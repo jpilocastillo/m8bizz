@@ -563,28 +563,9 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 // Create a new marketing event with all related data
 export async function createEvent(userId: string, eventData: any) {
   try {
-    // Use the admin client to bypass RLS policies
     const supabase = await createAdminClient()
 
-    if (!userId) {
-      console.error("createEvent called without userId")
-      return { success: false, error: "User ID is required" }
-    }
-
-    console.log("Creating new event with data:", {
-      ...eventData,
-      userId,
-    })
-
-    // Validate required fields
-    if (!eventData.name || !eventData.date || !eventData.location || !eventData.type || !eventData.topic) {
-      return {
-        success: false,
-        error: "Missing required fields: name, date, location, type, and topic are required",
-      }
-    }
-
-    // STEP 1: Create the marketing event
+    // Start a transaction
     const { data: event, error: eventError } = await supabase
       .from("marketing_events")
       .insert({
@@ -592,160 +573,91 @@ export async function createEvent(userId: string, eventData: any) {
         name: eventData.name,
         date: eventData.date,
         location: eventData.location,
-        marketing_type: eventData.type, // Map type to marketing_type
+        marketing_type: eventData.marketing_type,
         topic: eventData.topic,
+        time: eventData.time,
         age_range: eventData.age_range,
         mile_radius: eventData.mile_radius,
         income_assets: eventData.income_assets,
-        time: eventData.time,
-        status: "active",
+        status: "active"
       })
       .select()
       .single()
 
-    if (eventError || !event) {
+    if (eventError) {
       console.error("Error creating event:", eventError)
-      return { success: false, error: eventError?.message || "Failed to create event" }
+      return { success: false, error: eventError.message }
     }
 
-    console.log("Created event:", event.id)
-
-    // STEP 2: Create event details (new schema)
-    const { error: detailsError } = await supabase.from("event_details").insert({
-      event_id: event.id,
-      location: eventData.location,
-      type: eventData.type,
-      topic: eventData.topic,
-      time: eventData.time,
-      age_range: eventData.age_range,
-      mile_radius: eventData.mile_radius,
-      income_assets: eventData.income_assets,
-    })
-
-    if (detailsError) {
-      console.error("Error creating event details:", detailsError)
-      // Continue anyway - this is not critical
-    }
-
-    // STEP 3: Create expenses
-    const { error: expensesError } = await supabase.from("marketing_expenses").insert({
-      event_id: event.id,
-      advertising_cost: eventData.expenses.advertising_cost,
-      food_venue_cost: eventData.expenses.food_venue_cost,
-      other_costs: eventData.expenses.other_costs,
-      total_cost: eventData.expenses.total_cost,
-    })
+    // Create expenses record
+    const { error: expensesError } = await supabase
+      .from("marketing_expenses")
+      .insert({
+        event_id: event.id,
+        advertising_cost: parseFloat(eventData.advertising_cost) || 0,
+        food_venue_cost: parseFloat(eventData.food_venue_cost) || 0,
+        other_costs: parseFloat(eventData.other_costs) || 0
+      })
 
     if (expensesError) {
       console.error("Error creating expenses:", expensesError)
       return { success: false, error: expensesError.message }
     }
 
-    // STEP 4: Create attendance with new clients_from_event field
-    const { error: attendanceError } = await supabase.from("event_attendance").insert({
-      event_id: event.id,
-      registrant_responses: eventData.attendance.registrant_responses,
-      confirmations: eventData.attendance.confirmations,
-      attendees: eventData.attendance.attendees,
-      clients_from_event: eventData.attendance.clients_from_event || 0, // Add new field
-    })
+    // Create attendance record
+    const { error: attendanceError } = await supabase
+      .from("event_attendance")
+      .insert({
+        event_id: event.id,
+        registrant_responses: parseInt(eventData.registrant_responses) || 0,
+        confirmations: parseInt(eventData.confirmations) || 0,
+        attendees: parseInt(eventData.attendees) || 0,
+        clients_from_event: parseInt(eventData.clients_from_event) || 0
+      })
 
     if (attendanceError) {
       console.error("Error creating attendance:", attendanceError)
       return { success: false, error: attendanceError.message }
     }
 
-    // STEP 5: Create appointments in both tables for compatibility
-    // First in event_appointments (new schema)
-    const { error: newAppointmentsError } = await supabase.from("event_appointments").insert({
-      event_id: event.id,
-      set_at_event: eventData.appointments.set_at_event,
-      set_after_event: eventData.appointments.set_after_event,
-      first_appointment_attended: eventData.appointments.first_appointment_attended,
-      first_appointment_no_shows: eventData.appointments.first_appointment_no_shows,
-      second_appointment_attended: eventData.appointments.second_appointment_attended,
-    })
-
-    if (newAppointmentsError) {
-      console.error("Error creating appointments in new schema:", newAppointmentsError)
-      // Continue anyway - we'll try the old schema
-    }
-
-    // STEP 6: Create financial data with updated field names
-    // Map the fields to the new names
-    const financialData = {
-      event_id: event.id,
-      annuity_premium:
-        eventData.financialProduction.fixed_annuity || eventData.financialProduction.annuity_premium || 0,
-      life_insurance_premium:
-        eventData.financialProduction.life_insurance || eventData.financialProduction.life_insurance_premium || 0,
-      aum: eventData.financialProduction.aum || 0,
-      financial_planning: eventData.financialProduction.financial_planning || 0,
-      annuities_sold: eventData.financialProduction.annuities_sold || 0,
-      life_policies_sold: eventData.financialProduction.life_policies_sold || 0,
-      annuity_commission:
-        eventData.financialProduction.annuity_commission || eventData.financialProduction.annuity_premium || 0,
-      life_insurance_commission:
-        eventData.financialProduction.life_insurance_commission ||
-        eventData.financialProduction.life_insurance_premium ||
-        0,
-      aum_fees: eventData.financialProduction.aum_fees || 0,
-    }
-
-    // Calculate total
-    const total =
-      financialData.annuity_premium +
-      financialData.life_insurance_premium +
-      financialData.aum +
-      financialData.financial_planning
-
-    // First check if financial_results table exists
-    const { data: tableInfo, error: tableError } = await supabase
-      .from("information_schema.tables")
-      .select("table_name")
-      .eq("table_name", "financial_results")
-      .maybeSingle()
-
-    // Only try to insert into financial_results if the table exists
-    if (tableInfo && tableInfo.table_name === "financial_results") {
-      // First in financial_results (new schema)
-      const { error: newFinancialError } = await supabase.from("financial_results").insert({
-        ...financialData,
-        total: total,
+    // Create appointments record
+    const { error: appointmentsError } = await supabase
+      .from("event_appointments")
+      .insert({
+        event_id: event.id,
+        set_at_event: parseInt(eventData.set_at_event) || 0,
+        set_after_event: parseInt(eventData.set_after_event) || 0,
+        first_appointment_attended: parseInt(eventData.first_appointment_attended) || 0,
+        first_appointment_no_shows: parseInt(eventData.first_appointment_no_shows) || 0,
+        second_appointment_attended: parseInt(eventData.second_appointment_attended) || 0
       })
 
-      if (newFinancialError) {
-        console.error("Error creating financial results in new schema:", newFinancialError)
-        // Continue anyway - we'll try the old schema
-      }
-    } else {
-      console.log("financial_results table does not exist, skipping insert")
+    if (appointmentsError) {
+      console.error("Error creating appointments:", appointmentsError)
+      return { success: false, error: appointmentsError.message }
     }
 
-    // Then in financial_production (old schema with mapped fields)
-    const { error: oldFinancialError } = await supabase.from("financial_production").insert({
-      event_id: event.id,
-      fixed_annuity: financialData.annuity_premium, // Map to old field name
-      life_insurance: financialData.life_insurance_premium, // Map to old field name
-      aum: financialData.aum,
-      financial_planning: financialData.financial_planning,
-      total: total,
-      annuities_sold: financialData.annuities_sold,
-      life_policies_sold: financialData.life_policies_sold,
-      annuity_premium: financialData.annuity_commission, // Map to old field name
-      life_insurance_premium: financialData.life_insurance_commission, // Map to old field name
-      aum_fees: financialData.aum_fees,
-    })
+    // Create financial production record
+    const { error: financialError } = await supabase
+      .from("event_financial_production")
+      .insert({
+        event_id: event.id,
+        annuity_premium: parseFloat(eventData.annuity_premium) || 0,
+        life_insurance_premium: parseFloat(eventData.life_insurance_premium) || 0,
+        aum: parseFloat(eventData.aum) || 0,
+        financial_planning: parseFloat(eventData.financial_planning) || 0,
+        annuities_sold: parseInt(eventData.annuities_sold) || 0
+      })
 
-    if (oldFinancialError) {
-      console.error("Error creating financial production in old schema:", oldFinancialError)
-      // Continue anyway since we've already created the event
+    if (financialError) {
+      console.error("Error creating financial production:", financialError)
+      return { success: false, error: financialError.message }
     }
 
-    return { success: true, eventId: event.id }
+    return { success: true, data: event }
   } catch (error) {
-    console.error("Error creating event:", error)
-    return { success: false, error: "Failed to create event" }
+    console.error("Error in createEvent:", error)
+    return { success: false, error: error.message }
   }
 }
 

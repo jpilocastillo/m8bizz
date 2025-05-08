@@ -57,6 +57,10 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
   const [aum, setAum] = useState("")
   const [financialPlanning, setFinancialPlanning] = useState("")
   const [annuitiesSold, setAnnuitiesSold] = useState("")
+  const [lifePoliciesSold, setLifePoliciesSold] = useState("")
+  const [annuityCommission, setAnnuityCommission] = useState("")
+  const [lifeInsuranceCommission, setLifeInsuranceCommission] = useState("")
+  const [aumFees, setAumFees] = useState("")
 
   useEffect(() => {
     if (initialData) {
@@ -86,6 +90,10 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
       setAum(initialData.aum || "")
       setFinancialPlanning(initialData.financial_planning || "")
       setAnnuitiesSold(initialData.annuities_sold || "")
+      setLifePoliciesSold(initialData.life_policies_sold || "")
+      setAnnuityCommission(initialData.annuity_commission || "")
+      setLifeInsuranceCommission(initialData.life_insurance_commission || "")
+      setAumFees(initialData.aum_fees || "")
     }
   }, [initialData])
 
@@ -94,6 +102,7 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
     setIsSubmitting(true)
 
     try {
+      // Convert string values to numbers where needed
       const eventData = {
         name,
         date,
@@ -121,11 +130,24 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         aum,
         financial_planning: financialPlanning,
         annuities_sold: annuitiesSold,
+        life_policies_sold: lifePoliciesSold,
+        annuity_commission: annuityCommission,
+        life_insurance_commission: lifeInsuranceCommission,
+        aum_fees: aumFees,
+      }
+
+      if (!user?.id) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to create an event.",
+        })
+        return
       }
 
       const result = isEditing
         ? await updateEvent(initialData.id, eventData)
-        : await createEvent(user?.id || "", eventData)
+        : await createEvent(user.id, eventData)
 
       if (result.success) {
         toast({
@@ -487,6 +509,50 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
                   type="number"
                   value={annuitiesSold}
                   onChange={(e) => setAnnuitiesSold(e.target.value)}
+                  className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lifePoliciesSold" className="text-gray-300 font-medium">Life Policies Sold</Label>
+                <Input
+                  id="lifePoliciesSold"
+                  type="number"
+                  value={lifePoliciesSold}
+                  onChange={(e) => setLifePoliciesSold(e.target.value)}
+                  className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="annuityCommission" className="text-gray-300 font-medium">Annuity Commission</Label>
+                <Input
+                  id="annuityCommission"
+                  type="number"
+                  value={annuityCommission}
+                  onChange={(e) => setAnnuityCommission(e.target.value)}
+                  className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lifeInsuranceCommission" className="text-gray-300 font-medium">Life Insurance Commission</Label>
+                <Input
+                  id="lifeInsuranceCommission"
+                  type="number"
+                  value={lifeInsuranceCommission}
+                  onChange={(e) => setLifeInsuranceCommission(e.target.value)}
+                  className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="aumFees" className="text-gray-300 font-medium">AUM Fees</Label>
+                <Input
+                  id="aumFees"
+                  type="number"
+                  value={aumFees}
+                  onChange={(e) => setAumFees(e.target.value)}
                   className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
                   required
                 />
