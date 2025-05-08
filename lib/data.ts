@@ -101,6 +101,35 @@ export type EventFinancialProduction = {
   aum_fees?: number
 }
 
+// Add type definitions for financial data
+type FinancialData = {
+  annuity_premium: number;
+  life_insurance_premium: number;
+  aum: number;
+  financial_planning: number;
+  annuities_sold: number;
+  life_policies_sold: number;
+  annuity_commission: number;
+  life_insurance_commission: number;
+  aum_fees: number;
+  total?: number;
+  [key: string]: number | undefined; // Add index signature
+};
+
+type OldFinancialData = {
+  fixed_annuity: number;
+  life_insurance: number;
+  aum: number;
+  financial_planning: number;
+  annuities_sold: number;
+  life_policies_sold: number;
+  annuity_premium: number;
+  life_insurance_premium: number;
+  total: number;
+  aum_fees: number;
+  [key: string]: number | undefined; // Add index signature
+};
+
 // Fetch user events using admin client to bypass RLS
 export async function fetchUserEvents(userId: string) {
   try {
@@ -147,8 +176,38 @@ export async function fetchUserEvents(userId: string) {
   }
 }
 
-// Fetch all events with related data
-export async function fetchAllEvents(userId: string) {
+// Update the return type of fetchAllEvents
+export type EventWithRelations = {
+  id: string;
+  date: string;
+  name: string;
+  location: string;
+  type: string;
+  topic: string;
+  budget: number;
+  status: string;
+  marketing_type: string;
+  attendance?: {
+    attendees: number;
+    clients_from_event: number;
+  };
+  financial_production?: {
+    total: number;
+  };
+  marketing_expenses?: {
+    total_cost: number;
+  };
+  event_appointments?: {
+    set_at_event: number;
+    set_after_event: number;
+    first_appointment_attended: number;
+    first_appointment_no_shows: number;
+    second_appointment_attended: number;
+  };
+}
+
+// Update the function signature
+export async function fetchAllEvents(userId: string): Promise<EventWithRelations[]> {
   if (!userId) {
     console.error("fetchAllEvents called without userId")
     return []
@@ -168,7 +227,16 @@ export async function fetchAllEvents(userId: string) {
         marketing_type, 
         topic,
         status,
-        marketing_expenses (total_cost)
+        marketing_expenses (total_cost),
+        event_attendance (attendees, clients_from_event),
+        event_appointments (
+          set_at_event,
+          set_after_event,
+          first_appointment_attended,
+          first_appointment_no_shows,
+          second_appointment_attended
+        ),
+        financial_production (total)
       `)
       .eq("user_id", userId)
       .order("date", { ascending: false })
@@ -184,6 +252,11 @@ export async function fetchAllEvents(userId: string) {
         topic: event.topic || "Unknown",
         budget: event.marketing_expenses?.[0]?.total_cost || 0,
         status: event.status || "active",
+        marketing_type: event.marketing_type,
+        attendance: event.event_attendance?.[0],
+        financial_production: event.financial_production?.[0],
+        marketing_expenses: event.marketing_expenses?.[0],
+        event_appointments: event.event_appointments?.[0],
       }))
     }
 
@@ -199,7 +272,16 @@ export async function fetchAllEvents(userId: string) {
           status,
           user_id,
           event_details (location, type, topic),
-          marketing_expenses (total_cost)
+          marketing_expenses (total_cost),
+          event_attendance (attendees, clients_from_event),
+          event_appointments (
+            set_at_event,
+            set_after_event,
+            first_appointment_attended,
+            first_appointment_no_shows,
+            second_appointment_attended
+          ),
+          financial_production (total)
         `)
         .eq("user_id", userId)
         .order("date", { ascending: false })
@@ -220,6 +302,11 @@ export async function fetchAllEvents(userId: string) {
           topic: event.event_details?.[0]?.topic || "Unknown",
           budget: event.marketing_expenses?.[0]?.total_cost || 0,
           status: event.status || "active",
+          marketing_type: event.event_details?.[0]?.type || "Unknown",
+          attendance: event.event_attendance?.[0],
+          financial_production: event.financial_production?.[0],
+          marketing_expenses: event.marketing_expenses?.[0],
+          event_appointments: event.event_appointments?.[0],
         }))
       }
     }
@@ -252,7 +339,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         marketing_expenses (*),
         event_attendance (*),
         event_appointments (*),
-        event_financial_production (*)
+        financial_production (*)
       `)
       .eq("user_id", userId)
 
@@ -275,12 +362,13 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
     }
 
     console.log(`Found event: ${event.name} (${event.id})`)
+    console.log('Event data:', event)
 
     // Calculate ROI
     const expenses = event.marketing_expenses?.[0]
     const totalExpenses = expenses?.total_cost || 0
 
-    const financial = event.event_financial_production?.[0]
+    const financial = event.financial_production?.[0]
     const totalIncome = financial?.annuity_premium || 0 + 
                        financial?.life_insurance_premium || 0 + 
                        financial?.aum || 0 + 
@@ -295,7 +383,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         id,
         date,
         marketing_expenses (total_cost),
-        event_financial_production (
+        financial_production (
           annuity_premium,
           life_insurance_premium,
           aum,
@@ -308,7 +396,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 
     const roiTrend = pastEvents?.map(event => {
       const expenses = event.marketing_expenses?.[0]?.total_cost || 1
-      const financial = event.event_financial_production?.[0]
+      const financial = event.financial_production?.[0]
       const production = (financial?.annuity_premium || 0) +
                         (financial?.life_insurance_premium || 0) +
                         (financial?.aum || 0) +
@@ -318,12 +406,13 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 
     // Calculate conversion rate
     const attendance = event.event_attendance?.[0]
+    console.log('Attendance data:', attendance)
     const attendeeCount = attendance?.attendees || 0
     const clientCount = attendance?.clients_from_event || 0
     const conversionRate = attendeeCount > 0 ? Math.round((clientCount / attendeeCount) * 1000) / 10 : 0
 
     // Prepare the dashboard data
-    return {
+    const dashboardData = {
       eventId: event.id,
       eventName: event.name,
       eventDate: event.date,
@@ -383,6 +472,9 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         aum_fees: financial?.aum_fees || 0,
       },
     }
+
+    console.log('Dashboard data prepared:', dashboardData)
+    return dashboardData
   } catch (error) {
     console.error("Error in fetchDashboardData:", error)
     return null
@@ -599,7 +691,7 @@ export async function updateEvent(eventId: string, eventData: any) {
     // Update financial data in both tables
     if (eventData.financialProduction) {
       // Map the fields to the new names for financial_results
-      const newFinancialData = {
+      const newFinancialData: FinancialData = {
         annuity_premium: eventData.financialProduction.fixed_annuity || eventData.financialProduction.annuity_premium,
         life_insurance_premium:
           eventData.financialProduction.life_insurance || eventData.financialProduction.life_insurance_premium,
@@ -613,14 +705,14 @@ export async function updateEvent(eventId: string, eventData: any) {
           eventData.financialProduction.life_insurance_commission ||
           eventData.financialProduction.life_insurance_premium,
         aum_fees: eventData.financialProduction.aum_fees,
-      }
+      };
 
       // Remove undefined values
       Object.keys(newFinancialData).forEach((key) => {
         if (newFinancialData[key] === undefined) {
-          delete newFinancialData[key]
+          delete newFinancialData[key];
         }
-      })
+      });
 
       // Calculate total if we have all the necessary fields
       if (
@@ -633,22 +725,22 @@ export async function updateEvent(eventId: string, eventData: any) {
           (newFinancialData.annuity_premium || 0) +
           (newFinancialData.life_insurance_premium || 0) +
           (newFinancialData.aum || 0) +
-          (newFinancialData.financial_planning || 0)
+          (newFinancialData.financial_planning || 0);
       }
 
       // Try new schema first
       const { error: newFinancialError } = await supabase
-        .from("financial_results")
+        .from("financial_production")
         .update(newFinancialData)
-        .eq("event_id", eventId)
+        .eq("event_id", eventId);
 
       if (newFinancialError) {
-        console.error("Error updating financial results in new schema:", newFinancialError)
+        console.error("Error updating financial results in new schema:", newFinancialError);
         // Continue anyway - we'll try the old schema
       }
 
       // Map the fields to the old names for financial_production
-      const oldFinancialData = {
+      const oldFinancialData: OldFinancialData = {
         fixed_annuity: newFinancialData.annuity_premium,
         life_insurance: newFinancialData.life_insurance_premium,
         aum: newFinancialData.aum,
@@ -657,28 +749,28 @@ export async function updateEvent(eventId: string, eventData: any) {
         life_policies_sold: newFinancialData.life_policies_sold,
         annuity_premium: newFinancialData.annuity_commission,
         life_insurance_premium: newFinancialData.life_insurance_commission,
-        total: newFinancialData.total,
+        total: newFinancialData.total || 0,
         aum_fees: newFinancialData.aum_fees,
-      }
+      };
 
       // Remove undefined values
       Object.keys(oldFinancialData).forEach((key) => {
         if (oldFinancialData[key] === undefined) {
-          delete oldFinancialData[key]
+          delete oldFinancialData[key];
         }
-      })
+      });
 
       // Then try old schema
       const { error: oldFinancialError } = await supabase
         .from("financial_production")
         .update(oldFinancialData)
-        .eq("event_id", eventId)
+        .eq("event_id", eventId);
 
       if (oldFinancialError) {
-        console.error("Error updating financial production in old schema:", oldFinancialError)
+        console.error("Error updating financial production in old schema:", oldFinancialError);
         // Only return error if both failed
         if (newFinancialError) {
-          return { success: false, error: "Failed to update financial data" }
+          return { success: false, error: "Failed to update financial data" };
         }
       }
     }

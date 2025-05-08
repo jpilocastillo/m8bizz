@@ -22,10 +22,10 @@ export const createClient = async () => {
           return cookie?.value
         },
         set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
+            cookieStore.set({ name, value, ...options })
         },
         remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options })
+            cookieStore.set({ name, value: "", ...options })
         },
       },
     }
