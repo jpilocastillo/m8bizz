@@ -7,8 +7,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 export async function registerUser(name: string, email: string, password: string, company?: string) {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -93,8 +92,7 @@ export async function registerUser(name: string, email: string, password: string
 
 export async function loginUser(email: string, password: string) {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -115,8 +113,7 @@ export async function loginUser(email: string, password: string) {
 
 export async function getCurrentUser() {
   try {
-    const cookieStore = cookies()
-    const supabase = createClient(cookieStore)
+    const supabase = await createClient()
 
     const {
       data: { session },
@@ -137,12 +134,12 @@ export async function deleteUser(userId: string) {
   }
 
   try {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error("Missing Supabase environment variables")
     }
 
-    const adminClient = createSupabaseClient(
-      process.env.SUPABASE_URL,
+    const adminClient = createSupabaseClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
       {
         auth: {
