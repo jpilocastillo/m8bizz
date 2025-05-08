@@ -190,6 +190,8 @@ export type EventWithRelations = {
   attendance?: {
     attendees: number;
     clients_from_event: number;
+    registrant_responses: number;
+    confirmations: number;
   };
   financial_production?: {
     total: number;
@@ -258,7 +260,7 @@ export async function fetchAllEvents(userId: string): Promise<EventWithRelations
           date: event.date,
           name: event.name,
           location: event.location,
-          type: event.marketing_type || "Unknown", // Map marketing_type to type for backward compatibility
+          type: event.marketing_type || "Unknown",
           topic: event.topic || "Unknown",
           budget: event.marketing_expenses?.[0]?.total_cost || 0,
           status: event.status || "active",

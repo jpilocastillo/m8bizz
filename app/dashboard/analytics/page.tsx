@@ -46,10 +46,17 @@ export default async function AnalyticsPage() {
           return sum + (expenses > 0 ? ((revenue - expenses) / expenses) * 100 : 0)
         }, 0) / events.length : 0,
         totalClients: events.reduce((sum, event) => sum + (event.attendance?.clients_from_event || 0), 0),
+        totalRegistrants: events.reduce((sum, event) => sum + (event.attendance?.registrant_responses || 0), 0),
+        totalConfirmations: events.reduce((sum, event) => sum + (event.attendance?.confirmations || 0), 0),
         overallConversionRate: events.length > 0 ? events.reduce((sum, event) => {
           const attendees = event.attendance?.attendees || 0
           const clients = event.attendance?.clients_from_event || 0
           return sum + (attendees > 0 ? (clients / attendees) * 100 : 0)
+        }, 0) / events.length : 0,
+        registrationRate: events.length > 0 ? events.reduce((sum, event) => {
+          const registrants = event.attendance?.registrant_responses || 0
+          const confirmations = event.attendance?.confirmations || 0
+          return sum + (registrants > 0 ? (confirmations / registrants) * 100 : 0)
         }, 0) / events.length : 0,
         appointmentConversionRate: events.length > 0 ? events.reduce((sum, event) => {
           const setAtEvent = event.event_appointments?.set_at_event || 0
@@ -71,6 +78,8 @@ export default async function AnalyticsPage() {
         location: event.location,
         attendees: event.attendance?.attendees || 0,
         clients: event.attendance?.clients_from_event || 0,
+        registrants: event.attendance?.registrant_responses || 0,
+        confirmations: event.attendance?.confirmations || 0,
         revenue: event.financial_production?.total || 0,
         expenses: event.marketing_expenses?.total_cost || 0,
         roi: event.marketing_expenses?.total_cost > 0 
