@@ -22,7 +22,11 @@ export default async function NewEventPage() {
       redirect("/login")
     }
 
-    return <EventForm userId={data.user.id} />
+    return (
+      <div className="container mx-auto py-6">
+        <EventForm userId={data.user.id} />
+      </div>
+    )
   } catch (error) {
     console.error("Unhandled error in NewEventPage:", error)
 

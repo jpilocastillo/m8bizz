@@ -15,9 +15,10 @@ import { useAuth } from "@/components/auth-provider"
 interface EventFormProps {
   initialData?: any
   isEditing?: boolean
+  userId?: string
 }
 
-export function EventForm({ initialData, isEditing = false }: EventFormProps) {
+export function EventForm({ initialData, isEditing = false, userId }: EventFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -119,7 +120,9 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
     setIsSubmitting(true)
 
     try {
-      if (!user?.id) {
+      const currentUserId = userId || user?.id
+      if (!currentUserId) {
+        console.error("No user ID available")
         toast({
           variant: "destructive",
           title: "Error",
@@ -134,11 +137,7 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         date: "Date",
         location: "Location",
         marketingType: "Marketing Type",
-        topic: "Topic",
-        time: "Time",
-        ageRange: "Age Range",
-        mileRadius: "Mile Radius",
-        incomeAssets: "Income/Assets"
+        topic: "Topic"
       }
 
       const missingFields = Object.entries(requiredFields)
@@ -210,8 +209,10 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         status: 'active'
       }
 
+      console.log('Creating event with data:', eventData)
+
       // Create the event first
-      const result = await createEvent(user.id, eventData)
+      const result = await createEvent(currentUserId, eventData)
 
       if (!result.success || !result.eventId) {
         console.error("Error creating event:", result.error)
