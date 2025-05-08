@@ -437,7 +437,13 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
       .select(`
         *,
         marketing_expenses (*),
-        event_attendance (*),
+        event_attendance (
+          id,
+          registrant_responses,
+          confirmations,
+          attendees,
+          clients_from_event
+        ),
         event_appointments (*),
         financial_production (*)
       `)
@@ -548,12 +554,18 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         foodVenue: expenses?.food_venue_cost || 0,
       },
       topicOfMarketing: event.topic,
-      attendance: {
-        registrantResponses: attendance?.registrant_responses || 0,
-        confirmations: attendance?.confirmations || 0,
-        attendees: attendance?.attendees || 0,
-        clients_from_event: attendance?.clients_from_event || 0,
-        responseRate: attendance?.registrant_responses ? (attendance.confirmations / attendance.registrant_responses) * 100 : 0
+      attendance: attendance ? {
+        registrantResponses: attendance.registrant_responses || 0,
+        confirmations: attendance.confirmations || 0,
+        attendees: attendance.attendees || 0,
+        clients_from_event: attendance.clients_from_event || 0,
+        responseRate: attendance.registrant_responses ? (attendance.confirmations / attendance.registrant_responses) * 100 : 0
+      } : {
+        registrantResponses: 0,
+        confirmations: 0,
+        attendees: 0,
+        clients_from_event: 0,
+        responseRate: 0
       },
       appointments: {
         setAtEvent: event.event_appointments?.[0]?.set_at_event || 0,
