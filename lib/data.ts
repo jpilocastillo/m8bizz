@@ -130,6 +130,28 @@ type OldFinancialData = {
   [key: string]: number | undefined; // Add index signature
 };
 
+// Add this function before fetchAllEvents
+async function ensureAttendanceRecords(supabase: any, events: any[]) {
+  for (const event of events) {
+    if (!event.event_attendance || event.event_attendance.length === 0) {
+      console.log('Creating missing attendance record for event:', event.id)
+      const { error: attendanceError } = await supabase
+        .from('event_attendance')
+        .insert([{
+          event_id: event.id,
+          registrant_responses: 0,
+          confirmations: 0,
+          attendees: 0,
+          clients_from_event: 0
+        }])
+
+      if (attendanceError) {
+        console.error("Error creating attendance record:", attendanceError)
+      }
+    }
+  }
+}
+
 // Fetch user events using admin client to bypass RLS
 export async function fetchUserEvents(userId: string) {
   try {
@@ -250,11 +272,55 @@ export async function fetchAllEvents(userId: string): Promise<EventWithRelations
       .order("date", { ascending: false })
 
     if (marketingEvents && marketingEvents.length > 0) {
-      console.log('Fetched marketing events:', marketingEvents)
+      // Ensure all events have attendance records
+      await ensureAttendanceRecords(supabase, marketingEvents)
+      
+      // Fetch events again to get the updated attendance data
+      const { data: updatedEvents } = await supabase
+        .from("marketing_events")
+        .select(`
+          id,
+          name,
+          date,
+          location,
+          marketing_type, 
+          topic,
+          status,
+          marketing_expenses (total_cost),
+          event_attendance (
+            id,
+            attendees,
+            clients_from_event,
+            registrant_responses,
+            confirmations
+          ),
+          event_appointments (
+            set_at_event,
+            set_after_event,
+            first_appointment_attended,
+            first_appointment_no_shows,
+            second_appointment_attended
+          ),
+          financial_production (total)
+        `)
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+
+      console.log('Fetched updated marketing events:', updatedEvents)
       // Map the data to the expected format
-      return marketingEvents.map((event) => {
+      return (updatedEvents || []).map((event) => {
         const attendance = event.event_attendance?.[0]
-        console.log('Event attendance data:', attendance)
+        console.log('Event attendance data for event', event.id, ':', {
+          raw: event.event_attendance,
+          processed: attendance,
+          hasAttendance: !!attendance,
+          fields: attendance ? {
+            attendees: attendance.attendees,
+            clients_from_event: attendance.clients_from_event,
+            registrant_responses: attendance.registrant_responses,
+            confirmations: attendance.confirmations
+          } : 'no attendance data'
+        })
         return {
           id: event.id,
           date: event.date,
