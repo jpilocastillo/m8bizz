@@ -4,16 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity } from "lucide-react"
 
 interface ConversionEfficiencyProps {
-  registrationToAttendance: number
-  attendanceToAppointment: number
-  appointmentToClient: number
+  registrationToConfirmation: number
+  confirmationToAttendance: number
+  attendanceToClient: number
   overall: number
 }
 
 export function ConversionEfficiencyCard({
-  registrationToAttendance,
-  attendanceToAppointment,
-  appointmentToClient,
+  registrationToConfirmation,
+  confirmationToAttendance,
+  attendanceToClient,
   overall,
 }: ConversionEfficiencyProps) {
   return (
@@ -30,58 +30,58 @@ export function ConversionEfficiencyCard({
       </CardHeader>
       <CardContent className="p-6 flex-1 flex flex-col justify-between">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* Registration to Attendance */}
+          {/* Registration to Confirmation */}
           <div className="space-y-2 bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-emerald-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-white group-hover/item:text-emerald-300 transition-colors duration-300">
-                Registration to Attendance
+                Registration to Confirmation
               </span>
               <span className="text-sm font-bold text-emerald-400 group-hover/item:text-emerald-300 transition-colors duration-300">
-                {registrationToAttendance.toFixed(1)}%
+                {registrationToConfirmation.toFixed(1)}%
               </span>
             </div>
             <div className="text-xs text-gray-400 group-hover/item:text-gray-300 transition-colors duration-300">
-              {registrationToAttendance < 40
+              {registrationToConfirmation < 40
                 ? "Needs improvement"
-                : registrationToAttendance < 70
+                : registrationToConfirmation < 70
                   ? "Performing adequately"
                   : "Excellent performance"}
             </div>
           </div>
 
-          {/* Appointment to Client */}
-          <div className="space-y-2 bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-red-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-white group-hover/item:text-red-300 transition-colors duration-300">
-                Appointment to Client
-              </span>
-              <span className="text-sm font-bold text-red-400 group-hover/item:text-red-300 transition-colors duration-300">
-                {appointmentToClient.toFixed(1)}%
-              </span>
-            </div>
-            <div className="text-xs text-gray-400 group-hover/item:text-gray-300 transition-colors duration-300">
-              {appointmentToClient < 40
-                ? "Needs improvement"
-                : appointmentToClient < 70
-                  ? "Performing adequately"
-                  : "Excellent performance"}
-            </div>
-          </div>
-
-          {/* Attendance to Appointment */}
+          {/* Confirmation to Attendance */}
           <div className="space-y-2 bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-blue-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-white group-hover/item:text-blue-300 transition-colors duration-300">
-                Attendance to Appointment
+                Confirmation to Attendance
               </span>
               <span className="text-sm font-bold text-blue-400 group-hover/item:text-blue-300 transition-colors duration-300">
-                {attendanceToAppointment.toFixed(1)}%
+                {confirmationToAttendance.toFixed(1)}%
               </span>
             </div>
             <div className="text-xs text-gray-400 group-hover/item:text-gray-300 transition-colors duration-300">
-              {attendanceToAppointment < 40
+              {confirmationToAttendance < 40
                 ? "Needs improvement"
-                : attendanceToAppointment < 70
+                : confirmationToAttendance < 70
+                  ? "Performing adequately"
+                  : "Excellent performance"}
+            </div>
+          </div>
+
+          {/* Attendance to Client */}
+          <div className="space-y-2 bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-red-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-white group-hover/item:text-red-300 transition-colors duration-300">
+                Attendance to Client
+              </span>
+              <span className="text-sm font-bold text-red-400 group-hover/item:text-red-300 transition-colors duration-300">
+                {attendanceToClient.toFixed(1)}%
+              </span>
+            </div>
+            <div className="text-xs text-gray-400 group-hover/item:text-gray-300 transition-colors duration-300">
+              {attendanceToClient < 40
+                ? "Needs improvement"
+                : attendanceToClient < 70
                   ? "Performing adequately"
                   : "Excellent performance"}
             </div>
@@ -129,27 +129,27 @@ export function ConversionEfficiencyCard({
                 <div className="w-1/4 relative group/stage">
                   <div
                     className="absolute bottom-0 left-0 right-0 bg-emerald-500/40 transition-all duration-300 group-hover/stage:bg-emerald-500/60 group-hover/stage:shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-                    style={{ height: `${registrationToAttendance}%` }}
+                    style={{ height: `${registrationToConfirmation}%` }}
                   ></div>
                   <div className="absolute top-0 left-0 right-0 text-center text-xs text-emerald-400 font-bold transition-all duration-300 group-hover/stage:text-emerald-300 group-hover/stage:translate-y-[-2px]">
-                    {registrationToAttendance.toFixed(1)}%
+                    {registrationToConfirmation.toFixed(1)}%
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 text-center text-xs text-emerald-400 transition-all duration-300 group-hover/stage:text-emerald-300">
-                    Attendance
+                    Confirmation
                   </div>
                 </div>
 
-                {/* Appointment Stage */}
+                {/* Attendance Stage */}
                 <div className="w-1/4 relative group/stage">
                   <div
-                    className="absolute bottom-0 left-0 right-0 bg-blue-500/40 transition-all duration-300 group-hover/stage:bg-blue-500/60 group-hover/stage:shadow-[0_0_8px_rgba(59,130,246,0.4)]"
-                    style={{ height: `${(registrationToAttendance * attendanceToAppointment) / 100}%` }}
+                    className="absolute bottom-0 left-0 right-0 bg-emerald-500/40 transition-all duration-300 group-hover/stage:bg-emerald-500/60 group-hover/stage:shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                    style={{ height: `${confirmationToAttendance}%` }}
                   ></div>
-                  <div className="absolute top-0 left-0 right-0 text-center text-xs text-blue-400 font-bold transition-all duration-300 group-hover/stage:text-blue-300 group-hover/stage:translate-y-[-2px]">
-                    {((registrationToAttendance * attendanceToAppointment) / 100).toFixed(1)}%
+                  <div className="absolute top-0 left-0 right-0 text-center text-xs text-emerald-400 font-bold transition-all duration-300 group-hover/stage:text-emerald-300 group-hover/stage:translate-y-[-2px]">
+                    {confirmationToAttendance.toFixed(1)}%
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 text-center text-xs text-blue-400 transition-all duration-300 group-hover/stage:text-blue-300">
-                    Appointment
+                  <div className="absolute bottom-0 left-0 right-0 text-center text-xs text-emerald-400 transition-all duration-300 group-hover/stage:text-emerald-300">
+                    Attendance
                   </div>
                 </div>
 
@@ -238,33 +238,33 @@ export function ConversionEfficiencyCard({
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 rounded-full bg-emerald-500 transition-all duration-300 group-hover/rate:scale-125 group-hover/rate:shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
                   <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/rate:text-emerald-300">
-                    Registration → Attendance
+                    Registration → Confirmation
                   </span>
                 </div>
                 <span className="text-xs font-medium text-emerald-400 transition-colors duration-300 group-hover/rate:text-emerald-300">
-                  {registrationToAttendance.toFixed(1)}%
+                  {registrationToConfirmation.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center justify-between group/rate transition-all duration-300 hover:bg-m8bs-card-alt/30 hover:rounded-md hover:px-2">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 rounded-full bg-blue-500 transition-all duration-300 group-hover/rate:scale-125 group-hover/rate:shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
                   <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/rate:text-blue-300">
-                    Attendance → Appointment
+                    Confirmation → Attendance
                   </span>
                 </div>
                 <span className="text-xs font-medium text-blue-400 transition-colors duration-300 group-hover/rate:text-blue-300">
-                  {attendanceToAppointment.toFixed(1)}%
+                  {confirmationToAttendance.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center justify-between group/rate transition-all duration-300 hover:bg-m8bs-card-alt/30 hover:rounded-md hover:px-2">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 rounded-full bg-red-500 transition-all duration-300 group-hover/rate:scale-125 group-hover/rate:shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
                   <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/rate:text-red-300">
-                    Appointment → Client
+                    Attendance → Client
                   </span>
                 </div>
                 <span className="text-xs font-medium text-red-400 transition-colors duration-300 group-hover/rate:text-red-300">
-                  {appointmentToClient.toFixed(1)}%
+                  {attendanceToClient.toFixed(1)}%
                 </span>
               </div>
             </div>
@@ -275,11 +275,11 @@ export function ConversionEfficiencyCard({
                   Recommended Focus:
                 </span>
                 <span className="text-xs font-bold text-yellow-400 transition-all duration-300 group-hover/focus:text-yellow-300 group-hover/focus:scale-105">
-                  {registrationToAttendance <= Math.min(attendanceToAppointment, appointmentToClient)
-                    ? "Registration → Attendance"
-                    : attendanceToAppointment <= Math.min(registrationToAttendance, appointmentToClient)
-                      ? "Attendance → Appointment"
-                      : "Appointment → Client"}
+                  {registrationToConfirmation <= Math.min(confirmationToAttendance, attendanceToClient)
+                    ? "Registration → Confirmation"
+                    : confirmationToAttendance <= Math.min(registrationToConfirmation, attendanceToClient)
+                      ? "Confirmation → Attendance"
+                      : "Attendance → Client"}
                 </span>
               </div>
             </div>

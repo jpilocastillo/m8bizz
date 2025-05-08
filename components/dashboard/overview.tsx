@@ -62,6 +62,7 @@ interface DashboardData {
     confirmations: number
     attendees: number
     responseRate: number
+    clients_from_event: number
   }
   clientAcquisition: {
     expensePerBuyingUnit: number
@@ -124,7 +125,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
   }
 
   const conversionFunnelData = {
-    labels: ["Registrations", "Confirmations", "Attendees", "1st Appointments", "Clients"],
+    labels: ["Registrations", "Confirmations", "Attendees", "Clients"],
     datasets: [
       {
         label: "Count",
@@ -132,8 +133,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           data.attendance.registrantResponses,
           data.attendance.confirmations,
           data.attendance.attendees,
-          data.appointments.firstAppointmentAttended,
-          data.productsSold.annuities + data.productsSold.lifePolicies,
+          data.attendance.clients_from_event,
         ],
         backgroundColor: "rgba(59, 130, 246, 0.7)",
         borderColor: "#3b82f6",
@@ -338,7 +338,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
               type="bar"
               height={220}
               data={{
-                labels: ["Registrations", "Confirmations", "Attendees"],
+                labels: ["Registrations", "Confirmations", "Attendees", "Clients"],
                 datasets: [
                   {
                     label: "Count",
@@ -346,8 +346,14 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                       data.attendance.registrantResponses,
                       data.attendance.confirmations,
                       data.attendance.attendees,
+                      data.attendance.clients_from_event,
                     ],
-                    backgroundColor: ["rgba(59, 130, 246, 0.8)", "rgba(16, 185, 129, 0.8)", "rgba(249, 115, 22, 0.8)"],
+                    backgroundColor: [
+                      "rgba(59, 130, 246, 0.8)",
+                      "rgba(16, 185, 129, 0.8)",
+                      "rgba(249, 115, 22, 0.8)",
+                      "rgba(139, 92, 246, 0.8)",
+                    ],
                   },
                 ],
               }}
@@ -372,6 +378,21 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                     : 0
                 }
                 color="bg-emerald-500"
+                height="md"
+              />
+              <ProgressBar
+                label="Attendance to Clients"
+                valueLabel={`${
+                  data.attendance.attendees > 0
+                    ? ((data.attendance.clients_from_event / data.attendance.attendees) * 100).toFixed(1)
+                    : "0.0"
+                }%`}
+                value={
+                  data.attendance.attendees > 0
+                    ? (data.attendance.clients_from_event / data.attendance.attendees) * 100
+                    : 0
+                }
+                color="bg-purple-500"
                 height="md"
               />
             </div>

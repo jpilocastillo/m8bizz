@@ -107,26 +107,20 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const roi = totalExpenses > 0 ? (profit / totalExpenses) * 100 : 0
 
   // Calculate conversion metrics
+  const registrants = dashboardData.attendance?.registrantResponses || 0
+  const confirmations = dashboardData.attendance?.confirmations || 0
   const attendees = dashboardData.attendance?.attendees || 0
-  const appointments = dashboardData.appointments?.firstAppointmentAttended || 0
-  const clients = (dashboardData.productsSold?.annuities || 0) + (dashboardData.productsSold?.lifePolicies || 0)
+  const clients = dashboardData.attendance?.clients_from_event || 0
 
-  const registrationToAttendance =
-    (dashboardData.attendance?.registrantResponses || 0) > 0
-      ? (attendees / dashboardData.attendance.registrantResponses) * 100
-      : 0
-
-  const attendanceToAppointment = attendees > 0 ? (appointments / attendees) * 100 : 0
-
-  const appointmentToClient = appointments > 0 ? (clients / appointments) * 100 : 0
-
-  const overallConversion = attendees > 0 ? (clients / attendees) * 100 : 0
+  const registrationToConfirmation = registrants > 0 ? (confirmations / registrants) * 100 : 0
+  const confirmationToAttendance = confirmations > 0 ? (attendees / confirmations) * 100 : 0
+  const attendanceToClient = attendees > 0 ? (clients / attendees) * 100 : 0
+  const overallConversion = registrants > 0 ? (clients / registrants) * 100 : 0
 
   // Calculate client acquisition costs
-  const expensePerBuyingUnit = attendees > 0 ? totalExpenses / attendees : 0
-
-  const expensePerAppointment = appointments > 0 ? totalExpenses / appointments : 0
-
+  const expensePerRegistrant = registrants > 0 ? totalExpenses / registrants : 0
+  const expensePerConfirmation = confirmations > 0 ? totalExpenses / confirmations : 0
+  const expensePerAttendee = attendees > 0 ? totalExpenses / attendees : 0
   const expensePerClient = clients > 0 ? totalExpenses / clients : 0
 
   // Calculate income breakdown with safe fallbacks
@@ -207,7 +201,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             value={overallConversion}
             format="percent"
             icon={<Percent className="h-5 w-5 text-amber-400" />}
-            description={`${attendees} attendees → ${clients} clients`}
+            description={`${registrants} registrants → ${clients} clients`}
             color="amber"
           />
         </motion.div>
@@ -241,9 +235,9 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Updated Conversion Efficiency Card */}
         <ConversionEfficiencyCard
-          registrationToAttendance={registrationToAttendance}
-          attendanceToAppointment={attendanceToAppointment}
-          appointmentToClient={appointmentToClient}
+          registrationToConfirmation={registrationToConfirmation}
+          confirmationToAttendance={confirmationToAttendance}
+          attendanceToClient={attendanceToClient}
           overall={overallConversion}
         />
 
@@ -253,9 +247,9 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <RegistrantResponseAnalysis
-            responses={dashboardData.attendance?.registrantResponses || 0}
+            responses={registrants}
             mailers={10000}
-            confirmations={dashboardData.attendance?.confirmations || 0}
+            confirmations={confirmations}
             attendees={attendees}
           />
         </motion.div>
@@ -366,8 +360,9 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           transition={{ duration: 0.5, delay: 0.5 }}
         >
           <ClientAcquisitionCard
-            expensePerBuyingUnit={expensePerBuyingUnit}
-            expensePerAppointment={expensePerAppointment}
+            expensePerRegistrant={expensePerRegistrant}
+            expensePerConfirmation={expensePerConfirmation}
+            expensePerAttendee={expensePerAttendee}
             expensePerClient={expensePerClient}
             totalCost={totalExpenses}
           />

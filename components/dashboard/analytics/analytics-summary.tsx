@@ -19,6 +19,9 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
     overallConversionRate: 0,
     totalClients: 0,
     avgAttendees: 0,
+    totalRegistrants: 0,
+    avgRegistrants: 0,
+    totalConfirmations: 0,
   }
 
   // Format currency
@@ -54,14 +57,14 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
       <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
         <CardContent className="p-4 flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white font-bold tracking-wide">Total Attendees</span>
-            <div className="bg-green-500/20 p-1 rounded-md">
-              <Users className="h-4 w-4 text-green-500" />
+            <span className="text-sm text-white font-bold tracking-wide">Total Registrants</span>
+            <div className="bg-blue-500/20 p-1 rounded-md">
+              <Users className="h-4 w-4 text-blue-500" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold tracking-tight">{safeData.totalAttendees || 0}</div>
+          <div className="text-2xl font-extrabold tracking-tight">{safeData.totalRegistrants || 0}</div>
           <div className="text-xs text-white mt-1 font-medium">
-            Avg: {Math.round(safeData.avgAttendees || 0)} per event
+            Avg: {Math.round(safeData.avgRegistrants || 0)} per event
           </div>
         </CardContent>
       </Card>
@@ -111,16 +114,44 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
       <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
         <CardContent className="p-4 flex flex-col">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white font-bold tracking-wide">Conversion Rate</span>
-            <div className="bg-red-500/20 p-1 rounded-md">
-              <LineChart className="h-4 w-4 text-red-500" />
+            <span className="text-sm text-white font-bold tracking-wide">Total Confirmations</span>
+            <div className="bg-emerald-500/20 p-1 rounded-md">
+              <Users className="h-4 w-4 text-emerald-500" />
             </div>
           </div>
-          <div className="text-2xl font-extrabold tracking-tight">
-            {formatPercent(safeData.overallConversionRate || 0)}
-          </div>
+          <div className="text-2xl font-extrabold tracking-tight">{safeData.totalConfirmations || 0}</div>
           <div className="text-xs text-white mt-1 font-medium">
-            {safeData.totalClients || 0} clients from {safeData.totalAttendees || 0} attendees
+            Confirmation Rate: {safeData.totalRegistrants ? Math.round((safeData.totalConfirmations / safeData.totalRegistrants) * 100) : 0}%
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+        <CardContent className="p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-white font-bold tracking-wide">Total Attendees</span>
+            <div className="bg-amber-500/20 p-1 rounded-md">
+              <Users className="h-4 w-4 text-amber-500" />
+            </div>
+          </div>
+          <div className="text-2xl font-extrabold tracking-tight">{safeData.totalAttendees || 0}</div>
+          <div className="text-xs text-white mt-1 font-medium">
+            Attendance Rate: {safeData.totalConfirmations ? Math.round((safeData.totalAttendees / safeData.totalConfirmations) * 100) : 0}%
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+        <CardContent className="p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-white font-bold tracking-wide">Total Clients</span>
+            <div className="bg-purple-500/20 p-1 rounded-md">
+              <Users className="h-4 w-4 text-purple-500" />
+            </div>
+          </div>
+          <div className="text-2xl font-extrabold tracking-tight">{safeData.totalClients || 0}</div>
+          <div className="text-xs text-white mt-1 font-medium">
+            Conversion Rate: {safeData.totalAttendees ? Math.round((safeData.totalClients / safeData.totalAttendees) * 100) : 0}%
           </div>
         </CardContent>
       </Card>
