@@ -9,13 +9,11 @@ export const dynamic = "force-dynamic"
 export default async function EditEventPage({ params }: { params: { id: string } }) {
   const eventId = params.id
   const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
 
-  if (!user) {
+  if (error || !user) {
     return null
   }
 
@@ -34,7 +32,7 @@ export default async function EditEventPage({ params }: { params: { id: string }
           Edit Marketing Event
         </h2>
       </div>
-      <EventForm initialData={eventData} isEditing={true} />
+      <EventForm initialData={eventData} isEditing={true} userId={user.id} />
     </div>
   )
 }

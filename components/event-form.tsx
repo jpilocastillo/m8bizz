@@ -117,10 +117,13 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Form submission started')
     setIsSubmitting(true)
 
     try {
       const currentUserId = userId || user?.id
+      console.log('Current user ID:', currentUserId)
+      
       if (!currentUserId) {
         console.error("No user ID available")
         toast({
@@ -133,18 +136,30 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
       // Validate required fields
       const requiredFields = {
-        name: "Event Name",
-        date: "Date",
-        location: "Location",
-        marketingType: "Marketing Type",
-        topic: "Topic"
+        name,
+        date,
+        location,
+        marketingType,
+        topic
       }
 
+      console.log('Validating required fields:', requiredFields)
+
       const missingFields = Object.entries(requiredFields)
-        .filter(([key]) => !(e.target as any)[key]?.value)
-        .map(([_, label]) => label)
+        .filter(([_, value]) => !value)
+        .map(([key]) => {
+          switch (key) {
+            case 'name': return 'Event Name'
+            case 'date': return 'Date'
+            case 'location': return 'Location'
+            case 'marketingType': return 'Marketing Type'
+            case 'topic': return 'Topic'
+            default: return key
+          }
+        })
 
       if (missingFields.length > 0) {
+        console.log('Missing required fields:', missingFields)
         toast({
           variant: "destructive",
           title: "Missing Required Fields",
@@ -153,49 +168,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         return
       }
 
-      // Validate numeric fields
-      const numericFields = {
-        mileRadius: "Mile Radius",
-        advertisingCost: "Advertising Cost",
-        foodVenueCost: "Food/Venue Cost",
-        otherCosts: "Other Costs",
-        registrantResponses: "Registrant Responses",
-        confirmations: "Confirmations",
-        attendees: "Attendees",
-        clientsFromEvent: "Clients from Event",
-        setAtEvent: "Appointments Set at Event",
-        setAfterEvent: "Appointments Set After Event",
-        firstAppointmentAttended: "First Appointments Attended",
-        firstAppointmentNoShows: "First Appointment No-Shows",
-        secondAppointmentAttended: "Second Appointments Attended",
-        annuityPremium: "Annuity Premium",
-        lifeInsurancePremium: "Life Insurance Premium",
-        aum: "AUM",
-        financialPlanning: "Financial Planning",
-        annuitiesSold: "Annuities Sold",
-        lifePoliciesSold: "Life Policies Sold",
-        annuityCommission: "Annuity Commission",
-        lifeInsuranceCommission: "Life Insurance Commission",
-        aumFees: "AUM Fees"
-      }
-
-      const invalidNumericFields = Object.entries(numericFields)
-        .filter(([key]) => {
-          const value = (e.target as any)[key]?.value
-          return value && isNaN(Number(value))
-        })
-        .map(([_, label]) => label)
-
-      if (invalidNumericFields.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Invalid Numeric Fields",
-          description: `The following fields must be numbers: ${invalidNumericFields.join(", ")}`,
-        })
-        return
-      }
-
-      // Convert string values to numbers where needed
+      // Prepare the event data
       const eventData = {
         name,
         date,
@@ -209,20 +182,24 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         status: 'active'
       }
 
-      console.log('Creating event with data:', eventData)
+      console.log('Submitting event data:', eventData)
 
       // Create the event first
+      console.log('Calling createEvent function...')
       const result = await createEvent(currentUserId, eventData)
+      console.log('createEvent result:', result)
 
       if (!result.success || !result.eventId) {
         console.error("Error creating event:", result.error)
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to create event. Please try again.",
+          description: result.error || "Failed to create event. Please try again.",
         })
         return
       }
+
+      console.log('Event created successfully with ID:', result.eventId)
 
       // Prepare data for related records
       const expensesData = {
@@ -262,13 +239,28 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         aum_fees: parseFloat(aumFees) || 0
       }
 
+      console.log('Creating related records:', {
+        expenses: expensesData,
+        attendance: attendanceData,
+        appointments: appointmentsData,
+        financial: financialData
+      })
+
       // Create all related records in parallel
+      console.log('Creating related records in parallel...')
       const [expensesResult, attendanceResult, appointmentsResult, financialResult] = await Promise.all([
         createEventExpenses(expensesData),
         createEventAttendance(attendanceData),
         createEventAppointments(appointmentsData),
         createEventFinancialProduction(financialData)
       ])
+
+      console.log('Related records creation results:', {
+        expenses: expensesResult,
+        attendance: attendanceResult,
+        appointments: appointmentsResult,
+        financial: financialResult
+      })
 
       if (!expensesResult.success || !attendanceResult.success || !appointmentsResult.success || !financialResult.success) {
         console.error("Error creating related records:", {
@@ -285,11 +277,14 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         return
       }
 
+      console.log('All related records created successfully')
+
       toast({
         title: "Success",
         description: "Event created successfully!",
       })
 
+      console.log('Redirecting to dashboard...')
       router.push("/dashboard")
       router.refresh()
     } catch (error) {
