@@ -2,8 +2,8 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 
 // Improved fetchWithRetry function with better error handling
-async function fetchWithRetry(fn, maxRetries = 3, delay = 1000) {
-  let lastError
+async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3, delay = 1000): Promise<T> {
+  let lastError: unknown
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -12,25 +12,26 @@ async function fetchWithRetry(fn, maxRetries = 3, delay = 1000) {
       // For debugging, log the result structure (not the full data)
       if (process.env.NODE_ENV !== "production") {
         console.log(`Fetch successful, result structure:`, {
-          status: result?.status,
-          statusText: result?.statusText,
-          hasData: result?.data !== undefined,
-          hasError: result?.error !== undefined,
-          errorMessage: result?.error?.message,
+          status: (result as any)?.status,
+          statusText: (result as any)?.statusText,
+          hasData: (result as any)?.data !== undefined,
+          hasError: (result as any)?.error !== undefined,
+          errorMessage: (result as any)?.error?.message,
         })
       }
 
       return result
     } catch (error) {
       lastError = error
-      console.log(`Error during fetch attempt ${attempt + 1}/${maxRetries}:`, error.message)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.log(`Error during fetch attempt ${attempt + 1}/${maxRetries}:`, errorMessage)
 
       // Check if it's a rate limiting error
-      if (error.message && error.message.includes("Too Many R")) {
+      if (errorMessage.includes("Too Many R")) {
         console.log(`Rate limit hit, retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`)
         await new Promise((resolve) => setTimeout(resolve, delay))
         delay *= 2
-      } else if (error.message && (error.message.includes("Failed to fetch") || error.message.includes("network"))) {
+      } else if (errorMessage.includes("Failed to fetch") || errorMessage.includes("network")) {
         // Handle network errors with retry
         console.log(`Network error, retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`)
         await new Promise((resolve) => setTimeout(resolve, delay))
@@ -38,23 +39,17 @@ async function fetchWithRetry(fn, maxRetries = 3, delay = 1000) {
       } else {
         // For other errors, log more details but don't retry
         console.error("Error details:", {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          cause: error.cause,
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: errorMessage,
+          stack: error instanceof Error ? error.stack : undefined,
+          cause: error instanceof Error ? error.cause : undefined
         })
         break
       }
     }
   }
 
-  // If we've exhausted all retries, throw a more descriptive error
-  if (lastError) {
-    console.error("All fetch retry attempts failed:", lastError)
-    throw new Error(`Failed after ${maxRetries} attempts: ${lastError.message}`)
-  }
-
-  throw new Error("Unknown error in fetchWithRetry")
+  throw lastError
 }
 
 export type MarketingEvent = {
@@ -562,8 +557,14 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 
 // Create a new marketing event with all related data
 export async function createEvent(userId: string, eventData: any) {
+  if (!userId) {
+    console.error("createEvent called without userId")
+    return { success: false, error: "User ID is required" }
+  }
+
   try {
     const supabase = await createAdminClient()
+    console.log('Supabase admin client created')
 
     // Start a transaction
     const { data: event, error: eventError } = await supabase
@@ -589,72 +590,87 @@ export async function createEvent(userId: string, eventData: any) {
       return { success: false, error: eventError.message }
     }
 
-    // Create marketing expenses
-    const { error: expensesError } = await supabase
-      .from("marketing_expenses")
-      .insert({
-        event_id: event.id,
-        advertising_cost: parseFloat(eventData.advertising_cost) || 0,
-        food_venue_cost: parseFloat(eventData.food_venue_cost) || 0,
-        other_costs: parseFloat(eventData.other_costs) || 0
-      })
+    console.log('Event created successfully:', event)
 
-    if (expensesError) {
-      console.error("Error creating expenses:", expensesError)
-      return { success: false, error: expensesError.message }
+    // Create all related records in parallel
+    const [
+      expensesResult,
+      attendanceResult,
+      appointmentsResult,
+      financialResult
+    ] = await Promise.all([
+      // Create marketing expenses
+      supabase
+        .from("marketing_expenses")
+        .insert({
+          event_id: event.id,
+          advertising_cost: eventData.advertising_cost,
+          food_venue_cost: eventData.food_venue_cost,
+          other_costs: eventData.other_costs,
+          total_cost: eventData.advertising_cost + eventData.food_venue_cost + eventData.other_costs
+        }),
+
+      // Create event attendance
+      supabase
+        .from("event_attendance")
+        .insert({
+          event_id: event.id,
+          registrant_responses: eventData.registrant_responses,
+          confirmations: eventData.confirmations,
+          attendees: eventData.attendees,
+          clients_from_event: eventData.clients_from_event
+        }),
+
+      // Create event appointments
+      supabase
+        .from("event_appointments")
+        .insert({
+          event_id: event.id,
+          set_at_event: eventData.set_at_event,
+          set_after_event: eventData.set_after_event,
+          first_appointment_attended: eventData.first_appointment_attended,
+          first_appointment_no_shows: eventData.first_appointment_no_shows,
+          second_appointment_attended: eventData.second_appointment_attended
+        }),
+
+      // Create financial production
+      supabase
+        .from("financial_production")
+        .insert({
+          event_id: event.id,
+          annuity_premium: eventData.annuity_premium,
+          life_insurance_premium: eventData.life_insurance_premium,
+          aum: eventData.aum,
+          financial_planning: eventData.financial_planning,
+          annuities_sold: eventData.annuities_sold,
+          life_policies_sold: eventData.life_policies_sold,
+          annuity_commission: eventData.annuity_commission,
+          life_insurance_commission: eventData.life_insurance_commission,
+          aum_fees: eventData.aum_fees,
+          total: eventData.annuity_premium + eventData.life_insurance_premium + eventData.aum + eventData.financial_planning
+        })
+    ])
+
+    // Check for any errors in the parallel operations
+    const errors = [
+      { type: "expenses", error: expensesResult.error },
+      { type: "attendance", error: attendanceResult.error },
+      { type: "appointments", error: appointmentsResult.error },
+      { type: "financial", error: financialResult.error }
+    ].filter(result => result.error)
+
+    if (errors.length > 0) {
+      console.error("Errors creating related records:", errors)
+      // Attempt to rollback by deleting the main event
+      await supabase.from("marketing_events").delete().eq("id", event.id)
+      return { 
+        success: false, 
+        error: `Failed to create related records: ${errors.map(e => e.type).join(", ")}` 
+      }
     }
 
-    // Create event attendance
-    const { error: attendanceError } = await supabase
-      .from("event_attendance")
-      .insert({
-        event_id: event.id,
-        registrant_responses: parseInt(eventData.registrant_responses) || 0,
-        confirmations: parseInt(eventData.confirmations) || 0,
-        attendees: parseInt(eventData.attendees) || 0,
-        clients_from_event: parseInt(eventData.clients_from_event) || 0
-      })
-
-    if (attendanceError) {
-      console.error("Error creating attendance:", attendanceError)
-      return { success: false, error: attendanceError.message }
-    }
-
-    // Create event appointments
-    const { error: appointmentsError } = await supabase
-      .from("event_appointments")
-      .insert({
-        event_id: event.id,
-        set_at_event: parseInt(eventData.set_at_event) || 0,
-        set_after_event: parseInt(eventData.set_after_event) || 0,
-        first_appointment_attended: parseInt(eventData.first_appointment_attended) || 0,
-        first_appointment_no_shows: parseInt(eventData.first_appointment_no_shows) || 0,
-        second_appointment_attended: parseInt(eventData.second_appointment_attended) || 0
-      })
-
-    if (appointmentsError) {
-      console.error("Error creating appointments:", appointmentsError)
-      return { success: false, error: appointmentsError.message }
-    }
-
-    // Create event financial production
-    const { error: financialError } = await supabase
-      .from("event_financial_production")
-      .insert({
-        event_id: event.id,
-        annuity_premium: parseFloat(eventData.annuity_premium) || 0,
-        life_insurance_premium: parseFloat(eventData.life_insurance_premium) || 0,
-        aum: parseFloat(eventData.aum) || 0,
-        financial_planning: parseFloat(eventData.financial_planning) || 0,
-        annuities_sold: parseInt(eventData.annuities_sold) || 0
-      })
-
-    if (financialError) {
-      console.error("Error creating financial production:", financialError)
-      return { success: false, error: financialError.message }
-    }
-
-    return { success: true, data: event }
+    console.log('All related records created successfully')
+    return { success: true, eventId: event.id }
   } catch (error) {
     console.error("Error in createEvent:", error)
     return { success: false, error: "An unexpected error occurred while creating the event." }

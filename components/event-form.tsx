@@ -102,6 +102,74 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
     setIsSubmitting(true)
 
     try {
+      // Validate required fields
+      const requiredFields = {
+        name: "Event Name",
+        date: "Date",
+        location: "Location",
+        marketingType: "Marketing Type",
+        topic: "Topic",
+        time: "Time",
+        ageRange: "Age Range",
+        mileRadius: "Mile Radius",
+        incomeAssets: "Income/Assets"
+      }
+
+      const missingFields = Object.entries(requiredFields)
+        .filter(([key]) => !(e.target as any)[key]?.value)
+        .map(([_, label]) => label)
+
+      if (missingFields.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Missing Required Fields",
+          description: `Please fill in the following fields: ${missingFields.join(", ")}`,
+        })
+        return
+      }
+
+      // Validate numeric fields
+      const numericFields = {
+        mileRadius: "Mile Radius",
+        advertisingCost: "Advertising Cost",
+        foodVenueCost: "Food/Venue Cost",
+        otherCosts: "Other Costs",
+        registrantResponses: "Registrant Responses",
+        confirmations: "Confirmations",
+        attendees: "Attendees",
+        clientsFromEvent: "Clients from Event",
+        setAtEvent: "Appointments Set at Event",
+        setAfterEvent: "Appointments Set After Event",
+        firstAppointmentAttended: "First Appointments Attended",
+        firstAppointmentNoShows: "First Appointment No-Shows",
+        secondAppointmentAttended: "Second Appointments Attended",
+        annuityPremium: "Annuity Premium",
+        lifeInsurancePremium: "Life Insurance Premium",
+        aum: "AUM",
+        financialPlanning: "Financial Planning",
+        annuitiesSold: "Annuities Sold",
+        lifePoliciesSold: "Life Policies Sold",
+        annuityCommission: "Annuity Commission",
+        lifeInsuranceCommission: "Life Insurance Commission",
+        aumFees: "AUM Fees"
+      }
+
+      const invalidNumericFields = Object.entries(numericFields)
+        .filter(([key]) => {
+          const value = (e.target as any)[key]?.value
+          return value && isNaN(Number(value))
+        })
+        .map(([_, label]) => label)
+
+      if (invalidNumericFields.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Numeric Fields",
+          description: `The following fields must be numbers: ${invalidNumericFields.join(", ")}`,
+        })
+        return
+      }
+
       // Convert string values to numbers where needed
       const eventData = {
         name,
@@ -111,32 +179,35 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         topic,
         time,
         age_range: ageRange,
-        mile_radius: mileRadius,
+        mile_radius: parseInt(mileRadius) || 0,
         income_assets: incomeAssets,
-        advertising_cost: advertisingCost,
-        food_venue_cost: foodVenueCost,
-        other_costs: otherCosts,
-        registrant_responses: registrantResponses,
-        confirmations,
-        attendees,
-        clients_from_event: clientsFromEvent,
-        set_at_event: setAtEvent,
-        set_after_event: setAfterEvent,
-        first_appointment_attended: firstAppointmentAttended,
-        first_appointment_no_shows: firstAppointmentNoShows,
-        second_appointment_attended: secondAppointmentAttended,
-        annuity_premium: annuityPremium,
-        life_insurance_premium: lifeInsurancePremium,
-        aum,
-        financial_planning: financialPlanning,
-        annuities_sold: annuitiesSold,
-        life_policies_sold: lifePoliciesSold,
-        annuity_commission: annuityCommission,
-        life_insurance_commission: lifeInsuranceCommission,
-        aum_fees: aumFees,
+        advertising_cost: parseFloat(advertisingCost) || 0,
+        food_venue_cost: parseFloat(foodVenueCost) || 0,
+        other_costs: parseFloat(otherCosts) || 0,
+        registrant_responses: parseInt(registrantResponses) || 0,
+        confirmations: parseInt(confirmations) || 0,
+        attendees: parseInt(attendees) || 0,
+        clients_from_event: parseInt(clientsFromEvent) || 0,
+        set_at_event: parseInt(setAtEvent) || 0,
+        set_after_event: parseInt(setAfterEvent) || 0,
+        first_appointment_attended: parseInt(firstAppointmentAttended) || 0,
+        first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
+        second_appointment_attended: parseInt(secondAppointmentAttended) || 0,
+        annuity_premium: parseFloat(annuityPremium) || 0,
+        life_insurance_premium: parseFloat(lifeInsurancePremium) || 0,
+        aum: parseFloat(aum) || 0,
+        financial_planning: parseFloat(financialPlanning) || 0,
+        annuities_sold: parseInt(annuitiesSold) || 0,
+        life_policies_sold: parseInt(lifePoliciesSold) || 0,
+        annuity_commission: parseFloat(annuityCommission) || 0,
+        life_insurance_commission: parseFloat(lifeInsuranceCommission) || 0,
+        aum_fees: parseFloat(aumFees) || 0,
       }
 
+      console.log('Form data being submitted:', eventData)
+
       if (!user?.id) {
+        console.error('No user ID found')
         toast({
           variant: "destructive",
           title: "Error",
@@ -145,9 +216,13 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         return
       }
 
+      console.log('User ID:', user.id)
+      
       const result = isEditing
         ? await updateEvent(initialData.id, eventData)
         : await createEvent(user.id, eventData)
+
+      console.log('Database operation result:', result)
 
       if (result.success) {
         toast({
@@ -159,6 +234,7 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         router.push("/dashboard/events")
         router.refresh()
       } else {
+        console.error('Error from database operation:', result.error)
         toast({
           variant: "destructive",
           title: "Error",
@@ -166,7 +242,12 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         })
       }
     } catch (error) {
-      console.error(isEditing ? "Error updating event:" : "Error creating event:", error)
+      console.error('Detailed error:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        cause: error instanceof Error ? error.cause : undefined
+      })
       toast({
         variant: "destructive",
         title: "Error",
