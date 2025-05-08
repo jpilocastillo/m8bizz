@@ -428,15 +428,20 @@ export async function createEvent(userId: string, eventData: any) {
 
     // Create related records sequentially
     try {
+      // Calculate total cost
+      const advertisingCost = parseFloat(eventData.advertising_cost) || 0
+      const foodVenueCost = parseFloat(eventData.food_venue_cost) || 0
+      const otherCosts = parseFloat(eventData.other_costs) || 0
+      const totalCost = advertisingCost + foodVenueCost + otherCosts
+
       // Create marketing expenses
       const { error: expensesError } = await supabase
         .from("marketing_expenses")
         .insert({
           event_id: event.id,
-          advertising_cost: eventData.advertising_cost,
-          food_venue_cost: eventData.food_venue_cost,
-          other_costs: eventData.other_costs,
-          total_cost: eventData.advertising_cost + eventData.food_venue_cost + eventData.other_costs
+          advertising_cost: advertisingCost,
+          food_venue_cost: foodVenueCost,
+          other_costs: otherCosts
         })
 
       if (expensesError) {
@@ -448,10 +453,10 @@ export async function createEvent(userId: string, eventData: any) {
         .from("event_attendance")
         .insert({
           event_id: event.id,
-          registrant_responses: eventData.registrant_responses,
-          confirmations: eventData.confirmations,
-          attendees: eventData.attendees,
-          clients_from_event: eventData.clients_from_event
+          registrant_responses: parseInt(eventData.registrant_responses) || 0,
+          confirmations: parseInt(eventData.confirmations) || 0,
+          attendees: parseInt(eventData.attendees) || 0,
+          clients_from_event: parseInt(eventData.clients_from_event) || 0
         })
 
       if (attendanceError) {
@@ -463,31 +468,38 @@ export async function createEvent(userId: string, eventData: any) {
         .from("event_appointments")
         .insert({
           event_id: event.id,
-          set_at_event: eventData.set_at_event,
-          set_after_event: eventData.set_after_event,
-          first_appointment_attended: eventData.first_appointment_attended,
-          first_appointment_no_shows: eventData.first_appointment_no_shows,
-          second_appointment_attended: eventData.second_appointment_attended
+          set_at_event: parseInt(eventData.set_at_event) || 0,
+          set_after_event: parseInt(eventData.set_after_event) || 0,
+          first_appointment_attended: parseInt(eventData.first_appointment_attended) || 0,
+          first_appointment_no_shows: parseInt(eventData.first_appointment_no_shows) || 0,
+          second_appointment_attended: parseInt(eventData.second_appointment_attended) || 0
         })
 
       if (appointmentsError) {
         throw new Error(`Failed to create appointments: ${appointmentsError.message}`)
       }
 
+      // Calculate financial totals
+      const annuityPremium = parseFloat(eventData.annuity_premium) || 0
+      const lifeInsurancePremium = parseFloat(eventData.life_insurance_premium) || 0
+      const aum = parseFloat(eventData.aum) || 0
+      const financialPlanning = parseFloat(eventData.financial_planning) || 0
+      const total = annuityPremium + lifeInsurancePremium + aum + financialPlanning
+
       // Create financial production
       const { error: financialError } = await supabase
         .from("event_financial_production")
         .insert({
           event_id: event.id,
-          annuity_premium: eventData.annuity_premium,
-          life_insurance_premium: eventData.life_insurance_premium,
-          aum: eventData.aum,
-          financial_planning: eventData.financial_planning,
-          annuities_sold: eventData.annuities_sold,
-          life_policies_sold: eventData.life_policies_sold,
-          annuity_commission: eventData.annuity_commission,
-          life_insurance_commission: eventData.life_insurance_commission,
-          aum_fees: eventData.aum_fees
+          annuity_premium: annuityPremium,
+          life_insurance_premium: lifeInsurancePremium,
+          aum: aum,
+          financial_planning: financialPlanning,
+          annuities_sold: parseInt(eventData.annuities_sold) || 0,
+          life_policies_sold: parseInt(eventData.life_policies_sold) || 0,
+          annuity_commission: parseFloat(eventData.annuity_commission) || 0,
+          life_insurance_commission: parseFloat(eventData.life_insurance_commission) || 0,
+          aum_fees: parseFloat(eventData.aum_fees) || 0
         })
 
       if (financialError) {
@@ -495,7 +507,14 @@ export async function createEvent(userId: string, eventData: any) {
       }
 
       console.log('All related records created successfully')
-      return { success: true, eventId: event.id }
+      return { 
+        success: true, 
+        eventId: event.id,
+        totals: {
+          expenses: totalCost,
+          financial: total
+        }
+      }
     } catch (error) {
       // If any related record creation fails, delete the main event
       console.error("Error creating related records:", error)

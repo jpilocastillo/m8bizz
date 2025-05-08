@@ -9,18 +9,18 @@ ALTER TABLE IF EXISTS profiles DROP COLUMN IF EXISTS approval_status;
 
 -- Create the marketing events table
 CREATE TABLE IF NOT EXISTS marketing_events (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     date DATE NOT NULL,
     location TEXT NOT NULL,
     marketing_type TEXT NOT NULL,
     topic TEXT NOT NULL,
-    time TIME,
+    time TEXT,
     age_range TEXT,
     mile_radius TEXT,
     income_assets TEXT,
-    status TEXT DEFAULT 'active',
+    status TEXT NOT NULL DEFAULT 'active',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
