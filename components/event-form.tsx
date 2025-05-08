@@ -206,7 +206,7 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         return
       }
 
-      // Create related records
+      // Prepare data for related records
       const expensesData = {
         event_id: result.eventId,
         advertising_cost: parseFloat(advertisingCost) || 0,
@@ -244,7 +244,7 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         aum_fees: parseFloat(aumFees) || 0
       }
 
-      // Create all related records
+      // Create all related records in parallel
       const [expensesResult, attendanceResult, appointmentsResult, financialResult] = await Promise.all([
         createEventExpenses(expensesData),
         createEventAttendance(attendanceData),
