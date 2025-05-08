@@ -589,7 +589,7 @@ export async function createEvent(userId: string, eventData: any) {
       return { success: false, error: eventError.message }
     }
 
-    // Create expenses record
+    // Create marketing expenses
     const { error: expensesError } = await supabase
       .from("marketing_expenses")
       .insert({
@@ -604,7 +604,7 @@ export async function createEvent(userId: string, eventData: any) {
       return { success: false, error: expensesError.message }
     }
 
-    // Create attendance record
+    // Create event attendance
     const { error: attendanceError } = await supabase
       .from("event_attendance")
       .insert({
@@ -620,7 +620,7 @@ export async function createEvent(userId: string, eventData: any) {
       return { success: false, error: attendanceError.message }
     }
 
-    // Create appointments record
+    // Create event appointments
     const { error: appointmentsError } = await supabase
       .from("event_appointments")
       .insert({
@@ -637,7 +637,7 @@ export async function createEvent(userId: string, eventData: any) {
       return { success: false, error: appointmentsError.message }
     }
 
-    // Create financial production record
+    // Create event financial production
     const { error: financialError } = await supabase
       .from("event_financial_production")
       .insert({
@@ -657,7 +657,7 @@ export async function createEvent(userId: string, eventData: any) {
     return { success: true, data: event }
   } catch (error) {
     console.error("Error in createEvent:", error)
-    return { success: false, error: error.message }
+    return { success: false, error: "An unexpected error occurred while creating the event." }
   }
 }
 

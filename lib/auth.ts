@@ -15,8 +15,7 @@ export async function registerUser(name: string, email: string, password: string
         data: {
           full_name: name,
           company: company || null,
-          role: "user",
-          approval_status: "pending",
+          role: "user"
         },
       },
     })
@@ -53,7 +52,6 @@ export async function registerUser(name: string, email: string, password: string
               email: email,
               company: company || null,
               role: "user",
-              approval_status: "pending",
               auth_id: data.user.id, // Ensure auth_id is set
             })
             .eq("id", data.user.id)
@@ -70,8 +68,7 @@ export async function registerUser(name: string, email: string, password: string
             full_name: name,
             email: email,
             company: company || null,
-            role: "user",
-            approval_status: "pending",
+            role: "user"
           })
 
           if (insertError) {

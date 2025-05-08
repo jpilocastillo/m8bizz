@@ -1,4 +1,13 @@
 -- Create tables for marketing events system
+-- Update existing users to remove approval status
+UPDATE auth.users 
+SET raw_user_meta_data = raw_user_meta_data - 'approval_status'
+WHERE raw_user_meta_data ? 'approval_status';
+
+-- Drop approval_status column from profiles table if it exists
+ALTER TABLE IF EXISTS profiles DROP COLUMN IF EXISTS approval_status;
+
+-- Create the marketing events table
 CREATE TABLE IF NOT EXISTS marketing_events (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -16,6 +25,7 @@ CREATE TABLE IF NOT EXISTS marketing_events (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
+-- Create the marketing expenses table
 CREATE TABLE IF NOT EXISTS marketing_expenses (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     event_id UUID REFERENCES marketing_events(id) ON DELETE CASCADE,
@@ -27,6 +37,7 @@ CREATE TABLE IF NOT EXISTS marketing_expenses (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
+-- Create the event attendance table
 CREATE TABLE IF NOT EXISTS event_attendance (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     event_id UUID REFERENCES marketing_events(id) ON DELETE CASCADE,
@@ -38,6 +49,7 @@ CREATE TABLE IF NOT EXISTS event_attendance (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
+-- Create the event appointments table
 CREATE TABLE IF NOT EXISTS event_appointments (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     event_id UUID REFERENCES marketing_events(id) ON DELETE CASCADE,
@@ -50,6 +62,7 @@ CREATE TABLE IF NOT EXISTS event_appointments (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
+-- Create the event financial production table
 CREATE TABLE IF NOT EXISTS event_financial_production (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     event_id UUID REFERENCES marketing_events(id) ON DELETE CASCADE,
