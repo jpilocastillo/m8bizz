@@ -244,8 +244,17 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 
     console.log(`Fetching dashboard data for user ${userId}${eventId ? ` and event ${eventId}` : ""}`)
 
-    // First try to get the event from marketing_events table
-    let eventQuery = supabase.from("marketing_events").select("*").eq("user_id", userId)
+    // Get the event from marketing_events table
+    let eventQuery = supabase
+      .from("marketing_events")
+      .select(`
+        *,
+        marketing_expenses (*),
+        event_attendance (*),
+        event_appointments (*),
+        event_financial_production (*)
+      `)
+      .eq("user_id", userId)
 
     if (eventId) {
       eventQuery = eventQuery.eq("id", eventId)
@@ -253,28 +262,11 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
       eventQuery = eventQuery.order("date", { ascending: false }).limit(1)
     }
 
-    const { data: marketingEvent, error: marketingEventError } = await fetchWithRetry(() => eventQuery.maybeSingle())
+    const { data: event, error: eventError } = await eventQuery.maybeSingle()
 
-    let event = marketingEvent
-
-    // If no marketing_event found, try the events table
-    if (!event) {
-      console.log("No marketing_event found, trying events table")
-      let eventsQuery = supabase.from("events").select("*").eq("user_id", userId)
-
-      if (eventId) {
-        eventsQuery = eventsQuery.eq("id", eventId)
-      } else {
-        eventsQuery = eventsQuery.order("date", { ascending: false }).limit(1)
-      }
-
-      const { data: oldEvent, error: oldEventError } = await fetchWithRetry(() => eventsQuery.maybeSingle())
-
-      if (oldEventError) {
-        console.error("Error fetching event from events table:", oldEventError)
-      } else {
-        event = oldEvent
-      }
+    if (eventError) {
+      console.error("Error fetching event:", eventError)
+      return null
     }
 
     if (!event) {
@@ -284,192 +276,68 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 
     console.log(`Found event: ${event.name} (${event.id})`)
 
-    // Initialize data containers
-    let expenses = null
-    let attendance = null
-    let appointments = null
-    let financialProduction = null
-    let eventDetails = null
-
-    // STEP 1: Try to get data from the new schema first
-
-    // Get event details (new schema)
-    const { data: detailsData } = await supabase
-      .from("event_details")
-      .select("*")
-      .eq("event_id", event.id)
-      .maybeSingle()
-
-    if (detailsData) {
-      console.log("Found event details in new schema")
-      eventDetails = detailsData
-    }
-
-    // Get event expenses
-    const { data: expensesData } = await supabase
-      .from("marketing_expenses")
-      .select("*")
-      .eq("event_id", event.id)
-      .maybeSingle()
-
-    if (expensesData) {
-      console.log("Found expenses data")
-      expenses = expensesData
-    }
-
-    // Get event attendance (new schema)
-    const { data: attendanceData } = await supabase
-      .from("event_attendance")
-      .select("*")
-      .eq("event_id", event.id)
-      .maybeSingle()
-
-    if (attendanceData) {
-      console.log("Found attendance data in new schema")
-      attendance = attendanceData
-    }
-
-    // Try event_appointments first (new schema)
-    const { data: newAppointmentsData } = await supabase
-      .from("event_appointments")
-      .select("*")
-      .eq("event_id", event.id)
-      .maybeSingle()
-
-    if (newAppointmentsData) {
-      console.log("Found appointments data in new schema")
-      appointments = newAppointmentsData
-    } else {
-      // Fall back to appointments (old schema)
-      const { data: oldAppointmentsData } = await supabase
-        .from("appointments")
-        .select("*")
-        .eq("event_id", event.id)
-        .maybeSingle()
-
-      if (oldAppointmentsData) {
-        console.log("Found appointments data in old schema")
-        appointments = oldAppointmentsData
-      }
-    }
-
-    // Try financial_results first (new schema)
-    const { data: newFinancialData } = await supabase
-      .from("financial_results")
-      .select("*")
-      .eq("event_id", event.id)
-      .maybeSingle()
-
-    if (newFinancialData) {
-      console.log("Found financial data in new schema")
-      financialProduction = newFinancialData
-    } else {
-      // Fall back to financial_production (old schema)
-      const { data: oldFinancialData } = await supabase
-        .from("financial_production")
-        .select("*")
-        .eq("event_id", event.id)
-        .maybeSingle()
-
-      if (oldFinancialData) {
-        console.log("Found financial data in old schema")
-        financialProduction = oldFinancialData
-      }
-    }
-
     // Calculate ROI
-    const totalExpenses =
-      expenses?.total_cost ||
-      (expenses?.advertising_cost || 0) + (expenses?.food_venue_cost || 0) + (expenses?.other_costs || 0)
+    const expenses = event.marketing_expenses?.[0]
+    const totalExpenses = expenses?.total_cost || 0
 
-    // Map old field names to new ones if needed
-    const annuityPremium = financialProduction?.annuity_premium || financialProduction?.fixed_annuity || 0
-    const lifeInsurancePremium = financialProduction?.life_insurance_premium || financialProduction?.life_insurance || 0
-    const annuityCommission = financialProduction?.annuity_commission || 0
-    const lifeInsuranceCommission = financialProduction?.life_insurance_commission || 0
-
-    const totalIncome =
-      financialProduction?.total ||
-      annuityPremium +
-        lifeInsurancePremium +
-        (financialProduction?.aum || 0) +
-        (financialProduction?.financial_planning || 0)
+    const financial = event.event_financial_production?.[0]
+    const totalIncome = financial?.annuity_premium || 0 + 
+                       financial?.life_insurance_premium || 0 + 
+                       financial?.aum || 0 + 
+                       financial?.financial_planning || 0
 
     const roi = totalExpenses > 0 ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) : 0
 
     // Get ROI trend (last 6 events)
-    let roiTrend = [0, 0, 0, 0, 0, 0, roi] // Default fallback data with current ROI as last value
+    const { data: pastEvents } = await supabase
+      .from("marketing_events")
+      .select(`
+        id,
+        date,
+        marketing_expenses (total_cost),
+        event_financial_production (
+          annuity_premium,
+          life_insurance_premium,
+          aum,
+          financial_planning
+        )
+      `)
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      .limit(7)
 
-    try {
-      // First try marketing_events table
-      const { data: pastMarketingEvents } = await supabase
-        .from("marketing_events")
-        .select(`
-          id,
-          date,
-          marketing_expenses (total_cost),
-          financial_production (total)
-        `)
-        .eq("user_id", userId)
-        .order("date", { ascending: false })
-        .limit(7)
-
-      if (pastMarketingEvents && pastMarketingEvents.length > 0) {
-        // Process the trend data
-        roiTrend = pastMarketingEvents.map((pastEvent) => {
-          const eventExpenses = pastEvent.marketing_expenses?.[0]?.total_cost || 1
-          const eventProduction = pastEvent.financial_production?.[0]?.total || 0
-          return Math.round(((eventProduction - eventExpenses) / eventExpenses) * 100)
-        })
-      } else {
-        // Try events table
-        const { data: pastEvents } = await supabase
-          .from("events")
-          .select(`
-            id,
-            date,
-            marketing_expenses (total_cost),
-            financial_production (total)
-          `)
-          .eq("user_id", userId)
-          .order("date", { ascending: false })
-          .limit(7)
-
-        if (pastEvents && pastEvents.length > 0) {
-          // Process the trend data
-          roiTrend = pastEvents.map((pastEvent) => {
-            const eventExpenses = pastEvent.marketing_expenses?.[0]?.total_cost || 1
-            const eventProduction = pastEvent.financial_production?.[0]?.total || 0
-            return Math.round(((eventProduction - eventExpenses) / eventExpenses) * 100)
-          })
-        }
-      }
-    } catch (error) {
-      console.error("Error calculating ROI trend:", error)
-      // Keep using the default roiTrend
-    }
+    const roiTrend = pastEvents?.map(event => {
+      const expenses = event.marketing_expenses?.[0]?.total_cost || 1
+      const financial = event.event_financial_production?.[0]
+      const production = (financial?.annuity_premium || 0) +
+                        (financial?.life_insurance_premium || 0) +
+                        (financial?.aum || 0) +
+                        (financial?.financial_planning || 0)
+      return Math.round(((production - expenses) / expenses) * 100)
+    }) || [0, 0, 0, 0, 0, 0, roi]
 
     // Calculate conversion rate
+    const attendance = event.event_attendance?.[0]
     const attendeeCount = attendance?.attendees || 0
-    const clientCount = attendance?.clients_from_event || financialProduction?.annuities_sold || 0
+    const clientCount = attendance?.clients_from_event || 0
     const conversionRate = attendeeCount > 0 ? Math.round((clientCount / attendeeCount) * 1000) / 10 : 0
 
-    // Prepare the dashboard data in the format expected by the UI
+    // Prepare the dashboard data
     return {
       eventId: event.id,
       eventName: event.name,
-      eventDate: event.date, // Add the event date to the returned data
+      eventDate: event.date,
       roi: {
         value: roi,
         trend: roiTrend,
       },
-      writtenBusiness: financialProduction?.annuities_sold || 0,
+      writtenBusiness: financial?.annuities_sold || 0,
       income: {
         total: totalIncome,
         breakdown: {
-          fixedAnnuity: annuityPremium, // Map to old field name for UI compatibility
-          life: lifeInsurancePremium, // Map to old field name for UI compatibility
-          aum: financialProduction?.aum || 0,
+          fixedAnnuity: financial?.annuity_premium || 0,
+          life: financial?.life_insurance_premium || 0,
+          aum: financial?.aum || 0,
         },
       },
       conversionRate: {
@@ -479,74 +347,40 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
       },
       eventDetails: {
         dayOfWeek: new Date(event.date).toLocaleDateString("en-US", { weekday: "long" }),
-        location: eventDetails?.location || event.location || "N/A",
-        time: eventDetails?.time || event.time || "N/A",
-        ageRange: eventDetails?.age_range || event.age_range || "N/A",
-        mileRadius: eventDetails?.mile_radius || event.mile_radius || "N/A",
-        incomeAssets: eventDetails?.income_assets || event.income_assets || "N/A",
+        location: event.location,
+        time: event.time,
+        ageRange: event.age_range,
+        mileRadius: event.mile_radius,
+        incomeAssets: event.income_assets,
       },
       marketingExpenses: {
         total: totalExpenses,
         advertising: expenses?.advertising_cost || 0,
         foodVenue: expenses?.food_venue_cost || 0,
       },
-      topicOfMarketing: eventDetails?.topic || event.topic || "",
-      attendance: {
-        registrantResponses: attendance?.registrant_responses || 0,
-        confirmations: attendance?.confirmations || 0,
-        attendees: attendeeCount,
-        clientsFromEvent: attendance?.clients_from_event || 0, // New field
-        responseRate:
-          attendance?.registrant_responses && attendance.registrant_responses > 0
-            ? attendance.attendees / attendance.registrant_responses
-            : 0,
-      },
-      clientAcquisition: {
-        expensePerBuyingUnit: attendeeCount > 0 ? Math.round((totalExpenses / attendeeCount) * 100) / 100 : 0,
-        expensePerAppointment:
-          (appointments?.first_appointment_attended || 0) > 0
-            ? Math.round((totalExpenses / appointments.first_appointment_attended) * 100) / 100
-            : 0,
-        expensePerClient: clientCount > 0 ? Math.round((totalExpenses / clientCount) * 100) / 100 : 0,
-        totalCost: totalExpenses,
-      },
-      conversionEfficiency: {
-        registrationToAttendance:
-          attendance?.registrant_responses && attendance.registrant_responses > 0
-            ? Math.round((attendance.attendees / attendance.registrant_responses) * 1000) / 10
-            : 0,
-        attendanceToAppointment:
-          attendeeCount > 0 && appointments?.first_appointment_attended
-            ? Math.round((appointments.first_appointment_attended / attendeeCount) * 1000) / 10
-            : 0,
-        appointmentToClient:
-          (appointments?.first_appointment_attended || 0) > 0 && clientCount > 0
-            ? Math.round((clientCount / appointments.first_appointment_attended) * 1000) / 10
-            : 0,
-        overall: attendeeCount > 0 && clientCount > 0 ? Math.round((clientCount / attendeeCount) * 1000) / 10 : 0,
-      },
+      topicOfMarketing: event.topic,
       appointments: {
-        setAtEvent: appointments?.set_at_event || 0,
-        setAfterEvent: appointments?.set_after_event || 0,
-        firstAppointmentAttended: appointments?.first_appointment_attended || 0,
-        firstAppointmentNoShows: appointments?.first_appointment_no_shows || 0,
-        secondAppointmentAttended: appointments?.second_appointment_attended || 0,
+        setAtEvent: event.event_appointments?.[0]?.set_at_event || 0,
+        setAfterEvent: event.event_appointments?.[0]?.set_after_event || 0,
+        firstAppointmentAttended: event.event_appointments?.[0]?.first_appointment_attended || 0,
+        firstAppointmentNoShows: event.event_appointments?.[0]?.first_appointment_no_shows || 0,
+        secondAppointmentAttended: event.event_appointments?.[0]?.second_appointment_attended || 0,
       },
       productsSold: {
-        annuities: financialProduction?.annuities_sold || 0,
-        lifePolicies: financialProduction?.life_policies_sold || 0,
+        annuities: financial?.annuities_sold || 0,
+        lifePolicies: financial?.life_policies_sold || 0,
       },
       financialProduction: {
-        annuity_premium: annuityPremium,
-        life_insurance_premium: lifeInsurancePremium,
-        aum: financialProduction?.aum || 0,
-        financial_planning: financialProduction?.financial_planning || 0,
+        annuity_premium: financial?.annuity_premium || 0,
+        life_insurance_premium: financial?.life_insurance_premium || 0,
+        aum: financial?.aum || 0,
+        financial_planning: financial?.financial_planning || 0,
         total: totalIncome,
-        annuities_sold: financialProduction?.annuities_sold || 0,
-        life_policies_sold: financialProduction?.life_policies_sold || 0,
-        annuity_commission: annuityCommission,
-        life_insurance_commission: lifeInsuranceCommission,
-        aum_fees: financialProduction?.aum_fees || 0,
+        annuities_sold: financial?.annuities_sold || 0,
+        life_policies_sold: financial?.life_policies_sold || 0,
+        annuity_commission: financial?.annuity_commission || 0,
+        life_insurance_commission: financial?.life_insurance_commission || 0,
+        aum_fees: financial?.aum_fees || 0,
       },
     }
   } catch (error) {
@@ -635,7 +469,7 @@ export async function createEvent(userId: string, eventData: any) {
 
       // Create financial production
       supabase
-        .from("financial_production")
+        .from("event_financial_production")
         .insert({
           event_id: event.id,
           annuity_premium: eventData.annuity_premium,
@@ -989,5 +823,102 @@ export async function deleteEvent(eventId: string) {
   } catch (error) {
     console.error("Error in deleteEvent:", error)
     return { success: false, error: "An unexpected error occurred" }
+  }
+}
+
+export async function createEventExpenses(data: {
+  event_id: string
+  advertising_cost: number
+  food_venue_cost: number
+  other_costs: number
+}) {
+  try {
+    const supabase = await createAdminClient()
+    const { data: result, error } = await supabase
+      .from("marketing_expenses")
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { success: true, data: result }
+  } catch (error) {
+    console.error("Error creating event expenses:", error)
+    return { success: false, error: "Failed to create event expenses" }
+  }
+}
+
+export async function createEventAttendance(data: {
+  event_id: string
+  registrant_responses: number
+  confirmations: number
+  attendees: number
+  clients_from_event: number
+}) {
+  try {
+    const supabase = await createAdminClient()
+    const { data: result, error } = await supabase
+      .from("event_attendance")
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { success: true, data: result }
+  } catch (error) {
+    console.error("Error creating event attendance:", error)
+    return { success: false, error: "Failed to create event attendance" }
+  }
+}
+
+export async function createEventAppointments(data: {
+  event_id: string
+  set_at_event: number
+  set_after_event: number
+  first_appointment_attended: number
+  first_appointment_no_shows: number
+  second_appointment_attended: number
+}) {
+  try {
+    const supabase = await createAdminClient()
+    const { data: result, error } = await supabase
+      .from("event_appointments")
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { success: true, data: result }
+  } catch (error) {
+    console.error("Error creating event appointments:", error)
+    return { success: false, error: "Failed to create event appointments" }
+  }
+}
+
+export async function createEventFinancialProduction(data: {
+  event_id: string
+  annuity_premium: number
+  life_insurance_premium: number
+  aum: number
+  financial_planning: number
+  annuities_sold: number
+  life_policies_sold: number
+  annuity_commission: number
+  life_insurance_commission: number
+  aum_fees: number
+}) {
+  try {
+    const supabase = await createAdminClient()
+    const { data: result, error } = await supabase
+      .from("event_financial_production")
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { success: true, data: result }
+  } catch (error) {
+    console.error("Error creating event financial production:", error)
+    return { success: false, error: "Failed to create event financial production" }
   }
 }

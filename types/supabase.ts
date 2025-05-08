@@ -42,28 +42,34 @@ export interface Database {
       }
       event_attendance: {
         Row: {
+          id: string
+          event_id: string
+          registrant_responses: number | null
+          confirmations: number | null
           attendees: number | null
           clients_from_event: number | null
-          confirmations: number | null
-          event_id: string
-          id: string
-          registrant_responses: number | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
+          id?: string
+          event_id: string
+          registrant_responses?: number | null
+          confirmations?: number | null
           attendees?: number | null
           clients_from_event?: number | null
-          confirmations?: number | null
-          event_id: string
-          id?: string
-          registrant_responses?: number | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
+          id?: string
+          event_id?: string
+          registrant_responses?: number | null
+          confirmations?: number | null
           attendees?: number | null
           clients_from_event?: number | null
-          confirmations?: number | null
-          event_id?: string
-          id?: string
-          registrant_responses?: number | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -119,31 +125,37 @@ export interface Database {
       }
       event_appointments: {
         Row: {
+          id: string
           event_id: string
+          set_at_event: number | null
+          set_after_event: number | null
           first_appointment_attended: number | null
           first_appointment_no_shows: number | null
-          id: string
           second_appointment_attended: number | null
-          set_after_event: number | null
-          set_at_event: number | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
+          id?: string
           event_id: string
+          set_at_event?: number | null
+          set_after_event?: number | null
           first_appointment_attended?: number | null
           first_appointment_no_shows?: number | null
-          id?: string
           second_appointment_attended?: number | null
-          set_after_event?: number | null
-          set_at_event?: number | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
+          id?: string
           event_id?: string
+          set_at_event?: number | null
+          set_after_event?: number | null
           first_appointment_attended?: number | null
           first_appointment_no_shows?: number | null
-          id?: string
           second_appointment_attended?: number | null
-          set_after_event?: number | null
-          set_at_event?: number | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -208,28 +220,34 @@ export interface Database {
       }
       marketing_expenses: {
         Row: {
-          advertising_cost: number | null
-          event_id: string
-          food_venue_cost: number | null
           id: string
+          event_id: string
+          advertising_cost: number | null
+          food_venue_cost: number | null
           other_costs: number | null
           total_cost: number | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          advertising_cost?: number | null
-          event_id: string
-          food_venue_cost?: number | null
           id?: string
+          event_id: string
+          advertising_cost?: number | null
+          food_venue_cost?: number | null
           other_costs?: number | null
           total_cost?: number | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          advertising_cost?: number | null
-          event_id?: string
-          food_venue_cost?: number | null
           id?: string
+          event_id?: string
+          advertising_cost?: number | null
+          food_venue_cost?: number | null
           other_costs?: number | null
           total_cost?: number | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -242,46 +260,52 @@ export interface Database {
       }
       marketing_events: {
         Row: {
-          age_range: string | null
-          date: string | null
           id: string
-          income_assets: string | null
-          location: string | null
-          marketing_type: string | null
-          mile_radius: string | null
-          name: string | null
-          status: string | null
+          user_id: string
+          name: string
+          date: string
+          location: string
+          marketing_type: string
+          topic: string
           time: string | null
-          topic: string | null
-          user_id: string | null
+          age_range: string | null
+          mile_radius: string | null
+          income_assets: string | null
+          status: string
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          age_range?: string | null
-          date?: string | null
           id?: string
-          income_assets?: string | null
-          location?: string | null
-          marketing_type?: string | null
-          mile_radius?: string | null
-          name?: string | null
-          status?: string | null
+          user_id: string
+          name: string
+          date: string
+          location: string
+          marketing_type: string
+          topic: string
           time?: string | null
-          topic?: string | null
-          user_id?: string | null
+          age_range?: string | null
+          mile_radius?: string | null
+          income_assets?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          age_range?: string | null
-          date?: string | null
           id?: string
-          income_assets?: string | null
-          location?: string | null
-          marketing_type?: string | null
-          mile_radius?: string | null
-          name?: string | null
-          status?: string | null
+          user_id?: string
+          name?: string
+          date?: string
+          location?: string
+          marketing_type?: string
+          topic?: string
           time?: string | null
-          topic?: string | null
-          user_id?: string | null
+          age_range?: string | null
+          mile_radius?: string | null
+          income_assets?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -334,6 +358,53 @@ export interface Database {
             referencedColumns: ["id"]
           },
         ]
+      }
+      event_financial_production: {
+        Row: {
+          id: string
+          event_id: string
+          annuity_premium: number | null
+          life_insurance_premium: number | null
+          aum: number | null
+          financial_planning: number | null
+          annuities_sold: number | null
+          life_policies_sold: number | null
+          annuity_commission: number | null
+          life_insurance_commission: number | null
+          aum_fees: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          annuity_premium?: number | null
+          life_insurance_premium?: number | null
+          aum?: number | null
+          financial_planning?: number | null
+          annuities_sold?: number | null
+          life_policies_sold?: number | null
+          annuity_commission?: number | null
+          life_insurance_commission?: number | null
+          aum_fees?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          annuity_premium?: number | null
+          life_insurance_premium?: number | null
+          aum?: number | null
+          financial_planning?: number | null
+          annuities_sold?: number | null
+          life_policies_sold?: number | null
+          annuity_commission?: number | null
+          life_insurance_commission?: number | null
+          aum_fees?: number | null
+          created_at?: string
+          updated_at?: string
+        }
       }
     }
     Views: {

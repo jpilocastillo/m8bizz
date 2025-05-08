@@ -2,7 +2,7 @@
 create extension if not exists "uuid-ossp";
 
 -- Create profiles table that will be automatically populated when a user signs up
-create table public.profiles (
+create table if not exists public.profiles (
     id uuid references auth.users on delete cascade not null primary key,
     full_name text,
     email text unique,
@@ -16,7 +16,7 @@ create table public.profiles (
 );
 
 -- Create marketing_events table
-create table public.marketing_events (
+create table if not exists public.marketing_events (
     id uuid default uuid_generate_v4() primary key,
     user_id uuid references public.profiles(id) on delete cascade not null,
     name text not null,
@@ -34,7 +34,7 @@ create table public.marketing_events (
 );
 
 -- Create marketing_expenses table
-create table public.marketing_expenses (
+create table if not exists public.marketing_expenses (
     id uuid default uuid_generate_v4() primary key,
     event_id uuid references public.marketing_events(id) on delete cascade not null,
     advertising_cost decimal(10,2) default 0,
@@ -46,7 +46,7 @@ create table public.marketing_expenses (
 );
 
 -- Create event_attendance table
-create table public.event_attendance (
+create table if not exists public.event_attendance (
     id uuid default uuid_generate_v4() primary key,
     event_id uuid references public.marketing_events(id) on delete cascade not null,
     registrant_responses integer default 0,
@@ -58,7 +58,7 @@ create table public.event_attendance (
 );
 
 -- Create event_appointments table
-create table public.event_appointments (
+create table if not exists public.event_appointments (
     id uuid default uuid_generate_v4() primary key,
     event_id uuid references public.marketing_events(id) on delete cascade not null,
     set_at_event integer default 0,
@@ -71,7 +71,7 @@ create table public.event_appointments (
 );
 
 -- Create financial_production table
-create table public.financial_production (
+create table if not exists public.financial_production (
     id uuid default uuid_generate_v4() primary key,
     event_id uuid references public.marketing_events(id) on delete cascade not null,
     annuity_premium decimal(10,2) default 0,
@@ -80,12 +80,16 @@ create table public.financial_production (
     financial_planning decimal(10,2) default 0,
     annuities_sold integer default 0,
     life_policies_sold integer default 0,
+    annuity_commission decimal(10,2) default 0,
+    life_insurance_commission decimal(10,2) default 0,
     aum_fees decimal(10,2) default 0,
     total decimal(10,2) generated always as (
         annuity_premium + 
         life_insurance_premium + 
         aum + 
         financial_planning + 
+        annuity_commission + 
+        life_insurance_commission + 
         aum_fees
     ) stored,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -106,12 +110,15 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- Drop existing trigger if exists
+drop trigger if exists on_auth_user_created on auth.users;
+
 -- Create trigger for new user signup
 create trigger on_auth_user_created
     after insert on auth.users
     for each row execute procedure public.handle_new_user();
 
--- Create RLS (Row Level Security) policies
+-- Enable RLS (Row Level Security) policies
 alter table public.profiles enable row level security;
 alter table public.marketing_events enable row level security;
 alter table public.marketing_expenses enable row level security;
@@ -119,7 +126,23 @@ alter table public.event_attendance enable row level security;
 alter table public.event_appointments enable row level security;
 alter table public.financial_production enable row level security;
 
--- Profiles policies
+-- Drop existing policies if they exist
+drop policy if exists "Users can view their own profile" on public.profiles;
+drop policy if exists "Users can update their own profile" on public.profiles;
+drop policy if exists "Users can view their own events" on public.marketing_events;
+drop policy if exists "Users can create their own events" on public.marketing_events;
+drop policy if exists "Users can update their own events" on public.marketing_events;
+drop policy if exists "Users can delete their own events" on public.marketing_events;
+drop policy if exists "Users can view their own event expenses" on public.marketing_expenses;
+drop policy if exists "Users can manage their own event expenses" on public.marketing_expenses;
+drop policy if exists "Users can view their own event attendance" on public.event_attendance;
+drop policy if exists "Users can manage their own event attendance" on public.event_attendance;
+drop policy if exists "Users can view their own event appointments" on public.event_appointments;
+drop policy if exists "Users can manage their own event appointments" on public.event_appointments;
+drop policy if exists "Users can view their own financial production" on public.financial_production;
+drop policy if exists "Users can manage their own financial production" on public.financial_production;
+
+-- Create policies
 create policy "Users can view their own profile"
     on public.profiles for select
     using (auth.uid() = id);
@@ -128,7 +151,6 @@ create policy "Users can update their own profile"
     on public.profiles for update
     using (auth.uid() = id);
 
--- Marketing events policies
 create policy "Users can view their own events"
     on public.marketing_events for select
     using (auth.uid() = user_id);
@@ -145,7 +167,6 @@ create policy "Users can delete their own events"
     on public.marketing_events for delete
     using (auth.uid() = user_id);
 
--- Marketing expenses policies
 create policy "Users can view their own event expenses"
     on public.marketing_expenses for select
     using (
@@ -166,7 +187,6 @@ create policy "Users can manage their own event expenses"
         )
     );
 
--- Event attendance policies
 create policy "Users can view their own event attendance"
     on public.event_attendance for select
     using (
@@ -187,7 +207,6 @@ create policy "Users can manage their own event attendance"
         )
     );
 
--- Event appointments policies
 create policy "Users can view their own event appointments"
     on public.event_appointments for select
     using (
@@ -208,7 +227,6 @@ create policy "Users can manage their own event appointments"
         )
     );
 
--- Financial production policies
 create policy "Users can view their own financial production"
     on public.financial_production for select
     using (
@@ -229,10 +247,37 @@ create policy "Users can manage their own financial production"
         )
     );
 
+-- Drop existing indexes if they exist
+drop index if exists idx_marketing_events_user_id;
+drop index if exists idx_marketing_events_date;
+drop index if exists idx_marketing_expenses_event_id;
+drop index if exists idx_event_attendance_event_id;
+drop index if exists idx_event_appointments_event_id;
+drop index if exists idx_financial_production_event_id;
+
 -- Create indexes for better query performance
 create index idx_marketing_events_user_id on public.marketing_events(user_id);
 create index idx_marketing_events_date on public.marketing_events(date);
 create index idx_marketing_expenses_event_id on public.marketing_expenses(event_id);
 create index idx_event_attendance_event_id on public.event_attendance(event_id);
 create index idx_event_appointments_event_id on public.event_appointments(event_id);
-create index idx_financial_production_event_id on public.financial_production(event_id); 
+create index idx_financial_production_event_id on public.financial_production(event_id);
+
+-- Add total field to event_financial_production if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'event_financial_production' 
+        AND column_name = 'total'
+    ) THEN
+        ALTER TABLE event_financial_production
+        ADD COLUMN total numeric GENERATED ALWAYS AS (
+            COALESCE(annuity_premium, 0) +
+            COALESCE(life_insurance_premium, 0) +
+            COALESCE(aum, 0) +
+            COALESCE(financial_planning, 0)
+        ) STORED;
+    END IF;
+END $$; 

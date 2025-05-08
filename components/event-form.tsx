@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
-import { createEvent, updateEvent } from "@/lib/data"
+import { createEvent, createEventExpenses, createEventAttendance, createEventAppointments, createEventFinancialProduction } from "@/lib/data"
 import { useAuth } from "@/components/auth-provider"
 
 interface EventFormProps {
@@ -102,6 +102,15 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
     setIsSubmitting(true)
 
     try {
+      if (!user?.id) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to create an event.",
+        })
+        return
+      }
+
       // Validate required fields
       const requiredFields = {
         name: "Event Name",
@@ -179,20 +188,51 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         topic,
         time,
         age_range: ageRange,
-        mile_radius: parseInt(mileRadius) || 0,
+        mile_radius: mileRadius,
         income_assets: incomeAssets,
+        status: 'active'
+      }
+
+      // Create the event first
+      const result = await createEvent(user.id, eventData)
+
+      if (!result.success || !result.eventId) {
+        console.error("Error creating event:", result.error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create event. Please try again.",
+        })
+        return
+      }
+
+      // Create related records
+      const expensesData = {
+        event_id: result.eventId,
         advertising_cost: parseFloat(advertisingCost) || 0,
         food_venue_cost: parseFloat(foodVenueCost) || 0,
-        other_costs: parseFloat(otherCosts) || 0,
+        other_costs: parseFloat(otherCosts) || 0
+      }
+
+      const attendanceData = {
+        event_id: result.eventId,
         registrant_responses: parseInt(registrantResponses) || 0,
         confirmations: parseInt(confirmations) || 0,
         attendees: parseInt(attendees) || 0,
-        clients_from_event: parseInt(clientsFromEvent) || 0,
+        clients_from_event: parseInt(clientsFromEvent) || 0
+      }
+
+      const appointmentsData = {
+        event_id: result.eventId,
         set_at_event: parseInt(setAtEvent) || 0,
         set_after_event: parseInt(setAfterEvent) || 0,
         first_appointment_attended: parseInt(firstAppointmentAttended) || 0,
         first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
-        second_appointment_attended: parseInt(secondAppointmentAttended) || 0,
+        second_appointment_attended: parseInt(secondAppointmentAttended) || 0
+      }
+
+      const financialData = {
+        event_id: result.eventId,
         annuity_premium: parseFloat(annuityPremium) || 0,
         life_insurance_premium: parseFloat(lifeInsurancePremium) || 0,
         aum: parseFloat(aum) || 0,
@@ -201,46 +241,39 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         life_policies_sold: parseInt(lifePoliciesSold) || 0,
         annuity_commission: parseFloat(annuityCommission) || 0,
         life_insurance_commission: parseFloat(lifeInsuranceCommission) || 0,
-        aum_fees: parseFloat(aumFees) || 0,
+        aum_fees: parseFloat(aumFees) || 0
       }
 
-      console.log('Form data being submitted:', eventData)
+      // Create all related records
+      const [expensesResult, attendanceResult, appointmentsResult, financialResult] = await Promise.all([
+        createEventExpenses(expensesData),
+        createEventAttendance(attendanceData),
+        createEventAppointments(appointmentsData),
+        createEventFinancialProduction(financialData)
+      ])
 
-      if (!user?.id) {
-        console.error('No user ID found')
+      if (!expensesResult.success || !attendanceResult.success || !appointmentsResult.success || !financialResult.success) {
+        console.error("Error creating related records:", {
+          expenses: expensesResult.error,
+          attendance: attendanceResult.error,
+          appointments: appointmentsResult.error,
+          financial: financialResult.error
+        })
         toast({
           variant: "destructive",
           title: "Error",
-          description: "You must be logged in to create an event.",
+          description: "Failed to create some event details. Please try again.",
         })
         return
       }
 
-      console.log('User ID:', user.id)
-      
-      const result = isEditing
-        ? await updateEvent(initialData.id, eventData)
-        : await createEvent(user.id, eventData)
+      toast({
+        title: "Success",
+        description: "Event created successfully!",
+      })
 
-      console.log('Database operation result:', result)
-
-      if (result.success) {
-        toast({
-          title: isEditing ? "Event updated" : "Event created",
-          description: isEditing
-            ? "Your marketing event has been updated successfully."
-            : "Your marketing event has been created successfully.",
-        })
-        router.push("/dashboard/events")
-        router.refresh()
-      } else {
-        console.error('Error from database operation:', result.error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: result.error || `Failed to ${isEditing ? "update" : "create"} event. Please try again.`,
-        })
-      }
+      router.push("/dashboard")
+      router.refresh()
     } catch (error) {
       console.error('Detailed error:', {
         name: error instanceof Error ? error.name : 'Unknown',
