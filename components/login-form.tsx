@@ -132,9 +132,6 @@ export function LoginForm() {
                   Remember me
                 </label>
               </div>
-              <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
-                Forgot your password?
-              </Link>
             </div>
 
             <Button
@@ -148,10 +145,7 @@ export function LoginForm() {
 
           <div className="mt-8 text-center">
             <p className="text-gray-400 text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
-                Sign up
-              </Link>
+              Contact your administrator to get access
             </p>
           </div>
         </div>

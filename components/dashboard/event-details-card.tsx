@@ -57,7 +57,19 @@ export function EventDetailsCard({
               <Clock className="h-5 w-5 text-amber-400" />
             </div>
             <div className="text-white text-xs tracking-wider uppercase font-bold mb-2">Time</div>
-            <div className="text-white text-2xl font-extrabold">{time}</div>
+            <div className="text-white text-2xl font-extrabold">
+              {time === "N/A" ? time : time.includes("AM") || time.includes("PM") ? time : (() => {
+                try {
+                  const [hours, minutes] = time.split(":");
+                  const hour = parseInt(hours);
+                  const ampm = hour >= 12 ? "PM" : "AM";
+                  const hour12 = hour % 12 || 12;
+                  return `${hour12}:${minutes} ${ampm}`;
+                } catch {
+                  return time;
+                }
+              })()}
+            </div>
           </div>
 
           {/* Topic of Marketing - Add this new section */}

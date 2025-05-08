@@ -228,7 +228,13 @@ export async function fetchAllEvents(userId: string): Promise<EventWithRelations
         topic,
         status,
         marketing_expenses (total_cost),
-        event_attendance (attendees, clients_from_event),
+        event_attendance (
+          id,
+          attendees,
+          clients_from_event,
+          registrant_responses,
+          confirmations
+        ),
         event_appointments (
           set_at_event,
           set_after_event,
@@ -242,22 +248,32 @@ export async function fetchAllEvents(userId: string): Promise<EventWithRelations
       .order("date", { ascending: false })
 
     if (marketingEvents && marketingEvents.length > 0) {
+      console.log('Fetched marketing events:', marketingEvents)
       // Map the data to the expected format
-      return marketingEvents.map((event) => ({
-        id: event.id,
-        date: event.date,
-        name: event.name,
-        location: event.location,
-        type: event.marketing_type || "Unknown", // Map marketing_type to type for backward compatibility
-        topic: event.topic || "Unknown",
-        budget: event.marketing_expenses?.[0]?.total_cost || 0,
-        status: event.status || "active",
-        marketing_type: event.marketing_type,
-        attendance: event.event_attendance?.[0],
-        financial_production: event.financial_production?.[0],
-        marketing_expenses: event.marketing_expenses?.[0],
-        event_appointments: event.event_appointments?.[0],
-      }))
+      return marketingEvents.map((event) => {
+        const attendance = event.event_attendance?.[0]
+        console.log('Event attendance data:', attendance)
+        return {
+          id: event.id,
+          date: event.date,
+          name: event.name,
+          location: event.location,
+          type: event.marketing_type || "Unknown", // Map marketing_type to type for backward compatibility
+          topic: event.topic || "Unknown",
+          budget: event.marketing_expenses?.[0]?.total_cost || 0,
+          status: event.status || "active",
+          marketing_type: event.marketing_type,
+          attendance: attendance ? {
+            attendees: attendance.attendees || 0,
+            clients_from_event: attendance.clients_from_event || 0,
+            registrant_responses: attendance.registrant_responses || 0,
+            confirmations: attendance.confirmations || 0
+          } : undefined,
+          financial_production: event.financial_production?.[0],
+          marketing_expenses: event.marketing_expenses?.[0],
+          event_appointments: event.event_appointments?.[0],
+        }
+      })
     }
 
     // If no marketing_events, try the events table (old schema)
@@ -273,7 +289,13 @@ export async function fetchAllEvents(userId: string): Promise<EventWithRelations
           user_id,
           event_details (location, type, topic),
           marketing_expenses (total_cost),
-          event_attendance (attendees, clients_from_event),
+          event_attendance (
+            id,
+            attendees,
+            clients_from_event,
+            registrant_responses,
+            confirmations
+          ),
           event_appointments (
             set_at_event,
             set_after_event,
@@ -292,22 +314,32 @@ export async function fetchAllEvents(userId: string): Promise<EventWithRelations
       }
 
       if (events && events.length > 0) {
+        console.log('Fetched old events:', events)
         // Map the data to the expected format
-        return events.map((event) => ({
-          id: event.id,
-          date: event.date,
-          name: event.name,
-          location: event.event_details?.[0]?.location || "Unknown",
-          type: event.event_details?.[0]?.type || "Unknown",
-          topic: event.event_details?.[0]?.topic || "Unknown",
-          budget: event.marketing_expenses?.[0]?.total_cost || 0,
-          status: event.status || "active",
-          marketing_type: event.event_details?.[0]?.type || "Unknown",
-          attendance: event.event_attendance?.[0],
-          financial_production: event.financial_production?.[0],
-          marketing_expenses: event.marketing_expenses?.[0],
-          event_appointments: event.event_appointments?.[0],
-        }))
+        return events.map((event) => {
+          const attendance = event.event_attendance?.[0]
+          console.log('Event attendance data:', attendance)
+          return {
+            id: event.id,
+            date: event.date,
+            name: event.name,
+            location: event.event_details?.[0]?.location || "Unknown",
+            type: event.event_details?.[0]?.type || "Unknown",
+            topic: event.event_details?.[0]?.topic || "Unknown",
+            budget: event.marketing_expenses?.[0]?.total_cost || 0,
+            status: event.status || "active",
+            marketing_type: event.event_details?.[0]?.type || "Unknown",
+            attendance: attendance ? {
+              attendees: attendance.attendees || 0,
+              clients_from_event: attendance.clients_from_event || 0,
+              registrant_responses: attendance.registrant_responses || 0,
+              confirmations: attendance.confirmations || 0
+            } : undefined,
+            financial_production: event.financial_production?.[0],
+            marketing_expenses: event.marketing_expenses?.[0],
+            event_appointments: event.event_appointments?.[0],
+          }
+        })
       }
     }
 
@@ -509,6 +541,23 @@ export async function createEvent(userId: string, eventData: any) {
     }
 
     console.log('Event created successfully:', event)
+
+    // Create default attendance record
+    const { error: attendanceError } = await supabase
+      .from('event_attendance')
+      .insert([{
+        event_id: event.id,
+        registrant_responses: 0,
+        confirmations: 0,
+        attendees: 0,
+        clients_from_event: 0
+      }])
+
+    if (attendanceError) {
+      console.error("Error creating attendance record:", attendanceError)
+      // Continue anyway - we can update this later
+    }
+
     return { success: true, eventId: event.id }
   } catch (error) {
     console.error("Error in createEvent:", error)

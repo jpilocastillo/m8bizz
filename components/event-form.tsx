@@ -406,10 +406,23 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   </Label>
                   <Input
                     id="time"
+                    type="time"
                     value={time}
-                    onChange={(e) => setTime(e.target.value)}
+                    onChange={(e) => {
+                      const timeValue = e.target.value;
+                      if (timeValue) {
+                        // Convert 24-hour format to 12-hour format
+                        const [hours, minutes] = timeValue.split(':');
+                        const hour = parseInt(hours);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const hour12 = hour % 12 || 12;
+                        setTime(`${hour12}:${minutes} ${ampm}`);
+                      } else {
+                        setTime('');
+                      }
+                    }}
                     className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
-                    placeholder="e.g. 6:00 PM"
+                    placeholder="Select time"
                   />
                 </div>
                 <div className="space-y-2">
