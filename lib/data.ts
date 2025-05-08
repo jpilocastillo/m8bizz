@@ -391,31 +391,23 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 
 // Create a new marketing event with all related data
 export async function createEvent(userId: string, eventData: any) {
-  if (!userId) {
-    console.error("createEvent called without userId")
-    return { success: false, error: "User ID is required" }
-  }
-
   try {
+    console.log('Creating event with data:', { userId, eventData })
+    
+    if (!userId) {
+      console.error("No user ID provided")
+      return { success: false, error: "User ID is required" }
+    }
+
     const supabase = await createAdminClient()
     console.log('Supabase admin client created')
 
-    // Start a transaction
     const { data: event, error: eventError } = await supabase
-      .from("marketing_events")
-      .insert({
+      .from('marketing_events')
+      .insert([{
         user_id: userId,
-        name: eventData.name,
-        date: eventData.date,
-        location: eventData.location,
-        marketing_type: eventData.marketing_type,
-        topic: eventData.topic,
-        time: eventData.time,
-        age_range: eventData.age_range,
-        mile_radius: eventData.mile_radius,
-        income_assets: eventData.income_assets,
-        status: "active"
-      })
+        ...eventData
+      }])
       .select()
       .single()
 
@@ -425,85 +417,10 @@ export async function createEvent(userId: string, eventData: any) {
     }
 
     console.log('Event created successfully:', event)
-
-    // Create related records in parallel
-    try {
-      // Create marketing expenses
-      const { error: expensesError } = await supabase
-        .from("marketing_expenses")
-        .insert({
-          event_id: event.id,
-          advertising_cost: eventData.advertising_cost || 0,
-          food_venue_cost: eventData.food_venue_cost || 0,
-          other_costs: eventData.other_costs || 0
-        })
-
-      if (expensesError) {
-        throw new Error(`Failed to create expenses: ${expensesError.message}`)
-      }
-
-      // Create event attendance
-      const { error: attendanceError } = await supabase
-        .from("event_attendance")
-        .insert({
-          event_id: event.id,
-          registrant_responses: eventData.registrant_responses || 0,
-          confirmations: eventData.confirmations || 0,
-          attendees: eventData.attendees || 0,
-          clients_from_event: eventData.clients_from_event || 0
-        })
-
-      if (attendanceError) {
-        throw new Error(`Failed to create attendance: ${attendanceError.message}`)
-      }
-
-      // Create event appointments
-      const { error: appointmentsError } = await supabase
-        .from("event_appointments")
-        .insert({
-          event_id: event.id,
-          set_at_event: eventData.set_at_event || 0,
-          set_after_event: eventData.set_after_event || 0,
-          first_appointment_attended: eventData.first_appointment_attended || 0,
-          first_appointment_no_shows: eventData.first_appointment_no_shows || 0,
-          second_appointment_attended: eventData.second_appointment_attended || 0
-        })
-
-      if (appointmentsError) {
-        throw new Error(`Failed to create appointments: ${appointmentsError.message}`)
-      }
-
-      // Create financial production
-      const { error: financialError } = await supabase
-        .from("event_financial_production")
-        .insert({
-          event_id: event.id,
-          annuity_premium: eventData.annuity_premium || 0,
-          life_insurance_premium: eventData.life_insurance_premium || 0,
-          aum: eventData.aum || 0,
-          financial_planning: eventData.financial_planning || 0,
-          annuities_sold: eventData.annuities_sold || 0,
-          life_policies_sold: eventData.life_policies_sold || 0,
-          annuity_commission: eventData.annuity_commission || 0,
-          life_insurance_commission: eventData.life_insurance_commission || 0,
-          aum_fees: eventData.aum_fees || 0
-        })
-
-      if (financialError) {
-        throw new Error(`Failed to create financial production: ${financialError.message}`)
-      }
-
-      console.log('All related records created successfully')
-      return { success: true, eventId: event.id }
-    } catch (error) {
-      // If any related record creation fails, delete the main event
-      console.error("Error creating related records:", error)
-      await supabase.from("marketing_events").delete().eq("id", event.id)
-      return { success: false, error: error instanceof Error ? error.message : "Failed to create related records" }
-    }
+    return { success: true, eventId: event.id }
   } catch (error) {
     console.error("Error in createEvent:", error)
-    return { success: false, error: "An unexpected error occurred while creating the event." }
+    return { success: false, error: "Failed to create event" }
   }
 }
 
@@ -906,7 +823,7 @@ export async function createEventFinancialProduction(data: {
   try {
     const supabase = await createAdminClient()
     const { data: result, error } = await supabase
-      .from("event_financial_production")
+      .from("financial_production")
       .insert(data)
       .select()
       .single()
