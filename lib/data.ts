@@ -426,15 +426,10 @@ export async function createEvent(userId: string, eventData: any) {
 
     console.log('Event created successfully:', event)
 
-    // Create all related records in parallel
-    const [
-      expensesResult,
-      attendanceResult,
-      appointmentsResult,
-      financialResult
-    ] = await Promise.all([
+    // Create related records sequentially
+    try {
       // Create marketing expenses
-      supabase
+      const { error: expensesError } = await supabase
         .from("marketing_expenses")
         .insert({
           event_id: event.id,
@@ -442,10 +437,14 @@ export async function createEvent(userId: string, eventData: any) {
           food_venue_cost: eventData.food_venue_cost,
           other_costs: eventData.other_costs,
           total_cost: eventData.advertising_cost + eventData.food_venue_cost + eventData.other_costs
-        }),
+        })
+
+      if (expensesError) {
+        throw new Error(`Failed to create expenses: ${expensesError.message}`)
+      }
 
       // Create event attendance
-      supabase
+      const { error: attendanceError } = await supabase
         .from("event_attendance")
         .insert({
           event_id: event.id,
@@ -453,10 +452,14 @@ export async function createEvent(userId: string, eventData: any) {
           confirmations: eventData.confirmations,
           attendees: eventData.attendees,
           clients_from_event: eventData.clients_from_event
-        }),
+        })
+
+      if (attendanceError) {
+        throw new Error(`Failed to create attendance: ${attendanceError.message}`)
+      }
 
       // Create event appointments
-      supabase
+      const { error: appointmentsError } = await supabase
         .from("event_appointments")
         .insert({
           event_id: event.id,
@@ -465,10 +468,14 @@ export async function createEvent(userId: string, eventData: any) {
           first_appointment_attended: eventData.first_appointment_attended,
           first_appointment_no_shows: eventData.first_appointment_no_shows,
           second_appointment_attended: eventData.second_appointment_attended
-        }),
+        })
+
+      if (appointmentsError) {
+        throw new Error(`Failed to create appointments: ${appointmentsError.message}`)
+      }
 
       // Create financial production
-      supabase
+      const { error: financialError } = await supabase
         .from("event_financial_production")
         .insert({
           event_id: event.id,
@@ -480,31 +487,21 @@ export async function createEvent(userId: string, eventData: any) {
           life_policies_sold: eventData.life_policies_sold,
           annuity_commission: eventData.annuity_commission,
           life_insurance_commission: eventData.life_insurance_commission,
-          aum_fees: eventData.aum_fees,
-          total: eventData.annuity_premium + eventData.life_insurance_premium + eventData.aum + eventData.financial_planning
+          aum_fees: eventData.aum_fees
         })
-    ])
 
-    // Check for any errors in the parallel operations
-    const errors = [
-      { type: "expenses", error: expensesResult.error },
-      { type: "attendance", error: attendanceResult.error },
-      { type: "appointments", error: appointmentsResult.error },
-      { type: "financial", error: financialResult.error }
-    ].filter(result => result.error)
-
-    if (errors.length > 0) {
-      console.error("Errors creating related records:", errors)
-      // Attempt to rollback by deleting the main event
-      await supabase.from("marketing_events").delete().eq("id", event.id)
-      return { 
-        success: false, 
-        error: `Failed to create related records: ${errors.map(e => e.type).join(", ")}` 
+      if (financialError) {
+        throw new Error(`Failed to create financial production: ${financialError.message}`)
       }
-    }
 
-    console.log('All related records created successfully')
-    return { success: true, eventId: event.id }
+      console.log('All related records created successfully')
+      return { success: true, eventId: event.id }
+    } catch (error) {
+      // If any related record creation fails, delete the main event
+      console.error("Error creating related records:", error)
+      await supabase.from("marketing_events").delete().eq("id", event.id)
+      return { success: false, error: error instanceof Error ? error.message : "Failed to create related records" }
+    }
   } catch (error) {
     console.error("Error in createEvent:", error)
     return { success: false, error: "An unexpected error occurred while creating the event." }

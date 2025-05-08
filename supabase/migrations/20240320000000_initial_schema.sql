@@ -71,6 +71,11 @@ CREATE TABLE IF NOT EXISTS event_financial_production (
     aum DECIMAL(10,2) DEFAULT 0,
     financial_planning DECIMAL(10,2) DEFAULT 0,
     annuities_sold INTEGER DEFAULT 0,
+    life_policies_sold INTEGER DEFAULT 0,
+    annuity_commission DECIMAL(10,2) DEFAULT 0,
+    life_insurance_commission DECIMAL(10,2) DEFAULT 0,
+    aum_fees DECIMAL(10,2) DEFAULT 0,
+    total DECIMAL(10,2) GENERATED ALWAYS AS (annuity_premium + life_insurance_premium + aum + financial_planning) STORED,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
