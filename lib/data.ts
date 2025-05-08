@@ -469,10 +469,10 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
     const totalExpenses = expenses?.total_cost || 0
 
     const financial = event.financial_production?.[0]
-    const totalIncome = financial?.annuity_premium || 0 + 
-                       financial?.life_insurance_premium || 0 + 
-                       financial?.aum || 0 + 
-                       financial?.financial_planning || 0
+    const totalIncome = (financial?.annuity_premium || 0) + 
+                       (financial?.life_insurance_premium || 0) + 
+                       (financial?.aum || 0) + 
+                       (financial?.financial_planning || 0)
 
     const roi = totalExpenses > 0 ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) : 0
 
@@ -548,6 +548,13 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         foodVenue: expenses?.food_venue_cost || 0,
       },
       topicOfMarketing: event.topic,
+      attendance: {
+        registrantResponses: attendance?.registrant_responses || 0,
+        confirmations: attendance?.confirmations || 0,
+        attendees: attendance?.attendees || 0,
+        clients_from_event: attendance?.clients_from_event || 0,
+        responseRate: attendance?.registrant_responses ? (attendance.confirmations / attendance.registrant_responses) * 100 : 0
+      },
       appointments: {
         setAtEvent: event.event_appointments?.[0]?.set_at_event || 0,
         setAfterEvent: event.event_appointments?.[0]?.set_after_event || 0,
