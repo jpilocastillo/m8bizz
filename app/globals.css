@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+
+  --radius: 0.5rem;
+}
+
+body {
+  @apply bg-m8bs-bg text-m8bs-text;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-m8bs-bg text-foreground;
+  }
+
+  /* Enhanced Typography with bolder fonts */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-extrabold tracking-tight;
+  }
+
+  h1 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h2 {
+    @apply text-xl md:text-2xl;
+  }
+
+  h3 {
+    @apply text-lg md:text-xl;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-m8bs-card;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-m8bs-border rounded-md;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-m8bs-card-alt;
+}
+
+/* Glow effects */
+.glow-blue {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+}
+
+.glow-green {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+}
+
+.glow-red {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Enhanced Card Styling */
+.card-enhanced {
+  @apply bg-gradient-to-b from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg transition-all duration-300 hover:shadow-xl;
+}
+
+/* Blue gradient button */
+.btn-blue-gradient {
+  @apply bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark hover:from-m8bs-blue-light hover:to-m8bs-blue text-white border-0 transition-all duration-300;
+}
+
+/* Dark blue gradient background */
+.bg-dark-blue-gradient {
+  @apply bg-gradient-to-b from-m8bs-card to-m8bs-bg;
+}
+
+/* Card hover effect */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:border-m8bs-blue/50;
+}
+
+/* Animated Progress */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Update the text color classes to use white instead of muted colors */
+
+/* Improved Typography with bolder fonts and white text */
+.text-value {
+  @apply text-3xl font-extrabold text-white tracking-tight;
+}
+
+.text-label {
+  @apply text-sm font-bold text-white tracking-wide;
+}
+
+.text-subtitle {
+  @apply text-sm font-medium text-white;
+}
+
+/* Bold card titles */
+.card-title {
+  @apply text-lg font-extrabold text-white;
+}
+
+/* Bold metric values */
+.metric-value {
+  @apply text-2xl font-extrabold text-white;
+}
+
+/* Bold navigation */
+.nav-item {
+  @apply font-bold text-white;
+}
+
+/* Bold section headers */
+.section-header {
+  @apply font-extrabold text-xl text-white mb-4;
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
