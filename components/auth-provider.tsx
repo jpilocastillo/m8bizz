@@ -81,17 +81,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      setIsLoading(true)
       await supabase.auth.signOut()
-      setSession(null)
       setUser(null)
-      // Use replace instead of push to avoid back button issues
+      setSession(null)
+      // Use replace instead of push to prevent back navigation
       router.replace("/login")
-      // Force a refresh to ensure all components update with the new auth state
+      // Force a router refresh to clear server components
       router.refresh()
     } catch (error) {
       console.error("Error signing out:", error)
-      // Force a hard refresh to clear any client-side state
-      window.location.href = "/login"
+    } finally {
+      setIsLoading(false)
     }
   }
 

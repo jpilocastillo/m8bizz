@@ -1,4 +1,4 @@
-import type React from "react"
+import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
@@ -7,13 +7,19 @@ import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
-  title: "M8BS Marketing Dashboard",
-  description: "Track, analyze, and optimize your marketing campaigns",
+export const metadata: Metadata = {
+  title: "M8 Business Suite",
+  description: "Marketing and Business Management Dashboard",
   icons: {
-    icon: "/favicon.ico",
-  },
-    generator: 'v0.dev'
+    icon: [
+      { url: "/placeholder-logo.png", type: "image/png" },
+      { url: "/placeholder-logo.svg", type: "image/svg+xml" }
+    ],
+    shortcut: ["/placeholder-logo.png"],
+    apple: [
+      { url: "/placeholder-logo.png", type: "image/png" }
+    ]
+  }
 }
 
 export default function RootLayout({
@@ -23,9 +29,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-      </head>
       <body className={`${inter.className} bg-m8bs-bg`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
