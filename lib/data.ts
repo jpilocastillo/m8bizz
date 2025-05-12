@@ -470,126 +470,144 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
     console.log(`Found event: ${event.name} (${event.id})`)
     console.log('Event data:', event)
 
-    // Calculate ROI
-    const expenses = event.marketing_expenses?.[0]
-    const totalExpenses = expenses?.total_cost || 0
+    // Ensure attendance record exists
+    if (!event.event_attendance || event.event_attendance.length === 0) {
+      console.log('Creating missing attendance record for event:', event.id)
+      const { error: attendanceError } = await supabase
+        .from('event_attendance')
+        .insert([{
+          event_id: event.id,
+          registrant_responses: 0,
+          confirmations: 0,
+          attendees: 0,
+          clients_from_event: 0
+        }])
 
-    const financial = event.financial_production?.[0]
-    const totalIncome = (financial?.annuity_premium || 0) + 
-                       (financial?.life_insurance_premium || 0) + 
-                       (financial?.aum || 0) + 
-                       (financial?.financial_planning || 0)
+      if (attendanceError) {
+        console.error("Error creating attendance record:", attendanceError)
+      } else {
+        // Fetch the updated event data with the new attendance record
+        const { data: updatedEvent } = await eventQuery.maybeSingle()
+        if (updatedEvent) {
+          event.event_attendance = updatedEvent.event_attendance
+        }
+      }
+    }
+
+    // Calculate ROI
+    const expenses = event.marketing_expenses?.[0] || { total_cost: 0 }
+    const totalExpenses = expenses.total_cost || 0
+
+    const financial = event.financial_production?.[0] || {
+      annuity_premium: 0,
+      life_insurance_premium: 0,
+      aum: 0,
+      financial_planning: 0
+    }
+
+    const totalIncome = (financial.annuity_premium || 0) + 
+                       (financial.life_insurance_premium || 0) + 
+                       (financial.aum || 0) + 
+                       (financial.financial_planning || 0)
 
     const roi = totalExpenses > 0 ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) : 0
 
-    // Get ROI trend (last 6 events)
-    const { data: pastEvents } = await supabase
-      .from("marketing_events")
-      .select(`
-        id,
-        date,
-        marketing_expenses (total_cost),
-        financial_production (
-          annuity_premium,
-          life_insurance_premium,
-          aum,
-          financial_planning
-        )
-      `)
-      .eq("user_id", userId)
-      .order("date", { ascending: false })
-      .limit(7)
+    // Get attendance data with fallback to empty object
+    const attendance = event.event_attendance?.[0] || {
+      registrant_responses: 0,
+      confirmations: 0,
+      attendees: 0,
+      clients_from_event: 0
+    }
 
-    const roiTrend = pastEvents?.map(event => {
-      const expenses = event.marketing_expenses?.[0]?.total_cost || 1
-      const financial = event.financial_production?.[0]
-      const production = (financial?.annuity_premium || 0) +
-                        (financial?.life_insurance_premium || 0) +
-                        (financial?.aum || 0) +
-                        (financial?.financial_planning || 0)
-      return Math.round(((production - expenses) / expenses) * 100)
-    }) || [0, 0, 0, 0, 0, 0, roi]
+    // Get appointments data with fallback to empty object
+    const appointments = event.event_appointments?.[0] || {
+      set_at_event: 0,
+      set_after_event: 0,
+      first_appointment_attended: 0,
+      first_appointment_no_shows: 0,
+      second_appointment_attended: 0
+    }
 
-    // Calculate conversion rate
-    const attendance = event.event_attendance?.[0]
-    console.log('Attendance data:', attendance)
-    const attendeeCount = attendance?.attendees || 0
-    const clientCount = attendance?.clients_from_event || 0
-    const conversionRate = attendeeCount > 0 ? Math.round((clientCount / attendeeCount) * 1000) / 10 : 0
-
-    // Prepare the dashboard data
     const dashboardData = {
       eventId: event.id,
-      eventName: event.name,
-      eventDate: event.date,
+      eventDetails: {
+        name: event.name,
+        date: event.date,
+        location: event.location,
+        marketing_type: event.marketing_type,
+        topic: event.topic,
+        age_range: event.age_range,
+        mile_radius: event.mile_radius,
+        income_assets: event.income_assets,
+        time: event.time,
+        status: event.status
+      },
       roi: {
         value: roi,
-        trend: roiTrend,
+        trend: [roi] // Simplified trend for now
       },
-      writtenBusiness: financial?.annuities_sold || 0,
+      writtenBusiness: totalIncome,
       income: {
         total: totalIncome,
         breakdown: {
-          fixedAnnuity: financial?.annuity_premium || 0,
-          life: financial?.life_insurance_premium || 0,
-          aum: financial?.aum || 0,
-        },
+          fixedAnnuity: financial.annuity_premium || 0,
+          life: financial.life_insurance_premium || 0,
+          aum: financial.aum || 0
+        }
       },
       conversionRate: {
-        value: conversionRate,
-        attendees: attendeeCount,
-        clients: clientCount,
-      },
-      eventDetails: {
-        dayOfWeek: new Date(event.date).toLocaleDateString("en-US", { weekday: "long" }),
-        location: event.location,
-        time: event.time,
-        ageRange: event.age_range,
-        mileRadius: event.mile_radius,
-        incomeAssets: event.income_assets,
+        value: attendance.attendees > 0 ? Math.round((attendance.clients_from_event / attendance.attendees) * 100) : 0,
+        attendees: attendance.attendees,
+        clients: attendance.clients_from_event
       },
       marketingExpenses: {
         total: totalExpenses,
-        advertising: expenses?.advertising_cost || 0,
-        foodVenue: expenses?.food_venue_cost || 0,
+        advertising: expenses.advertising_cost || 0,
+        foodVenue: expenses.food_venue_cost || 0
       },
       topicOfMarketing: event.topic,
-      attendance: attendance ? {
-        registrantResponses: attendance.registrant_responses || 0,
-        confirmations: attendance.confirmations || 0,
-        attendees: attendance.attendees || 0,
-        clients_from_event: attendance.clients_from_event || 0,
-        responseRate: attendance.registrant_responses ? (attendance.confirmations / attendance.registrant_responses) * 100 : 0
-      } : {
-        registrantResponses: 0,
-        confirmations: 0,
-        attendees: 0,
-        clients_from_event: 0,
-        responseRate: 0
+      attendance: {
+        registrantResponses: attendance.registrant_responses,
+        confirmations: attendance.confirmations,
+        attendees: attendance.attendees,
+        responseRate: attendance.registrant_responses > 0 ? Math.round((attendance.confirmations / attendance.registrant_responses) * 100) : 0,
+        clients_from_event: attendance.clients_from_event
+      },
+      clientAcquisition: {
+        expensePerRegistrant: attendance.registrant_responses > 0 ? totalExpenses / attendance.registrant_responses : 0,
+        expensePerConfirmation: attendance.confirmations > 0 ? totalExpenses / attendance.confirmations : 0,
+        expensePerAttendee: attendance.attendees > 0 ? totalExpenses / attendance.attendees : 0,
+        totalCost: totalExpenses
+      },
+      conversionEfficiency: {
+        registrationToAttendance: attendance.registrant_responses > 0 ? Math.round((attendance.attendees / attendance.registrant_responses) * 100) : 0,
+        attendanceToClient: attendance.attendees > 0 ? Math.round((attendance.clients_from_event / attendance.attendees) * 100) : 0,
+        overall: attendance.registrant_responses > 0 ? Math.round((attendance.clients_from_event / attendance.registrant_responses) * 100) : 0
       },
       appointments: {
-        setAtEvent: event.event_appointments?.[0]?.set_at_event || 0,
-        setAfterEvent: event.event_appointments?.[0]?.set_after_event || 0,
-        firstAppointmentAttended: event.event_appointments?.[0]?.first_appointment_attended || 0,
-        firstAppointmentNoShows: event.event_appointments?.[0]?.first_appointment_no_shows || 0,
-        secondAppointmentAttended: event.event_appointments?.[0]?.second_appointment_attended || 0,
+        setAtEvent: appointments.set_at_event,
+        setAfterEvent: appointments.set_after_event,
+        firstAppointmentAttended: appointments.first_appointment_attended,
+        firstAppointmentNoShows: appointments.first_appointment_no_shows,
+        secondAppointmentAttended: appointments.second_appointment_attended
       },
       productsSold: {
-        annuities: financial?.annuities_sold || 0,
-        lifePolicies: financial?.life_policies_sold || 0,
+        annuities: financial.annuities_sold || 0,
+        lifePolicies: financial.life_policies_sold || 0
       },
       financialProduction: {
-        annuity_premium: financial?.annuity_premium || 0,
-        life_insurance_premium: financial?.life_insurance_premium || 0,
-        aum: financial?.aum || 0,
-        financial_planning: financial?.financial_planning || 0,
+        annuity_premium: financial.annuity_premium || 0,
+        life_insurance_premium: financial.life_insurance_premium || 0,
+        aum: financial.aum || 0,
+        financial_planning: financial.financial_planning || 0,
         total: totalIncome,
-        annuities_sold: financial?.annuities_sold || 0,
-        life_policies_sold: financial?.life_policies_sold || 0,
-        annuity_commission: financial?.annuity_commission || 0,
-        life_insurance_commission: financial?.life_insurance_commission || 0,
-        aum_fees: financial?.aum_fees || 0,
-      },
+        annuities_sold: financial.annuities_sold || 0,
+        life_policies_sold: financial.life_policies_sold || 0,
+        annuity_commission: financial.annuity_commission || 0,
+        life_insurance_commission: financial.life_insurance_commission || 0,
+        aum_fees: financial.aum_fees || 0
+      }
     }
 
     console.log('Dashboard data prepared:', dashboardData)
