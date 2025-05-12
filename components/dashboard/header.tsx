@@ -77,10 +77,7 @@ export function DashboardHeader({
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-m8bs-border" />
               <DropdownMenuItem 
-                onClick={async () => {
-                  await signOut()
-                  router.replace("/login")
-                }} 
+                onClick={signOut}
                 className="hover:bg-m8bs-card-alt cursor-pointer font-medium"
               >
                 Log out

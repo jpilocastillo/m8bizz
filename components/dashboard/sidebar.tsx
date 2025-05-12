@@ -222,14 +222,11 @@ export function Sidebar() {
       <div className="p-4 border-t border-m8bs-border">
         <Button
           variant="ghost"
+          onClick={signOut}
           className={cn(
             "justify-start text-white hover:text-white hover:bg-m8bs-card-alt transition-all duration-200 font-bold",
             isCollapsed ? "w-8 px-0 justify-center" : "w-full",
           )}
-          onClick={async () => {
-            await signOut()
-            router.replace("/login")
-          }}
         >
           <LogOut className="h-5 w-5" />
           {!isCollapsed && <span className="ml-2">Log out</span>}

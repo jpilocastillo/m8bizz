@@ -82,15 +82,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setIsLoading(true)
-      await supabase.auth.signOut()
+      // First clear the session
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Then clear local state
       setUser(null)
       setSession(null)
-      // Use replace instead of push to prevent back navigation
-      router.replace("/login")
-      // Force a router refresh to clear server components
-      router.refresh()
+      
+      // Clear any stored data
+      localStorage.removeItem('supabase.auth.token')
+      
+      // Force a hard navigation to the login page
+      window.location.href = "/"
     } catch (error) {
       console.error("Error signing out:", error)
+      // Even if there's an error, try to redirect to login
+      window.location.href = "/"
     } finally {
       setIsLoading(false)
     }

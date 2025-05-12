@@ -109,7 +109,7 @@ export function LoginForm() {
         <p className="text-sm text-gray-500 dark:text-gray-400">
           <Link href="/forgot-password" className="hover:text-brand underline underline-offset-4">
             Forgot your password?
-          </Link>
+        </Link>
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Contact your administrator to get access
