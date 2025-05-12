@@ -105,8 +105,15 @@ export function LoginForm() {
           </Button>
         </form>
       </Form>
-      <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-        Contact your administrator to get access
+      <div className="text-center space-y-2">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          <Link href="/forgot-password" className="hover:text-brand underline underline-offset-4">
+            Forgot your password?
+          </Link>
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Contact your administrator to get access
+        </p>
       </div>
     </div>
   )

@@ -84,7 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut()
       setSession(null)
       setUser(null)
-      router.push("/login")
+      // Use replace instead of push to avoid back button issues
+      router.replace("/login")
+      // Force a refresh to ensure all components update with the new auth state
       router.refresh()
     } catch (error) {
       console.error("Error signing out:", error)

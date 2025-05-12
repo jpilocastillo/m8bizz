@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -14,10 +13,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createClient } from "@/lib/supabase/client"
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 })
 
-export default function ForgotPassword() {
+export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -25,7 +28,8 @@ export default function ForgotPassword() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      password: "",
+      confirmPassword: "",
     },
   })
 
@@ -34,8 +38,8 @@ export default function ForgotPassword() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { error } = await supabase.auth.updateUser({
+        password: values.password,
       })
 
       if (error) {
@@ -43,18 +47,18 @@ export default function ForgotPassword() {
       }
 
       toast({
-        title: "Reset link sent",
-        description: "Check your email for the password reset link.",
+        title: "Password updated",
+        description: "Your password has been successfully updated.",
       })
 
-      // Clear form after successful submission
-      form.reset()
+      // Redirect to login page
+      router.push("/login")
     } catch (error) {
       console.error("Password reset error:", error)
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to send reset link. Please try again.",
+        description: "Failed to update password. Please try again.",
       })
     } finally {
       setIsLoading(false)
@@ -65,9 +69,9 @@ export default function ForgotPassword() {
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Forgot Password</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Reset Password</h1>
           <p className="text-sm text-muted-foreground">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your new password below.
           </p>
         </div>
 
@@ -75,12 +79,25 @@ export default function ForgotPassword() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="email"
+              name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="your.email@example.com" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -88,16 +105,10 @@ export default function ForgotPassword() {
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isLoading ? "Sending..." : "Send Reset Link"}
+              {isLoading ? "Updating..." : "Update Password"}
             </Button>
           </form>
         </Form>
-
-        <p className="px-8 text-center text-sm text-muted-foreground">
-          <Link href="/login" className="hover:text-brand underline underline-offset-4">
-            Back to login
-          </Link>
-        </p>
       </div>
     </div>
   )
