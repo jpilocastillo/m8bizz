@@ -3,10 +3,12 @@
 import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Eye, Edit, Trash2 } from "lucide-react"
+import { Eye, Edit, Trash2, ArrowUpDown, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { deleteEvent } from "@/lib/data"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface Event {
   id: string
@@ -26,76 +34,97 @@ interface Event {
   type: string
   topic?: string
   budget: number
+  status: string
+  attendance?: {
+    attendees: number
+    clients_from_event: number
+    registrant_responses: number
+    confirmations: number
+  }
+  financial_production?: {
+    total: number
+  }
 }
 
 interface EventsTableProps {
   events: Event[]
 }
 
-export function EventsTable({ events }: EventsTableProps) {
+export function EventsTable({ events: initialEvents }: EventsTableProps) {
   const [sortColumn, setSortColumn] = useState<keyof Event>("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [eventToDelete, setEventToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-
+  const [searchQuery, setSearchQuery] = useState("")
   const router = useRouter()
   const { toast } = useToast()
 
-  const handleSort = (column: keyof Event) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-    } else {
-      setSortColumn(column)
-      setSortDirection("asc")
-    }
-  }
+  // Filter events based on search query
+  const filteredEvents = initialEvents.filter((event) => {
+    const searchLower = searchQuery.toLowerCase()
+    return (
+      event.name.toLowerCase().includes(searchLower) ||
+      event.location.toLowerCase().includes(searchLower) ||
+      event.type.toLowerCase().includes(searchLower) ||
+      event.topic?.toLowerCase().includes(searchLower)
+    )
+  })
 
-  const sortedEvents = [...events].sort((a, b) => {
+  // Sort events
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
     const aValue = a[sortColumn]
     const bValue = b[sortColumn]
 
     if (typeof aValue === "string" && typeof bValue === "string") {
-      return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+      return sortDirection === "asc"
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue)
     }
 
     if (typeof aValue === "number" && typeof bValue === "number") {
       return sortDirection === "asc" ? aValue - bValue : bValue - aValue
     }
 
+    if (aValue instanceof Date && bValue instanceof Date) {
+      return sortDirection === "asc"
+        ? aValue.getTime() - bValue.getTime()
+        : bValue.getTime() - aValue.getTime()
+    }
+
     return 0
   })
 
-  const confirmDelete = (id: string) => {
-    setEventToDelete(id)
+  const handleSort = (column: keyof Event) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      setSortColumn(column)
+      setSortDirection("desc")
+    }
+  }
+
+  const handleDelete = async (eventId: string) => {
+    setEventToDelete(eventId)
     setDeleteDialogOpen(true)
   }
 
-  const handleDelete = async () => {
+  const confirmDelete = async () => {
     if (!eventToDelete) return
 
     setIsDeleting(true)
     try {
-      const { success, error } = await deleteEvent(eventToDelete)
-
-      if (success) {
-        toast({
-          title: "Event deleted",
-          description: "The marketing event has been deleted successfully.",
-        })
-        router.refresh()
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error || "Failed to delete event. Please try again.",
-        })
-      }
+      await deleteEvent(eventToDelete)
+      toast({
+        title: "Event deleted",
+        description: "The event has been successfully deleted.",
+      })
+      router.refresh()
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: "Failed to delete the event. Please try again.",
       })
     } finally {
       setIsDeleting(false)
@@ -105,8 +134,7 @@ export function EventsTable({ events }: EventsTableProps) {
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -121,108 +149,156 @@ export function EventsTable({ events }: EventsTableProps) {
     }).format(amount)
   }
 
-  const handleView = (eventId: string) => {
-    router.push(`/dashboard?event=${eventId}`)
-  }
-
-  const handleEdit = (eventId: string) => {
-    router.push(`/dashboard/events/edit/${eventId}`)
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "bg-green-500/20 text-green-400"
+      case "upcoming":
+        return "bg-blue-500/20 text-blue-400"
+      case "cancelled":
+        return "bg-red-500/20 text-red-400"
+      default:
+        return "bg-gray-500/20 text-gray-400"
+    }
   }
 
   return (
     <>
-      <div className="rounded-md border border-[#1f2037] overflow-hidden">
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search events..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 bg-m8bs-card border-m8bs-border text-white"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-md border border-m8bs-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-[#131525] bg-gradient-to-r from-[#0f1029] to-[#131525]">
+            <TableRow className="hover:bg-m8bs-card-alt bg-gradient-to-r from-m8bs-card to-m8bs-card-alt">
               <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("date")}>
-                Date {sortColumn === "date" && (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex items-center gap-2">
+                  Date
+                  <ArrowUpDown className="h-4 w-4" />
+                </div>
               </TableHead>
               <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("name")}>
-                Name {sortColumn === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex items-center gap-2">
+                  Name
+                  <ArrowUpDown className="h-4 w-4" />
+                </div>
               </TableHead>
-              <TableHead
-                className="text-gray-400 cursor-pointer font-medium py-4"
-                onClick={() => handleSort("location")}
-              >
-                Location {sortColumn === "location" && (sortDirection === "asc" ? "↑" : "↓")}
+              <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("location")}>
+                <div className="flex items-center gap-2">
+                  Location
+                  <ArrowUpDown className="h-4 w-4" />
+                </div>
               </TableHead>
               <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("type")}>
-                Type {sortColumn === "type" && (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex items-center gap-2">
+                  Type
+                  <ArrowUpDown className="h-4 w-4" />
+                </div>
               </TableHead>
               <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("budget")}>
-                Budget {sortColumn === "budget" && (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex items-center gap-2">
+                  Budget
+                  <ArrowUpDown className="h-4 w-4" />
+                </div>
               </TableHead>
               <TableHead className="text-gray-400 text-right py-4">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedEvents.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-400">
-                  No marketing events found. Create your first event to get started.
+            {sortedEvents.map((event) => (
+              <TableRow key={event.id} className="hover:bg-m8bs-card-alt">
+                <TableCell className="font-medium text-white">{formatDate(event.date)}</TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <div className="font-medium text-white">{event.name}</div>
+                    <Badge className={getStatusColor(event.status)}>{event.status}</Badge>
+                  </div>
+                </TableCell>
+                <TableCell className="text-white">{event.location}</TableCell>
+                <TableCell className="text-white">{event.type}</TableCell>
+                <TableCell className="text-white">{formatCurrency(event.budget)}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push(`/dashboard?event=${event.id}`)}
+                            className="h-8 w-8 text-white hover:bg-m8bs-blue/20"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>View Details</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push(`/dashboard/events/edit/${event.id}`)}
+                            className="h-8 w-8 text-white hover:bg-m8bs-blue/20"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit Event</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(event.id)}
+                            className="h-8 w-8 text-white hover:bg-red-500/20"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete Event</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </TableCell>
               </TableRow>
-            ) : (
-              sortedEvents.map((event) => (
-                <TableRow key={event.id} className="hover:bg-[#1f2037]/70 border-[#1f2037] transition-colors">
-                  <TableCell className="font-medium text-white">{formatDate(event.date)}</TableCell>
-                  <TableCell>{event.name}</TableCell>
-                  <TableCell>{event.location}</TableCell>
-                  <TableCell>{event.type}</TableCell>
-                  <TableCell>{formatCurrency(event.budget)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-blue-500/20 hover:text-blue-400 transition-colors"
-                        onClick={() => handleView(event.id)}
-                      >
-                        <Eye className="h-4 w-4" />
-                        <span className="sr-only">View</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-green-500/20 hover:text-green-400 transition-colors"
-                        onClick={() => handleEdit(event.id)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-red-500/20 hover:text-red-400 transition-colors"
-                        onClick={() => confirmDelete(event.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-gray-900 border-gray-800">
+        <AlertDialogContent className="bg-m8bs-card border-m8bs-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the marketing event and all associated data.
+            <AlertDialogTitle className="text-white">Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              This action cannot be undone. This will permanently delete the event and all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-800 border-gray-700 text-white">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-m8bs-card-alt border-m8bs-border text-white hover:bg-m8bs-card">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={handleDelete}
+              onClick={confirmDelete}
               disabled={isDeleting}
+              className="bg-red-500 text-white hover:bg-red-600"
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
