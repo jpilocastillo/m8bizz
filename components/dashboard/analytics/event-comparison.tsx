@@ -62,20 +62,22 @@ export function EventComparison({ events }: EventComparisonProps) {
   }
 
   // Format value based on metric type
-  const formatValue = (value: number, metric: MetricType) => {
+  const formatValue = (value: number | null | undefined, metric: MetricType) => {
+    const numValue = Number(value) || 0;
+    
     switch (metric) {
       case "ROI":
       case "Conversion":
-        return `${value.toFixed(1)}%`
+        return `${numValue.toFixed(1)}%`
       case "Revenue":
       case "Expenses":
       case "Profit":
-        return `$${value.toLocaleString()}`
+        return `$${numValue.toLocaleString()}`
       case "Attendees":
       case "Clients":
-        return value.toLocaleString()
+        return numValue.toLocaleString()
       default:
-        return value
+        return String(numValue)
     }
   }
 

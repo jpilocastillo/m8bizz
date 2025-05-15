@@ -19,6 +19,7 @@ import { ThreeDMetricCard } from "@/components/dashboard/3d-metric-card"
 import { MarketingExpensesCard } from "./marketing-expenses-card"
 import { format } from "date-fns"
 import { DashboardError } from "./dashboard-error"
+import { createClient } from "@/lib/supabase/client"
 
 interface DashboardContentProps {
   initialData: any
@@ -27,55 +28,163 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ initialData, events, userId }: DashboardContentProps) {
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [selectedEventId, setSelectedEventId] = useState<string | undefined>(undefined)
   const [dashboardData, setDashboardData] = useState(initialData)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Add debug logging
   useEffect(() => {
-    try {
-      console.log("Dashboard Data:", dashboardData)
-
-      // Check specific fields that might be causing issues
-      if (dashboardData) {
-        console.log("Financial Production:", dashboardData.financialProduction)
-        console.log("Appointments:", dashboardData.appointments)
-        console.log("Attendance:", dashboardData.attendance)
-        console.log("Event Details:", dashboardData.eventDetails)
-      }
-    } catch (err) {
-      console.error("Error in dashboard data logging:", err)
-    }
-  }, [dashboardData])
-
-  useEffect(() => {
-    async function loadEventData(eventId: string) {
-      setLoading(true)
-      setError(null)
-      try {
-        console.log(`Loading data for event: ${eventId}`)
-        const data = await fetchDashboardData(userId, eventId)
-        console.log("Fetched dashboard data:", data)
-
-        if (!data) {
-          setError("Failed to load event data. Please try again.")
-          return
-        }
-
-        setDashboardData(data)
-      } catch (error) {
-        console.error("Error loading event data:", error)
-        setError("An error occurred while loading event data. Please try again.")
-      } finally {
-        setLoading(false)
-      }
-    }
-
     if (selectedEventId) {
       loadEventData(selectedEventId)
     }
   }, [selectedEventId, userId])
+
+  // Add real-time subscription for data updates
+  useEffect(() => {
+    const supabase = createClient()
+    
+    // Subscribe to changes in all related tables
+    const subscriptions = [
+      supabase
+        .channel('marketing_events_changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'marketing_events',
+          filter: selectedEventId ? `id=eq.${selectedEventId}` : undefined
+        }, () => {
+          if (selectedEventId) {
+            loadEventData(selectedEventId)
+          }
+        })
+        .subscribe(),
+      supabase
+        .channel('marketing_expenses_changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'marketing_expenses',
+          filter: selectedEventId ? `event_id=eq.${selectedEventId}` : undefined
+        }, () => {
+          if (selectedEventId) {
+            loadEventData(selectedEventId)
+          }
+        })
+        .subscribe(),
+      supabase
+        .channel('event_attendance_changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'event_attendance',
+          filter: selectedEventId ? `event_id=eq.${selectedEventId}` : undefined
+        }, () => {
+          if (selectedEventId) {
+            loadEventData(selectedEventId)
+          }
+        })
+        .subscribe(),
+      supabase
+        .channel('event_appointments_changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'event_appointments',
+          filter: selectedEventId ? `event_id=eq.${selectedEventId}` : undefined
+        }, () => {
+          if (selectedEventId) {
+            loadEventData(selectedEventId)
+          }
+        })
+        .subscribe(),
+      supabase
+        .channel('financial_production_changes')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'financial_production',
+          filter: selectedEventId ? `event_id=eq.${selectedEventId}` : undefined
+        }, () => {
+          if (selectedEventId) {
+            loadEventData(selectedEventId)
+          }
+        })
+        .subscribe()
+    ]
+
+    return () => {
+      subscriptions.forEach(sub => sub.unsubscribe())
+    }
+  }, [selectedEventId])
+
+  async function loadEventData(eventId: string) {
+    setLoading(true)
+    setError(null)
+    try {
+      console.log(`Loading data for event: ${eventId}`)
+      const data = await fetchDashboardData(userId, eventId)
+      console.log("Fetched dashboard data:", data)
+
+      if (!data) {
+        setError("Failed to load event data. Please try again.")
+        return
+      }
+
+      // Ensure all data is properly formatted
+      const formattedData = {
+        ...data,
+        eventDetails: {
+          ...data.eventDetails,
+          dayOfWeek: data.eventDetails.dayOfWeek || "N/A",
+          location: data.eventDetails.location || "N/A",
+          time: data.eventDetails.time || "N/A",
+          topic: data.eventDetails.topic || "N/A",
+          age_range: data.eventDetails.age_range || "N/A",
+          mile_radius: data.eventDetails.mile_radius || "N/A",
+          income_assets: data.eventDetails.income_assets || "N/A"
+        },
+        marketingExpenses: {
+          total: data.marketingExpenses?.total || 0,
+          advertising: data.marketingExpenses?.advertising || 0,
+          foodVenue: data.marketingExpenses?.foodVenue || 0,
+          other: data.marketingExpenses?.other || 0
+        },
+        attendance: {
+          registrantResponses: data.attendance?.registrantResponses || 0,
+          confirmations: data.attendance?.confirmations || 0,
+          attendees: data.attendance?.attendees || 0,
+          responseRate: data.attendance?.responseRate || 0,
+          clients_from_event: data.attendance?.clients_from_event || 0
+        },
+        appointments: {
+          setAtEvent: data.appointments?.setAtEvent || 0,
+          setAfterEvent: data.appointments?.setAfterEvent || 0,
+          firstAppointmentAttended: data.appointments?.firstAppointmentAttended || 0,
+          firstAppointmentNoShows: data.appointments?.firstAppointmentNoShows || 0,
+          secondAppointmentAttended: data.appointments?.secondAppointmentAttended || 0
+        },
+        financialProduction: {
+          annuity_premium: data.financialProduction?.annuity_premium || 0,
+          life_insurance_premium: data.financialProduction?.life_insurance_premium || 0,
+          aum: data.financialProduction?.aum || 0,
+          financial_planning: data.financialProduction?.financial_planning || 0,
+          total: data.financialProduction?.total || 0,
+          annuities_sold: data.financialProduction?.annuities_sold || 0,
+          life_policies_sold: data.financialProduction?.life_policies_sold || 0,
+          annuity_commission: data.financialProduction?.annuity_commission || 0,
+          life_insurance_commission: data.financialProduction?.life_insurance_commission || 0,
+          aum_fees: data.financialProduction?.aum_fees || 0
+        }
+      }
+
+      setDashboardData(formattedData)
+    } catch (error) {
+      console.error("Error loading event data:", error)
+      setError("An error occurred while loading event data. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (error) {
     return <DashboardError error={error} />
@@ -130,7 +239,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const aumFees = dashboardData.financialProduction?.aum_fees || 0
 
   // Format event date
-  const eventDate = dashboardData.eventDate ? new Date(dashboardData.eventDate) : null
+  const eventDate = dashboardData.eventDetails?.date ? new Date(dashboardData.eventDetails.date) : null
   const formattedDate = eventDate ? format(eventDate, "MMMM d, yyyy") : "Date not available"
 
   // Section divider component
@@ -153,7 +262,11 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           <span className="font-medium">Event Date:</span>
           <span className="ml-2 font-bold">{formattedDate}</span>
         </div>
-        <EventSelector events={events} onSelect={setSelectedEventId} />
+        <EventSelector
+          events={events}
+          selectedEventId={selectedEventId}
+          onSelect={setSelectedEventId}
+        />
       </div>
 
       {/* Top metrics */}
@@ -216,10 +329,10 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           dayOfWeek={dashboardData.eventDetails.dayOfWeek}
           location={dashboardData.eventDetails.location}
           time={dashboardData.eventDetails.time}
-          ageRange={dashboardData.eventDetails.ageRange}
-          mileRadius={dashboardData.eventDetails.mileRadius}
-          incomeAssets={dashboardData.eventDetails.incomeAssets}
-          topic={dashboardData.topicOfMarketing}
+          topic={dashboardData.eventDetails.topic}
+          ageRange={dashboardData.eventDetails.age_range}
+          mileRadius={dashboardData.eventDetails.mile_radius}
+          incomeAssets={dashboardData.eventDetails.income_assets}
         />
       </div>
 
@@ -241,16 +354,12 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           overall={overallConversion}
         />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
+        <motion.div variants={item}>
           <RegistrantResponseAnalysis
-            responses={registrants}
-            mailers={10000}
-            confirmations={confirmations}
-            attendees={attendees}
+            responses={dashboardData.attendance?.registrantResponses || 0}
+            confirmations={dashboardData.attendance?.confirmations || 0}
+            attendees={dashboardData.attendance?.attendees || 0}
+            mailers={dashboardData.attendance?.registrantResponses || 0}
           />
         </motion.div>
       </div>
@@ -297,13 +406,13 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           >
             <ProductSoldCard
               title="Annuities Sold"
-              count={dashboardData.productsSold?.annuities || 0}
+              count={dashboardData.financialProduction?.annuities_sold || 0}
               icon={<Award className="h-5 w-5 text-blue-400" />}
               color="blue"
               details={[
                 {
                   label: "Average Premium",
-                  value: `${dashboardData.financialProduction?.annuity_premium && dashboardData.productsSold?.annuities ? (dashboardData.financialProduction.annuity_premium / Math.max(1, dashboardData.productsSold?.annuities)).toLocaleString() : "0"}`,
+                  value: `${dashboardData.financialProduction?.annuity_premium && dashboardData.financialProduction?.annuities_sold ? (dashboardData.financialProduction.annuity_premium / Math.max(1, dashboardData.financialProduction.annuities_sold)).toLocaleString() : "0"}`,
                 },
                 { label: "Commission Rate", value: "4.5%" },
                 { label: "Total Commission", value: `$${annuityCommission.toLocaleString()}` },
@@ -320,13 +429,13 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           >
             <ProductSoldCard
               title="Life Policies Sold"
-              count={dashboardData.productsSold?.lifePolicies || 0}
+              count={dashboardData.financialProduction?.life_policies_sold || 0}
               icon={<Shield className="h-5 w-5 text-red-400" />}
               color="red"
               details={[
                 {
                   label: "Average Coverage",
-                  value: `$${dashboardData.financialProduction?.life_insurance_premium && dashboardData.productsSold?.lifePolicies ? (dashboardData.financialProduction.life_insurance_premium / Math.max(1, dashboardData.productsSold?.lifePolicies)).toLocaleString() : "0"}`,
+                  value: `$${dashboardData.financialProduction?.life_insurance_premium && dashboardData.financialProduction?.life_policies_sold ? (dashboardData.financialProduction.life_insurance_premium / Math.max(1, dashboardData.financialProduction.life_policies_sold)).toLocaleString() : "0"}`,
                 },
                 { label: "Commission Rate", value: "85%" },
                 { label: "Total Commission", value: `$${lifeInsuranceCommission.toLocaleString()}` },
@@ -381,7 +490,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           <ConversionRateIndicator
             attendees={attendees}
             clients={clients}
-            incomeAssets={dashboardData.eventDetails.incomeAssets}
+            incomeAssets={dashboardData.eventDetails.income_assets}
           />
         </motion.div>
 

@@ -65,38 +65,67 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [lifeInsuranceCommission, setLifeInsuranceCommission] = useState("")
   const [aumFees, setAumFees] = useState("")
 
+  // Add state for 12-hour time input
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("");
+  const [ampm, setAmpm] = useState("AM");
+
   useEffect(() => {
     if (initialData) {
-      setName(initialData.name || "")
-      setDate(initialData.date || "")
-      setLocation(initialData.location || "")
-      setMarketingType(initialData.marketing_type || "")
-      setTopic(initialData.topic || "")
-      setTime(initialData.time || "")
-      setAgeRange(initialData.age_range || "")
-      setMileRadius(initialData.mile_radius || "")
-      setIncomeAssets(initialData.income_assets || "")
-      setAdvertisingCost(initialData.advertising_cost || "")
-      setFoodVenueCost(initialData.food_venue_cost || "")
-      setOtherCosts(initialData.other_costs || "")
-      setRegistrantResponses(initialData.registrant_responses || "")
-      setConfirmations(initialData.confirmations || "")
-      setAttendees(initialData.attendees || "")
-      setClientsFromEvent(initialData.clients_from_event || "")
-      setSetAtEvent(initialData.set_at_event || "")
-      setSetAfterEvent(initialData.set_after_event || "")
-      setFirstAppointmentAttended(initialData.first_appointment_attended || "")
-      setFirstAppointmentNoShows(initialData.first_appointment_no_shows || "")
-      setSecondAppointmentAttended(initialData.second_appointment_attended || "")
-      setAnnuityPremium(initialData.annuity_premium || "")
-      setLifeInsurancePremium(initialData.life_insurance_premium || "")
-      setAum(initialData.aum || "")
-      setFinancialPlanning(initialData.financial_planning || "")
-      setAnnuitiesSold(initialData.annuities_sold || "")
-      setLifePoliciesSold(initialData.life_policies_sold || "")
-      setAnnuityCommission(initialData.annuity_commission || "")
-      setLifeInsuranceCommission(initialData.life_insurance_commission || "")
-      setAumFees(initialData.aum_fees || "")
+      // Event details
+      setName(initialData.eventDetails?.name || "")
+      setDate(initialData.eventDetails?.date || "")
+      setLocation(initialData.eventDetails?.location || "")
+      setMarketingType(initialData.eventDetails?.marketing_type || "")
+      setTopic(initialData.eventDetails?.topic || "")
+      setTime(initialData.eventDetails?.time || "")
+      setAgeRange(initialData.eventDetails?.age_range || "")
+      setMileRadius(initialData.eventDetails?.mile_radius || "")
+      setIncomeAssets(initialData.eventDetails?.income_assets || "")
+
+      // Expenses
+      setAdvertisingCost(initialData.marketingExpenses?.advertising?.toString() || "")
+      setFoodVenueCost(initialData.marketingExpenses?.foodVenue?.toString() || "")
+      setOtherCosts(initialData.marketingExpenses?.other?.toString() || "")
+
+      // Attendance
+      setRegistrantResponses(initialData.attendance?.registrantResponses?.toString() || "")
+      setConfirmations(initialData.attendance?.confirmations?.toString() || "")
+      setAttendees(initialData.attendance?.attendees?.toString() || "")
+      setClientsFromEvent(initialData.attendance?.clients_from_event?.toString() || "")
+
+      // Appointments
+      setSetAtEvent(initialData.appointments?.setAtEvent?.toString() || "")
+      setSetAfterEvent(initialData.appointments?.setAfterEvent?.toString() || "")
+      setFirstAppointmentAttended(initialData.appointments?.firstAppointmentAttended?.toString() || "")
+      setFirstAppointmentNoShows(initialData.appointments?.firstAppointmentNoShows?.toString() || "")
+      setSecondAppointmentAttended(initialData.appointments?.secondAppointmentAttended?.toString() || "")
+
+      // Financial production
+      setAnnuityPremium(initialData.financialProduction?.annuity_premium?.toString() || "")
+      setLifeInsurancePremium(initialData.financialProduction?.life_insurance_premium?.toString() || "")
+      setAum(initialData.financialProduction?.aum?.toString() || "")
+      setFinancialPlanning(initialData.financialProduction?.financial_planning?.toString() || "")
+      setAnnuitiesSold(initialData.financialProduction?.annuities_sold?.toString() || "")
+      setLifePoliciesSold(initialData.financialProduction?.life_policies_sold?.toString() || "")
+      setAnnuityCommission(initialData.financialProduction?.annuity_commission?.toString() || "")
+      setLifeInsuranceCommission(initialData.financialProduction?.life_insurance_commission?.toString() || "")
+      setAumFees(initialData.financialProduction?.aum_fees?.toString() || "")
+
+      // Parse 24-hour time to 12-hour
+      if (initialData.eventDetails?.time) {
+        const [h, m] = initialData.eventDetails.time.split(":");
+        let hourNum = parseInt(h, 10);
+        const ampmVal = hourNum >= 12 ? "PM" : "AM";
+        hourNum = hourNum % 12 || 12;
+        setHour(hourNum.toString().padStart(2, "0"));
+        setMinute(m);
+        setAmpm(ampmVal);
+      } else {
+        setHour("");
+        setMinute("");
+        setAmpm("AM");
+      }
     }
   }, [initialData])
 
@@ -113,6 +142,14 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     const assets = Number.parseFloat(aum) || 0
     const planning = Number.parseFloat(financialPlanning) || 0
     return annuity + life + assets + planning
+  }
+
+  // Helper to convert to 24-hour format
+  function to24HourFormat(hour: string | number, minute: string | number, ampm: string): string {
+    let h = parseInt(hour.toString(), 10);
+    if (ampm === "PM" && h !== 12) h += 12;
+    if (ampm === "AM" && h === 12) h = 0;
+    return `${h.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:00`;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,22 +206,54 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       }
 
       // Prepare the event data
+      const time24 = hour && minute ? to24HourFormat(hour, minute, ampm) : null;
       const eventData = {
         name,
         date,
         location,
         marketing_type: marketingType,
         topic,
-        time,
+        time: time24,
         age_range: ageRange,
         mile_radius: mileRadius,
         income_assets: incomeAssets,
-        status: 'active'
+        status: 'active',
+        relatedData: {
+          attendance: {
+            registrant_responses: parseInt(registrantResponses) || 0,
+            confirmations: parseInt(confirmations) || 0,
+            attendees: parseInt(attendees) || 0,
+            clients_from_event: parseInt(clientsFromEvent) || 0
+          },
+          expenses: {
+            advertising_cost: parseFloat(advertisingCost) || 0,
+            food_venue_cost: parseFloat(foodVenueCost) || 0,
+            other_costs: parseFloat(otherCosts) || 0
+          },
+          appointments: {
+            set_at_event: parseInt(setAtEvent) || 0,
+            set_after_event: parseInt(setAfterEvent) || 0,
+            first_appointment_attended: parseInt(firstAppointmentAttended) || 0,
+            first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
+            second_appointment_attended: parseInt(secondAppointmentAttended) || 0
+          },
+          financialProduction: {
+            annuity_premium: parseFloat(annuityPremium) || 0,
+            life_insurance_premium: parseFloat(lifeInsurancePremium) || 0,
+            aum: parseFloat(aum) || 0,
+            financial_planning: parseFloat(financialPlanning) || 0,
+            annuities_sold: parseInt(annuitiesSold) || 0,
+            life_policies_sold: parseInt(lifePoliciesSold) || 0,
+            annuity_commission: parseFloat(annuityCommission) || 0,
+            life_insurance_commission: parseFloat(lifeInsuranceCommission) || 0,
+            aum_fees: parseFloat(aumFees) || 0
+          }
+        }
       }
 
-      console.log('Submitting event data:', eventData)
+      console.log('Submitting event data with relatedData:', eventData)
 
-      // Create the event first
+      // Create the event and all related records
       console.log('Calling createEvent function...')
       const result = await createEvent(currentUserId, eventData)
       console.log('createEvent result:', result)
@@ -199,85 +268,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         return
       }
 
-      console.log('Event created successfully with ID:', result.eventId)
-
-      // Prepare data for related records
-      const expensesData = {
-        event_id: result.eventId,
-        advertising_cost: parseFloat(advertisingCost) || 0,
-        food_venue_cost: parseFloat(foodVenueCost) || 0,
-        other_costs: parseFloat(otherCosts) || 0
-      }
-
-      const attendanceData = {
-        event_id: result.eventId,
-        registrant_responses: parseInt(registrantResponses) || 0,
-        confirmations: parseInt(confirmations) || 0,
-        attendees: parseInt(attendees) || 0,
-        clients_from_event: parseInt(clientsFromEvent) || 0
-      }
-
-      const appointmentsData = {
-        event_id: result.eventId,
-        set_at_event: parseInt(setAtEvent) || 0,
-        set_after_event: parseInt(setAfterEvent) || 0,
-        first_appointment_attended: parseInt(firstAppointmentAttended) || 0,
-        first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
-        second_appointment_attended: parseInt(secondAppointmentAttended) || 0
-      }
-
-      const financialData = {
-        event_id: result.eventId,
-        annuity_premium: parseFloat(annuityPremium) || 0,
-        life_insurance_premium: parseFloat(lifeInsurancePremium) || 0,
-        aum: parseFloat(aum) || 0,
-        financial_planning: parseFloat(financialPlanning) || 0,
-        annuities_sold: parseInt(annuitiesSold) || 0,
-        life_policies_sold: parseInt(lifePoliciesSold) || 0,
-        annuity_commission: parseFloat(annuityCommission) || 0,
-        life_insurance_commission: parseFloat(lifeInsuranceCommission) || 0,
-        aum_fees: parseFloat(aumFees) || 0
-      }
-
-      console.log('Creating related records:', {
-        expenses: expensesData,
-        attendance: attendanceData,
-        appointments: appointmentsData,
-        financial: financialData
-      })
-
-      // Create all related records in parallel
-      console.log('Creating related records in parallel...')
-      const [expensesResult, attendanceResult, appointmentsResult, financialResult] = await Promise.all([
-        createEventExpenses(expensesData),
-        createEventAttendance(attendanceData),
-        createEventAppointments(appointmentsData),
-        createEventFinancialProduction(financialData)
-      ])
-
-      console.log('Related records creation results:', {
-        expenses: expensesResult,
-        attendance: attendanceResult,
-        appointments: appointmentsResult,
-        financial: financialResult
-      })
-
-      if (!expensesResult.success || !attendanceResult.success || !appointmentsResult.success || !financialResult.success) {
-        console.error("Error creating related records:", {
-          expenses: expensesResult.error,
-          attendance: attendanceResult.error,
-          appointments: appointmentsResult.error,
-          financial: financialResult.error
-        })
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to create some event details. Please try again.",
-        })
-        return
-      }
-
-      console.log('All related records created successfully')
+      console.log('Event and related records created successfully')
 
       toast({
         title: "Success",
@@ -404,26 +395,35 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   <Label htmlFor="time" className="text-gray-300 font-medium">
                     Time
                   </Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={time}
-                    onChange={(e) => {
-                      const timeValue = e.target.value;
-                      if (timeValue) {
-                        // Convert 24-hour format to 12-hour format
-                        const [hours, minutes] = timeValue.split(':');
-                        const hour = parseInt(hours);
-                        const ampm = hour >= 12 ? 'PM' : 'AM';
-                        const hour12 = hour % 12 || 12;
-                        setTime(`${hour12}:${minutes} ${ampm}`);
-                      } else {
-                        setTime('');
-                      }
-                    }}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
-                    placeholder="Select time"
-                  />
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      id="hour"
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={hour}
+                      onChange={e => setHour(e.target.value)}
+                      placeholder="HH"
+                      required
+                      className="w-16"
+                    />
+                    <span>:</span>
+                    <Input
+                      id="minute"
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={minute}
+                      onChange={e => setMinute(e.target.value)}
+                      placeholder="MM"
+                      required
+                      className="w-16"
+                    />
+                    <select value={ampm} onChange={e => setAmpm(e.target.value)} className="bg-[#1f2037] text-white rounded px-2">
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="marketingType" className="text-gray-300 font-medium">

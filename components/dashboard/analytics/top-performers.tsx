@@ -17,7 +17,7 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
     .sort((a, b) => {
       switch (activeMetric) {
         case "ROI":
-          return (b.roi || 0) - (a.roi || 0)
+          return (b.roi?.value || 0) - (a.roi?.value || 0)
         case "Conversion":
           return (b.clients / b.attendees || 0) - (a.clients / a.attendees || 0)
         case "Revenue":
@@ -36,7 +36,7 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
   const formatValue = (event: any, metric: MetricType) => {
     switch (metric) {
       case "ROI":
-        return `${(event.roi || 0).toFixed(1)}%`
+        return `${(event.roi?.value || 0).toFixed(1)}%`
       case "Conversion":
         return `${((event.clients / event.attendees || 0) * 100).toFixed(1)}%`
       case "Revenue":

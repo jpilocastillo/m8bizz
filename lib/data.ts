@@ -57,13 +57,44 @@ export type MarketingEvent = {
   name: string
   date: string
   location: string
-  marketing_type: string // Changed from type to marketing_type
+  marketing_type: string
   topic: string
   age_range: string | null
   mile_radius: string | null
   income_assets: string | null
   time: string | null
   status: string
+  attendance?: {
+    registrant_responses: number
+    confirmations: number
+    attendees: number
+    clients_from_event: number
+  }
+  marketing_expenses?: {
+    advertising_cost: number
+    food_venue_cost: number
+    other_costs: number
+    total_cost: number
+  }
+  event_appointments?: {
+    set_at_event: number
+    set_after_event: number
+    first_appointment_attended: number
+    first_appointment_no_shows: number
+    second_appointment_attended: number
+  }
+  financial_production?: {
+    annuity_premium: number
+    life_insurance_premium: number
+    aum: number
+    financial_planning: number
+    annuities_sold: number
+    life_policies_sold: number
+    annuity_commission: number
+    life_insurance_commission: number
+    aum_fees: number
+    total: number
+  }
 }
 
 export type EventExpenses = {
@@ -231,190 +262,155 @@ export type EventWithRelations = {
 }
 
 // Update the function signature
-export async function fetchAllEvents(userId: string): Promise<EventWithRelations[]> {
-  if (!userId) {
-    console.error("fetchAllEvents called without userId")
-    return []
-  }
-
+export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> {
   try {
     const supabase = await createAdminClient()
 
-    // Try to get events from marketing_events table first (new schema)
-    const { data: marketingEvents, error: marketingError } = await supabase
-      .from("marketing_events")
+    const { data: events, error } = await supabase
+      .from('marketing_events')
       .select(`
         id,
         name,
         date,
         location,
-        marketing_type, 
+        marketing_type,
         topic,
         status,
-        marketing_expenses (total_cost),
+        time,
+        age_range,
+        mile_radius,
+        income_assets,
+        created_at,
+        updated_at,
+        marketing_expenses (
+          id,
+          advertising_cost,
+          food_venue_cost,
+          other_costs
+        ),
         event_attendance (
           id,
-          attendees,
-          clients_from_event,
           registrant_responses,
-          confirmations
+          confirmations,
+          attendees,
+          clients_from_event
         ),
         event_appointments (
+          id,
           set_at_event,
           set_after_event,
           first_appointment_attended,
           first_appointment_no_shows,
           second_appointment_attended
         ),
-        financial_production (total)
+        financial_production (
+          id,
+          annuity_premium,
+          life_insurance_premium,
+          aum,
+          financial_planning,
+          annuities_sold,
+          life_policies_sold,
+          annuity_commission,
+          life_insurance_commission,
+          aum_fees
+        )
       `)
-      .eq("user_id", userId)
-      .order("date", { ascending: false })
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
 
-    if (marketingEvents && marketingEvents.length > 0) {
-      // Ensure all events have attendance records
-      await ensureAttendanceRecords(supabase, marketingEvents)
-      
-      // Fetch events again to get the updated attendance data
-      const { data: updatedEvents } = await supabase
-        .from("marketing_events")
-        .select(`
-          id,
-          name,
-          date,
-          location,
-          marketing_type, 
-          topic,
-          status,
-          marketing_expenses (total_cost),
-          event_attendance (
-            id,
-            attendees,
-            clients_from_event,
-            registrant_responses,
-            confirmations
-          ),
-          event_appointments (
-            set_at_event,
-            set_after_event,
-            first_appointment_attended,
-            first_appointment_no_shows,
-            second_appointment_attended
-          ),
-          financial_production (total)
-        `)
-        .eq("user_id", userId)
-        .order("date", { ascending: false })
+    if (error) {
+      console.error('Error fetching events:', error);
+      return [];
+    }
 
-      console.log('Fetched updated marketing events:', updatedEvents)
-      // Map the data to the expected format
-      return (updatedEvents || []).map((event) => {
-        const attendance = event.event_attendance?.[0]
-        console.log('Event attendance data for event', event.id, ':', {
-          raw: event.event_attendance,
-          processed: attendance,
-          hasAttendance: !!attendance,
-          fields: attendance ? {
-            attendees: attendance.attendees,
-            clients_from_event: attendance.clients_from_event,
-            registrant_responses: attendance.registrant_responses,
-            confirmations: attendance.confirmations
-          } : 'no attendance data'
-        })
-        return {
-          id: event.id,
-          date: event.date,
-          name: event.name,
-          location: event.location,
-          type: event.marketing_type || "Unknown",
-          topic: event.topic || "Unknown",
-          budget: event.marketing_expenses?.[0]?.total_cost || 0,
-          status: event.status || "active",
-          marketing_type: event.marketing_type,
-          attendance: attendance ? {
-            attendees: attendance.attendees || 0,
-            clients_from_event: attendance.clients_from_event || 0,
-            registrant_responses: attendance.registrant_responses || 0,
-            confirmations: attendance.confirmations || 0
-          } : undefined,
-          financial_production: event.financial_production?.[0],
-          marketing_expenses: event.marketing_expenses?.[0],
-          event_appointments: event.event_appointments?.[0],
+    // Ensure all events have attendance records
+    await ensureAttendanceRecords(supabase, events);
+
+    return events.map(event => {
+      // Helper to get latest record by date
+      function getLatest(records: any[]) {
+        if (!Array.isArray(records) || records.length === 0) return {};
+        return [...records].sort((a, b) => {
+          const aDate = a.updated_at ? Number(new Date(a.updated_at)) : (a.created_at ? Number(new Date(a.created_at)) : 0);
+          const bDate = b.updated_at ? Number(new Date(b.updated_at)) : (b.created_at ? Number(new Date(b.created_at)) : 0);
+          return bDate - aDate;
+        })[0];
+      }
+
+      const latestAttendance = getLatest(event.event_attendance);
+      const latestFinancial = getLatest(event.financial_production);
+      const latestExpenses = getLatest(event.marketing_expenses);
+      const latestAppointments = getLatest(event.event_appointments);
+
+      const total = (typeof latestFinancial?.annuity_premium === 'number' ? latestFinancial.annuity_premium : 0)
+        + (typeof latestFinancial?.life_insurance_premium === 'number' ? latestFinancial.life_insurance_premium : 0)
+        + (typeof latestFinancial?.aum === 'number' ? latestFinancial.aum : 0)
+        + (typeof latestFinancial?.financial_planning === 'number' ? latestFinancial.financial_planning : 0);
+
+      // Calculate day of week from event.date
+      const eventDateObj = event.date ? new Date(event.date) : null;
+      const dayOfWeek = eventDateObj
+        ? eventDateObj.toLocaleDateString("en-US", { weekday: "long" })
+        : "N/A";
+      return {
+        id: event.id,
+        name: event.name,
+        date: event.date,
+        dayOfWeek,
+        location: event.location,
+        marketing_type: event.marketing_type,
+        topic: event.topic,
+        status: event.status,
+        time: event.time,
+        age_range: event.age_range,
+        mile_radius: event.mile_radius,
+        income_assets: event.income_assets,
+        created_at: event.created_at,
+        updated_at: event.updated_at,
+        // Add top-level fields for multi-event dashboard
+        clients: typeof latestAttendance?.clients_from_event === 'number' ? latestAttendance.clients_from_event : 0,
+        attendees: typeof latestAttendance?.attendees === 'number' ? latestAttendance.attendees : 0,
+        revenue: total,
+        attendance: {
+          registrant_responses: typeof latestAttendance?.registrant_responses === 'number' ? latestAttendance.registrant_responses : 0,
+          confirmations: typeof latestAttendance?.confirmations === 'number' ? latestAttendance.confirmations : 0,
+          attendees: typeof latestAttendance?.attendees === 'number' ? latestAttendance.attendees : 0,
+          clients_from_event: typeof latestAttendance?.clients_from_event === 'number' ? latestAttendance.clients_from_event : 0
+        },
+        financial_production: {
+          annuity_premium: typeof latestFinancial?.annuity_premium === 'number' ? latestFinancial.annuity_premium : 0,
+          life_insurance_premium: typeof latestFinancial?.life_insurance_premium === 'number' ? latestFinancial.life_insurance_premium : 0,
+          aum: typeof latestFinancial?.aum === 'number' ? latestFinancial.aum : 0,
+          financial_planning: typeof latestFinancial?.financial_planning === 'number' ? latestFinancial.financial_planning : 0,
+          annuities_sold: typeof latestFinancial?.annuities_sold === 'number' ? latestFinancial.annuities_sold : 0,
+          life_policies_sold: typeof latestFinancial?.life_policies_sold === 'number' ? latestFinancial.life_policies_sold : 0,
+          annuity_commission: typeof latestFinancial?.annuity_commission === 'number' ? latestFinancial.annuity_commission : 0,
+          life_insurance_commission: typeof latestFinancial?.life_insurance_commission === 'number' ? latestFinancial.life_insurance_commission : 0,
+          aum_fees: typeof latestFinancial?.aum_fees === 'number' ? latestFinancial.aum_fees : 0,
+          total
+        },
+        marketing_expenses: {
+          advertising_cost: typeof latestExpenses?.advertising_cost === 'number' ? latestExpenses.advertising_cost : 0,
+          food_venue_cost: typeof latestExpenses?.food_venue_cost === 'number' ? latestExpenses.food_venue_cost : 0,
+          other_costs: typeof latestExpenses?.other_costs === 'number' ? latestExpenses.other_costs : 0,
+          total_cost:
+            (typeof latestExpenses?.advertising_cost === 'number' ? latestExpenses.advertising_cost : 0) +
+            (typeof latestExpenses?.food_venue_cost === 'number' ? latestExpenses.food_venue_cost : 0) +
+            (typeof latestExpenses?.other_costs === 'number' ? latestExpenses.other_costs : 0),
+        },
+        event_appointments: {
+          set_at_event: typeof latestAppointments?.set_at_event === 'number' ? latestAppointments.set_at_event : 0,
+          set_after_event: typeof latestAppointments?.set_after_event === 'number' ? latestAppointments.set_after_event : 0,
+          first_appointment_attended: typeof latestAppointments?.first_appointment_attended === 'number' ? latestAppointments.first_appointment_attended : 0,
+          first_appointment_no_shows: typeof latestAppointments?.first_appointment_no_shows === 'number' ? latestAppointments.first_appointment_no_shows : 0,
+          second_appointment_attended: typeof latestAppointments?.second_appointment_attended === 'number' ? latestAppointments.second_appointment_attended : 0
         }
-      })
-    }
-
-    // If no marketing_events, try the events table (old schema)
-    if (marketingError || !marketingEvents || marketingEvents.length === 0) {
-      console.log("No marketing_events found, trying events table")
-      const { data: events, error: eventsError } = await supabase
-        .from("events")
-        .select(`
-          id,
-          name,
-          date,
-          status,
-          user_id,
-          event_details (location, type, topic),
-          marketing_expenses (total_cost),
-          event_attendance (
-            id,
-            attendees,
-            clients_from_event,
-            registrant_responses,
-            confirmations
-          ),
-          event_appointments (
-            set_at_event,
-            set_after_event,
-            first_appointment_attended,
-            first_appointment_no_shows,
-            second_appointment_attended
-          ),
-          financial_production (total)
-        `)
-        .eq("user_id", userId)
-        .order("date", { ascending: false })
-
-      if (eventsError) {
-        console.error("Error fetching events:", eventsError)
-        return []
-      }
-
-      if (events && events.length > 0) {
-        console.log('Fetched old events:', events)
-        // Map the data to the expected format
-        return events.map((event) => {
-          const attendance = event.event_attendance?.[0]
-          console.log('Event attendance data:', attendance)
-          return {
-            id: event.id,
-            date: event.date,
-            name: event.name,
-            location: event.event_details?.[0]?.location || "Unknown",
-            type: event.event_details?.[0]?.type || "Unknown",
-            topic: event.event_details?.[0]?.topic || "Unknown",
-            budget: event.marketing_expenses?.[0]?.total_cost || 0,
-            status: event.status || "active",
-            marketing_type: event.event_details?.[0]?.type || "Unknown",
-            attendance: attendance ? {
-              attendees: attendance.attendees || 0,
-              clients_from_event: attendance.clients_from_event || 0,
-              registrant_responses: attendance.registrant_responses || 0,
-              confirmations: attendance.confirmations || 0
-            } : undefined,
-            financial_production: event.financial_production?.[0],
-            marketing_expenses: event.marketing_expenses?.[0],
-            event_appointments: event.event_appointments?.[0],
-          }
-        })
-      }
-    }
-
-    return []
+      };
+    });
   } catch (error) {
-    console.error("Error in fetchAllEvents:", error)
-    return []
+    console.error('Error in fetchAllEvents:', error);
+    return [];
   }
 }
 
@@ -426,17 +422,22 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
   }
 
   try {
-    // Use the admin client to bypass RLS policies
     const supabase = await createAdminClient()
 
     console.log(`Fetching dashboard data for user ${userId}${eventId ? ` and event ${eventId}` : ""}`)
 
-    // Get the event from marketing_events table
+    // Get the event with all related data in a single query
     let eventQuery = supabase
       .from("marketing_events")
       .select(`
         *,
-        marketing_expenses (*),
+        marketing_expenses (
+          id,
+          advertising_cost,
+          food_venue_cost,
+          other_costs,
+          total_cost
+        ),
         event_attendance (
           id,
           registrant_responses,
@@ -444,8 +445,26 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
           attendees,
           clients_from_event
         ),
-        event_appointments (*),
-        financial_production (*)
+        event_appointments (
+          id,
+          set_at_event,
+          set_after_event,
+          first_appointment_attended,
+          first_appointment_no_shows,
+          second_appointment_attended
+        ),
+        financial_production (
+          id,
+          annuity_premium,
+          life_insurance_premium,
+          aum,
+          financial_planning,
+          annuities_sold,
+          life_policies_sold,
+          annuity_commission,
+          life_insurance_commission,
+          aum_fees
+        )
       `)
       .eq("user_id", userId)
 
@@ -467,44 +486,42 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
       return null
     }
 
-    console.log(`Found event: ${event.name} (${event.id})`)
-    console.log('Event data:', event)
+    // Ensure all related records exist
+    const [expenses, attendance, appointments, financial] = await Promise.all([
+      ensureRecord(supabase, 'marketing_expenses', event.id, {
+        advertising_cost: 0,
+        food_venue_cost: 0,
+        other_costs: 0,
+        total_cost: 0
+      }),
+      ensureRecord(supabase, 'event_attendance', event.id, {
+        registrant_responses: 0,
+        confirmations: 0,
+        attendees: 0,
+        clients_from_event: 0
+      }),
+      ensureRecord(supabase, 'event_appointments', event.id, {
+        set_at_event: 0,
+        set_after_event: 0,
+        first_appointment_attended: 0,
+        first_appointment_no_shows: 0,
+        second_appointment_attended: 0
+      }),
+      ensureRecord(supabase, 'financial_production', event.id, {
+        annuity_premium: 0,
+        life_insurance_premium: 0,
+        aum: 0,
+        financial_planning: 0,
+        annuities_sold: 0,
+        life_policies_sold: 0,
+        annuity_commission: 0,
+        life_insurance_commission: 0,
+        aum_fees: 0
+      })
+    ])
 
-    // Ensure attendance record exists
-    if (!event.event_attendance || event.event_attendance.length === 0) {
-      console.log('Creating missing attendance record for event:', event.id)
-      const { error: attendanceError } = await supabase
-        .from('event_attendance')
-        .insert([{
-          event_id: event.id,
-          registrant_responses: 0,
-          confirmations: 0,
-          attendees: 0,
-          clients_from_event: 0
-        }])
-
-      if (attendanceError) {
-        console.error("Error creating attendance record:", attendanceError)
-      } else {
-        // Fetch the updated event data with the new attendance record
-        const { data: updatedEvent } = await eventQuery.maybeSingle()
-        if (updatedEvent) {
-          event.event_attendance = updatedEvent.event_attendance
-        }
-      }
-    }
-
-    // Calculate ROI
-    const expenses = event.marketing_expenses?.[0] || { total_cost: 0 }
+    // Calculate totals and metrics
     const totalExpenses = expenses.total_cost || 0
-
-    const financial = event.financial_production?.[0] || {
-      annuity_premium: 0,
-      life_insurance_premium: 0,
-      aum: 0,
-      financial_planning: 0
-    }
-
     const totalIncome = (financial.annuity_premium || 0) + 
                        (financial.life_insurance_premium || 0) + 
                        (financial.aum || 0) + 
@@ -512,28 +529,19 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 
     const roi = totalExpenses > 0 ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) : 0
 
-    // Get attendance data with fallback to empty object
-    const attendance = event.event_attendance?.[0] || {
-      registrant_responses: 0,
-      confirmations: 0,
-      attendees: 0,
-      clients_from_event: 0
-    }
+    // Calculate day of week from event.date
+    const eventDateObj = event.date ? new Date(event.date) : null
+    const dayOfWeek = eventDateObj
+      ? eventDateObj.toLocaleDateString("en-US", { weekday: "long" })
+      : "N/A"
 
-    // Get appointments data with fallback to empty object
-    const appointments = event.event_appointments?.[0] || {
-      set_at_event: 0,
-      set_after_event: 0,
-      first_appointment_attended: 0,
-      first_appointment_no_shows: 0,
-      second_appointment_attended: 0
-    }
-
+    // Prepare consistent dashboard data structure
     const dashboardData = {
       eventId: event.id,
       eventDetails: {
         name: event.name,
         date: event.date,
+        dayOfWeek,
         location: event.location,
         marketing_type: event.marketing_type,
         topic: event.topic,
@@ -545,7 +553,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
       },
       roi: {
         value: roi,
-        trend: [roi] // Simplified trend for now
+        trend: [roi]
       },
       writtenBusiness: totalIncome,
       income: {
@@ -553,7 +561,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         breakdown: {
           fixedAnnuity: financial.annuity_premium || 0,
           life: financial.life_insurance_premium || 0,
-          aum: financial.aum || 0
+          aum: financial.aum || 0,
+          financialPlanning: financial.financial_planning || 0
         }
       },
       conversionRate: {
@@ -564,7 +573,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
       marketingExpenses: {
         total: totalExpenses,
         advertising: expenses.advertising_cost || 0,
-        foodVenue: expenses.food_venue_cost || 0
+        foodVenue: expenses.food_venue_cost || 0,
+        other: expenses.other_costs || 0
       },
       topicOfMarketing: event.topic,
       attendance: {
@@ -618,6 +628,33 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
   }
 }
 
+// Helper function to ensure a record exists
+async function ensureRecord(supabase: any, table: string, eventId: string, defaultData: any) {
+  const { data: existing } = await supabase
+    .from(table)
+    .select('*')
+    .eq('event_id', eventId)
+    .maybeSingle()
+
+  if (existing) {
+    return existing
+  }
+
+  const { data: newRecord, error } = await supabase
+    .from(table)
+    .insert([{ event_id: eventId, ...defaultData }])
+    .select()
+    .single()
+
+  if (error) {
+    console.error(`Error creating ${table} record:`, error)
+    return defaultData
+  }
+
+  console.log('Inserted event:', newRecord);
+  return newRecord
+}
+
 // Create a new marketing event with all related data
 export async function createEvent(userId: string, eventData: any) {
   try {
@@ -631,36 +668,86 @@ export async function createEvent(userId: string, eventData: any) {
     const supabase = await createAdminClient()
     console.log('Supabase admin client created')
 
+    // Destructure relatedData from eventData
+    const { relatedData, ...eventFields } = eventData
+
+    // 1. Create the event (only event fields, not relatedData)
     const { data: event, error: eventError } = await supabase
       .from('marketing_events')
-      .insert([{
-        user_id: userId,
-        ...eventData
-      }])
+      .insert([{ user_id: userId, ...eventFields }])
       .select()
       .single()
 
-    if (eventError) {
+    if (eventError || !event) {
       console.error("Error creating event:", eventError)
-      return { success: false, error: eventError.message }
+      return { success: false, error: eventError?.message || "Failed to create event" }
     }
 
     console.log('Event created successfully:', event)
 
-    // Create default attendance record
-    const { error: attendanceError } = await supabase
-      .from('event_attendance')
-      .insert([{
-        event_id: event.id,
-        registrant_responses: 0,
-        confirmations: 0,
-        attendees: 0,
-        clients_from_event: 0
-      }])
+    // 2. Create related records (attendance, expenses, appointments, financials)
+    const { attendance, expenses, appointments, financialProduction } = relatedData || {}
 
-    if (attendanceError) {
-      console.error("Error creating attendance record:", attendanceError)
-      // Continue anyway - we can update this later
+    // Create all related records in parallel
+    const [attendanceResult, expensesResult, appointmentsResult, financialResult] = await Promise.all([
+      // Attendance
+      attendance ? (async () => {
+        try {
+          const { error } = await supabase
+            .from('event_attendance')
+            .insert([{ event_id: event.id, ...attendance }])
+          return { success: !error, error }
+        } catch (error) {
+          return { success: false, error }
+        }
+      })() : Promise.resolve({ success: true, error: null }),
+
+      // Expenses
+      expenses ? (async () => {
+        try {
+          const { error } = await supabase
+            .from('marketing_expenses')
+            .insert([{ event_id: event.id, ...expenses }])
+          return { success: !error, error }
+        } catch (error) {
+          return { success: false, error }
+        }
+      })() : Promise.resolve({ success: true, error: null }),
+
+      // Appointments
+      appointments ? (async () => {
+        try {
+          const { error } = await supabase
+            .from('event_appointments')
+            .insert([{ event_id: event.id, ...appointments }])
+          return { success: !error, error }
+        } catch (error) {
+          return { success: false, error }
+        }
+      })() : Promise.resolve({ success: true, error: null }),
+
+      // Financial Production
+      financialProduction ? (async () => {
+        try {
+          const { error } = await supabase
+            .from('financial_production')
+            .insert([{ event_id: event.id, ...financialProduction }])
+          return { success: !error, error }
+        } catch (error) {
+          return { success: false, error }
+        }
+      })() : Promise.resolve({ success: true, error: null })
+    ])
+
+    // Check if any of the related records failed to create
+    if (!attendanceResult.success || !expensesResult.success || !appointmentsResult.success || !financialResult.success) {
+      console.error("Error creating related records:", {
+        attendance: attendanceResult.error,
+        expenses: expensesResult.error,
+        appointments: appointmentsResult.error,
+        financial: financialResult.error
+      })
+      return { success: false, error: "Failed to create some event details" }
     }
 
     return { success: true, eventId: event.id }

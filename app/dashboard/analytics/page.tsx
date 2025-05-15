@@ -24,82 +24,74 @@ export default async function AnalyticsPage() {
     }
 
     // Fetch all events with their related data
-    const events = await fetchAllEvents(data.user.id)
+    const events = await fetchAllEvents(data.user.id) as Array<any>
     console.log('Fetched events for analytics:', events)
+    // Debug: Log each event's key fields to check for missing data
+    events.forEach((event, idx) => {
+      console.log(`Event[${idx}]: id=${event.id}, attendees=${event.attendees}, clients=${event.clients}, revenue=${event.revenue}, roi=${JSON.stringify(event.roi)}, attendance=${JSON.stringify(event.attendance)}, financialProduction=${JSON.stringify(event.financialProduction)}`);
+    });
 
-    // Calculate analytics data
+    console.log(
+      "Event for analytics (expenses):",
+      events.find(e => e.id === "529eb418-9b02-4099-a3aa-3ab6574c4225")
+    );
+
+    // Calculate analytics data using the same structure as single event dashboard
     const analyticsData = {
       summary: {
         totalEvents: events.length,
-        totalAttendees: events.reduce((sum, event) => sum + (event.attendance?.attendees || 0), 0),
-        avgAttendees: events.length > 0 ? events.reduce((sum, event) => sum + (event.attendance?.attendees || 0), 0) / events.length : 0,
-        totalRevenue: events.reduce((sum, event) => sum + (event.financial_production?.total || 0), 0),
+        totalAttendees: events.reduce((sum, event) => sum + (event.attendees || 0), 0),
+        avgAttendees: events.length > 0 ? events.reduce((sum, event) => sum + (event.attendees || 0), 0) / events.length : 0,
+        totalRevenue: events.reduce((sum, event) => sum + (event.revenue || 0), 0),
         totalExpenses: events.reduce((sum, event) => sum + (event.marketing_expenses?.total_cost || 0), 0),
         totalProfit: events.reduce((sum, event) => {
-          const revenue = event.financial_production?.total || 0
-          const expenses = event.marketing_expenses?.total_cost || 0
-          return sum + (revenue - expenses)
+          const revenue = event.revenue || 0;
+          const expenses = event.marketing_expenses?.total_cost || 0;
+          return sum + (revenue - expenses);
         }, 0),
-        overallROI: events.length > 0 ? events.reduce((sum, event) => {
-          const revenue = event.financial_production?.total || 0
-          const expenses = event.marketing_expenses?.total_cost || 0
-          return sum + (expenses > 0 ? ((revenue - expenses) / expenses) * 100 : 0)
-        }, 0) / events.length : 0,
-        totalClients: events.reduce((sum, event) => sum + (event.attendance?.clients_from_event || 0), 0),
+        overallROI: (() => {
+          const totalRevenue = events.reduce((sum, event) => sum + (event.revenue || 0), 0);
+          const totalExpenses = events.reduce((sum, event) => sum + (event.marketing_expenses?.total_cost || 0), 0);
+          return totalExpenses > 0 ? ((totalRevenue - totalExpenses) / totalExpenses) * 100 : 0;
+        })(),
+        totalClients: events.reduce((sum, event) => sum + (event.clients || 0), 0),
         totalRegistrants: events.reduce((sum, event) => sum + (event.attendance?.registrant_responses || 0), 0),
         totalConfirmations: events.reduce((sum, event) => sum + (event.attendance?.confirmations || 0), 0),
-        overallConversionRate: events.length > 0 ? events.reduce((sum, event) => {
-          const attendees = event.attendance?.attendees || 0
-          const clients = event.attendance?.clients_from_event || 0
-          return sum + (attendees > 0 ? (clients / attendees) * 100 : 0)
-        }, 0) / events.length : 0,
-        registrationRate: events.length > 0 ? events.reduce((sum, event) => {
-          const registrants = event.attendance?.registrant_responses || 0
-          const confirmations = event.attendance?.confirmations || 0
-          return sum + (registrants > 0 ? (confirmations / registrants) * 100 : 0)
-        }, 0) / events.length : 0,
-        appointmentConversionRate: events.length > 0 ? events.reduce((sum, event) => {
-          const setAtEvent = event.event_appointments?.set_at_event || 0
-          const attended = event.event_appointments?.first_appointment_attended || 0
-          return sum + (setAtEvent > 0 ? (attended / setAtEvent) * 100 : 0)
-        }, 0) / events.length : 0,
-        avgAppointments: events.length > 0 ? events.reduce((sum, event) => {
-          const setAtEvent = event.event_appointments?.set_at_event || 0
-          const setAfterEvent = event.event_appointments?.set_after_event || 0
-          return sum + setAtEvent + setAfterEvent
-        }, 0) / events.length : 0,
-        avgClients: events.length > 0 ? events.reduce((sum, event) => sum + (event.attendance?.clients_from_event || 0), 0) / events.length : 0,
+        overallConversionRate: (() => {
+          const totalAttendees = events.reduce((sum, event) => sum + (event.attendees || 0), 0);
+          const totalClients = events.reduce((sum, event) => sum + (event.clients || 0), 0);
+          return totalAttendees > 0 ? (totalClients / totalAttendees) * 100 : 0;
+        })(),
+        avgRegistrants: events.length > 0 ? events.reduce((sum, event) => sum + (event.attendance?.registrant_responses || 0), 0) / events.length : 0,
       },
-      events: events.map(event => ({
-        id: event.id,
-        name: event.name,
-        date: event.date,
-        type: event.marketing_type,
-        location: event.location,
-        attendees: event.attendance?.attendees || 0,
-        clients: event.attendance?.clients_from_event || 0,
-        registrants: event.attendance?.registrant_responses || 0,
-        confirmations: event.attendance?.confirmations || 0,
-        revenue: event.financial_production?.total || 0,
-        expenses: event.marketing_expenses?.total_cost || 0,
-        roi: event.marketing_expenses?.total_cost > 0 
-          ? ((event.financial_production?.total || 0) - event.marketing_expenses?.total_cost) / event.marketing_expenses?.total_cost * 100 
-          : 0,
-        appointments: {
-          setAtEvent: event.event_appointments?.set_at_event || 0,
-          setAfterEvent: event.event_appointments?.set_after_event || 0,
-          firstAppointmentAttended: event.event_appointments?.first_appointment_attended || 0,
-          firstAppointmentNoShows: event.event_appointments?.first_appointment_no_shows || 0,
-          secondAppointmentAttended: event.event_appointments?.second_appointment_attended || 0,
-        },
-        financial: event.financial_production || {},
-        attendance: event.attendance || {},
-      })),
+      events: events.map(event => {
+        const totalExpenses = event.marketing_expenses?.total_cost || 0;
+        const totalRevenue = event.revenue || 0;
+        const totalClients = event.clients || 0;
+        const totalAttendees = event.attendees || 0;
+        const profit = totalRevenue - totalExpenses;
+        const roi = totalExpenses > 0 ? ((totalRevenue - totalExpenses) / totalExpenses) * 100 : 0;
+        // Map other expected fields as needed
+        return {
+          ...event,
+          revenue: totalRevenue,
+          attendees: totalAttendees,
+          clients: totalClients,
+          expenses: totalExpenses,
+          profit,
+          roi,
+          // ...existing mapped fields...
+        };
+      }),
       monthlyData: [], // TODO: Implement monthly data aggregation
       metricsByType: [], // TODO: Implement metrics by type aggregation
     }
 
     console.log('Analytics data prepared:', analyticsData)
+    console.log(
+      "Mapped event for analytics:",
+      analyticsData.events.find(e => e.id === "529eb418-9b02-4099-a3aa-3ab6574c4225")
+    );
     return <AnalyticsDashboard analyticsData={analyticsData} />
   } catch (error) {
     console.error("Unhandled error in AnalyticsPage:", error)
