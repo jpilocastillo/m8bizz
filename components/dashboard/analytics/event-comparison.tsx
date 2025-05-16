@@ -115,6 +115,8 @@ export function EventComparison({ events }: EventComparisonProps) {
       type: event.type,
       date: event.date,
       id: event.id,
+      location: event.location,
+      label: `${event.name} (${event.date ? new Date(event.date).toLocaleDateString() : 'No date'} • ${event.location || 'No location'})`,
     }
   })
 
@@ -142,16 +144,19 @@ export function EventComparison({ events }: EventComparisonProps) {
 
   const colors = getGradientColors(activeMetric)
 
+  // Remove ROI from the metric selection
+  const metricOptions: MetricType[] = ["Conversion", "Revenue", "Expenses", "Profit", "Attendees", "Clients"];
+
   return (
     <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-md card-hover">
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-2 mb-2">
-          <BarChart3 className="h-5 w-5 text-blue-400" />
-          <CardTitle className="text-lg font-medium text-white">Event Comparison</CardTitle>
+        <div className="flex items-center gap-3 mb-6">
+          <span className="inline-block w-2 h-8 rounded bg-gradient-to-b from-purple-500 to-purple-700 mr-2" />
+          <h2 className="text-2xl font-extrabold text-white tracking-tight">Event Comparison</h2>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
           <div className="flex flex-wrap gap-2">
-            {(["ROI", "Conversion", "Revenue", "Expenses", "Profit", "Attendees", "Clients"] as MetricType[]).map(
+            {metricOptions.map(
               (metric) => (
                 <Button
                   key={metric}
@@ -206,10 +211,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                           )}
                         />
                         <div className="flex flex-col">
-                          <span>{event.name}</span>
-                          <span className="text-xs text-gray-400">
-                            {new Date(event.date).toLocaleDateString()} • {event.type}
-                          </span>
+                          <span>{event.name} <span className="text-xs text-gray-400">({new Date(event.date).toLocaleDateString()} • {event.location || 'No location'})</span></span>
                         </div>
                       </CommandItem>
                     ))}
@@ -221,7 +223,7 @@ export function EventComparison({ events }: EventComparisonProps) {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="h-[400px] mt-6">
+        <div className="h-[400px] mt-6 w-full">
           <svg className="w-0 h-0">
             <defs>
               <linearGradient id={`barGradient-${activeMetric}`} x1="0" y1="0" x2="0" y2="1">
@@ -234,13 +236,15 @@ export function EventComparison({ events }: EventComparisonProps) {
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ top: 20, right: 30, left: 150, bottom: 20 }}
-              barGap={8}
+              margin={{ top: 30, right: 80, left: 10, bottom: 30 }}
+              barGap={16}
             >
               <XAxis
                 type="number"
                 stroke="#888888"
-                fontSize={12}
+                fontSize={22}
+                fontWeight="bold"
+                tick={{ style: { fontWeight: 700, fontSize: 22, fill: '#fff' } }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value) => {
@@ -254,13 +258,15 @@ export function EventComparison({ events }: EventComparisonProps) {
                 }}
               />
               <YAxis
-                dataKey="name"
+                dataKey="label"
                 type="category"
                 stroke="#888888"
-                fontSize={12}
+                fontSize={22}
+                fontWeight="bold"
+                tick={false}
                 tickLine={false}
                 axisLine={false}
-                width={140}
+                width={120}
               />
               <Tooltip
                 wrapperStyle={{ outline: "none" }}
@@ -276,11 +282,8 @@ export function EventComparison({ events }: EventComparisonProps) {
                     return (
                       <div className="rounded-lg border border-[#2a2a45] bg-[#1a1a2e] p-3 shadow-lg">
                         <div className="grid gap-1">
-                          <div className="font-semibold text-white">{data.name}</div>
-                          <div className="text-xs text-gray-400">
-                            {new Date(data.date).toLocaleDateString()} • {data.type}
-                          </div>
-                          <div className="font-bold text-white mt-1">{formatValue(data.value, activeMetric)}</div>
+                          <div className="font-extrabold text-white text-2xl">{data.name} <span className="text-xl text-gray-400">({data.date ? new Date(data.date).toLocaleDateString() : 'No date'} • {data.location || 'No location'})</span></div>
+                          <div className="font-extrabold text-white text-3xl mt-2">{formatValue(data.value, activeMetric)}</div>
                         </div>
                       </div>
                     )
@@ -293,7 +296,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                 animationDuration={1500}
                 animationEasing="ease-out"
                 radius={[0, 6, 6, 0]}
-                barSize={36}
+                barSize={48}
               >
                 {chartData.map((entry, index) => (
                   <Cell
@@ -310,8 +313,33 @@ export function EventComparison({ events }: EventComparisonProps) {
                 <LabelList
                   dataKey="value"
                   position="right"
-                  style={{ fill: "white", fontSize: 12, fontWeight: "bold" }}
-                  formatter={(value: number) => formatValue(value, activeMetric)}
+                  content={({ x, y, width, height, value, index }) => {
+                    const event = chartData[index];
+                    return (
+                      <g>
+                        <text
+                          x={x + width + 12}
+                          y={y + height / 2 - 10}
+                          fill="#fff"
+                          fontSize={18}
+                          fontWeight="bold"
+                          alignmentBaseline="middle"
+                        >
+                          {formatValue(value, activeMetric)}
+                        </text>
+                        <text
+                          x={x + 16}
+                          y={y + height / 2 + 8}
+                          fill="#cbd5e1"
+                          fontSize={14}
+                          fontWeight="bold"
+                          alignmentBaseline="middle"
+                        >
+                          {event.type} | {event.date ? new Date(event.date).toLocaleDateString() : 'No date'} | {event.location}
+                        </text>
+                      </g>
+                    );
+                  }}
                 />
               </Bar>
             </BarChart>

@@ -64,6 +64,10 @@ export type MarketingEvent = {
   income_assets: string | null
   time: string | null
   status: string
+  // Top-level fields for summary and dashboard
+  revenue?: number
+  attendees?: number
+  clients?: number
   attendance?: {
     registrant_responses: number
     confirmations: number
@@ -264,8 +268,11 @@ export type EventWithRelations = {
 // Update the function signature
 export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> {
   try {
-    const supabase = await createAdminClient()
+    console.log("[fetchAllEvents] Starting fetch for user:", userId);
+    const supabase = await createAdminClient();
+    console.log("[fetchAllEvents] Admin client created");
 
+    console.log("[fetchAllEvents] Querying marketing_events table");
     const { data: events, error } = await supabase
       .from('marketing_events')
       .select(`
@@ -286,7 +293,8 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
           id,
           advertising_cost,
           food_venue_cost,
-          other_costs
+          other_costs,
+          total_cost
         ),
         event_attendance (
           id,
@@ -313,18 +321,22 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
           life_policies_sold,
           annuity_commission,
           life_insurance_commission,
-          aum_fees
+          aum_fees,
+          total
         )
       `)
       .eq('user_id', userId)
       .order('date', { ascending: false });
 
     if (error) {
-      console.error('Error fetching events:', error);
+      console.error('[fetchAllEvents] Error fetching events:', error);
       return [];
     }
 
+    console.log('[fetchAllEvents] Raw events fetched:', events?.length || 0);
+
     // Ensure all events have attendance records
+    console.log('[fetchAllEvents] Ensuring attendance records');
     await ensureAttendanceRecords(supabase, events);
 
     return events.map(event => {
@@ -338,10 +350,11 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
         })[0];
       }
 
-      const latestAttendance = getLatest(event.event_attendance);
-      const latestFinancial = getLatest(event.financial_production);
-      const latestExpenses = getLatest(event.marketing_expenses);
-      const latestAppointments = getLatest(event.event_appointments);
+      // Flatten related arrays to single objects
+      const latestAttendance = Array.isArray(event.event_attendance) ? event.event_attendance[0] : event.event_attendance;
+      const latestFinancial = Array.isArray(event.financial_production) ? event.financial_production[0] : event.financial_production;
+      const latestExpenses = Array.isArray(event.marketing_expenses) ? event.marketing_expenses[0] : event.marketing_expenses;
+      const latestAppointments = Array.isArray(event.event_appointments) ? event.event_appointments[0] : event.event_appointments;
 
       const total = (typeof latestFinancial?.annuity_premium === 'number' ? latestFinancial.annuity_premium : 0)
         + (typeof latestFinancial?.life_insurance_premium === 'number' ? latestFinancial.life_insurance_premium : 0)
@@ -353,6 +366,7 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
       const dayOfWeek = eventDateObj
         ? eventDateObj.toLocaleDateString("en-US", { weekday: "long" })
         : "N/A";
+
       return {
         id: event.id,
         name: event.name,
@@ -368,44 +382,13 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
         income_assets: event.income_assets,
         created_at: event.created_at,
         updated_at: event.updated_at,
-        // Add top-level fields for multi-event dashboard
         clients: typeof latestAttendance?.clients_from_event === 'number' ? latestAttendance.clients_from_event : 0,
         attendees: typeof latestAttendance?.attendees === 'number' ? latestAttendance.attendees : 0,
         revenue: total,
-        attendance: {
-          registrant_responses: typeof latestAttendance?.registrant_responses === 'number' ? latestAttendance.registrant_responses : 0,
-          confirmations: typeof latestAttendance?.confirmations === 'number' ? latestAttendance.confirmations : 0,
-          attendees: typeof latestAttendance?.attendees === 'number' ? latestAttendance.attendees : 0,
-          clients_from_event: typeof latestAttendance?.clients_from_event === 'number' ? latestAttendance.clients_from_event : 0
-        },
-        financial_production: {
-          annuity_premium: typeof latestFinancial?.annuity_premium === 'number' ? latestFinancial.annuity_premium : 0,
-          life_insurance_premium: typeof latestFinancial?.life_insurance_premium === 'number' ? latestFinancial.life_insurance_premium : 0,
-          aum: typeof latestFinancial?.aum === 'number' ? latestFinancial.aum : 0,
-          financial_planning: typeof latestFinancial?.financial_planning === 'number' ? latestFinancial.financial_planning : 0,
-          annuities_sold: typeof latestFinancial?.annuities_sold === 'number' ? latestFinancial.annuities_sold : 0,
-          life_policies_sold: typeof latestFinancial?.life_policies_sold === 'number' ? latestFinancial.life_policies_sold : 0,
-          annuity_commission: typeof latestFinancial?.annuity_commission === 'number' ? latestFinancial.annuity_commission : 0,
-          life_insurance_commission: typeof latestFinancial?.life_insurance_commission === 'number' ? latestFinancial.life_insurance_commission : 0,
-          aum_fees: typeof latestFinancial?.aum_fees === 'number' ? latestFinancial.aum_fees : 0,
-          total
-        },
-        marketing_expenses: {
-          advertising_cost: typeof latestExpenses?.advertising_cost === 'number' ? latestExpenses.advertising_cost : 0,
-          food_venue_cost: typeof latestExpenses?.food_venue_cost === 'number' ? latestExpenses.food_venue_cost : 0,
-          other_costs: typeof latestExpenses?.other_costs === 'number' ? latestExpenses.other_costs : 0,
-          total_cost:
-            (typeof latestExpenses?.advertising_cost === 'number' ? latestExpenses.advertising_cost : 0) +
-            (typeof latestExpenses?.food_venue_cost === 'number' ? latestExpenses.food_venue_cost : 0) +
-            (typeof latestExpenses?.other_costs === 'number' ? latestExpenses.other_costs : 0),
-        },
-        event_appointments: {
-          set_at_event: typeof latestAppointments?.set_at_event === 'number' ? latestAppointments.set_at_event : 0,
-          set_after_event: typeof latestAppointments?.set_after_event === 'number' ? latestAppointments.set_after_event : 0,
-          first_appointment_attended: typeof latestAppointments?.first_appointment_attended === 'number' ? latestAppointments.first_appointment_attended : 0,
-          first_appointment_no_shows: typeof latestAppointments?.first_appointment_no_shows === 'number' ? latestAppointments.first_appointment_no_shows : 0,
-          second_appointment_attended: typeof latestAppointments?.second_appointment_attended === 'number' ? latestAppointments.second_appointment_attended : 0
-        }
+        attendance: latestAttendance,
+        financial_production: latestFinancial ? { ...latestFinancial, total } : undefined,
+        marketing_expenses: latestExpenses,
+        event_appointments: latestAppointments,
       };
     });
   } catch (error) {

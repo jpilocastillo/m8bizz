@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { useState } from "react"
 
 type MetricType = "ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients"
 
@@ -12,63 +13,73 @@ interface PerformanceHeatmapProps {
 }
 
 export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: PerformanceHeatmapProps) {
-  // Extract unique event types and locations
-  const eventTypes = [...new Set(data.events.map((event: any) => event.type || "Unknown"))]
-  const locations = [...new Set(data.events.map((event: any) => event.location || "Unknown"))]
+  // Grouping options for rows and columns
+  const groupingOptions = [
+    { label: "Topic", value: "topic" },
+    { label: "Location", value: "location" },
+    { label: "Time", value: "time" },
+    { label: "Day of Week", value: "dayOfWeek" },
+  ];
+  const [rowGroup, setRowGroup] = useState<string>("topic");
+  const [colGroup, setColGroup] = useState<string>("location");
+
+  // Extract unique values for rows and columns
+  const rowValues = [...new Set(data.events.map((event: any) => event[rowGroup] || "Unknown"))];
+  const colValues = [...new Set(data.events.map((event: any) => event[colGroup] || "Unknown"))];
 
   // Create a matrix of performance data
-  const matrix = eventTypes.map((type) => {
-    const typeEvents = data.events.filter((event: any) => (event.type || "Unknown") === type)
+  const matrix = rowValues.map((row) => {
+    const rowEvents = data.events.filter((event: any) => (event[rowGroup] || "Unknown") === row);
 
-    const locationData = locations.map((location) => {
-      const eventsAtLocation = typeEvents.filter((event: any) => (event.location || "Unknown") === location)
+    const colData = colValues.map((col) => {
+      const eventsAtCell = rowEvents.filter((event: any) => (event[colGroup] || "Unknown") === col);
 
-      if (eventsAtLocation.length === 0) {
-        return { value: null, count: 0 }
+      if (eventsAtCell.length === 0) {
+        return { value: null, count: 0 };
       }
 
-      let metricValue = 0
+      let metricValue = 0;
 
       switch (activeMetric) {
         case "ROI":
           metricValue =
-            eventsAtLocation.reduce((sum: number, event: any) => sum + (event.roi || 0), 0) / eventsAtLocation.length
-          break
+            eventsAtCell.reduce((sum: number, event: any) => sum + (event.roi || 0), 0) / eventsAtCell.length;
+          break;
         case "Conversion":
           metricValue =
-            eventsAtLocation.reduce((sum: number, event: any) => {
-              const conversion = event.attendees ? (event.clients / event.attendees) * 100 : 0
-              return sum + conversion
-            }, 0) / eventsAtLocation.length
-          break
+            eventsAtCell.reduce((sum: number, event: any) => {
+              const conversion = event.attendees ? (event.clients / event.attendees) * 100 : 0;
+              return sum + conversion;
+            }, 0) / eventsAtCell.length;
+          break;
         case "Revenue":
           metricValue =
-            eventsAtLocation.reduce((sum: number, event: any) => sum + (event.revenue || 0), 0) /
-            eventsAtLocation.length
-          break
+            eventsAtCell.reduce((sum: number, event: any) => sum + (event.revenue || 0), 0) /
+            eventsAtCell.length;
+          break;
         case "Attendees":
           metricValue =
-            eventsAtLocation.reduce((sum: number, event: any) => sum + (event.attendees || 0), 0) /
-            eventsAtLocation.length
-          break
+            eventsAtCell.reduce((sum: number, event: any) => sum + (event.attendees || 0), 0) /
+            eventsAtCell.length;
+          break;
         case "Clients":
           metricValue =
-            eventsAtLocation.reduce((sum: number, event: any) => sum + (event.clients || 0), 0) /
-            eventsAtLocation.length
-          break
+            eventsAtCell.reduce((sum: number, event: any) => sum + (event.clients || 0), 0) /
+            eventsAtCell.length;
+          break;
       }
 
       return {
         value: metricValue,
-        count: eventsAtLocation.length,
-      }
-    })
+        count: eventsAtCell.length,
+      };
+    });
 
     return {
-      type,
-      locations: locationData,
-    }
-  })
+      row,
+      cols: colData,
+    };
+  });
 
   // Get color based on metric value
   const getColor = (value: number | null, metric: MetricType) => {
@@ -142,28 +153,50 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
             </Button>
           ))}
         </div>
+        <div className="flex flex-wrap gap-2 mt-4 items-center">
+          <span className="text-sm text-gray-400 mr-2">Rows:</span>
+          <select
+            className="bg-[#131525] border border-[#1f2037] text-white rounded px-2 py-1 mr-4"
+            value={rowGroup}
+            onChange={e => setRowGroup(e.target.value)}
+          >
+            {groupingOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <span className="text-sm text-gray-400 mr-2">Columns:</span>
+          <select
+            className="bg-[#131525] border border-[#1f2037] text-white rounded px-2 py-1"
+            value={colGroup}
+            onChange={e => setColGroup(e.target.value)}
+          >
+            {groupingOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </div>
       </CardHeader>
       <CardContent className="px-0 pb-0">
-        {matrix.length > 0 && locations.length > 0 ? (
+        {matrix.length > 0 && colValues.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-left p-2 text-sm font-medium text-gray-400">Event Type</th>
-                  {locations.map((location) => (
-                    <th key={location} className="p-2 text-sm font-medium text-gray-400 text-center">
-                      {location}
+                  <th className="text-left p-2 text-sm font-medium text-gray-400">{groupingOptions.find(opt => opt.value === rowGroup)?.label || "Row"}</th>
+                  {colValues.map((col) => (
+                    <th key={col} className="p-2 text-sm font-medium text-gray-400 text-center">
+                      {col}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {matrix.map((row) => (
-                  <tr key={row.type}>
-                    <td className="p-2 text-sm font-medium text-white">{row.type}</td>
-                    {row.locations.map((cell, i) => (
+                  <tr key={row.row}>
+                    <td className="p-2 text-sm font-medium text-white">{row.row}</td>
+                    {row.cols.map((cell, i) => (
                       <td
-                        key={`${row.type}-${locations[i]}`}
+                        key={`${row.row}-${colValues[i]}`}
                         className={`p-2 text-center ${getColor(cell.value, activeMetric)} rounded-md m-1`}
                       >
                         <div className="text-sm font-medium text-white">{formatValue(cell.value, activeMetric)}</div>
