@@ -8,6 +8,7 @@ import { EventComparison } from "@/components/dashboard/analytics/event-comparis
 import { EnhancedExport } from "@/components/dashboard/analytics/enhanced-export"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MetricsByType } from "@/components/dashboard/analytics/metrics-by-type"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
 // Sample data structure with defaults
 const defaultData = {
@@ -58,17 +59,28 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        <div className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-2xl p-8 shadow-lg card-hover flex flex-col justify-between">
-          <TopPerformers
-            data={filteredData?.events || []}
-            activeMetric={activeMetric}
-            onMetricChange={setActiveMetric}
-          />
-        </div>
-        <div className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-2xl p-8 shadow-lg card-hover flex flex-col justify-between">
-          <EventComparison events={filteredData?.events || []} />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-m8bs-card border-m8bs-card-alt">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl font-bold text-white">Top Performing Events</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <TopPerformers
+              data={filteredData?.events || []}
+              activeMetric={activeMetric}
+              onMetricChange={setActiveMetric}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-m8bs-card border-m8bs-card-alt">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl font-bold text-white">Event Comparison</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <EventComparison events={filteredData?.events || []} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

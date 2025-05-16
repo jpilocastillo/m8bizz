@@ -175,18 +175,6 @@ export function Sidebar() {
                     <span>View All Events</span>
                   </Link>
                   <Link
-                    href="/dashboard/events/summary"
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-                      pathname === "/dashboard/events/summary"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
-                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
-                    )}
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    <span>Event Summary</span>
-                  </Link>
-                  <Link
                     href="/dashboard/events/new"
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
