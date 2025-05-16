@@ -47,15 +47,30 @@ export default async function AnalyticsPage() {
         avgAttendees: events.length > 0 
           ? Math.round(events.reduce((sum, event) => sum + (event.attendance?.attendees || 0), 0) / events.length) 
           : 0,
-        totalRevenue: events.reduce((sum, event) => sum + (event.financial_production?.total || 0), 0),
+        totalRevenue: events.reduce((sum, event) => {
+          const totalProduction = (event.financial_production?.aum_fees || 0) + 
+                                (event.financial_production?.annuity_commission || 0) + 
+                                (event.financial_production?.life_insurance_commission || 0) + 
+                                (event.financial_production?.financial_planning || 0)
+          return sum + totalProduction
+        }, 0),
         totalExpenses: events.reduce((sum, event) => sum + (event.marketing_expenses?.total_cost || 0), 0),
         totalProfit: events.reduce((sum, event) => {
-          const revenue = event.financial_production?.total || 0
+          const totalProduction = (event.financial_production?.aum_fees || 0) + 
+                                (event.financial_production?.annuity_commission || 0) + 
+                                (event.financial_production?.life_insurance_commission || 0) + 
+                                (event.financial_production?.financial_planning || 0)
           const expenses = event.marketing_expenses?.total_cost || 0
-          return sum + (revenue - expenses)
+          return sum + (totalProduction - expenses)
         }, 0),
         overallROI: (() => {
-          const totalRevenue = events.reduce((sum, event) => sum + (event.financial_production?.total || 0), 0)
+          const totalRevenue = events.reduce((sum, event) => {
+            const totalProduction = (event.financial_production?.aum_fees || 0) + 
+                                  (event.financial_production?.annuity_commission || 0) + 
+                                  (event.financial_production?.life_insurance_commission || 0) + 
+                                  (event.financial_production?.financial_planning || 0)
+            return sum + totalProduction
+          }, 0)
           const totalExpenses = events.reduce((sum, event) => sum + (event.marketing_expenses?.total_cost || 0), 0)
           return totalExpenses > 0 ? ((totalRevenue - totalExpenses) / totalExpenses) * 100 : 0
         })(),
@@ -67,22 +82,26 @@ export default async function AnalyticsPage() {
         })(),
       },
       events: events.map(event => {
-        const revenue = event.financial_production?.total || 0;
-        const expenses = event.marketing_expenses?.total_cost || 0;
+        const totalProduction = (event.financial_production?.aum_fees || 0) + 
+                              (event.financial_production?.annuity_commission || 0) + 
+                              (event.financial_production?.life_insurance_commission || 0) + 
+                              (event.financial_production?.financial_planning || 0)
+        const expenses = event.marketing_expenses?.total_cost || 0
         return {
           id: event.id,
           name: event.name,
           date: event.date,
           location: event.location,
           type: event.marketing_type || 'Other',
-          revenue,
+          topic: event.topic || 'N/A',
+          revenue: totalProduction,
           expenses,
-          profit: revenue - expenses,
+          profit: totalProduction - expenses,
           attendees: event.attendance?.attendees || 0,
           clients: event.attendance?.clients_from_event || 0,
           registrants: event.attendance?.registrant_responses || 0,
           confirmations: event.attendance?.confirmations || 0,
-          roi: { value: expenses > 0 ? ((revenue - expenses) / expenses) * 100 : 0 },
+          roi: { value: expenses > 0 ? ((totalProduction - expenses) / expenses) * 100 : 0 },
           conversionRate: (() => {
             const attendees = event.attendance?.attendees || 0;
             const clients = event.attendance?.clients_from_event || 0;
@@ -112,10 +131,16 @@ export default async function AnalyticsPage() {
           }
           
           const stats = monthlyStats.get(monthKey)
+          const totalProduction = (event.financial_production?.aum_fees || 0) + 
+                                (event.financial_production?.annuity_commission || 0) + 
+                                (event.financial_production?.life_insurance_commission || 0) + 
+                                (event.financial_production?.financial_planning || 0)
+          const expenses = event.marketing_expenses?.total_cost || 0
+          
           stats.events++
-          stats.revenue += event.financial_production?.total || 0
-          stats.expenses += event.marketing_expenses?.total_cost || 0
-          stats.profit += (event.financial_production?.total || 0) - (event.marketing_expenses?.total_cost || 0)
+          stats.revenue += totalProduction
+          stats.expenses += expenses
+          stats.profit += totalProduction - expenses
           stats.attendees += event.attendance?.attendees || 0
           stats.clients += event.attendance?.clients_from_event || 0
         })
@@ -149,10 +174,16 @@ export default async function AnalyticsPage() {
           }
           
           const stats = typeStats.get(type)
+          const totalProduction = (event.financial_production?.aum_fees || 0) + 
+                                (event.financial_production?.annuity_commission || 0) + 
+                                (event.financial_production?.life_insurance_commission || 0) + 
+                                (event.financial_production?.financial_planning || 0)
+          const expenses = event.marketing_expenses?.total_cost || 0
+          
           stats.events++
-          stats.revenue += event.financial_production?.total || 0
-          stats.expenses += event.marketing_expenses?.total_cost || 0
-          stats.profit += (event.financial_production?.total || 0) - (event.marketing_expenses?.total_cost || 0)
+          stats.revenue += totalProduction
+          stats.expenses += expenses
+          stats.profit += totalProduction - expenses
           stats.attendees += event.attendance?.attendees || 0
           stats.clients += event.attendance?.clients_from_event || 0
         })

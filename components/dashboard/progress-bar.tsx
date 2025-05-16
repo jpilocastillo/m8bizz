@@ -37,10 +37,10 @@ export function ProgressBar({
           {valueLabel && <span className="text-sm font-medium text-white">{valueLabel}</span>}
         </div>
       )}
-      <div className={cn("w-full bg-[#1f2037] rounded-full overflow-hidden", heightClass)}>
+      <div className={cn("w-full bg-gray-800 rounded-full overflow-hidden", heightClass)}>
         <div
           className={cn("rounded-full transition-all duration-500 ease-out", color, height === "lg" && "shadow-glow")}
-          style={{ width: `${percentage}%` }}
+          style={{ width: `${percentage}%`, backgroundColor: undefined }}
         />
       </div>
     </div>

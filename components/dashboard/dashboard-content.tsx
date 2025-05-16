@@ -211,8 +211,9 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
 
   // Calculate derived metrics with safe fallbacks
   const totalExpenses = dashboardData.marketingExpenses?.total || 0
-  const totalIncome = dashboardData.financialProduction?.total || 0
-  const profit = totalIncome - totalExpenses
+  const totalProduction = dashboardData.financialProduction?.aum_fees + dashboardData.financialProduction?.annuity_commission + dashboardData.financialProduction?.life_insurance_commission + dashboardData.financialProduction?.financial_planning || 0
+  const totalIncome = totalProduction // Set total income equal to total production
+  const profit = totalProduction - totalExpenses // Calculate profit as total production minus expenses
   const roi = totalExpenses > 0 ? (profit / totalExpenses) * 100 : 0
 
   // Calculate conversion metrics
@@ -359,7 +360,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             responses={dashboardData.attendance?.registrantResponses || 0}
             confirmations={dashboardData.attendance?.confirmations || 0}
             attendees={dashboardData.attendance?.attendees || 0}
-            mailers={dashboardData.attendance?.registrantResponses || 0}
+            marketingAudienceSize={dashboardData.eventDetails?.marketing_audience || 0}
           />
         </motion.div>
       </div>
@@ -505,6 +506,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             firstAppointmentAttended={dashboardData.appointments?.firstAppointmentAttended || 0}
             firstAppointmentNoShows={dashboardData.appointments?.firstAppointmentNoShows || 0}
             secondAppointmentAttended={dashboardData.appointments?.secondAppointmentAttended || 0}
+            clients={dashboardData.attendance?.clients_from_event || 0}
           />
         </motion.div>
       </div>

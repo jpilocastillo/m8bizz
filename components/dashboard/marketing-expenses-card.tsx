@@ -17,6 +17,7 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
   const total = advertising + foodVenue
   const advertisingPercentage = (advertising / total) * 100
   const foodVenuePercentage = (foodVenue / total) * 100
+  const unusedPercentage = 100 - advertisingPercentage - foodVenuePercentage
 
   return (
     <Card
@@ -36,7 +37,7 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
           onMouseEnter={() => setHoveredSection("donut")}
           onMouseLeave={() => setHoveredSection(null)}
         >
-          <div className="relative w-48 h-48 transition-all duration-500 group-hover:scale-105">
+          <div className="relative w-72 h-72 transition-all duration-500 group-hover:scale-105">
             <svg className="w-full h-full" viewBox="0 0 100 100">
               <circle
                 cx="50"
@@ -94,61 +95,35 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
             </div>
           </div>
         </div>
-        <div className="space-y-5">
-          <div
-            className="space-y-2 transition-all duration-300 hover:translate-x-1 rounded-lg p-2 hover:bg-blue-900/10"
-            onMouseEnter={() => setHoveredSection("advertising")}
-            onMouseLeave={() => setHoveredSection(null)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500 transition-all duration-300 group-hover:animate-pulse"></div>
-                <span className="text-sm font-medium text-white transition-all duration-300 group-hover:text-blue-300">
-                  Advertising Cost
+        {/* Multi-segment progress bar for budget allocation */}
+        <div className="w-full flex flex-col items-stretch mt-6 mb-2">
+          <div className="w-full h-10 bg-gray-800 rounded-full flex overflow-hidden relative">
+            <div
+              className="bg-blue-500 h-full transition-all duration-500 flex items-center justify-center relative"
+              style={{ width: `${advertisingPercentage}%` }}
+              title={`Advertising: ${advertisingPercentage.toFixed(1)}%`}
+            >
+              {advertising > 0 && (
+                <span className="absolute left-2 text-xs font-bold text-white drop-shadow-sm">
+                  ${advertising.toLocaleString()}
                 </span>
-              </div>
-              <div className="text-white font-bold transition-all duration-300 group-hover:text-blue-300 group-hover:scale-105">
-                ${advertising.toLocaleString()}
-              </div>
+              )}
             </div>
-            <ProgressBar
-              value={advertisingPercentage}
-              maxValue={100}
-              color="bg-blue-500"
-              height="md"
-              className="transition-all duration-500 hover:bg-blue-400 hover:shadow-[0_0_8px_rgba(59,130,246,0.6)]"
-            />
-            <div className="text-xs text-gray-400 text-right transition-all duration-300 group-hover:text-blue-300">
-              {advertisingPercentage.toFixed(1)}%
+            <div
+              className="bg-emerald-500 h-full transition-all duration-500 flex items-center justify-center relative"
+              style={{ width: `${foodVenuePercentage}%` }}
+              title={`Food/Venue: ${foodVenuePercentage.toFixed(1)}%`}
+            >
+              {foodVenue > 0 && (
+                <span className="absolute right-2 text-xs font-bold text-white drop-shadow-sm">
+                  ${foodVenue.toLocaleString()}
+                </span>
+              )}
             </div>
           </div>
-
-          <div
-            className="space-y-2 transition-all duration-300 hover:translate-x-1 rounded-lg p-2 hover:bg-emerald-900/10"
-            onMouseEnter={() => setHoveredSection("foodVenue")}
-            onMouseLeave={() => setHoveredSection(null)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-emerald-500 transition-all duration-300 group-hover:animate-pulse"></div>
-                <span className="text-sm font-medium text-white transition-all duration-300 group-hover:text-emerald-300">
-                  Food/Venue Cost
-                </span>
-              </div>
-              <div className="text-white font-bold transition-all duration-300 group-hover:text-emerald-300 group-hover:scale-105">
-                ${foodVenue.toLocaleString()}
-              </div>
-            </div>
-            <ProgressBar
-              value={foodVenuePercentage}
-              maxValue={100}
-              color="bg-emerald-500"
-              height="md"
-              className="transition-all duration-500 hover:bg-emerald-400 hover:shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-            />
-            <div className="text-xs text-gray-400 text-right transition-all duration-300 group-hover:text-emerald-300">
-              {foodVenuePercentage.toFixed(1)}%
-            </div>
+          <div className="flex justify-between text-sm text-gray-300 mt-2 font-semibold">
+            <span>Advertising</span>
+            <span>Food/Venue</span>
           </div>
         </div>
       </CardContent>

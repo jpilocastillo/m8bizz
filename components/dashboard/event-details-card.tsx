@@ -9,6 +9,7 @@ interface EventDetailsCardProps {
   mileRadius?: string
   incomeAssets?: string
   topic?: string // Add this new prop
+  marketingAudienceSize?: string // Add this new prop
 }
 
 export function EventDetailsCard({
@@ -19,6 +20,7 @@ export function EventDetailsCard({
   mileRadius = "N/A",
   incomeAssets = "N/A",
   topic = "N/A", // Add this new parameter with default
+  marketingAudienceSize = "N/A",
 }: EventDetailsCardProps) {
   return (
     <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-md">
@@ -29,7 +31,7 @@ export function EventDetailsCard({
         </h3>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="grid grid-cols-7 divide-x divide-m8bs-border">
+        <div className="grid grid-cols-8 divide-x divide-m8bs-border">
           {/* Day of Week */}
           <div className="p-6 flex flex-col items-center justify-start text-center relative overflow-hidden group">
             <div className="absolute inset-0 bg-m8bs-blue/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -110,6 +112,16 @@ export function EventDetailsCard({
             </div>
             <div className="text-white text-xs tracking-wider uppercase font-bold mb-2">Income Assets</div>
             <div className="text-white text-2xl font-extrabold">{incomeAssets}</div>
+          </div>
+
+          {/* Marketing Audience Size */}
+          <div className="p-6 flex flex-col items-center justify-start text-center relative overflow-hidden group">
+            <div className="absolute inset-0 bg-pink-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="bg-pink-900/20 p-2.5 rounded-md mb-3">
+              <Users className="h-5 w-5 text-pink-400" />
+            </div>
+            <div className="text-white text-xs tracking-wider uppercase font-bold mb-2">Marketing Audience Size</div>
+            <div className="text-white text-2xl font-extrabold">{marketingAudienceSize}</div>
           </div>
         </div>
       </CardContent>

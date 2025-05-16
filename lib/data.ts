@@ -505,10 +505,17 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
 
     // Calculate totals and metrics
     const totalExpenses = expenses.total_cost || 0
+    
+    // Calculate AUM fees (assuming 1% annual fee, divided by 12 for monthly)
+    const aumFeePercentage = 0.01 // 1% annual fee
+    const monthlyAumFees = (financial.aum || 0) * aumFeePercentage / 12
+    const annualAumFees = (financial.aum || 0) * aumFeePercentage
+
     const totalIncome = (financial.annuity_premium || 0) + 
                        (financial.life_insurance_premium || 0) + 
                        (financial.aum || 0) + 
-                       (financial.financial_planning || 0)
+                       (financial.financial_planning || 0) +
+                       annualAumFees // Add annual AUM fees to total income
 
     const roi = totalExpenses > 0 ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) : 0
 
@@ -545,7 +552,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
           fixedAnnuity: financial.annuity_premium || 0,
           life: financial.life_insurance_premium || 0,
           aum: financial.aum || 0,
-          financialPlanning: financial.financial_planning || 0
+          financialPlanning: financial.financial_planning || 0,
+          aumFees: annualAumFees // Add AUM fees to income breakdown
         }
       },
       conversionRate: {
@@ -599,7 +607,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         life_policies_sold: financial.life_policies_sold || 0,
         annuity_commission: financial.annuity_commission || 0,
         life_insurance_commission: financial.life_insurance_commission || 0,
-        aum_fees: financial.aum_fees || 0
+        aum_fees: annualAumFees // Update to use annual AUM fees
       }
     }
 
@@ -753,38 +761,32 @@ export async function updateEvent(eventId: string, eventData: any) {
 
     console.log("Updating event:", eventId)
 
-    // First check if the event exists in marketing_events
+    // Check if the event exists in marketing_events
     const { data: marketingEvent, error: marketingEventError } = await supabase
       .from("marketing_events")
       .select("id")
       .eq("id", eventId)
       .maybeSingle()
 
-    // If not found in marketing_events, check events table
-    const { data: oldEvent, error: oldEventError } = await supabase
-      .from("events")
-      .select("id")
-      .eq("id", eventId)
-      .maybeSingle()
+    if (marketingEventError) {
+      console.error("Error checking marketing_events:", marketingEventError)
+      return { success: false, error: marketingEventError.message }
+    }
 
-    const isMarketingEvent = !!marketingEvent
-    const isOldEvent = !!oldEvent
-
-    if (!isMarketingEvent && !isOldEvent) {
-      console.error("Event not found in either table")
+    if (!marketingEvent) {
+      console.error("Event not found in marketing_events table")
       return { success: false, error: "Event not found" }
     }
 
+    // Extract related data
+    const { relatedData, ...coreEventData } = eventData
+
     // Update event core data
-    if (
-      Object.keys(eventData).some(
-        (key) => !["expenses", "attendance", "appointments", "financialProduction"].includes(key),
-      )
-    ) {
+    if (Object.keys(coreEventData).length > 0) {
       // Map type to marketing_type if provided
       const marketingEventData = {
-        ...eventData,
-        marketing_type: eventData.type, // Map type to marketing_type
+        ...coreEventData,
+        marketing_type: coreEventData.type, // Map type to marketing_type
       }
 
       // Remove type from the data to avoid conflicts
@@ -792,217 +794,156 @@ export async function updateEvent(eventId: string, eventData: any) {
         delete marketingEventData.type
       }
 
-      if (isMarketingEvent) {
-        const { error: eventError } = await supabase
-          .from("marketing_events")
-          .update(marketingEventData)
-          .eq("id", eventId)
+      const { error: eventError } = await supabase
+        .from("marketing_events")
+        .update(marketingEventData)
+        .eq("id", eventId)
 
-        if (eventError) {
-          console.error("Error updating marketing_events:", eventError)
-          return { success: false, error: eventError.message }
-        }
+      if (eventError) {
+        console.error("Error updating marketing_events:", eventError)
+        return { success: false, error: eventError.message }
+      }
+    }
 
-        // Also update event_details if it exists
-        const { error: detailsError } = await supabase
-          .from("event_details")
-          .update({
-            location: eventData.location,
-            type: eventData.marketing_type || eventData.type, // Use marketing_type or fall back to type
-            topic: eventData.topic,
-            time: eventData.time,
-            age_range: eventData.age_range,
-            mile_radius: eventData.mile_radius,
-            income_assets: eventData.income_assets,
-          })
+    // Update related data if present
+    if (relatedData) {
+      // Update expenses
+      if (relatedData.expenses) {
+        // First check if expenses record exists
+        const { data: existingExpenses } = await supabase
+          .from("marketing_expenses")
+          .select("id")
           .eq("event_id", eventId)
+          .maybeSingle()
 
-        if (detailsError) {
-          console.error("Error updating event details:", detailsError)
-          // Continue anyway - this is not critical
+        if (existingExpenses) {
+          // Update existing record
+          const { error: expensesError } = await supabase
+            .from("marketing_expenses")
+            .update(relatedData.expenses)
+            .eq("event_id", eventId)
+
+          if (expensesError) {
+            console.error("Error updating expenses:", expensesError)
+            return { success: false, error: expensesError.message }
+          }
+        } else {
+          // Insert new record
+          const { error: expensesError } = await supabase
+            .from("marketing_expenses")
+            .insert([{ event_id: eventId, ...relatedData.expenses }])
+
+          if (expensesError) {
+            console.error("Error inserting expenses:", expensesError)
+            return { success: false, error: expensesError.message }
+          }
         }
-      } else if (isOldEvent) {
-        // Update the old events table
-        const { error: eventError } = await supabase
-          .from("events")
-          .update({
-            name: eventData.name,
-            date: eventData.date,
-            status: eventData.status,
-          })
-          .eq("id", eventId)
+      }
 
-        if (eventError) {
-          console.error("Error updating events:", eventError)
-          return { success: false, error: eventError.message }
-        }
-
-        // Update event_details for old schema
-        const { error: detailsError } = await supabase
-          .from("event_details")
-          .update({
-            location: eventData.location,
-            type: eventData.type,
-            topic: eventData.topic,
-            time: eventData.time,
-            age_range: eventData.age_range,
-            mile_radius: eventData.mile_radius,
-            income_assets: eventData.income_assets,
-          })
+      // Update attendance
+      if (relatedData.attendance) {
+        // First check if attendance record exists
+        const { data: existingAttendance } = await supabase
+          .from("event_attendance")
+          .select("id")
           .eq("event_id", eventId)
+          .maybeSingle()
 
-        if (detailsError) {
-          console.error("Error updating event details for old schema:", detailsError)
-          // Continue anyway - this is not critical
+        if (existingAttendance) {
+          // Update existing record
+          const { error: attendanceError } = await supabase
+            .from("event_attendance")
+            .update(relatedData.attendance)
+            .eq("event_id", eventId)
+
+          if (attendanceError) {
+            console.error("Error updating attendance:", attendanceError)
+            return { success: false, error: attendanceError.message }
+          }
+        } else {
+          // Insert new record
+          const { error: attendanceError } = await supabase
+            .from("event_attendance")
+            .insert([{ event_id: eventId, ...relatedData.attendance }])
+
+          if (attendanceError) {
+            console.error("Error inserting attendance:", attendanceError)
+            return { success: false, error: attendanceError.message }
+          }
         }
       }
-    }
 
-    // Update expenses
-    if (eventData.expenses) {
-      const { error: expensesError } = await supabase
-        .from("marketing_expenses")
-        .update(eventData.expenses)
-        .eq("event_id", eventId)
+      // Update appointments
+      if (relatedData.appointments) {
+        // First check if appointments record exists
+        const { data: existingAppointments } = await supabase
+          .from("event_appointments")
+          .select("id")
+          .eq("event_id", eventId)
+          .maybeSingle()
 
-      if (expensesError) {
-        console.error("Error updating expenses:", expensesError)
-        return { success: false, error: expensesError.message }
-      }
-    }
+        if (existingAppointments) {
+          // Update existing record
+          const { error: appointmentsError } = await supabase
+            .from("event_appointments")
+            .update(relatedData.appointments)
+            .eq("event_id", eventId)
 
-    // Update attendance
-    if (eventData.attendance) {
-      const { error: attendanceError } = await supabase
-        .from("event_attendance")
-        .update(eventData.attendance)
-        .eq("event_id", eventId)
+          if (appointmentsError) {
+            console.error("Error updating appointments:", appointmentsError)
+            return { success: false, error: appointmentsError.message }
+          }
+        } else {
+          // Insert new record
+          const { error: appointmentsError } = await supabase
+            .from("event_appointments")
+            .insert([{ event_id: eventId, ...relatedData.appointments }])
 
-      if (attendanceError) {
-        console.error("Error updating attendance:", attendanceError)
-        return { success: false, error: attendanceError.message }
-      }
-    }
-
-    // Update appointments in both tables
-    if (eventData.appointments) {
-      // Try new schema first
-      const { error: newAppointmentsError } = await supabase
-        .from("event_appointments")
-        .update(eventData.appointments)
-        .eq("event_id", eventId)
-
-      if (newAppointmentsError) {
-        console.error("Error updating appointments in new schema:", newAppointmentsError)
-        // Continue anyway - we'll try the old schema
-      }
-
-      // Then try old schema
-      const { error: oldAppointmentsError } = await supabase
-        .from("appointments")
-        .update(eventData.appointments)
-        .eq("event_id", eventId)
-
-      if (oldAppointmentsError) {
-        console.error("Error updating appointments in old schema:", oldAppointmentsError)
-        // Only return error if both failed
-        if (newAppointmentsError) {
-          return { success: false, error: "Failed to update appointments" }
+          if (appointmentsError) {
+            console.error("Error inserting appointments:", appointmentsError)
+            return { success: false, error: appointmentsError.message }
+          }
         }
       }
-    }
 
-    // Update financial data in both tables
-    if (eventData.financialProduction) {
-      // Map the fields to the new names for financial_results
-      const newFinancialData: FinancialData = {
-        annuity_premium: eventData.financialProduction.fixed_annuity || eventData.financialProduction.annuity_premium,
-        life_insurance_premium:
-          eventData.financialProduction.life_insurance || eventData.financialProduction.life_insurance_premium,
-        aum: eventData.financialProduction.aum,
-        financial_planning: eventData.financialProduction.financial_planning,
-        annuities_sold: eventData.financialProduction.annuities_sold,
-        life_policies_sold: eventData.financialProduction.life_policies_sold,
-        annuity_commission:
-          eventData.financialProduction.annuity_commission || eventData.financialProduction.annuity_premium,
-        life_insurance_commission:
-          eventData.financialProduction.life_insurance_commission ||
-          eventData.financialProduction.life_insurance_premium,
-        aum_fees: eventData.financialProduction.aum_fees,
-      };
+      // Update financial production
+      if (relatedData.financialProduction) {
+        // First check if financial production record exists
+        const { data: existingFinancial } = await supabase
+          .from("financial_production")
+          .select("id")
+          .eq("event_id", eventId)
+          .maybeSingle()
 
-      // Remove undefined values
-      Object.keys(newFinancialData).forEach((key) => {
-        if (newFinancialData[key] === undefined) {
-          delete newFinancialData[key];
-        }
-      });
+        if (existingFinancial) {
+          // Update existing record
+          const { error: financialError } = await supabase
+            .from("financial_production")
+            .update(relatedData.financialProduction)
+            .eq("event_id", eventId)
 
-      // Calculate total if we have all the necessary fields
-      if (
-        newFinancialData.annuity_premium !== undefined &&
-        newFinancialData.life_insurance_premium !== undefined &&
-        newFinancialData.aum !== undefined &&
-        newFinancialData.financial_planning !== undefined
-      ) {
-        newFinancialData.total =
-          (newFinancialData.annuity_premium || 0) +
-          (newFinancialData.life_insurance_premium || 0) +
-          (newFinancialData.aum || 0) +
-          (newFinancialData.financial_planning || 0);
-      }
+          if (financialError) {
+            console.error("Error updating financial production:", financialError)
+            return { success: false, error: financialError.message }
+          }
+        } else {
+          // Insert new record
+          const { error: financialError } = await supabase
+            .from("financial_production")
+            .insert([{ event_id: eventId, ...relatedData.financialProduction }])
 
-      // Try new schema first
-      const { error: newFinancialError } = await supabase
-        .from("financial_production")
-        .update(newFinancialData)
-        .eq("event_id", eventId);
-
-      if (newFinancialError) {
-        console.error("Error updating financial results in new schema:", newFinancialError);
-        // Continue anyway - we'll try the old schema
-      }
-
-      // Map the fields to the old names for financial_production
-      const oldFinancialData: OldFinancialData = {
-        fixed_annuity: newFinancialData.annuity_premium,
-        life_insurance: newFinancialData.life_insurance_premium,
-        aum: newFinancialData.aum,
-        financial_planning: newFinancialData.financial_planning,
-        annuities_sold: newFinancialData.annuities_sold,
-        life_policies_sold: newFinancialData.life_policies_sold,
-        annuity_premium: newFinancialData.annuity_commission,
-        life_insurance_premium: newFinancialData.life_insurance_commission,
-        total: newFinancialData.total || 0,
-        aum_fees: newFinancialData.aum_fees,
-      };
-
-      // Remove undefined values
-      Object.keys(oldFinancialData).forEach((key) => {
-        if (oldFinancialData[key] === undefined) {
-          delete oldFinancialData[key];
-        }
-      });
-
-      // Then try old schema
-      const { error: oldFinancialError } = await supabase
-        .from("financial_production")
-        .update(oldFinancialData)
-        .eq("event_id", eventId);
-
-      if (oldFinancialError) {
-        console.error("Error updating financial production in old schema:", oldFinancialError);
-        // Only return error if both failed
-        if (newFinancialError) {
-          return { success: false, error: "Failed to update financial data" };
+          if (financialError) {
+            console.error("Error inserting financial production:", financialError)
+            return { success: false, error: financialError.message }
+          }
         }
       }
     }
 
     return { success: true }
   } catch (error) {
-    console.error("Error updating event:", error)
-    return { success: false, error: "Failed to update event" }
+    console.error("Error in updateEvent:", error)
+    return { success: false, error: error instanceof Error ? error.message : "An unexpected error occurred" }
   }
 }
 

@@ -10,6 +10,7 @@ interface AppointmentTrendsProps {
   firstAppointmentAttended?: number
   firstAppointmentNoShows?: number
   secondAppointmentAttended?: number
+  clients?: number
 }
 
 export function AppointmentTrends({
@@ -18,6 +19,7 @@ export function AppointmentTrends({
   firstAppointmentAttended = 4,
   firstAppointmentNoShows = 2,
   secondAppointmentAttended = 4,
+  clients = 0,
 }: AppointmentTrendsProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [animationComplete, setAnimationComplete] = useState(false)
@@ -37,6 +39,7 @@ export function AppointmentTrends({
   const firstAppointmentRate = Math.round((firstAppointmentAttended / (setAtEvent + setAfterEvent)) * 100)
   const secondAppointmentRate = Math.round((secondAppointmentAttended / firstAppointmentAttended) * 100)
   const overallConversionRate = Math.round((secondAppointmentAttended / (setAtEvent + setAfterEvent)) * 100)
+  const closingRate = secondAppointmentAttended > 0 ? Math.round((clients / secondAppointmentAttended) * 100) : 0
 
   // Data for the journey steps
   const journeySteps = [
@@ -80,6 +83,14 @@ export function AppointmentTrends({
       gradient: "from-slate-500 to-slate-300",
       description: `${secondAppointmentRate}% return rate`,
     },
+    {
+      label: "Clients",
+      value: clients,
+      icon: TrendingUp,
+      color: "bg-amber-400",
+      gradient: "from-amber-500 to-amber-300",
+      description: `${closingRate}% closing rate`,
+    },
   ]
 
   // Journey insights with hover effects
@@ -115,6 +126,15 @@ export function AppointmentTrends({
     return () => clearTimeout(timer)
   }, [])
 
+  // Add closing rate to journey insights
+  journeyInsights.push({
+    text: `Closing rate: ${closingRate}% of 2nd appointments become clients`,
+    color: "text-amber-400",
+    hoverBg: "bg-amber-500/20",
+    hoverBorder: "border-amber-500/50",
+    icon: TrendingUp,
+  })
+
   return (
     <Card
       className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-md h-full transition-all duration-300 hover:shadow-lg hover:shadow-amber-900/20"
@@ -146,7 +166,7 @@ export function AppointmentTrends({
           <div className="flex items-center">
             <Info className="h-4 w-4 mr-2 text-amber-400 group-hover:animate-pulse" />
             <span className="text-gray-400">
-              Overall conversion:{" "}
+              Overall conversion: {" "}
               <span className="text-amber-400 font-bold group-hover:text-amber-300">{overallConversionRate}%</span> from
               initial contact to second appointment
             </span>
@@ -154,67 +174,17 @@ export function AppointmentTrends({
         </div>
 
         {/* Journey Path Visualization */}
-        <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-700 transform -translate-y-1/2 z-0">
-          {journeySteps.map(
-            (step, index) =>
-              index < journeySteps.length - 1 && (
-                <div
-                  key={`connector-${index}`}
-                  className={`absolute h-1 transition-all duration-700 ease-out ${step.color}`}
-                  style={{
-                    left: `${index * 25}%`,
-                    width: "25%",
-                    opacity: animationComplete ? 1 : 0,
-                    transform: animationComplete ? "scaleX(1)" : "scaleX(0)",
-                    transformOrigin: "left",
-                    transitionDelay: `${index * 200}ms`,
-                  }}
-                />
-              ),
-          )}
-        </div>
-
-        <div className="flex justify-between items-end relative h-48 mb-12 z-10">
+        <div className="flex justify-between items-end mb-8 relative z-10">
           {journeySteps.map((step, index) => (
-            <div
-              key={index}
-              className="w-[18%] flex flex-col items-center"
-              onMouseEnter={() => setActiveStep(index)}
-              onMouseLeave={() => setActiveStep(null)}
-            >
-              {/* Bar Chart */}
-              <div className="w-full h-full relative flex items-end mb-2">
-                <div
-                  className={`w-full rounded-t-sm transition-all duration-700 ease-out bg-gradient-to-t ${step.gradient} hover:shadow-lg`}
-                  style={{
-                    height: animationComplete ? `${(step.value / maxValue) * 100}%` : "0%",
-                    transitionDelay: `${index * 100}ms`,
-                    boxShadow: activeStep === index ? "0 0 20px rgba(255, 255, 255, 0.4)" : "none",
-                    transform: activeStep === index ? "scaleY(1.05)" : "scaleY(1)",
-                  }}
-                >
-                  {/* Value Label */}
-                  <div
-                    className={`absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 px-2 py-1 rounded text-white text-sm font-bold transition-all duration-300 ${
-                      activeStep === index ? "opacity-100 scale-110" : "opacity-0 scale-90"
-                    }`}
-                  >
-                    {step.value}
-                  </div>
-                </div>
-              </div>
-
+            <div key={step.label} className="flex flex-col items-center flex-1 relative">
               {/* Icon */}
               <div
                 className={`rounded-full p-2 mb-2 transition-all duration-300 ${
-                  activeStep === index
-                    ? `${step.color} text-white scale-110 shadow-lg shadow-${step.color}/40`
-                    : "bg-gray-800 text-gray-400"
+                  activeStep === index ? `${step.color} text-white scale-110 shadow-lg` : "bg-gray-800 text-gray-400"
                 }`}
               >
                 <step.icon className={`h-5 w-5 ${activeStep === index ? "animate-pulse" : ""}`} />
               </div>
-
               {/* Label */}
               <p
                 className={`text-sm font-medium text-center transition-colors duration-300 ${
@@ -223,7 +193,6 @@ export function AppointmentTrends({
               >
                 {step.label}
               </p>
-
               {/* Value */}
               <p
                 className={`text-xl font-bold transition-all duration-300 ${
@@ -232,7 +201,6 @@ export function AppointmentTrends({
               >
                 {step.value}
               </p>
-
               {/* Description - Only visible when active */}
               <div
                 className={`mt-1 text-xs text-center transition-all duration-300 max-w-[120px] ${
@@ -247,7 +215,7 @@ export function AppointmentTrends({
 
         {/* Flow Arrows */}
         <div className="flex justify-between items-center px-10 mb-6">
-          {[0, 1, 2, 3].map((index) => (
+          {[0, 1, 2, 3, 4].map((index) => (
             <ArrowRight
               key={`arrow-${index}`}
               className={`h-5 w-5 text-gray-600 transition-all duration-300 ${

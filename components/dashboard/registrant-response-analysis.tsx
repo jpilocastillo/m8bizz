@@ -4,22 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface RegistrantResponseAnalysisProps {
   responses?: number
-  mailers?: number
+  marketingAudienceSize?: number
   confirmations?: number
   attendees?: number
 }
 
 export function RegistrantResponseAnalysis({
   responses = 31,
-  mailers = 10000,
+  marketingAudienceSize = 10000,
   confirmations = 28,
   attendees = 28,
 }: RegistrantResponseAnalysisProps) {
   // Calculate rates
-  const responseRate = (responses / mailers) * 100
+  const responseRate = (responses / marketingAudienceSize) * 100
   const confirmationRate = (confirmations / responses) * 100
   const attendanceRate = confirmations > 0 ? (attendees / confirmations) * 100 : 0
-  const overallRate = (attendees / mailers) * 100
+  const overallRate = (attendees / marketingAudienceSize) * 100
 
   // Format rates for display
   const responseRateFormatted = responseRate.toFixed(2)
@@ -28,13 +28,13 @@ export function RegistrantResponseAnalysis({
   const overallRateFormatted = overallRate.toFixed(2)
 
   // Calculate drop-offs
-  const responseDropOff = mailers - responses
+  const responseDropOff = marketingAudienceSize - responses
   const confirmationDropOff = responses - confirmations
   const attendanceDropOff = confirmations - attendees
-  const totalDropOff = mailers - attendees
+  const totalDropOff = marketingAudienceSize - attendees
 
   // Calculate drop-off percentages
-  const responseDropOffPercent = (responseDropOff / mailers) * 100
+  const responseDropOffPercent = (responseDropOff / marketingAudienceSize) * 100
   const confirmationDropOffPercent = (confirmationDropOff / responses) * 100
   const attendanceDropOffPercent = (attendanceDropOff / confirmations) * 100
 
@@ -56,11 +56,11 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center mb-1">
               <Users className="h-4 w-4 text-blue-400 mr-2 transition-all duration-300 group-hover/item:text-blue-300 group-hover/item:rotate-6" />
               <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
-                Mailers
+                Marketing Audience Size
               </span>
             </div>
             <div className="text-lg font-bold text-white transition-colors duration-300 group-hover/item:text-blue-300">
-              {mailers.toLocaleString()}
+              {marketingAudienceSize.toLocaleString()}
             </div>
           </div>
 
@@ -68,7 +68,7 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center mb-1">
               <Users className="h-4 w-4 text-blue-400 mr-2 transition-all duration-300 group-hover/item:text-blue-300 group-hover/item:rotate-6" />
               <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
-                Responses
+                Responses (BU)
               </span>
             </div>
             <div className="text-lg font-bold text-white transition-colors duration-300 group-hover/item:text-blue-300">
@@ -83,7 +83,7 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center mb-1">
               <CheckCircle className="h-4 w-4 text-green-400 mr-2 transition-all duration-300 group-hover/item:text-green-300 group-hover/item:rotate-6" />
               <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
-                Confirmations
+                Confirmations (BU)
               </span>
             </div>
             <div className="text-lg font-bold text-white transition-colors duration-300 group-hover/item:text-green-300">
@@ -98,7 +98,7 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center mb-1">
               <UserCheck className="h-4 w-4 text-purple-400 mr-2 transition-all duration-300 group-hover/item:text-purple-300 group-hover/item:rotate-6" />
               <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
-                Attendees
+                Attendees (BU)
               </span>
             </div>
             <div className="text-lg font-bold text-white transition-colors duration-300 group-hover/item:text-purple-300">
@@ -117,10 +117,10 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center mb-4 group/stage">
               <div className="w-32 text-right pr-3">
                 <div className="text-sm font-medium text-white transition-colors duration-300 group-hover/stage:text-blue-300">
-                  Mailers
+                  Marketing Audience Size
                 </div>
                 <div className="text-xs text-gray-400 transition-colors duration-300 group-hover/stage:text-gray-300">
-                  {mailers.toLocaleString()}
+                  {marketingAudienceSize.toLocaleString()}
                 </div>
               </div>
 
@@ -152,7 +152,7 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center mb-4 group/stage">
               <div className="w-32 text-right pr-3">
                 <div className="text-sm font-medium text-white transition-colors duration-300 group-hover/stage:text-blue-300">
-                  Responses
+                  Responses (BU)
                 </div>
                 <div className="text-xs text-gray-400 transition-colors duration-300 group-hover/stage:text-gray-300">
                   {responses.toLocaleString()}
@@ -187,7 +187,7 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center mb-4 group/stage">
               <div className="w-32 text-right pr-3">
                 <div className="text-sm font-medium text-white transition-colors duration-300 group-hover/stage:text-green-300">
-                  Confirmations
+                  Confirmations (BU)
                 </div>
                 <div className="text-xs text-gray-400 transition-colors duration-300 group-hover/stage:text-gray-300">
                   {confirmations.toLocaleString()}
@@ -222,7 +222,7 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center group/stage">
               <div className="w-32 text-right pr-3">
                 <div className="text-sm font-medium text-white transition-colors duration-300 group-hover/stage:text-purple-300">
-                  Attendees
+                  Attendees (BU)
                 </div>
                 <div className="text-xs text-gray-400 transition-colors duration-300 group-hover/stage:text-gray-300">
                   {attendees.toLocaleString()}
@@ -253,7 +253,7 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center mb-3 group/bar">
               <div className="w-16 text-right pr-3">
                 <div className="text-xs text-gray-400 transition-colors duration-300 group-hover/bar:text-gray-300">
-                  Mailers
+                  Marketing Audience Size
                 </div>
               </div>
 
@@ -268,7 +268,7 @@ export function RegistrantResponseAnalysis({
 
               <div className="w-16 pl-3">
                 <div className="text-xs text-white transition-colors duration-300 group-hover/bar:text-blue-300">
-                  {mailers.toLocaleString()}
+                  {marketingAudienceSize.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -276,7 +276,7 @@ export function RegistrantResponseAnalysis({
             <div className="flex items-center group/bar">
               <div className="w-16 text-right pr-3">
                 <div className="text-xs text-gray-400 transition-colors duration-300 group-hover/bar:text-gray-300">
-                  Attendees
+                  Attendees (BU)
                 </div>
               </div>
 

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
-import { createEvent, createEventExpenses, createEventAttendance, createEventAppointments, createEventFinancialProduction } from "@/lib/data"
+import { createEvent, createEventExpenses, createEventAttendance, createEventAppointments, createEventFinancialProduction, updateEvent } from "@/lib/data"
 import { useAuth } from "@/components/auth-provider"
 
 interface EventFormProps {
@@ -35,6 +35,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [ageRange, setAgeRange] = useState("")
   const [mileRadius, setMileRadius] = useState("")
   const [incomeAssets, setIncomeAssets] = useState("")
+  const [marketingAudience, setMarketingAudience] = useState("")
 
   // Expenses
   const [advertisingCost, setAdvertisingCost] = useState("")
@@ -58,12 +59,15 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [annuityPremium, setAnnuityPremium] = useState("")
   const [lifeInsurancePremium, setLifeInsurancePremium] = useState("")
   const [aum, setAum] = useState("")
+  const [aumFeePercentage, setAumFeePercentage] = useState("1.5")
+  const [aumFees, setAumFees] = useState("")
   const [financialPlanning, setFinancialPlanning] = useState("")
   const [annuitiesSold, setAnnuitiesSold] = useState("")
   const [lifePoliciesSold, setLifePoliciesSold] = useState("")
+  const [annuityCommissionPercentage, setAnnuityCommissionPercentage] = useState("")
   const [annuityCommission, setAnnuityCommission] = useState("")
+  const [lifeInsuranceCommissionPercentage, setLifeInsuranceCommissionPercentage] = useState("")
   const [lifeInsuranceCommission, setLifeInsuranceCommission] = useState("")
-  const [aumFees, setAumFees] = useState("")
 
   // Add state for 12-hour time input
   const [hour, setHour] = useState("");
@@ -82,6 +86,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       setAgeRange(initialData.eventDetails?.age_range || "")
       setMileRadius(initialData.eventDetails?.mile_radius || "")
       setIncomeAssets(initialData.eventDetails?.income_assets || "")
+      setMarketingAudience(initialData.eventDetails?.marketing_audience || "")
 
       // Expenses
       setAdvertisingCost(initialData.marketingExpenses?.advertising?.toString() || "")
@@ -105,12 +110,27 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       setAnnuityPremium(initialData.financialProduction?.annuity_premium?.toString() || "")
       setLifeInsurancePremium(initialData.financialProduction?.life_insurance_premium?.toString() || "")
       setAum(initialData.financialProduction?.aum?.toString() || "")
+      const existingAumFees = initialData.financialProduction?.aum_fees || 0
+      const existingAum = initialData.financialProduction?.aum || 0
+      const calculatedPercentage = existingAum > 0 ? ((existingAumFees / existingAum) * 100).toFixed(2) : "1.5"
+      setAumFeePercentage(calculatedPercentage)
+      setAumFees(existingAumFees.toString())
       setFinancialPlanning(initialData.financialProduction?.financial_planning?.toString() || "")
       setAnnuitiesSold(initialData.financialProduction?.annuities_sold?.toString() || "")
       setLifePoliciesSold(initialData.financialProduction?.life_policies_sold?.toString() || "")
       setAnnuityCommission(initialData.financialProduction?.annuity_commission?.toString() || "")
       setLifeInsuranceCommission(initialData.financialProduction?.life_insurance_commission?.toString() || "")
-      setAumFees(initialData.financialProduction?.aum_fees?.toString() || "")
+      // Calculate percentage from existing annuity commission
+      const existingCommission = initialData.financialProduction?.annuity_commission || 0
+      const existingPremium = initialData.financialProduction?.annuity_premium || 0
+      const annuityCommissionPercentage = existingPremium > 0 ? ((existingCommission / existingPremium) * 100).toFixed(2) : ""
+      setAnnuityCommissionPercentage(annuityCommissionPercentage)
+      setAnnuityCommission(existingCommission.toString())
+      // Calculate percentage from existing life insurance commission
+      const existingLifeCommission = initialData.financialProduction?.life_insurance_commission || 0
+      const lifeInsuranceCommissionPercentage = existingPremium > 0 ? ((existingLifeCommission / existingPremium) * 100).toFixed(2) : ""
+      setLifeInsuranceCommissionPercentage(lifeInsuranceCommissionPercentage)
+      setLifeInsuranceCommission(existingLifeCommission.toString())
 
       // Parse 24-hour time to 12-hour
       if (initialData.eventDetails?.time) {
@@ -129,6 +149,30 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     }
   }, [initialData])
 
+  // Calculate AUM fees when AUM or percentage changes
+  useEffect(() => {
+    const aumValue = parseFloat(aum) || 0
+    const percentage = parseFloat(aumFeePercentage) || 0
+    const annualFees = (aumValue * percentage) / 100
+    setAumFees(annualFees.toFixed(2))
+  }, [aum, aumFeePercentage])
+
+  // Calculate annuity commission when premium or percentage changes
+  useEffect(() => {
+    const premiumValue = parseFloat(annuityPremium) || 0
+    const percentage = parseFloat(annuityCommissionPercentage) || 0
+    const commission = (premiumValue * percentage) / 100
+    setAnnuityCommission(commission.toFixed(2))
+  }, [annuityPremium, annuityCommissionPercentage])
+
+  // Calculate life insurance commission when premium or percentage changes
+  useEffect(() => {
+    const premiumValue = parseFloat(lifeInsurancePremium) || 0
+    const percentage = parseFloat(lifeInsuranceCommissionPercentage) || 0
+    const commission = (premiumValue * percentage) / 100
+    setLifeInsuranceCommission(commission.toFixed(2))
+  }, [lifeInsurancePremium, lifeInsuranceCommissionPercentage])
+
   const calculateTotalCost = () => {
     const adCost = Number.parseFloat(advertisingCost) || 0
     const foodCost = Number.parseFloat(foodVenueCost) || 0
@@ -137,11 +181,11 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   }
 
   const calculateTotalProduction = () => {
-    const annuity = Number.parseFloat(annuityPremium) || 0
-    const life = Number.parseFloat(lifeInsurancePremium) || 0
-    const assets = Number.parseFloat(aum) || 0
-    const planning = Number.parseFloat(financialPlanning) || 0
-    return annuity + life + assets + planning
+    const aumFeesValue = parseFloat(aumFees) || 0
+    const annuityCommissionValue = parseFloat(annuityCommission) || 0
+    const lifeInsuranceCommissionValue = parseFloat(lifeInsuranceCommission) || 0
+    const planningValue = parseFloat(financialPlanning) || 0
+    return aumFeesValue + annuityCommissionValue + lifeInsuranceCommissionValue + planningValue
   }
 
   // Helper to convert to 24-hour format
@@ -217,6 +261,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         age_range: ageRange,
         mile_radius: mileRadius,
         income_assets: incomeAssets,
+        marketing_audience: marketingAudience,
         status: 'active',
         relatedData: {
           attendance: {
@@ -253,26 +298,30 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
       console.log('Submitting event data with relatedData:', eventData)
 
-      // Create the event and all related records
-      console.log('Calling createEvent function...')
-      const result = await createEvent(currentUserId, eventData)
-      console.log('createEvent result:', result)
+      let result;
+      if (isEditing && initialData?.eventId) {
+        console.log('Updating existing event:', initialData.eventId)
+        result = await updateEvent(initialData.eventId, eventData)
+      } else {
+        console.log('Creating new event...')
+        result = await createEvent(currentUserId, eventData)
+      }
 
-      if (!result.success || !result.eventId) {
-        console.error("Error creating event:", result.error)
+      if (!result.success) {
+        console.error("Error with event operation:", result.error)
         toast({
           variant: "destructive",
           title: "Error",
-          description: result.error || "Failed to create event. Please try again.",
+          description: result.error || `Failed to ${isEditing ? 'update' : 'create'} event. Please try again.`,
         })
         return
       }
 
-      console.log('Event and related records created successfully')
+      console.log('Event operation completed successfully')
 
       toast({
         title: "Success",
-        description: "Event created successfully!",
+        description: `Event ${isEditing ? 'updated' : 'created'} successfully!`,
       })
 
       console.log('Redirecting to dashboard...')
@@ -487,6 +536,20 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     placeholder="e.g. 500k-2m"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="marketingAudience" className="text-gray-300 font-medium">
+                    Marketing Audience Size
+                  </Label>
+                  <Input
+                    id="marketingAudience"
+                    type="number"
+                    min="0"
+                    value={marketingAudience}
+                    onChange={(e) => setMarketingAudience(e.target.value)}
+                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    placeholder="Enter total number of people"
+                  />
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
@@ -620,7 +683,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="registrantResponses" className="text-gray-300 font-medium">
-                    Registrant Responses
+                    Registrant Responses (BU)
                   </Label>
                   <Input
                     id="registrantResponses"
@@ -633,7 +696,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmations" className="text-gray-300 font-medium">
-                    Confirmations
+                    Confirmations (BU)
                   </Label>
                   <Input
                     id="confirmations"
@@ -646,7 +709,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="attendees" className="text-gray-300 font-medium">
-                    Attendees
+                    Attendees (BU)
                   </Label>
                   <Input
                     id="attendees"
@@ -870,18 +933,28 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aumFees" className="text-gray-300 font-medium">
-                    AUM Fees ($)
+                  <Label htmlFor="aumFeePercentage" className="text-gray-300 font-medium">
+                    AUM Fee Percentage (%)
                   </Label>
                   <Input
-                    id="aumFees"
+                    id="aumFeePercentage"
                     type="number"
                     step="0.01"
-                    value={aumFees}
-                    onChange={(e) => setAumFees(e.target.value)}
+                    min="0"
+                    max="100"
+                    value={aumFeePercentage}
+                    onChange={(e) => setAumFeePercentage(e.target.value)}
                     className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="aumFees" className="text-gray-300 font-medium">
+                    Annual AUM Fees ($)
+                  </Label>
+                  <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                    ${aumFees}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="financialPlanning" className="text-gray-300 font-medium">
@@ -930,15 +1003,41 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="annuityCommissionPercentage" className="text-gray-300 font-medium">
+                    Annuity Commission Percentage (%)
+                  </Label>
+                  <Input
+                    id="annuityCommissionPercentage"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={annuityCommissionPercentage}
+                    onChange={(e) => setAnnuityCommissionPercentage(e.target.value)}
+                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="annuityCommission" className="text-gray-300 font-medium">
                     Annuity Commission ($)
                   </Label>
+                  <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                    ${annuityCommission}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lifeInsuranceCommissionPercentage" className="text-gray-300 font-medium">
+                    Life Insurance Commission Percentage (%)
+                  </Label>
                   <Input
-                    id="annuityCommission"
+                    id="lifeInsuranceCommissionPercentage"
                     type="number"
                     step="0.01"
-                    value={annuityCommission}
-                    onChange={(e) => setAnnuityCommission(e.target.value)}
+                    min="0"
+                    max="100"
+                    value={lifeInsuranceCommissionPercentage}
+                    onChange={(e) => setLifeInsuranceCommissionPercentage(e.target.value)}
                     className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
                     required
                   />
@@ -947,15 +1046,9 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   <Label htmlFor="lifeInsuranceCommission" className="text-gray-300 font-medium">
                     Life Insurance Commission ($)
                   </Label>
-                  <Input
-                    id="lifeInsuranceCommission"
-                    type="number"
-                    step="0.01"
-                    value={lifeInsuranceCommission}
-                    onChange={(e) => setLifeInsuranceCommission(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
-                    required
-                  />
+                  <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                    ${lifeInsuranceCommission}
+                  </div>
                 </div>
               </div>
             </CardContent>

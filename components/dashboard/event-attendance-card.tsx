@@ -45,7 +45,7 @@ export function EventAttendanceCard({
           {/* Registrant Responses */}
           <div className="p-6 flex items-center justify-between">
             <div>
-              <div className="text-white text-sm font-medium mb-1">Registrant Responses</div>
+              <div className="text-white text-sm font-medium mb-1">Registrant Responses (BU)</div>
               <div className="text-white text-4xl font-bold">{registrantResponses}</div>
             </div>
             <div className="flex-shrink-0">
@@ -58,7 +58,7 @@ export function EventAttendanceCard({
           {/* Confirmations */}
           <div className="p-6 flex items-center justify-between">
             <div>
-              <div className="text-white text-sm font-medium mb-1">Confirmations</div>
+              <div className="text-white text-sm font-medium mb-1">Confirmations (BU)</div>
               <div className="text-white text-4xl font-bold">{confirmations}</div>
             </div>
             <div className="flex-shrink-0">
@@ -71,7 +71,7 @@ export function EventAttendanceCard({
           {/* Attendees */}
           <div className="p-6 flex items-center justify-between">
             <div>
-              <div className="text-white text-sm font-medium mb-1">Attendees</div>
+              <div className="text-white text-sm font-medium mb-1">Attendees (BU)</div>
               <div className="text-white text-4xl font-bold">{attendees}</div>
             </div>
             <div className="flex-shrink-0">
