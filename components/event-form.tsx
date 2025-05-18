@@ -35,7 +35,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [ageRange, setAgeRange] = useState("")
   const [mileRadius, setMileRadius] = useState("")
   const [incomeAssets, setIncomeAssets] = useState("")
-  const [marketingAudience, setMarketingAudience] = useState("")
+  const [marketingAudience, setMarketingAudience] = useState<string | null>(null)
 
   // Expenses
   const [advertisingCost, setAdvertisingCost] = useState("")
@@ -86,7 +86,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       setAgeRange(initialData.eventDetails?.age_range || "")
       setMileRadius(initialData.eventDetails?.mile_radius || "")
       setIncomeAssets(initialData.eventDetails?.income_assets || "")
-      setMarketingAudience(initialData.eventDetails?.marketing_audience || "")
+      setMarketingAudience(
+        initialData.eventDetails?.marketing_audience !== undefined &&
+        initialData.eventDetails?.marketing_audience !== null
+          ? initialData.eventDetails.marketing_audience.toString()
+          : ""
+      )
 
       // Expenses
       setAdvertisingCost(initialData.marketingExpenses?.advertising?.toString() || "")
@@ -261,7 +266,10 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         age_range: ageRange,
         mile_radius: mileRadius,
         income_assets: incomeAssets,
-        marketing_audience: marketingAudience,
+        marketing_audience:
+          marketingAudience === "" || marketingAudience === null
+            ? null
+            : parseInt(marketingAudience, 10),
         status: 'active',
         relatedData: {
           attendance: {
@@ -544,8 +552,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="marketingAudience"
                     type="number"
                     min="0"
-                    value={marketingAudience}
-                    onChange={(e) => setMarketingAudience(e.target.value)}
+                    value={marketingAudience ?? ""}
+                    onChange={e => setMarketingAudience(e.target.value === "" ? null : e.target.value)}
                     className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
                     placeholder="Enter total number of people"
                   />

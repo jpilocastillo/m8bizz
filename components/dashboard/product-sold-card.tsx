@@ -198,12 +198,14 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
 
             {/* Details section */}
             <div className="space-y-2 mb-4">
-              {details.map((detail, index) => (
-                <div key={index} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">{detail.label}</span>
-                  <span className="text-white font-medium">{detail.value}</span>
-                </div>
-              ))}
+              {details
+                .filter(detail => detail.label.toLowerCase() !== 'commission rate')
+                .map((detail, index) => (
+                  <div key={index} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">{detail.label}</span>
+                    <span className="text-white font-medium">{detail.value}</span>
+                  </div>
+                ))}
             </div>
 
             {/* Benefits section */}

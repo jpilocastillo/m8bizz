@@ -125,8 +125,8 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       const data = await fetchDashboardData(userId, eventId)
       console.log("Fetched dashboard data:", data)
 
-      if (!data) {
-        setError("Failed to load event data. Please try again.")
+      if (!data || !data.eventDetails || !data.eventDetails.name) {
+        setError("Event not found. Please select a valid event.")
         return
       }
 
@@ -141,7 +141,10 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           topic: data.eventDetails.topic || "N/A",
           age_range: data.eventDetails.age_range || "N/A",
           mile_radius: data.eventDetails.mile_radius || "N/A",
-          income_assets: data.eventDetails.income_assets || "N/A"
+          income_assets: data.eventDetails.income_assets || "N/A",
+          marketing_audience: typeof data.eventDetails.marketing_audience === 'number'
+            ? data.eventDetails.marketing_audience
+            : 0
         },
         marketingExpenses: {
           total: data.marketingExpenses?.total || 0,
@@ -334,6 +337,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           ageRange={dashboardData.eventDetails.age_range}
           mileRadius={dashboardData.eventDetails.mile_radius}
           incomeAssets={dashboardData.eventDetails.income_assets}
+          marketingAudienceSize={dashboardData.eventDetails.marketing_audience}
         />
       </div>
 

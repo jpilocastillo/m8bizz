@@ -64,6 +64,7 @@ export type MarketingEvent = {
   income_assets: string | null
   time: string | null
   status: string
+  marketing_audience: number | null
   // Top-level fields for summary and dashboard
   revenue?: number
   attendees?: number
@@ -287,6 +288,7 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
         age_range,
         mile_radius,
         income_assets,
+        marketing_audience,
         created_at,
         updated_at,
         marketing_expenses (
@@ -389,6 +391,7 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
         financial_production: latestFinancial ? { ...latestFinancial, total } : undefined,
         marketing_expenses: latestExpenses,
         event_appointments: latestAppointments,
+        marketing_audience: event.marketing_audience
       };
     });
   } catch (error) {
@@ -413,7 +416,18 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
     let eventQuery = supabase
       .from("marketing_events")
       .select(`
-        *,
+        id,
+        name,
+        date,
+        location,
+        marketing_type,
+        topic,
+        status,
+        time,
+        age_range,
+        mile_radius,
+        income_assets,
+        marketing_audience,
         marketing_expenses (
           id,
           advertising_cost,
@@ -449,7 +463,6 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
           aum_fees
         )
       `)
-      .eq("user_id", userId)
 
     if (eventId) {
       eventQuery = eventQuery.eq("id", eventId)
@@ -539,7 +552,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         mile_radius: event.mile_radius,
         income_assets: event.income_assets,
         time: event.time,
-        status: event.status
+        status: event.status,
+        marketing_audience: event.marketing_audience
       },
       roi: {
         value: roi,
@@ -662,7 +676,13 @@ export async function createEvent(userId: string, eventData: any) {
     // Destructure relatedData from eventData
     const { relatedData, ...eventFields } = eventData
 
+    // Ensure marketing_audience is a number
+    if (typeof eventFields.marketing_audience === "string") {
+      eventFields.marketing_audience = parseInt(eventFields.marketing_audience, 10);
+    }
+
     // 1. Create the event (only event fields, not relatedData)
+    console.log('Saving eventFields:', eventFields);
     const { data: event, error: eventError } = await supabase
       .from('marketing_events')
       .insert([{ user_id: userId, ...eventFields }])
@@ -794,6 +814,12 @@ export async function updateEvent(eventId: string, eventData: any) {
         delete marketingEventData.type
       }
 
+      // Ensure marketing_audience is a number
+      if (typeof marketingEventData.marketing_audience === "string") {
+        marketingEventData.marketing_audience = parseInt(marketingEventData.marketing_audience, 10);
+      }
+
+      console.log('Saving marketingEventData:', marketingEventData);
       const { error: eventError } = await supabase
         .from("marketing_events")
         .update(marketingEventData)

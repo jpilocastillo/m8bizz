@@ -26,8 +26,8 @@ export function FinancialProductionCard({
     }).format(value)
   }
 
-  // Calculate total premium
-  const totalPremium = annuityPremium + lifeInsurancePremium
+  // Calculate total financial production
+  const totalFinancialProduction = annuityPremium + lifeInsurancePremium + aum + financialPlanning;
 
   return (
     <Card
@@ -57,16 +57,12 @@ export function FinancialProductionCard({
               <h3 className="text-sm font-medium text-m8bs-muted mb-1">Assets Under Management</h3>
               <p className="text-2xl font-bold text-white">{formatCurrency(aum)}</p>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-m8bs-muted mb-1">Financial Planning Fees</h3>
-              <p className="text-2xl font-bold text-white">{formatCurrency(financialPlanning)}</p>
-            </div>
           </div>
         </div>
         <div className="mt-6 pt-4 border-t border-m8bs-border">
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium text-m8bs-muted">Total Premium</h3>
-            <p className="text-xl font-bold text-white">{formatCurrency(totalPremium)}</p>
+            <h3 className="text-sm font-medium text-m8bs-muted">Total Financial Production</h3>
+            <p className="text-xl font-bold text-white">{formatCurrency(totalFinancialProduction)}</p>
           </div>
         </div>
       </CardContent>
