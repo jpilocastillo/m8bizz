@@ -204,12 +204,6 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
                   <ArrowUpDown className="h-4 w-4" />
                 </div>
               </TableHead>
-              <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("budget")}>
-                <div className="flex items-center gap-2">
-                  Budget
-                  <ArrowUpDown className="h-4 w-4" />
-                </div>
-              </TableHead>
               <TableHead className="text-gray-400 text-right py-4">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -225,7 +219,6 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
                 </TableCell>
                 <TableCell className="text-white">{event.location}</TableCell>
                 <TableCell className="text-white">{event.type}</TableCell>
-                <TableCell className="text-white">{formatCurrency(event.budget)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <TooltipProvider>
