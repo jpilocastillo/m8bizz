@@ -25,6 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { format, parseISO } from "date-fns"
 
 interface Event {
   id: string
@@ -134,11 +135,8 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
+    const date = parseISO(dateString)
+    return format(date, "MMM d, yyyy")
   }
 
   const formatCurrency = (amount: number) => {

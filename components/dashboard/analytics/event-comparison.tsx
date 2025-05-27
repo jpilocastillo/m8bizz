@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList, Cell } from "recharts"
-import { Check, ChevronsUpDown, BarChart3 } from "lucide-react"
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList, Cell, Legend } from "recharts"
+import { Check, ChevronsUpDown, BarChart3, TrendingUp, TrendingDown } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
+import { format, parseISO } from "date-fns"
 
 type MetricType = "ROI" | "Conversion" | "Revenue" | "Expenses" | "Profit" | "Attendees" | "Clients"
 
@@ -116,29 +117,63 @@ export function EventComparison({ events }: EventComparisonProps) {
       date: event.date,
       id: event.id,
       location: event.location,
-      label: `${event.name} (${event.date ? new Date(event.date).toLocaleDateString() : 'No date'} • ${event.location || 'No location'})`,
+      label: event.name,
     }
   })
+
+  // Calculate summary statistics
+  const calculateSummary = () => {
+    if (chartData.length === 0) return null;
+    
+    const values = chartData.map(d => d.value);
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const trend = values[0] > values[values.length - 1] ? "down" : "up";
+    
+    return { avg, max, min, trend };
+  }
+
+  const summary = calculateSummary();
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-[#131525] border border-[#1f2037] p-3 rounded-lg shadow-lg">
+          <p className="font-bold text-white mb-1">{data.name}</p>
+          <p className="text-sm text-gray-400 mb-1">
+            {data.date ? format(parseISO(data.date), "MMM d, yyyy") : 'No date'} • {data.location}
+          </p>
+          <p className="text-sm font-semibold text-white">
+            {activeMetric}: {formatValue(data.value, activeMetric)}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Get gradient colors based on metric for the chart
   const getGradientColors = (metric: MetricType) => {
     switch (metric) {
       case "ROI":
-        return { start: "#9333ea", end: "#c084fc" } // purple
+        return { start: "#8B5CF6", end: "#C4B5FD" } // purple
       case "Conversion":
-        return { start: "#f97316", end: "#fdba74" } // orange
+        return { start: "#F97316", end: "#FDBA74" } // orange
       case "Revenue":
-        return { start: "#16a34a", end: "#86efac" } // green
+        return { start: "#10B981", end: "#6EE7B7" } // emerald
       case "Expenses":
-        return { start: "#dc2626", end: "#fca5a5" } // red
+        return { start: "#EF4444", end: "#FCA5A5" } // red
       case "Profit":
-        return { start: "#2563eb", end: "#93c5fd" } // blue
+        return { start: "#3B82F6", end: "#93C5FD" } // blue
       case "Attendees":
-        return { start: "#ca8a04", end: "#fde68a" } // yellow
+        return { start: "#F59E0B", end: "#FCD34D" } // amber
       case "Clients":
-        return { start: "#0284c7", end: "#7dd3fc" } // sky
+        return { start: "#0EA5E9", end: "#7DD3FC" } // sky
       default:
-        return { start: "#2563eb", end: "#93c5fd" } // blue
+        return { start: "#3B82F6", end: "#93C5FD" } // blue
     }
   }
 
@@ -211,7 +246,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                           )}
                         />
                         <div className="flex flex-col">
-                          <span>{event.name} <span className="text-xs text-gray-400">({new Date(event.date).toLocaleDateString()} • {event.location || 'No location'})</span></span>
+                          <span>{event.name} <span className="text-xs text-gray-400">({event.date ? format(parseISO(event.date), "MMM d, yyyy") : 'No date'} • {event.location || 'No location'})</span></span>
                         </div>
                       </CommandItem>
                     ))}
@@ -223,10 +258,22 @@ export function EventComparison({ events }: EventComparisonProps) {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="h-[400px] mt-6 w-full">
+        {summary && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-[#131525] p-4 rounded-lg border border-[#1f2037]">
+              <p className="text-sm text-gray-400 mb-1">Average {activeMetric}</p>
+              <p className="text-xl font-bold text-white">{formatValue(summary.avg, activeMetric)}</p>
+            </div>
+            <div className="bg-[#131525] p-4 rounded-lg border border-[#1f2037]">
+              <p className="text-sm text-gray-400 mb-1">Highest {activeMetric}</p>
+              <p className="text-xl font-bold text-white">{formatValue(summary.max, activeMetric)}</p>
+            </div>
+          </div>
+        )}
+        <div className="h-[600px] mt-6 w-full">
           <svg className="w-0 h-0">
             <defs>
-              <linearGradient id={`barGradient-${activeMetric}`} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={`barGradient-${activeMetric}`} x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor={colors.start} />
                 <stop offset="100%" stopColor={colors.end} />
               </linearGradient>
@@ -236,74 +283,49 @@ export function EventComparison({ events }: EventComparisonProps) {
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ top: 30, right: 80, left: 10, bottom: 30 }}
+              margin={{ top: 20, right: 200, left: 20, bottom: 20 }}
               barGap={16}
             >
               <XAxis
                 type="number"
                 stroke="#888888"
-                fontSize={22}
-                fontWeight="bold"
-                tick={{ style: { fontWeight: 700, fontSize: 22, fill: '#fff' } }}
+                fontSize={14}
+                tick={{ style: { fill: '#94a3b8' } }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value) => {
                   if (activeMetric === "Revenue" || activeMetric === "Expenses" || activeMetric === "Profit") {
-                    return `$${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`
+                    return `$${value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toLocaleString()}`
                   }
                   if (activeMetric === "ROI" || activeMetric === "Conversion") {
-                    return `${value}%`
+                    return `${value.toFixed(1)}%`
                   }
-                  return value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value
+                  return value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toLocaleString()
                 }}
               />
               <YAxis
                 dataKey="label"
                 type="category"
                 stroke="#888888"
-                fontSize={22}
-                fontWeight="bold"
-                tick={false}
+                fontSize={14}
+                tick={{ style: { fill: '#94a3b8' } }}
                 tickLine={false}
                 axisLine={false}
-                width={120}
-              />
-              <Tooltip
-                wrapperStyle={{ outline: "none" }}
-                contentStyle={{
-                  backgroundColor: "#1a1a2e",
-                  border: "1px solid #2a2a45",
-                  borderRadius: "8px",
-                }}
-                cursor={{ fill: "rgba(255,255,255,0.05)" }}
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0].payload
-                    return (
-                      <div className="rounded-lg border border-[#2a2a45] bg-[#1a1a2e] p-3 shadow-lg">
-                        <div className="grid gap-1">
-                          <div className="font-extrabold text-white text-2xl">{data.name} <span className="text-xl text-gray-400">({data.date ? new Date(data.date).toLocaleDateString() : 'No date'} • {data.location || 'No location'})</span></div>
-                          <div className="font-extrabold text-white text-3xl mt-2">{formatValue(data.value, activeMetric)}</div>
-                        </div>
-                      </div>
-                    )
-                  }
-                  return null
-                }}
+                width={180}
               />
               <Bar
                 dataKey="value"
                 animationDuration={1500}
                 animationEasing="ease-out"
-                radius={[0, 6, 6, 0]}
-                barSize={48}
+                radius={[0, 8, 8, 0]}
+                barSize={32}
               >
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={`url(#barGradient-${activeMetric})`}
                     style={{
-                      filter: "drop-shadow(0px 2px 6px rgba(0, 0, 0, 0.3))",
+                      filter: "drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.2))",
                       opacity: animate ? 1 : 0,
                       transition: `opacity 0.5s ease-in-out ${index * 0.1}s, transform 0.5s ease-out ${index * 0.1}s`,
                       transform: animate ? "translateX(0)" : "translateX(-20px)",
@@ -314,28 +336,29 @@ export function EventComparison({ events }: EventComparisonProps) {
                   dataKey="value"
                   position="right"
                   content={({ x, y, width, height, value, index }) => {
+                    if (!x || !y || !width || !height || typeof index !== 'number') return null;
                     const event = chartData[index];
                     return (
                       <g>
                         <text
-                          x={x + width + 12}
-                          y={y + height / 2 - 10}
+                          x={Number(x) + Number(width) + 8}
+                          y={Number(y) + Number(height) / 2 - 10}
                           fill="#fff"
-                          fontSize={18}
-                          fontWeight="bold"
-                          alignmentBaseline="middle"
+                          fontSize={14}
+                          fontWeight="600"
+                          dominantBaseline="middle"
                         >
-                          {formatValue(value, activeMetric)}
+                          {formatValue(Number(value), activeMetric)}
                         </text>
                         <text
-                          x={x + 16}
-                          y={y + height / 2 + 8}
-                          fill="#cbd5e1"
-                          fontSize={14}
-                          fontWeight="bold"
-                          alignmentBaseline="middle"
+                          x={Number(x) + Number(width) + 8}
+                          y={Number(y) + Number(height) / 2 + 10}
+                          fill="#94a3b8"
+                          fontSize={12}
+                          fontWeight="400"
+                          dominantBaseline="middle"
                         >
-                          {event.type} | {event.date ? new Date(event.date).toLocaleDateString() : 'No date'} | {event.location}
+                          {event.date ? format(parseISO(event.date), "MMM d, yyyy") : 'No date'} • {event.location || 'No location'}
                         </text>
                       </g>
                     );
@@ -344,6 +367,39 @@ export function EventComparison({ events }: EventComparisonProps) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* Data Table */}
+        <div className="mt-8 overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-[#1f2037]">
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Event Name</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Date</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Location</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Type</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">{activeMetric}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {chartData.map((event, index) => (
+                <tr 
+                  key={event.id} 
+                  className="border-b border-[#1f2037] hover:bg-[#1f2037]/50 transition-colors"
+                >
+                  <td className="py-3 px-4 text-sm text-white font-medium">{event.name}</td>
+                  <td className="py-3 px-4 text-sm text-gray-400">
+                    {event.date ? format(parseISO(event.date), "MMM d, yyyy") : 'No date'}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-400">{event.location || 'No location'}</td>
+                  <td className="py-3 px-4 text-sm text-gray-400">{event.type}</td>
+                  <td className="py-3 px-4 text-sm text-white font-medium text-right">
+                    {formatValue(event.value, activeMetric)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <div className="mt-4 text-center text-sm text-gray-400">

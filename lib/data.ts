@@ -463,6 +463,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
           aum_fees
         )
       `)
+      .eq("user_id", userId)
 
     if (eventId) {
       eventQuery = eventQuery.eq("id", eventId)
@@ -478,7 +479,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
     }
 
     if (!event) {
-      console.log("No events found for user")
+      console.log("No event found")
       return null
     }
 

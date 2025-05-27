@@ -17,7 +17,7 @@ import { AccumulativeIncomeCard } from "./accumulative-income-card"
 import { FinancialProductionCard } from "./financial-production-card"
 import { ThreeDMetricCard } from "@/components/dashboard/3d-metric-card"
 import { MarketingExpensesCard } from "./marketing-expenses-card"
-import { format } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { DashboardError } from "./dashboard-error"
 import { createClient } from "@/lib/supabase/client"
 
@@ -243,7 +243,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const aumFees = dashboardData.financialProduction?.aum_fees || 0
 
   // Format event date
-  const eventDate = dashboardData.eventDetails?.date ? new Date(dashboardData.eventDetails.date) : null
+  const eventDate = dashboardData.eventDetails?.date ? parseISO(dashboardData.eventDetails.date) : null
   const formattedDate = eventDate ? format(eventDate, "MMMM d, yyyy") : "Date not available"
 
   // Section divider component
@@ -361,7 +361,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
 
         <motion.div variants={item}>
           <RegistrantResponseAnalysis
-            responses={dashboardData.attendance?.registrantResponses || 0}
+            registrants={dashboardData.attendance?.registrantResponses || 0}
             confirmations={dashboardData.attendance?.confirmations || 0}
             attendees={dashboardData.attendance?.attendees || 0}
             marketingAudienceSize={dashboardData.eventDetails?.marketing_audience || 0}

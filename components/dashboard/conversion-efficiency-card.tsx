@@ -1,13 +1,18 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Activity } from "lucide-react"
+import { Activity, TrendingUp, TrendingDown } from "lucide-react"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
 
 interface ConversionEfficiencyProps {
   registrationToConfirmation: number
   confirmationToAttendance: number
   attendanceToClient: number
   overall: number
+  registrants?: number
+  confirmations?: number
+  attendees?: number
+  clients?: number
 }
 
 export function ConversionEfficiencyCard({
@@ -15,7 +20,53 @@ export function ConversionEfficiencyCard({
   confirmationToAttendance,
   attendanceToClient,
   overall,
+  registrants = 31,
+  confirmations = 28,
+  attendees = 28,
+  clients = 25,
 }: ConversionEfficiencyProps) {
+  const chartData = [
+    {
+      name: "Registration",
+      value: 100,
+      actual: registrants,
+      color: "#10B981",
+    },
+    {
+      name: "Confirmation",
+      value: registrationToConfirmation,
+      actual: confirmations,
+      color: "#3B82F6",
+    },
+    {
+      name: "Attendance",
+      value: confirmationToAttendance,
+      actual: attendees,
+      color: "#8B5CF6",
+    },
+    {
+      name: "Client",
+      value: attendanceToClient,
+      actual: clients,
+      color: "#EF4444",
+    },
+  ]
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div className="bg-[#1a1b2e] p-3 rounded-lg border border-m8bs-border shadow-lg">
+          <p className="text-sm font-medium text-white">{data.name}</p>
+          <p className="text-xs text-gray-400">
+            {data.actual} people ({data.value.toFixed(1)}%)
+          </p>
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
     <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-md h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:shadow-blue-900/20 hover:border-blue-700/50 group">
       <CardHeader className="bg-m8bs-card-alt border-b border-m8bs-border px-6 py-4 transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-m8bs-card-alt group-hover:to-blue-900/40">
@@ -29,258 +80,168 @@ export function ConversionEfficiencyCard({
         </div>
       </CardHeader>
       <CardContent className="p-6 flex-1 flex flex-col justify-between">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* Registration to Confirmation */}
-          <div className="space-y-2 bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-emerald-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-white group-hover/item:text-emerald-300 transition-colors duration-300">
-                Registration to Confirmation
-              </span>
-              <span className="text-sm font-bold text-emerald-400 group-hover/item:text-emerald-300 transition-colors duration-300">
-                {registrationToConfirmation.toFixed(1)}%
-              </span>
+        {/* Overall Conversion Summary */}
+        <div className="bg-[#1a1b2e]/50 p-4 rounded-lg border border-m8bs-border/30 mb-6 transition-all duration-300 hover:bg-[#1a1b2e]/70 hover:border-blue-900/30 hover:shadow-inner">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-white">Overall Conversion</h3>
+            <div className="text-right">
+              <div className="text-lg font-bold text-white">
+                {overall.toFixed(1)}%
+              </div>
+              <div className="text-xs text-gray-400">
+                {clients.toLocaleString()} of {registrants.toLocaleString()} registrants
+              </div>
             </div>
-            <div className="text-xs text-gray-400 group-hover/item:text-gray-300 transition-colors duration-300">
-              {registrationToConfirmation < 40
-                ? "Needs improvement"
-                : registrationToConfirmation < 70
-                  ? "Performing adequately"
-                  : "Excellent performance"}
+          </div>
+          <div className="w-full bg-m8bs-border/30 rounded-full h-2">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${overall}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Conversion Chart */}
+        <div className="bg-[#1a1b2e]/50 p-4 rounded-lg border border-m8bs-border/30 mb-6 transition-all duration-300 hover:bg-[#1a1b2e]/70 hover:border-blue-900/30 hover:shadow-inner">
+          <h3 className="text-sm font-medium text-white mb-4">Conversion Flow</h3>
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                <XAxis
+                  dataKey="name"
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar
+                  dataKey="value"
+                  radius={[4, 4, 0, 0]}
+                  background={{ fill: "#1F2937" }}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} opacity={0.8} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Conversion Stages */}
+        <div className="grid grid-cols-1 gap-4 mb-6">
+          {/* Registration to Confirmation */}
+          <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-emerald-700/60 hover:bg-m8bs-card-alt/50">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-white">Registration to Confirmation</span>
+              <span className="text-sm font-bold text-emerald-400">{registrationToConfirmation.toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
+              <span>{confirmations.toLocaleString()} confirmed</span>
+              <span>of {registrants.toLocaleString()} registrants</span>
+            </div>
+            <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
+              <div
+                className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                style={{ width: `${registrationToConfirmation}%` }}
+              />
             </div>
           </div>
 
           {/* Confirmation to Attendance */}
-          <div className="space-y-2 bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-blue-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-white group-hover/item:text-blue-300 transition-colors duration-300">
-                Confirmation to Attendance
-              </span>
-              <span className="text-sm font-bold text-blue-400 group-hover/item:text-blue-300 transition-colors duration-300">
-                {confirmationToAttendance.toFixed(1)}%
-              </span>
+          <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-blue-700/60 hover:bg-m8bs-card-alt/50">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-white">Confirmation to Attendance</span>
+              <span className="text-sm font-bold text-blue-400">{confirmationToAttendance.toFixed(1)}%</span>
             </div>
-            <div className="text-xs text-gray-400 group-hover/item:text-gray-300 transition-colors duration-300">
-              {confirmationToAttendance < 40
-                ? "Needs improvement"
-                : confirmationToAttendance < 70
-                  ? "Performing adequately"
-                  : "Excellent performance"}
+            <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
+              <span>{attendees.toLocaleString()} attended</span>
+              <span>of {confirmations.toLocaleString()} confirmed</span>
+            </div>
+            <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
+              <div
+                className="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                style={{ width: `${confirmationToAttendance}%` }}
+              />
             </div>
           </div>
 
           {/* Attendance to Client */}
-          <div className="space-y-2 bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-red-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-white group-hover/item:text-red-300 transition-colors duration-300">
-                Attendance to Client
-              </span>
-              <span className="text-sm font-bold text-red-400 group-hover/item:text-red-300 transition-colors duration-300">
-                {attendanceToClient.toFixed(1)}%
-              </span>
+          <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-red-700/60 hover:bg-m8bs-card-alt/50">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-white">Attendance to Client</span>
+              <span className="text-sm font-bold text-red-400">{attendanceToClient.toFixed(1)}%</span>
             </div>
-            <div className="text-xs text-gray-400 group-hover/item:text-gray-300 transition-colors duration-300">
-              {attendanceToClient < 40
-                ? "Needs improvement"
-                : attendanceToClient < 70
-                  ? "Performing adequately"
-                  : "Excellent performance"}
+            <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
+              <span>{clients.toLocaleString()} converted</span>
+              <span>of {attendees.toLocaleString()} attended</span>
             </div>
-          </div>
-
-          {/* Overall Conversion */}
-          <div className="space-y-2 bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-purple-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-white group-hover/item:text-purple-300 transition-colors duration-300">
-                Overall Conversion
-              </span>
-              <span className="text-sm font-bold text-purple-400 group-hover/item:text-purple-300 transition-colors duration-300">
-                {overall.toFixed(1)}%
-              </span>
-            </div>
-            <div className="text-xs text-gray-400 group-hover/item:text-gray-300 transition-colors duration-300">
-              {overall < 30 ? "Needs improvement" : overall < 60 ? "Performing adequately" : "Excellent performance"}
+            <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
+              <div
+                className="bg-red-500 h-1.5 rounded-full transition-all duration-500"
+                style={{ width: `${attendanceToClient}%` }}
+              />
             </div>
           </div>
         </div>
 
-        {/* Conversion Funnel Visualization */}
-        <div className="bg-[#1a1b2e]/50 p-4 rounded-lg border border-m8bs-border/30 mb-6 transition-all duration-300 hover:bg-[#1a1b2e]/70 hover:border-blue-900/30 hover:shadow-inner group/funnel">
-          <h4 className="text-sm font-semibold text-white mb-3 transition-colors duration-300 group-hover/funnel:text-blue-300">
-            Conversion Funnel
-          </h4>
-          <div className="relative h-32">
-            <div className="absolute inset-0 flex items-end justify-center">
-              <div className="w-full h-full flex">
-                {/* Registration Stage - 100% */}
-                <div className="w-1/4 relative group/stage">
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-24 bg-emerald-500/20 rounded-tl-lg transition-all duration-300 group-hover/stage:bg-emerald-500/30"
-                    style={{ height: "100%" }}
-                  ></div>
-                  <div className="absolute top-0 left-0 right-0 text-center text-xs text-emerald-400 font-bold transition-all duration-300 group-hover/stage:text-emerald-300 group-hover/stage:translate-y-[-2px]">
-                    100%
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 text-center text-xs text-emerald-400 transition-all duration-300 group-hover/stage:text-emerald-300">
-                    Registration
-                  </div>
-                </div>
-
-                {/* Attendance Stage */}
-                <div className="w-1/4 relative group/stage">
-                  <div
-                    className="absolute bottom-0 left-0 right-0 bg-emerald-500/40 transition-all duration-300 group-hover/stage:bg-emerald-500/60 group-hover/stage:shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-                    style={{ height: `${registrationToConfirmation}%` }}
-                  ></div>
-                  <div className="absolute top-0 left-0 right-0 text-center text-xs text-emerald-400 font-bold transition-all duration-300 group-hover/stage:text-emerald-300 group-hover/stage:translate-y-[-2px]">
-                    {registrationToConfirmation.toFixed(1)}%
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 text-center text-xs text-emerald-400 transition-all duration-300 group-hover/stage:text-emerald-300">
-                    Confirmation
-                  </div>
-                </div>
-
-                {/* Attendance Stage */}
-                <div className="w-1/4 relative group/stage">
-                  <div
-                    className="absolute bottom-0 left-0 right-0 bg-emerald-500/40 transition-all duration-300 group-hover/stage:bg-emerald-500/60 group-hover/stage:shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-                    style={{ height: `${confirmationToAttendance}%` }}
-                  ></div>
-                  <div className="absolute top-0 left-0 right-0 text-center text-xs text-emerald-400 font-bold transition-all duration-300 group-hover/stage:text-emerald-300 group-hover/stage:translate-y-[-2px]">
-                    {confirmationToAttendance.toFixed(1)}%
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 text-center text-xs text-emerald-400 transition-all duration-300 group-hover/stage:text-emerald-300">
-                    Attendance
-                  </div>
-                </div>
-
-                {/* Client Stage */}
-                <div className="w-1/4 relative group/stage">
-                  <div
-                    className="absolute bottom-0 left-0 right-0 bg-red-500/40 rounded-tr-lg transition-all duration-300 group-hover/stage:bg-red-500/60 group-hover/stage:shadow-[0_0_8px_rgba(239,68,68,0.4)]"
-                    style={{ height: `${overall}%` }}
-                  ></div>
-                  <div className="absolute top-0 left-0 right-0 text-center text-xs text-red-400 font-bold transition-all duration-300 group-hover/stage:text-red-300 group-hover/stage:translate-y-[-2px]">
-                    {overall.toFixed(1)}%
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 text-center text-xs text-red-400 transition-all duration-300 group-hover/stage:text-red-300">
-                    Client
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Overall Circular Indicator */}
-        <div className="flex justify-between items-center mt-auto">
-          <div className="relative flex items-center justify-center group/circle">
-            <div className="absolute inset-0 bg-[#1a1b2e]/50 rounded-full transition-all duration-300 group-hover/circle:bg-[#1a1b2e]/70"></div>
-            <svg className="w-32 h-32 relative z-10" viewBox="0 0 100 100">
-              <defs>
-                <linearGradient id="circleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#8b5cf6" />
-                </linearGradient>
-              </defs>
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#1f2037" strokeWidth="10" />
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                stroke="url(#circleGradient)"
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeDasharray={`${overall * 2.51} 251.2`}
-                strokeDashoffset="0"
-                transform="rotate(-90 50 50)"
-                className="transition-all duration-500 group-hover/circle:filter group-hover/circle:drop-shadow-[0_0_3px_rgba(139,92,246,0.5)]"
-              >
-                <animate
-                  attributeName="stroke-dasharray"
-                  from="0 251.2"
-                  to={`${overall * 2.51} 251.2`}
-                  dur="1.5s"
-                  fill="freeze"
-                  calcMode="spline"
-                  keySplines="0.42 0 0.58 1"
-                />
-              </circle>
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center flex-col">
-              <div className="text-center bg-[#1a1b2e]/80 p-3 rounded-full backdrop-blur-sm transition-all duration-300 group-hover/circle:bg-[#1a1b2e]/90 group-hover/circle:scale-105">
-                <div className="text-xs text-gray-400 mb-1 transition-colors duration-300 group-hover/circle:text-gray-300">
-                  Overall
-                </div>
-                <div className="text-2xl font-bold text-white transition-all duration-300 group-hover/circle:text-transparent group-hover/circle:bg-clip-text group-hover/circle:bg-gradient-to-r group-hover/circle:from-blue-300 group-hover/circle:to-purple-300">
-                  {overall.toFixed(1)}%
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4 flex-1 ml-6">
-            <div className="space-y-2 group/insights">
-              <h4 className="text-sm font-semibold text-white transition-colors duration-300 group-hover/insights:text-blue-300">
-                Conversion Insights
-              </h4>
-              <p className="text-xs text-gray-400 transition-colors duration-300 group-hover/insights:text-gray-300">
-                {overall < 30
-                  ? "Your conversion funnel needs attention. Focus on improving each stage to increase overall performance."
-                  : overall < 60
-                    ? "Your conversion funnel is performing adequately. Look for opportunities to optimize weaker stages."
-                    : "Excellent conversion performance! Continue monitoring to maintain these strong results."}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              <div className="flex items-center justify-between group/rate transition-all duration-300 hover:bg-m8bs-card-alt/30 hover:rounded-md hover:px-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-emerald-500 transition-all duration-300 group-hover/rate:scale-125 group-hover/rate:shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                  <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/rate:text-emerald-300">
-                    Registration → Confirmation
-                  </span>
-                </div>
-                <span className="text-xs font-medium text-emerald-400 transition-colors duration-300 group-hover/rate:text-emerald-300">
-                  {registrationToConfirmation.toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex items-center justify-between group/rate transition-all duration-300 hover:bg-m8bs-card-alt/30 hover:rounded-md hover:px-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 transition-all duration-300 group-hover/rate:scale-125 group-hover/rate:shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
-                  <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/rate:text-blue-300">
-                    Confirmation → Attendance
-                  </span>
-                </div>
-                <span className="text-xs font-medium text-blue-400 transition-colors duration-300 group-hover/rate:text-blue-300">
-                  {confirmationToAttendance.toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex items-center justify-between group/rate transition-all duration-300 hover:bg-m8bs-card-alt/30 hover:rounded-md hover:px-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500 transition-all duration-300 group-hover/rate:scale-125 group-hover/rate:shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>
-                  <span className="text-xs text-gray-400 transition-colors duration-300 group-hover/rate:text-red-300">
-                    Attendance → Client
-                  </span>
-                </div>
-                <span className="text-xs font-medium text-red-400 transition-colors duration-300 group-hover/rate:text-red-300">
-                  {attendanceToClient.toFixed(1)}%
-                </span>
+        {/* Key Insights */}
+        <div className="bg-[#1a1b2e]/50 p-4 rounded-lg border border-m8bs-border/30">
+          <h4 className="text-sm font-semibold text-white mb-3">Key Insights</h4>
+          <div className="space-y-3">
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5" />
+              <div>
+                <p className="text-sm text-white">
+                  {registrationToConfirmation < 40
+                    ? "Registration to confirmation rate needs improvement"
+                    : registrationToConfirmation < 70
+                      ? "Registration to confirmation rate is performing well"
+                      : "Excellent registration to confirmation rate"}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {confirmations.toLocaleString()} out of {registrants.toLocaleString()} registrants confirmed
+                </p>
               </div>
             </div>
 
-            <div className="bg-[#1a1b2e]/50 p-3 rounded-lg border border-m8bs-border/30 mt-2 transition-all duration-300 hover:bg-[#1a1b2e]/70 hover:border-yellow-900/30 hover:shadow-inner group/focus">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-white transition-colors duration-300 group-hover/focus:text-yellow-300">
-                  Recommended Focus:
-                </span>
-                <span className="text-xs font-bold text-yellow-400 transition-all duration-300 group-hover/focus:text-yellow-300 group-hover/focus:scale-105">
-                  {registrationToConfirmation <= Math.min(confirmationToAttendance, attendanceToClient)
-                    ? "Registration → Confirmation"
-                    : confirmationToAttendance <= Math.min(registrationToConfirmation, attendanceToClient)
-                      ? "Confirmation → Attendance"
-                      : "Attendance → Client"}
-                </span>
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
+              <div>
+                <p className="text-sm text-white">
+                  {confirmationToAttendance < 40
+                    ? "Attendance rate needs attention"
+                    : confirmationToAttendance < 70
+                      ? "Attendance rate is stable"
+                      : "Strong attendance rate"}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {attendees.toLocaleString()} out of {confirmations.toLocaleString()} confirmed attendees showed up
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5" />
+              <div>
+                <p className="text-sm text-white">
+                  {attendanceToClient < 40
+                    ? "Client conversion needs focus"
+                    : attendanceToClient < 70
+                      ? "Client conversion is progressing"
+                      : "Strong client conversion"}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {clients.toLocaleString()} out of {attendees.toLocaleString()} attendees became clients
+                </p>
               </div>
             </div>
           </div>

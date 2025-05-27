@@ -176,7 +176,13 @@ export function AppointmentTrends({
         {/* Journey Path Visualization */}
         <div className="flex justify-between items-end mb-8 relative z-10">
           {journeySteps.map((step, index) => (
-            <div key={step.label} className="flex flex-col items-center flex-1 relative">
+            <div
+              key={step.label}
+              className="flex flex-col items-center flex-1 relative cursor-pointer"
+              onMouseEnter={() => setActiveStep(index)}
+              onMouseLeave={() => setActiveStep(null)}
+              onClick={() => setActiveStep(index)}
+            >
               {/* Icon */}
               <div
                 className={`rounded-full p-2 mb-2 transition-all duration-300 ${

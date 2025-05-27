@@ -126,9 +126,6 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
             </div>
           </div>
           <div className="text-2xl font-extrabold tracking-tight">{safeData.totalAttendees}</div>
-          <div className="text-xs text-white mt-1 font-medium">
-            Attendance Rate: {formatPercent(attendanceRate)}
-          </div>
         </CardContent>
       </Card>
 
