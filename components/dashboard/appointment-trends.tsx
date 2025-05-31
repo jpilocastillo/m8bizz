@@ -174,49 +174,43 @@ export function AppointmentTrends({
         </div>
 
         {/* Journey Path Visualization */}
-        <div className="flex justify-between items-end mb-8 relative z-10">
-          {journeySteps.map((step, index) => (
-            <div
-              key={step.label}
-              className="flex flex-col items-center flex-1 relative cursor-pointer"
-              onMouseEnter={() => setActiveStep(index)}
-              onMouseLeave={() => setActiveStep(null)}
-              onClick={() => setActiveStep(index)}
-            >
-              {/* Icon */}
-              <div
-                className={`rounded-full p-2 mb-2 transition-all duration-300 ${
-                  activeStep === index ? `${step.color} text-white scale-110 shadow-lg` : "bg-gray-800 text-gray-400"
-                }`}
-              >
-                <step.icon className={`h-5 w-5 ${activeStep === index ? "animate-pulse" : ""}`} />
+        <div className="mb-8 relative z-10">
+          {/* Icons Row */}
+          <div className="grid grid-cols-6 gap-4 items-end text-center mb-1">
+            {journeySteps.map((step, index) => (
+              <div key={step.label} className="flex items-center justify-center w-full">
+                <div
+                  className={`rounded-full p-2 transition-all duration-300 ${
+                    activeStep === index ? `${step.color} text-white scale-110 shadow-lg` : "bg-gray-800 text-gray-400"
+                  }`}
+                >
+                  <step.icon className={`h-5 w-5 ${activeStep === index ? "animate-pulse" : ""}`} />
+                </div>
               </div>
-              {/* Label */}
-              <p
-                className={`text-sm font-medium text-center transition-colors duration-300 ${
-                  activeStep === index ? "text-white" : "text-gray-400"
-                }`}
-              >
-                {step.label}
-              </p>
-              {/* Value */}
-              <p
-                className={`text-xl font-bold transition-all duration-300 ${
-                  activeStep === index ? "text-white scale-110" : "text-gray-300"
-                }`}
-              >
-                {step.value}
-              </p>
-              {/* Description - Only visible when active */}
-              <div
-                className={`mt-1 text-xs text-center transition-all duration-300 max-w-[120px] ${
-                  activeStep === index ? "opacity-100 text-gray-300" : "opacity-0 text-gray-500"
-                }`}
-              >
-                {step.description}
+            ))}
+          </div>
+          {/* Labels Row */}
+          <div className="grid grid-cols-6 gap-4 items-end text-center mb-1">
+            {journeySteps.map((step, index) => (
+              <div key={step.label} className="flex items-center justify-center w-full">
+                <p
+                  className={`text-sm font-medium transition-colors duration-300 ${
+                    activeStep === index ? "text-white" : "text-gray-400"
+                  }`}
+                >
+                  {step.label}
+                </p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          {/* Values Row */}
+          <div className="grid grid-cols-6 gap-4 items-end text-center">
+            {journeySteps.map((step, index) => (
+              <div key={step.label} className="flex items-center justify-center w-full">
+                <div className="text-2xl font-extrabold text-white leading-tight min-h-[2.5rem] flex items-end justify-center">{step.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Flow Arrows */}

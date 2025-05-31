@@ -47,6 +47,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [confirmations, setConfirmations] = useState("")
   const [attendees, setAttendees] = useState("")
   const [clientsFromEvent, setClientsFromEvent] = useState("")
+  const [plateLickers, setPlateLickers] = useState("")
 
   // Appointments
   const [setAtEvent, setSetAtEvent] = useState("")
@@ -68,6 +69,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [annuityCommission, setAnnuityCommission] = useState("")
   const [lifeInsuranceCommissionPercentage, setLifeInsuranceCommissionPercentage] = useState("")
   const [lifeInsuranceCommission, setLifeInsuranceCommission] = useState("")
+  const [aumAccountsOpened, setAumAccountsOpened] = useState("")
+  const [financialPlansSold, setFinancialPlansSold] = useState("")
 
   // Add state for 12-hour time input
   const [hour, setHour] = useState("");
@@ -103,6 +106,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       setConfirmations(initialData.attendance?.confirmations?.toString() || "")
       setAttendees(initialData.attendance?.attendees?.toString() || "")
       setClientsFromEvent(initialData.attendance?.clients_from_event?.toString() || "")
+      setPlateLickers(initialData.attendance?.plate_lickers?.toString() || "")
 
       // Appointments
       setSetAtEvent(initialData.appointments?.setAtEvent?.toString() || "")
@@ -136,6 +140,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       const lifeInsuranceCommissionPercentage = existingPremium > 0 ? ((existingLifeCommission / existingPremium) * 100).toFixed(2) : ""
       setLifeInsuranceCommissionPercentage(lifeInsuranceCommissionPercentage)
       setLifeInsuranceCommission(existingLifeCommission.toString())
+      setAumAccountsOpened(initialData.financialProduction?.aum_accounts_opened?.toString() || "")
+      setFinancialPlansSold(initialData.financialProduction?.financial_plans_sold?.toString() || "")
 
       // Parse 24-hour time to 12-hour
       if (initialData.eventDetails?.time) {
@@ -276,7 +282,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             registrant_responses: parseInt(registrantResponses) || 0,
             confirmations: parseInt(confirmations) || 0,
             attendees: parseInt(attendees) || 0,
-            clients_from_event: parseInt(clientsFromEvent) || 0
+            clients_from_event: parseInt(clientsFromEvent) || 0,
+            plate_lickers: parseInt(plateLickers) || 0
           },
           expenses: {
             advertising_cost: parseFloat(advertisingCost) || 0,
@@ -299,12 +306,18 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             life_policies_sold: parseInt(lifePoliciesSold) || 0,
             annuity_commission: parseFloat(annuityCommission) || 0,
             life_insurance_commission: parseFloat(lifeInsuranceCommission) || 0,
-            aum_fees: parseFloat(aumFees) || 0
+            aum_fees: parseFloat(aumFees) || 0,
+            aum_accounts_opened: parseInt(aumAccountsOpened) || 0,
+            financial_plans_sold: parseInt(financialPlansSold) || 0,
           }
         }
       }
 
-      console.log('Submitting event data with relatedData:', eventData)
+      console.log('Submitting event data with plate lickers:', {
+        plateLickers,
+        parsedPlateLickers: parseInt(plateLickers) || 0,
+        fullEventData: eventData
+      });
 
       let result;
       if (isEditing && initialData?.eventId) {
@@ -741,6 +754,19 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="plateLickers" className="text-gray-300 font-medium">
+                    Plate Lickers
+                  </Label>
+                  <Input
+                    id="plateLickers"
+                    type="number"
+                    value={plateLickers}
+                    onChange={(e) => setPlateLickers(e.target.value)}
+                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    placeholder="No interest in appointments or services"
+                  />
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
@@ -927,6 +953,20 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="aumAccountsOpened" className="text-gray-300 font-medium">
+                    AUM Accounts Opened
+                  </Label>
+                  <Input
+                    id="aumAccountsOpened"
+                    type="number"
+                    min="0"
+                    value={aumAccountsOpened}
+                    onChange={e => setAumAccountsOpened(e.target.value)}
+                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    placeholder="Number of AUM accounts opened"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="aum" className="text-gray-300 font-medium">
                     AUM ($)
                   </Label>
@@ -963,6 +1003,20 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
                     ${aumFees}
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="financialPlansSold" className="text-gray-300 font-medium">
+                    Financial Plans Sold
+                  </Label>
+                  <Input
+                    id="financialPlansSold"
+                    type="number"
+                    min="0"
+                    value={financialPlansSold}
+                    onChange={e => setFinancialPlansSold(e.target.value)}
+                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    placeholder="Number of financial plans sold"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="financialPlanning" className="text-gray-300 font-medium">

@@ -7,6 +7,7 @@ interface RegistrantResponseAnalysisProps {
   marketingAudienceSize?: number
   confirmations?: number
   attendees?: number
+  plateLickers?: number
 }
 
 export function RegistrantResponseAnalysis({
@@ -14,6 +15,7 @@ export function RegistrantResponseAnalysis({
   marketingAudienceSize = 10000,
   confirmations = 28,
   attendees = 28,
+  plateLickers = 0,
 }: RegistrantResponseAnalysisProps) {
   // Calculate rates
   const registrantRate = (registrants / marketingAudienceSize) * 100
@@ -51,62 +53,44 @@ export function RegistrantResponseAnalysis({
       </CardHeader>
       <CardContent className="p-8 flex-1 flex flex-col">
         {/* Summary Stats */}
-        <div className="grid grid-cols-4 gap-8 mb-8">
-          <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-8 transition-all duration-300 hover:shadow-md hover:border-blue-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex items-center mb-2">
-              <Users className="h-5 w-5 text-blue-400 mr-2 transition-all duration-300 group-hover/item:text-blue-300 group-hover/item:rotate-6" />
-              <span className="text-sm text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
-                Marketing Audience Size
-              </span>
-            </div>
-            <div className="text-2xl font-bold text-white transition-colors duration-300 group-hover/item:text-blue-300">
-              {marketingAudienceSize.toLocaleString()}
-            </div>
-          </div>
+        <div className="bg-m8bs-card rounded-xl p-3 grid grid-cols-5 grid-rows-3 gap-y-0 gap-x-2 text-center items-end">
+          {/* Icons Row */}
+          <Users className="inline h-4 w-4 md:h-5 md:w-5 text-m8bs-blue col-start-1 row-start-1 mx-auto" />
+          <Users className="inline h-4 w-4 md:h-5 md:w-5 text-cyan-400 col-start-2 row-start-1 mx-auto" />
+          <Users className="inline h-4 w-4 md:h-5 md:w-5 text-emerald-400 col-start-3 row-start-1 mx-auto" />
+          <Users className="inline h-4 w-4 md:h-5 md:w-5 text-purple-400 col-start-4 row-start-1 mx-auto" />
+          <Users className="inline h-4 w-4 md:h-5 md:w-5 text-cyan-400 col-start-5 row-start-1 mx-auto" />
 
-          <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-8 transition-all duration-300 hover:shadow-md hover:border-blue-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex items-center mb-2">
-              <Users className="h-5 w-5 text-blue-400 mr-2 transition-all duration-300 group-hover/item:text-blue-300 group-hover/item:rotate-6" />
-              <span className="text-sm text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
-                Registrants (BU)
-              </span>
-            </div>
-            <div className="text-2xl font-bold text-white transition-colors duration-300 group-hover/item:text-blue-300">
-              {registrants.toLocaleString()}
-            </div>
-            <div className="text-sm text-blue-400 transition-colors duration-300 group-hover/item:text-blue-300">
-              {registrantRateFormatted}% rate
-            </div>
-          </div>
+          {/* Labels Row */}
+          <span className="text-[10px] md:text-xs font-semibold text-m8bs-blue col-start-1 row-start-2">Marketing Audience Size</span>
+          <span className="text-[10px] md:text-xs font-semibold text-cyan-400 col-start-2 row-start-2">Registrants (BU)</span>
+          <span className="text-[10px] md:text-xs font-semibold text-emerald-400 col-start-3 row-start-2">Confirmations (BU)</span>
+          <span className="text-[10px] md:text-xs font-semibold text-purple-400 col-start-4 row-start-2">Attendees (BU)</span>
+          <span className="text-[10px] md:text-xs font-semibold text-cyan-400 col-start-5 row-start-2">Plate Lickers</span>
 
-          <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-8 transition-all duration-300 hover:shadow-md hover:border-green-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex items-center mb-2">
-              <CheckCircle className="h-5 w-5 text-green-400 mr-2 transition-all duration-300 group-hover/item:text-green-300 group-hover/item:rotate-6" />
-              <span className="text-sm text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
-                Confirmations (BU)
-              </span>
-            </div>
-            <div className="text-2xl font-bold text-white transition-colors duration-300 group-hover/item:text-green-300">
-              {confirmations.toLocaleString()}
-            </div>
-            <div className="text-sm text-green-400 transition-colors duration-300 group-hover/item:text-green-300">
-              {confirmationRateFormatted}% rate
-            </div>
+          {/* Values Row */}
+          <div className="flex flex-col items-center col-start-1 row-start-3">
+            <span className="text-xl md:text-2xl font-extrabold text-m8bs-blue leading-tight">{marketingAudienceSize.toLocaleString()}</span>
+            <span className="text-[10px] md:text-xs font-semibold text-m8bs-blue mt-0">&nbsp;</span>
           </div>
-
-          <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-8 transition-all duration-300 hover:shadow-md hover:border-purple-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/item">
-            <div className="flex items-center mb-2">
-              <UserCheck className="h-5 w-5 text-purple-400 mr-2 transition-all duration-300 group-hover/item:text-purple-300 group-hover/item:rotate-6" />
-              <span className="text-sm text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
-                Attendees (BU)
-              </span>
-            </div>
-            <div className="text-2xl font-bold text-white transition-colors duration-300 group-hover/item:text-purple-300">
-              {attendees.toLocaleString()}
-            </div>
-            <div className="text-sm text-purple-400 transition-colors duration-300 group-hover/item:text-purple-300">
-              {attendanceRateFormatted}% rate
-            </div>
+          <div className="flex flex-col items-center col-start-2 row-start-3">
+            <span className="text-xl md:text-2xl font-extrabold text-cyan-400 leading-tight">{registrants}</span>
+            <span className="text-[10px] md:text-xs font-semibold text-cyan-400 mt-0">{((registrants / marketingAudienceSize) * 100).toFixed(2)}% rate</span>
+          </div>
+          <div className="flex flex-col items-center col-start-3 row-start-3">
+            <span className="text-xl md:text-2xl font-extrabold text-emerald-400 leading-tight">{confirmations}</span>
+            <span className="text-[10px] md:text-xs font-semibold text-emerald-400 mt-0">{registrants > 0 ? ((confirmations / registrants) * 100).toFixed(1) : 0}% rate</span>
+          </div>
+          <div className="flex flex-col items-center col-start-4 row-start-3">
+            <span className="text-xl md:text-2xl font-extrabold text-purple-400 leading-tight">{attendees}</span>
+            <span className="text-[10px] md:text-xs font-semibold text-purple-400 mt-0">{confirmations > 0 ? ((attendees / confirmations) * 100).toFixed(1) : 0}% rate</span>
+          </div>
+          <div className="flex flex-col items-center col-start-5 row-start-3">
+            <span className="flex items-end justify-center">
+              <span className="text-xl md:text-2xl font-extrabold text-cyan-400 leading-tight">{plateLickers}</span>
+              <span className="text-base font-normal text-cyan-400 leading-tight">&nbsp;/ {attendees}</span>
+            </span>
+            <span className="text-[10px] md:text-xs font-semibold text-cyan-400 mt-0">{attendees > 0 ? ((plateLickers / attendees) * 100).toFixed(1) : 0}% of attendees</span>
           </div>
         </div>
 
@@ -153,6 +137,20 @@ export function RegistrantResponseAnalysis({
                   </div>
                   <div className="text-xs text-purple-400">
                     {attendanceRateFormatted}% conversion
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center group/item">
+                <span className="text-sm text-gray-400 transition-colors duration-300 group-hover/item:text-gray-300">
+                  Plate Lickers
+                </span>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-white transition-colors duration-300 group-hover/item:text-blue-300">
+                    {plateLickers.toLocaleString()} / {attendees.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-blue-400">
+                    {attendees > 0 ? ((plateLickers / attendees) * 100).toFixed(1) : 0}% of attendees
                   </div>
                 </div>
               </div>
@@ -310,6 +308,34 @@ export function RegistrantResponseAnalysis({
                 </div>
               </div>
             </div>
+
+            {/* Plate Lickers */}
+            <div className="flex items-center group/stage">
+              <div className="w-40 text-right pr-4">
+                <div className="text-sm font-medium text-white transition-colors duration-300 group-hover/stage:text-blue-300">
+                  Plate Lickers
+                </div>
+                <div className="text-xs text-gray-400 transition-colors duration-300 group-hover/stage:text-gray-300">
+                  {plateLickers.toLocaleString()} people
+                </div>
+              </div>
+              <div className="flex-grow">
+                <div className="h-10 bg-blue-900/20 rounded-lg relative overflow-hidden transition-all duration-300 group-hover/stage:bg-blue-900/30 group-hover/stage:shadow-inner">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-blue-500/30 rounded-lg transition-all duration-300 group-hover/stage:bg-blue-500/40 group-hover/stage:shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+                    style={{ width: `${attendees > 0 ? (plateLickers / attendees) * 100 : 0}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="w-20 pl-4 text-right">
+                <div className="text-sm font-medium text-white transition-colors duration-300 group-hover/stage:text-blue-300">
+                  {attendees > 0 ? ((plateLickers / attendees) * 100).toFixed(1) : 0}%
+                </div>
+                <div className="text-xs text-red-400">
+                  -{attendees > 0 ? (100 - (plateLickers / attendees) * 100).toFixed(1) : 0}%
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -342,6 +368,10 @@ export function RegistrantResponseAnalysis({
                   ? "Your attendance rate is good. Consider adding more value to your event to increase attendance."
                   : "Your attendance rate is excellent. Your event is delivering on its promised value."}
             </p>
+
+            {plateLickers / Math.max(1, attendees) > 0.3 && (
+              <p className="text-blue-400">A high percentage of plate lickers may indicate a need to refine your event targeting or value proposition.</p>
+            )}
           </div>
         </div>
       </CardContent>

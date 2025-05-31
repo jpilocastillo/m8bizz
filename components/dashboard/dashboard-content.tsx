@@ -20,6 +20,7 @@ import { MarketingExpensesCard } from "./marketing-expenses-card"
 import { format, parseISO } from "date-fns"
 import { DashboardError } from "./dashboard-error"
 import { createClient } from "@/lib/supabase/client"
+import { PlateLickerCard } from "@/components/dashboard/plate-licker-card"
 
 interface DashboardContentProps {
   initialData: any
@@ -27,10 +28,81 @@ interface DashboardContentProps {
   userId: string
 }
 
+interface DashboardData {
+  eventId: string;
+  eventDetails: {
+    name: string;
+    date: string;
+    dayOfWeek: string;
+    location: string;
+    marketing_type: string;
+    topic: string;
+    age_range: string;
+    mile_radius: number;
+    income_assets: string;
+    time: string;
+    status: string;
+    marketing_audience: number;
+  };
+  roi: {
+    value: number;
+    trend: number[];
+  };
+  writtenBusiness: number;
+  income: {
+    total: number;
+    breakdown: {
+      fixedAnnuity: number;
+      life: number;
+      aum: number;
+      financialPlanning: number;
+      aumFees: number;
+    };
+  };
+  conversionRate: {
+    value: number;
+    attendees: number;
+    clients: number;
+  };
+  marketingExpenses: {
+    total: number;
+    advertising: number;
+    foodVenue: number;
+    other: number;
+  };
+  topicOfMarketing: string;
+  attendance: {
+    registrantResponses: number;
+    confirmations: number;
+    attendees: number;
+    clients_from_event: number;
+    plate_lickers: number;
+  };
+  appointments: {
+    setAtEvent: number;
+    setAfterEvent: number;
+    firstAppointmentAttended: number;
+    firstAppointmentNoShows: number;
+    secondAppointmentAttended: number;
+  };
+  financialProduction: {
+    annuity_premium: number;
+    life_insurance_premium: number;
+    aum: number;
+    financial_planning: number;
+    annuities_sold: number;
+    life_policies_sold: number;
+    annuity_commission: number;
+    life_insurance_commission: number;
+    aum_fees: number;
+    aum_accounts_opened: number;
+  };
+}
+
 export function DashboardContent({ initialData, events, userId }: DashboardContentProps) {
-  const [selectedEventId, setSelectedEventId] = useState<string | undefined>(undefined)
-  const [dashboardData, setDashboardData] = useState(initialData)
-  const [loading, setLoading] = useState(false)
+  const [selectedEventId, setSelectedEventId] = useState<string>(initialData?.eventId || '')
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(initialData || null)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -118,7 +190,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   }, [selectedEventId])
 
   async function loadEventData(eventId: string) {
-    setLoading(true)
+    setIsLoading(true)
     setError(null)
     try {
       console.log(`Loading data for event: ${eventId}`)
@@ -131,20 +203,43 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       }
 
       // Ensure all data is properly formatted
-      const formattedData = {
-        ...data,
+      const formattedData: DashboardData = {
+        eventId: data.eventId,
         eventDetails: {
-          ...data.eventDetails,
+          name: data.eventDetails.name,
+          date: data.eventDetails.date,
           dayOfWeek: data.eventDetails.dayOfWeek || "N/A",
           location: data.eventDetails.location || "N/A",
-          time: data.eventDetails.time || "N/A",
+          marketing_type: data.eventDetails.marketing_type || "N/A",
           topic: data.eventDetails.topic || "N/A",
           age_range: data.eventDetails.age_range || "N/A",
-          mile_radius: data.eventDetails.mile_radius || "N/A",
+          mile_radius: data.eventDetails.mile_radius || 0,
           income_assets: data.eventDetails.income_assets || "N/A",
+          time: data.eventDetails.time || "N/A",
+          status: data.eventDetails.status || "N/A",
           marketing_audience: typeof data.eventDetails.marketing_audience === 'number'
             ? data.eventDetails.marketing_audience
             : 0
+        },
+        roi: {
+          value: data.roi?.value || 0,
+          trend: data.roi?.trend || [0]
+        },
+        writtenBusiness: data.writtenBusiness || 0,
+        income: {
+          total: data.income?.total || 0,
+          breakdown: {
+            fixedAnnuity: data.income?.breakdown?.fixedAnnuity || 0,
+            life: data.income?.breakdown?.life || 0,
+            aum: data.income?.breakdown?.aum || 0,
+            financialPlanning: data.income?.breakdown?.financialPlanning || 0,
+            aumFees: data.income?.breakdown?.aumFees || 0
+          }
+        },
+        conversionRate: {
+          value: data.conversionRate?.value || 0,
+          attendees: data.conversionRate?.attendees || 0,
+          clients: data.conversionRate?.clients || 0
         },
         marketingExpenses: {
           total: data.marketingExpenses?.total || 0,
@@ -152,12 +247,13 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           foodVenue: data.marketingExpenses?.foodVenue || 0,
           other: data.marketingExpenses?.other || 0
         },
+        topicOfMarketing: data.topicOfMarketing || "N/A",
         attendance: {
           registrantResponses: data.attendance?.registrantResponses || 0,
           confirmations: data.attendance?.confirmations || 0,
           attendees: data.attendance?.attendees || 0,
-          responseRate: data.attendance?.responseRate || 0,
-          clients_from_event: data.attendance?.clients_from_event || 0
+          clients_from_event: data.attendance?.clients_from_event || 0,
+          plate_lickers: data.attendance?.plate_lickers || 0
         },
         appointments: {
           setAtEvent: data.appointments?.setAtEvent || 0,
@@ -171,12 +267,12 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           life_insurance_premium: data.financialProduction?.life_insurance_premium || 0,
           aum: data.financialProduction?.aum || 0,
           financial_planning: data.financialProduction?.financial_planning || 0,
-          total: data.financialProduction?.total || 0,
           annuities_sold: data.financialProduction?.annuities_sold || 0,
           life_policies_sold: data.financialProduction?.life_policies_sold || 0,
           annuity_commission: data.financialProduction?.annuity_commission || 0,
           life_insurance_commission: data.financialProduction?.life_insurance_commission || 0,
-          aum_fees: data.financialProduction?.aum_fees || 0
+          aum_fees: data.financialProduction?.aum_fees || 0,
+          aum_accounts_opened: data.financialProduction?.aum_accounts_opened || 0
         }
       }
 
@@ -185,7 +281,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       console.error("Error loading event data:", error)
       setError("An error occurred while loading event data. Please try again.")
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -241,6 +337,10 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const annuityCommission = dashboardData.financialProduction?.annuity_commission || 0
   const financialPlanningIncome = dashboardData.financialProduction?.financial_planning || 0
   const aumFees = dashboardData.financialProduction?.aum_fees || 0
+
+  // Calculate AUM Fee % for the card
+  const aum = dashboardData.financialProduction?.aum || 0;
+  const aumFeePercentage = aum > 0 ? ((aumFees / aum) * 100).toFixed(2) : '1.5';
 
   // Format event date
   const eventDate = dashboardData.eventDetails?.date ? parseISO(dashboardData.eventDetails.date) : null
@@ -330,14 +430,14 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       {/* Event details - Full width */}
       <div className="grid grid-cols-1 gap-6">
         <EventDetailsCard
-          dayOfWeek={dashboardData.eventDetails.dayOfWeek}
-          location={dashboardData.eventDetails.location}
-          time={dashboardData.eventDetails.time}
-          topic={dashboardData.eventDetails.topic}
-          ageRange={dashboardData.eventDetails.age_range}
-          mileRadius={dashboardData.eventDetails.mile_radius}
-          incomeAssets={dashboardData.eventDetails.income_assets}
-          marketingAudienceSize={dashboardData.eventDetails.marketing_audience}
+          dayOfWeek={dashboardData.eventDetails?.dayOfWeek || "N/A"}
+          location={dashboardData.eventDetails?.location || "N/A"}
+          time={dashboardData.eventDetails?.time || "N/A"}
+          ageRange={dashboardData.eventDetails?.age_range || "N/A"}
+          mileRadius={String(dashboardData.eventDetails?.mile_radius || 0)}
+          incomeAssets={dashboardData.eventDetails?.income_assets || "N/A"}
+          topic={dashboardData.eventDetails?.topic || "N/A"}
+          marketingAudienceSize={String(dashboardData.eventDetails?.marketing_audience || 0)}
         />
       </div>
 
@@ -353,21 +453,39 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Updated Conversion Efficiency Card */}
         <ConversionEfficiencyCard
-          registrationToConfirmation={registrationToConfirmation}
-          confirmationToAttendance={confirmationToAttendance}
-          attendanceToClient={attendanceToClient}
-          overall={overallConversion}
+          registrationToConfirmation={Number(registrationToConfirmation) || 0}
+          confirmationToAttendance={Number(confirmationToAttendance) || 0}
+          attendanceToClient={Number(attendanceToClient) || 0}
+          overall={Number(overallConversion) || 0}
+          registrants={Number(registrants) || 0}
+          confirmations={Number(confirmations) || 0}
+          attendees={Number(attendees) || 0}
+          clients={Number(clients) || 0}
         />
-
         <motion.div variants={item}>
           <RegistrantResponseAnalysis
             registrants={dashboardData.attendance?.registrantResponses || 0}
             confirmations={dashboardData.attendance?.confirmations || 0}
             attendees={dashboardData.attendance?.attendees || 0}
             marketingAudienceSize={dashboardData.eventDetails?.marketing_audience || 0}
+            plateLickers={dashboardData.attendance?.plate_lickers || 0}
           />
         </motion.div>
       </div>
+
+      {/* Plate Lickers Card */}
+      {/* <div className="grid grid-cols-1 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          <PlateLickerCard
+            plateLickers={dashboardData.attendance?.plate_lickers || 0}
+            attendees={attendees}
+          />
+        </motion.div>
+      </div> */}
 
       {/* Financial Section */}
       <SectionDivider title="Financial Performance" />
@@ -391,7 +509,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
         >
           <FinancialProductionCard
             aum={dashboardData.financialProduction?.aum || 0}
-            financialPlanning={dashboardData.financialProduction?.financialPlanning || 0}
+            financialPlanning={dashboardData.financialProduction?.financial_planning || 0}
             annuityPremium={dashboardData.financialProduction?.annuity_premium || 0}
             lifeInsurancePremium={dashboardData.financialProduction?.life_insurance_premium || 0}
           />
@@ -402,55 +520,69 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       <SectionDivider title="Products & Costs" />
 
       {/* Products sold */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-          >
-            <ProductSoldCard
-              title="Annuities Sold"
-              count={dashboardData.financialProduction?.annuities_sold || 0}
-              icon={<Award className="h-5 w-5 text-blue-400" />}
-              color="blue"
-              details={[
-                {
-                  label: "Average Premium",
-                  value: `${dashboardData.financialProduction?.annuity_premium && dashboardData.financialProduction?.annuities_sold ? (dashboardData.financialProduction.annuity_premium / Math.max(1, dashboardData.financialProduction.annuities_sold)).toLocaleString() : "0"}`,
-                },
-                { label: "Commission Rate", value: "4.5%" },
-                { label: "Total Commission", value: `$${annuityCommission.toLocaleString()}` },
-              ]}
-              benefits={["Tax-deferred growth", "Guaranteed income", "Principal protection"]}
-              chartData={[65, 40, 85, 30, 55, 65, 75]}
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.9 }}
-          >
-            <ProductSoldCard
-              title="Life Policies Sold"
-              count={dashboardData.financialProduction?.life_policies_sold || 0}
-              icon={<Shield className="h-5 w-5 text-red-400" />}
-              color="red"
-              details={[
-                {
-                  label: "Average Coverage",
-                  value: `$${dashboardData.financialProduction?.life_insurance_premium && dashboardData.financialProduction?.life_policies_sold ? (dashboardData.financialProduction.life_insurance_premium / Math.max(1, dashboardData.financialProduction.life_policies_sold)).toLocaleString() : "0"}`,
-                },
-                { label: "Commission Rate", value: "85%" },
-                { label: "Total Commission", value: `$${lifeInsuranceCommission.toLocaleString()}` },
-              ]}
-              benefits={["Death benefit", "Cash value growth", "Living benefits"]}
-              chartData={[45, 60, 35, 70, 45, 60, 35]}
-            />
-          </motion.div>
-        </div>
-
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        >
+          <ProductSoldCard
+            title="Annuities Sold"
+            count={dashboardData.financialProduction?.annuities_sold || 0}
+            icon={<Award className="h-5 w-5 text-blue-400" />}
+            color="blue"
+            details={[
+              {
+                label: "Average Premium",
+                value: `${dashboardData.financialProduction?.annuity_premium && dashboardData.financialProduction?.annuities_sold ? (dashboardData.financialProduction.annuity_premium / Math.max(1, dashboardData.financialProduction.annuities_sold)).toLocaleString() : "0"}`,
+              },
+              { label: "Commission Rate", value: "4.5%" },
+              { label: "Total Commission", value: `$${annuityCommission.toLocaleString()}` },
+            ]}
+            benefits={["Tax-deferred growth", "Guaranteed income", "Principal protection"]}
+            chartData={[65, 40, 85, 30, 55, 65, 75]}
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+        >
+          <ProductSoldCard
+            title="Life Policies Sold"
+            count={dashboardData.financialProduction?.life_policies_sold || 0}
+            icon={<Shield className="h-5 w-5 text-red-400" />}
+            color="red"
+            details={[
+              {
+                label: "Average Coverage",
+                value: `$${dashboardData.financialProduction?.life_insurance_premium && dashboardData.financialProduction?.life_policies_sold ? (dashboardData.financialProduction.life_insurance_premium / Math.max(1, dashboardData.financialProduction.life_policies_sold)).toLocaleString() : "0"}`,
+              },
+              { label: "Commission Rate", value: "85%" },
+              { label: "Total Commission", value: `$${lifeInsuranceCommission.toLocaleString()}` },
+            ]}
+            benefits={["Death benefit", "Cash value growth", "Living benefits"]}
+            chartData={[45, 60, 35, 70, 45, 60, 35]}
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1.1 }}
+        >
+          <ProductSoldCard
+            title="AUM Accounts Opened"
+            count={dashboardData.financialProduction?.aum_accounts_opened || 0}
+            icon={<DollarSign className="h-5 w-5 text-emerald-400" />}
+            color="green"
+            details={[
+              { label: "AUM Fee %", value: `${aumFeePercentage}%` },
+              { label: "Annual AUM Fees", value: `$${aumFees.toLocaleString()}` },
+            ]}
+            benefits={["Scalable Revenue", "Recurring Revenue Stream", "Client Retention"]}
+            chartData={[30, 50, 40, 60, 80, 70, 90]}
+          />
+        </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

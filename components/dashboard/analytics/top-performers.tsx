@@ -88,7 +88,6 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
   return (
     <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-md card-hover">
       <CardHeader className="px-0 pt-0">
-        <h2 className="text-2xl font-extrabold text-white tracking-tight mb-4">Top Performing Events</h2>
         <div className="flex flex-wrap gap-2 mb-4">
           {(["ROI", "Conversion", "Revenue", "Attendees", "Clients"] as MetricType[]).map((metric) => (
             <Button

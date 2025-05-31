@@ -185,10 +185,6 @@ export function EventComparison({ events }: EventComparisonProps) {
   return (
     <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-md card-hover">
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-3 mb-6">
-          <span className="inline-block w-2 h-8 rounded bg-gradient-to-b from-purple-500 to-purple-700 mr-2" />
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">Event Comparison</h2>
-        </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
           <div className="flex flex-wrap gap-2">
             {metricOptions.map(
@@ -199,7 +195,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                   size="sm"
                   className={`border-[#1f2037] ${
                     activeMetric === metric
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      ? "bg-purple-600 text-white hover:bg-purple-700"
                       : "bg-[#131525] text-white hover:bg-[#1f2037]"
                   }`}
                   onClick={() => setActiveMetric(metric)}

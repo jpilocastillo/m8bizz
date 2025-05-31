@@ -98,6 +98,8 @@ export type MarketingEvent = {
     annuity_commission: number
     life_insurance_commission: number
     aum_fees: number
+    aum_accounts_opened: number
+    financial_plans_sold: number
     total: number
   }
 }
@@ -324,6 +326,8 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
           annuity_commission,
           life_insurance_commission,
           aum_fees,
+          aum_accounts_opened,
+          financial_plans_sold,
           total
         )
       `)
@@ -440,7 +444,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
           registrant_responses,
           confirmations,
           attendees,
-          clients_from_event
+          clients_from_event,
+          plate_lickers
         ),
         event_appointments (
           id,
@@ -495,7 +500,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         registrant_responses: 0,
         confirmations: 0,
         attendees: 0,
-        clients_from_event: 0
+        clients_from_event: 0,
+        plate_lickers: 0
       }),
       ensureRecord(supabase, 'event_appointments', event.id, {
         set_at_event: 0,
@@ -513,9 +519,14 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         life_policies_sold: 0,
         annuity_commission: 0,
         life_insurance_commission: 0,
-        aum_fees: 0
+        aum_fees: 0,
+        aum_accounts_opened: 0,
+        financial_plans_sold: 0
       })
     ])
+
+    // Log plate licker data
+    console.log('Plate Licker Data:', { plateLickers: attendance.plate_lickers, attendees: attendance.attendees });
 
     // Calculate totals and metrics
     const totalExpenses = expenses.total_cost || 0
@@ -550,7 +561,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         marketing_type: event.marketing_type,
         topic: event.topic,
         age_range: event.age_range,
-        mile_radius: event.mile_radius,
+        mile_radius: Number(event.mile_radius),
         income_assets: event.income_assets,
         time: event.time,
         status: event.status,
@@ -588,7 +599,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         confirmations: attendance.confirmations,
         attendees: attendance.attendees,
         responseRate: attendance.registrant_responses > 0 ? Math.round((attendance.confirmations / attendance.registrant_responses) * 100) : 0,
-        clients_from_event: attendance.clients_from_event
+        clients_from_event: attendance.clients_from_event,
+        plate_lickers: attendance.plate_lickers
       },
       clientAcquisition: {
         expensePerRegistrant: attendance.registrant_responses > 0 ? totalExpenses / attendance.registrant_responses : 0,
@@ -598,7 +610,14 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
       },
       conversionEfficiency: {
         registrationToAttendance: attendance.registrant_responses > 0 ? Math.round((attendance.attendees / attendance.registrant_responses) * 100) : 0,
-        attendanceToClient: attendance.attendees > 0 ? Math.round((attendance.clients_from_event / attendance.attendees) * 100) : 0,
+        attendanceToClient: (() => {
+          console.log('Debug attendance to client conversion:', {
+            attendees: attendance.attendees,
+            clients_from_event: attendance.clients_from_event,
+            calculation: attendance.attendees > 0 ? Math.round((attendance.clients_from_event / attendance.attendees) * 100) : 0
+          });
+          return attendance.attendees > 0 ? Math.round((attendance.clients_from_event / attendance.attendees) * 100) : 0;
+        })(),
         overall: attendance.registrant_responses > 0 ? Math.round((attendance.clients_from_event / attendance.registrant_responses) * 100) : 0
       },
       appointments: {
@@ -622,7 +641,9 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         life_policies_sold: financial.life_policies_sold || 0,
         annuity_commission: financial.annuity_commission || 0,
         life_insurance_commission: financial.life_insurance_commission || 0,
-        aum_fees: annualAumFees // Update to use annual AUM fees
+        aum_fees: annualAumFees,
+        aum_accounts_opened: financial.aum_accounts_opened || 0,
+        financial_plans_sold: financial.financial_plans_sold || 0
       }
     }
 
@@ -878,9 +899,17 @@ export async function updateEvent(eventId: string, eventData: any) {
 
         if (existingAttendance) {
           // Update existing record
+          console.log('Updating existing attendance record with data:', {
+            event_id: eventId,
+            ...relatedData.attendance,
+            plate_lickers: relatedData.attendance.plate_lickers
+          });
           const { error: attendanceError } = await supabase
             .from("event_attendance")
-            .update(relatedData.attendance)
+            .update({
+              ...relatedData.attendance,
+              plate_lickers: relatedData.attendance.plate_lickers
+            })
             .eq("event_id", eventId)
 
           if (attendanceError) {
@@ -889,9 +918,18 @@ export async function updateEvent(eventId: string, eventData: any) {
           }
         } else {
           // Insert new record
+          console.log('Inserting new attendance record with data:', {
+            event_id: eventId,
+            ...relatedData.attendance,
+            plate_lickers: relatedData.attendance.plate_lickers
+          });
           const { error: attendanceError } = await supabase
             .from("event_attendance")
-            .insert([{ event_id: eventId, ...relatedData.attendance }])
+            .insert([{
+              event_id: eventId,
+              ...relatedData.attendance,
+              plate_lickers: relatedData.attendance.plate_lickers
+            }])
 
           if (attendanceError) {
             console.error("Error inserting attendance:", attendanceError)
@@ -1051,9 +1089,11 @@ export async function createEventAttendance(data: {
   confirmations: number
   attendees: number
   clients_from_event: number
+  plate_lickers: number
 }) {
   try {
     const supabase = await createAdminClient()
+    console.log('Saving event attendance data:', data);
     const { data: result, error } = await supabase
       .from("event_attendance")
       .insert(data)
@@ -1061,6 +1101,7 @@ export async function createEventAttendance(data: {
       .single()
 
     if (error) throw error
+    console.log('Event attendance saved successfully:', result);
     return { success: true, data: result }
   } catch (error) {
     console.error("Error creating event attendance:", error)

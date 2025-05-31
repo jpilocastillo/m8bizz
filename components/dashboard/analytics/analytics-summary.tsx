@@ -13,6 +13,7 @@ interface AnalyticsSummaryData {
   overallConversionRate: number
   totalClients: number
   avgAttendees: number
+  totalPlateLickers?: number
 }
 
 interface AnalyticsSummaryProps {
@@ -33,6 +34,7 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
     overallConversionRate: data?.overallConversionRate || 0,
     totalClients: data?.totalClients || 0,
     avgAttendees: data?.avgAttendees || 0,
+    totalPlateLickers: data?.totalPlateLickers || 0,
   }
 
   // Use backend-calculated values directly where available
@@ -62,87 +64,104 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
   const overallROI = safeData.overallROI
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-        <CardContent className="p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white font-bold tracking-wide">Total Events</span>
-            <div className="bg-m8bs-blue/20 p-1 rounded-md">
-              <BarChart3 className="h-4 w-4 text-m8bs-blue" />
+    <div className="overflow-x-auto">
+      <div className="grid grid-cols-7 gap-4 min-w-[900px]">
+        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+          <CardContent className="p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-white font-bold tracking-wide">Total Events</span>
+              <div className="bg-m8bs-blue/20 p-1 rounded-md">
+                <BarChart3 className="h-4 w-4 text-m8bs-blue" />
+              </div>
             </div>
-          </div>
-          <div className="text-2xl font-extrabold tracking-tight">{safeData.totalEvents}</div>
-        </CardContent>
-      </Card>
+            <div className="text-2xl font-extrabold tracking-tight">{safeData.totalEvents}</div>
+          </CardContent>
+        </Card>
 
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-        <CardContent className="p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white font-bold tracking-wide">Total Revenue</span>
-            <div className="bg-emerald-500/20 p-1 rounded-md">
-              <DollarSign className="h-4 w-4 text-emerald-500" />
+        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+          <CardContent className="p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-white font-bold tracking-wide">Total Revenue</span>
+              <div className="bg-emerald-500/20 p-1 rounded-md">
+                <DollarSign className="h-4 w-4 text-emerald-500" />
+              </div>
             </div>
-          </div>
-          <div className="text-2xl font-extrabold tracking-tight">{formatCurrency(safeData.totalRevenue)}</div>
-          <div className="text-xs text-white mt-1 font-medium">
-            Avg: {formatCurrency(avgRevenuePerEvent)} per event
-          </div>
-        </CardContent>
-      </Card>
+            <div className="text-2xl font-extrabold tracking-tight">{formatCurrency(safeData.totalRevenue)}</div>
+            <div className="text-xs text-white mt-1 font-medium">
+              Avg: {formatCurrency(avgRevenuePerEvent)} per event
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-        <CardContent className="p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white font-bold tracking-wide">Total Profit</span>
-            <div className="bg-purple-500/20 p-1 rounded-md">
-              <TrendingUp className="h-4 w-4 text-purple-500" />
+        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+          <CardContent className="p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-white font-bold tracking-wide">Total Profit</span>
+              <div className="bg-purple-500/20 p-1 rounded-md">
+                <TrendingUp className="h-4 w-4 text-purple-500" />
+              </div>
             </div>
-          </div>
-          <div className="text-2xl font-extrabold tracking-tight">{formatCurrency(safeData.totalProfit)}</div>
-          <div className="text-xs text-white mt-1 font-medium">
-            Expenses: {formatCurrency(safeData.totalExpenses)}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="text-2xl font-extrabold tracking-tight">{formatCurrency(safeData.totalProfit)}</div>
+            <div className="text-xs text-white mt-1 font-medium">
+              Expenses: {formatCurrency(safeData.totalExpenses)}
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-        <CardContent className="p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white font-bold tracking-wide">Overall ROI</span>
-            <div className="bg-yellow-500/20 p-1 rounded-md">
-              <Percent className="h-4 w-4 text-yellow-500" />
+        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+          <CardContent className="p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-white font-bold tracking-wide">Overall ROI</span>
+              <div className="bg-yellow-500/20 p-1 rounded-md">
+                <Percent className="h-4 w-4 text-yellow-500" />
+              </div>
             </div>
-          </div>
-          <div className="text-2xl font-extrabold tracking-tight">{formatPercent(overallROI)}</div>
-        </CardContent>
-      </Card>
+            <div className="text-2xl font-extrabold tracking-tight">{formatPercent(overallROI)}</div>
+          </CardContent>
+        </Card>
 
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-        <CardContent className="p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white font-bold tracking-wide">Total Attendees</span>
-            <div className="bg-amber-500/20 p-1 rounded-md">
-              <Users className="h-4 w-4 text-amber-500" />
+        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+          <CardContent className="p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-white font-bold tracking-wide">Total Attendees</span>
+              <div className="bg-amber-500/20 p-1 rounded-md">
+                <Users className="h-4 w-4 text-amber-500" />
+              </div>
             </div>
-          </div>
-          <div className="text-2xl font-extrabold tracking-tight">{safeData.totalAttendees}</div>
-        </CardContent>
-      </Card>
+            <div className="text-2xl font-extrabold tracking-tight">{safeData.totalAttendees}</div>
+          </CardContent>
+        </Card>
 
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-        <CardContent className="p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white font-bold tracking-wide">Total Clients</span>
-            <div className="bg-purple-500/20 p-1 rounded-md">
-              <Users className="h-4 w-4 text-purple-500" />
+        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+          <CardContent className="p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-white font-bold tracking-wide">Total Clients</span>
+              <div className="bg-purple-500/20 p-1 rounded-md">
+                <Users className="h-4 w-4 text-purple-500" />
+              </div>
             </div>
-          </div>
-          <div className="text-2xl font-extrabold tracking-tight">{safeData.totalClients}</div>
-          <div className="text-xs text-white mt-1 font-medium">
-            Conversion Rate: {formatPercent(conversionRate)}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="text-2xl font-extrabold tracking-tight">{safeData.totalClients}</div>
+            <div className="text-xs text-white mt-1 font-medium">
+              Conversion Rate: {formatPercent(conversionRate)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
+          <CardContent className="p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-white font-bold tracking-wide">Plate Lickers</span>
+              <div className="bg-blue-500/20 p-1 rounded-md">
+                <Users className="h-4 w-4 text-blue-500" />
+              </div>
+            </div>
+            <div className="text-2xl font-extrabold tracking-tight">{safeData.totalPlateLickers ?? 0}</div>
+            <div className="text-xs text-white mt-1 font-medium">
+              {safeData.totalAttendees > 0 ? (((safeData.totalPlateLickers ?? 0) / safeData.totalAttendees) * 100).toFixed(1) : 0}% of attendees
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

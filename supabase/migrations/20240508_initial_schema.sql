@@ -53,6 +53,7 @@ create table if not exists public.event_attendance (
     confirmations integer default 0,
     attendees integer default 0,
     clients_from_event integer default 0,
+    plate_lickers integer default 0,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

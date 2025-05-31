@@ -178,7 +178,11 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
                 {/* Centered count */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-4xl font-bold text-white">{animatedCount}</span>
-                  <span className={`text-sm ${colorClasses.text}`}>{animatedCount === 1 ? "Policy" : "Policies"}</span>
+                  <span className={`text-sm ${colorClasses.text}`}>{
+                    title === "AUM Accounts Opened"
+                      ? (animatedCount === 1 ? "Account" : "Accounts")
+                      : (animatedCount === 1 ? "Policy" : "Policies")
+                  }</span>
                 </div>
               </div>
             </div>
