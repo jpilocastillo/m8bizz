@@ -10,6 +10,7 @@ interface AppointmentTrendsProps {
   firstAppointmentAttended?: number
   firstAppointmentNoShows?: number
   secondAppointmentAttended?: number
+  notQualified?: number
   clients?: number
 }
 
@@ -19,6 +20,7 @@ export function AppointmentTrends({
   firstAppointmentAttended = 4,
   firstAppointmentNoShows = 2,
   secondAppointmentAttended = 4,
+  notQualified = 0,
   clients = 0,
 }: AppointmentTrendsProps) {
   const [isHovered, setIsHovered] = useState(false)
@@ -82,6 +84,14 @@ export function AppointmentTrends({
       color: "bg-slate-400",
       gradient: "from-slate-500 to-slate-300",
       description: `${secondAppointmentRate}% return rate`,
+    },
+    {
+      label: "Not Qualified",
+      value: notQualified,
+      icon: XCircle,
+      color: "bg-red-500",
+      gradient: "from-red-600 to-red-400",
+      description: "Prospects not qualified for appointments",
     },
     {
       label: "Clients",
@@ -176,7 +186,7 @@ export function AppointmentTrends({
         {/* Journey Path Visualization */}
         <div className="mb-8 relative z-10">
           {/* Icons Row */}
-          <div className="grid grid-cols-6 gap-4 items-end text-center mb-1">
+          <div className="grid grid-cols-7 gap-4 items-end text-center mb-1">
             {journeySteps.map((step, index) => (
               <div key={step.label} className="flex items-center justify-center w-full">
                 <div
@@ -190,7 +200,7 @@ export function AppointmentTrends({
             ))}
           </div>
           {/* Labels Row */}
-          <div className="grid grid-cols-6 gap-4 items-end text-center mb-1">
+          <div className="grid grid-cols-7 gap-4 items-end text-center mb-1">
             {journeySteps.map((step, index) => (
               <div key={step.label} className="flex items-center justify-center w-full">
                 <p
@@ -204,7 +214,7 @@ export function AppointmentTrends({
             ))}
           </div>
           {/* Values Row */}
-          <div className="grid grid-cols-6 gap-4 items-end text-center">
+          <div className="grid grid-cols-7 gap-4 items-end text-center">
             {journeySteps.map((step, index) => (
               <div key={step.label} className="flex items-center justify-center w-full">
                 <div className="text-2xl font-extrabold text-white leading-tight min-h-[2.5rem] flex items-end justify-center">{step.value}</div>
@@ -215,7 +225,7 @@ export function AppointmentTrends({
 
         {/* Flow Arrows */}
         <div className="flex justify-between items-center px-10 mb-6">
-          {[0, 1, 2, 3, 4].map((index) => (
+          {[0, 1, 2, 3, 4, 5].map((index) => (
             <ArrowRight
               key={`arrow-${index}`}
               className={`h-5 w-5 text-gray-600 transition-all duration-300 ${

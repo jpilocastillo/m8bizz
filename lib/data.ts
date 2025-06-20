@@ -87,6 +87,7 @@ export type MarketingEvent = {
     first_appointment_attended: number
     first_appointment_no_shows: number
     second_appointment_attended: number
+    not_qualified: number
   }
   financial_production?: {
     annuity_premium: number
@@ -124,6 +125,7 @@ export type EventAppointments = {
   first_appointment_attended: number
   first_appointment_no_shows: number
   second_appointment_attended: number
+  not_qualified: number
 }
 
 export type EventFinancialProduction = {
@@ -265,6 +267,7 @@ export type EventWithRelations = {
     first_appointment_attended: number;
     first_appointment_no_shows: number;
     second_appointment_attended: number;
+    not_qualified: number;
   };
 }
 
@@ -313,7 +316,8 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
           set_after_event,
           first_appointment_attended,
           first_appointment_no_shows,
-          second_appointment_attended
+          second_appointment_attended,
+          not_qualified
         ),
         financial_production (
           id,
@@ -453,7 +457,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
           set_after_event,
           first_appointment_attended,
           first_appointment_no_shows,
-          second_appointment_attended
+          second_appointment_attended,
+          not_qualified
         ),
         financial_production (
           id,
@@ -508,7 +513,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         set_after_event: 0,
         first_appointment_attended: 0,
         first_appointment_no_shows: 0,
-        second_appointment_attended: 0
+        second_appointment_attended: 0,
+        not_qualified: 0
       }),
       ensureRecord(supabase, 'financial_production', event.id, {
         annuity_premium: 0,
@@ -625,7 +631,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         setAfterEvent: appointments.set_after_event,
         firstAppointmentAttended: appointments.first_appointment_attended,
         firstAppointmentNoShows: appointments.first_appointment_no_shows,
-        secondAppointmentAttended: appointments.second_appointment_attended
+        secondAppointmentAttended: appointments.second_appointment_attended,
+        notQualified: appointments.not_qualified
       },
       productsSold: {
         annuities: financial.annuities_sold || 0,
@@ -1116,6 +1123,7 @@ export async function createEventAppointments(data: {
   first_appointment_attended: number
   first_appointment_no_shows: number
   second_appointment_attended: number
+  not_qualified: number
 }) {
   try {
     const supabase = await createAdminClient()

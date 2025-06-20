@@ -7,22 +7,26 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 interface ConversionEfficiencyProps {
   registrationToConfirmation: number
   confirmationToAttendance: number
+  attendanceToAppointments: number
   attendanceToClient: number
   overall: number
   registrants?: number
   confirmations?: number
   attendees?: number
+  appointmentsBooked?: number
   clients?: number
 }
 
 export function ConversionEfficiencyCard({
   registrationToConfirmation,
   confirmationToAttendance,
+  attendanceToAppointments,
   attendanceToClient,
   overall,
   registrants = 31,
   confirmations = 28,
   attendees = 28,
+  appointmentsBooked = 25,
   clients = 25,
 }: ConversionEfficiencyProps) {
   const chartData = [
@@ -43,6 +47,12 @@ export function ConversionEfficiencyCard({
       value: confirmationToAttendance,
       actual: attendees,
       color: "#8B5CF6",
+    },
+    {
+      name: "Appointments",
+      value: attendanceToAppointments,
+      actual: appointmentsBooked,
+      color: "#F59E0B",
     },
     {
       name: "Client",
@@ -174,6 +184,24 @@ export function ConversionEfficiencyCard({
             </div>
           </div>
 
+          {/* Attendance to Appointments */}
+          <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-amber-700/60 hover:bg-m8bs-card-alt/50">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-white">Attendance to Appointments</span>
+              <span className="text-sm font-bold text-amber-400">{attendanceToAppointments.toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between items-center text-xs text-gray-400 mb-2">
+              <span>{appointmentsBooked.toLocaleString()} appointments booked</span>
+              <span>of {attendees.toLocaleString()} attended</span>
+            </div>
+            <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
+              <div
+                className="bg-amber-500 h-1.5 rounded-full transition-all duration-500"
+                style={{ width: `${attendanceToAppointments}%` }}
+              />
+            </div>
+          </div>
+
           {/* Attendance to Client */}
           <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-red-700/60 hover:bg-m8bs-card-alt/50">
             <div className="flex justify-between items-center mb-2">
@@ -225,6 +253,22 @@ export function ConversionEfficiencyCard({
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
                   {attendees.toLocaleString()} out of {confirmations.toLocaleString()} confirmed attendees showed up
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5" />
+              <div>
+                <p className="text-sm text-white">
+                  {attendanceToAppointments < 40
+                    ? "Appointment booking rate needs improvement"
+                    : attendanceToAppointments < 70
+                      ? "Appointment booking rate is performing well"
+                      : "Excellent appointment booking rate"}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {appointmentsBooked.toLocaleString()} out of {attendees.toLocaleString()} attendees booked appointments
                 </p>
               </div>
             </div>

@@ -55,6 +55,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [firstAppointmentAttended, setFirstAppointmentAttended] = useState("")
   const [firstAppointmentNoShows, setFirstAppointmentNoShows] = useState("")
   const [secondAppointmentAttended, setSecondAppointmentAttended] = useState("")
+  const [notQualified, setNotQualified] = useState("")
 
   // Financial production
   const [annuityPremium, setAnnuityPremium] = useState("")
@@ -114,6 +115,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       setFirstAppointmentAttended(initialData.appointments?.firstAppointmentAttended?.toString() || "")
       setFirstAppointmentNoShows(initialData.appointments?.firstAppointmentNoShows?.toString() || "")
       setSecondAppointmentAttended(initialData.appointments?.secondAppointmentAttended?.toString() || "")
+      setNotQualified(initialData.appointments?.notQualified?.toString() || "")
 
       // Financial production
       setAnnuityPremium(initialData.financialProduction?.annuity_premium?.toString() || "")
@@ -295,7 +297,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             set_after_event: parseInt(setAfterEvent) || 0,
             first_appointment_attended: parseInt(firstAppointmentAttended) || 0,
             first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
-            second_appointment_attended: parseInt(secondAppointmentAttended) || 0
+            second_appointment_attended: parseInt(secondAppointmentAttended) || 0,
+            not_qualified: parseInt(notQualified) || 0
           },
           financialProduction: {
             annuity_premium: parseFloat(annuityPremium) || 0,
@@ -876,6 +879,19 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     onChange={(e) => setSecondAppointmentAttended(e.target.value)}
                     className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notQualified" className="text-gray-300 font-medium">
+                    Not Qualified
+                  </Label>
+                  <Input
+                    id="notQualified"
+                    type="number"
+                    value={notQualified}
+                    onChange={(e) => setNotQualified(e.target.value)}
+                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    placeholder="Number of prospects not qualified"
                   />
                 </div>
               </div>

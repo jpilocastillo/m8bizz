@@ -84,6 +84,7 @@ interface DashboardData {
     firstAppointmentAttended: number;
     firstAppointmentNoShows: number;
     secondAppointmentAttended: number;
+    notQualified: number;
   };
   financialProduction: {
     annuity_premium: number;
@@ -260,7 +261,8 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           setAfterEvent: data.appointments?.setAfterEvent || 0,
           firstAppointmentAttended: data.appointments?.firstAppointmentAttended || 0,
           firstAppointmentNoShows: data.appointments?.firstAppointmentNoShows || 0,
-          secondAppointmentAttended: data.appointments?.secondAppointmentAttended || 0
+          secondAppointmentAttended: data.appointments?.secondAppointmentAttended || 0,
+          notQualified: (data.appointments as any)?.notQualified || 0
         },
         financialProduction: {
           annuity_premium: data.financialProduction?.annuity_premium || 0,
@@ -320,9 +322,11 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const confirmations = dashboardData.attendance?.confirmations || 0
   const attendees = dashboardData.attendance?.attendees || 0
   const clients = dashboardData.attendance?.clients_from_event || 0
+  const totalAppointmentsBooked = (dashboardData.appointments?.setAtEvent || 0) + (dashboardData.appointments?.setAfterEvent || 0)
 
   const registrationToConfirmation = registrants > 0 ? (confirmations / registrants) * 100 : 0
   const confirmationToAttendance = confirmations > 0 ? (attendees / confirmations) * 100 : 0
+  const attendanceToAppointments = attendees > 0 ? (totalAppointmentsBooked / attendees) * 100 : 0
   const attendanceToClient = attendees > 0 ? (clients / attendees) * 100 : 0
   const overallConversion = registrants > 0 ? (clients / registrants) * 100 : 0
 
@@ -455,11 +459,13 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
         <ConversionEfficiencyCard
           registrationToConfirmation={Number(registrationToConfirmation) || 0}
           confirmationToAttendance={Number(confirmationToAttendance) || 0}
+          attendanceToAppointments={Number(attendanceToAppointments) || 0}
           attendanceToClient={Number(attendanceToClient) || 0}
           overall={Number(overallConversion) || 0}
           registrants={Number(registrants) || 0}
           confirmations={Number(confirmations) || 0}
           attendees={Number(attendees) || 0}
+          appointmentsBooked={Number(totalAppointmentsBooked) || 0}
           clients={Number(clients) || 0}
         />
         <motion.div variants={item}>
@@ -627,6 +633,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           <ConversionRateIndicator
             attendees={attendees}
             clients={clients}
+            appointmentsBooked={totalAppointmentsBooked}
             incomeAssets={dashboardData.eventDetails.income_assets}
           />
         </motion.div>
@@ -642,6 +649,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             firstAppointmentAttended={dashboardData.appointments?.firstAppointmentAttended || 0}
             firstAppointmentNoShows={dashboardData.appointments?.firstAppointmentNoShows || 0}
             secondAppointmentAttended={dashboardData.appointments?.secondAppointmentAttended || 0}
+            notQualified={(dashboardData.appointments as any)?.notQualified || 0}
             clients={dashboardData.attendance?.clients_from_event || 0}
           />
         </motion.div>

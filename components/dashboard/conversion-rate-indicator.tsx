@@ -8,12 +8,14 @@ import { useState } from "react"
 interface ConversionRateIndicatorProps {
   attendees: number
   clients: number
+  appointmentsBooked: number
   incomeAssets?: string
 }
 
 export function ConversionRateIndicator({
   attendees,
   clients,
+  appointmentsBooked,
   incomeAssets = "$100,000+",
 }: ConversionRateIndicatorProps) {
   // State for hover effects
@@ -321,31 +323,20 @@ export function ConversionRateIndicator({
             </motion.div>
           )}
 
-          {/* Attendee/client stats */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <motion.div
-              className={`bg-[#1a1b2e] p-3 rounded border border-m8bs-border/20 transition-all duration-300 ${
-                hoveredSection === "attendees" ? "bg-[#1d1e33] border-purple-500/30 shadow-sm" : ""
-              }`}
-              onMouseEnter={() => setHoveredSection("attendees")}
-              onMouseLeave={() => setHoveredSection(null)}
-              whileHover={{ y: -2 }}
-            >
-              <div className="text-xs text-gray-400 mb-1">Total Attendees</div>
-              <div className="text-lg font-medium text-white">{attendees}</div>
-            </motion.div>
-
-            <motion.div
-              className={`bg-[#1a1b2e] p-3 rounded border border-m8bs-border/20 transition-all duration-300 ${
-                hoveredSection === "clients" ? "bg-[#1d1e33] border-green-500/30 shadow-sm" : ""
-              }`}
-              onMouseEnter={() => setHoveredSection("clients")}
-              onMouseLeave={() => setHoveredSection(null)}
-              whileHover={{ y: -2 }}
-            >
-              <div className="text-xs text-gray-400 mb-1">Total Clients</div>
-              <div className="text-lg font-medium text-white">{clients}</div>
-            </motion.div>
+          {/* Totals */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-m8bs-card-alt/30 border border-m8bs-border/30 rounded-lg p-4 text-center transition-all duration-300 hover:bg-m8bs-card-alt/50 hover:border-blue-500/50">
+              <p className="text-sm text-gray-400">Total Attendees</p>
+              <p className="text-2xl font-bold text-white">{attendees}</p>
+            </div>
+            <div className="bg-m8bs-card-alt/30 border border-m8bs-border/30 rounded-lg p-4 text-center transition-all duration-300 hover:bg-m8bs-card-alt/50 hover:border-yellow-500/50">
+              <p className="text-sm text-gray-400">Appointments Booked</p>
+              <p className="text-2xl font-bold text-white">{appointmentsBooked}</p>
+            </div>
+            <div className="bg-m8bs-card-alt/30 border border-m8bs-border/30 rounded-lg p-4 text-center transition-all duration-300 hover:bg-m8bs-card-alt/50 hover:border-green-500/50">
+              <p className="text-sm text-gray-400">Total Clients</p>
+              <p className="text-2xl font-bold text-white">{clients}</p>
+            </div>
           </div>
 
           {/* Improvement tips */}
