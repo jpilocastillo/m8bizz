@@ -1,18 +1,23 @@
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { LoginForm } from "@/components/login-form"
+import { redirect } from "next/navigation"
 
-export default async function Home() {
-  const supabase = await createClient()
-
-  // Get the session without try/catch since redirect handles this specially
-  const { data } = await supabase.auth.getSession()
-
-  // If user is authenticated, redirect to dashboard
-  if (data.session) {
-    redirect("/dashboard")
+export default async function HomePage() {
+  try {
+    const supabase = await createClient()
+    
+    // Get the current user session
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    // If user is authenticated, redirect to dashboard
+    if (user && !error) {
+      redirect("/dashboard")
+    }
+    
+    // If no user or any error, redirect to login
+    redirect("/login")
+  } catch (error) {
+    console.error("Error in homepage:", error)
+    // If there's an error (like missing env vars), redirect to login instead of test page
+    redirect("/login")
   }
-
-  // If not authenticated, render the login form directly
-  return <LoginForm />
-}
+} 

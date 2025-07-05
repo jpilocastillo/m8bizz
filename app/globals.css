@@ -185,5 +185,46 @@ body {
 }
 
 .animate-pulse-slow {
-  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* === New Styles for Sleek Login Page === */
+
+/* 1. Animated Gradient Background */
+@keyframes background-pan {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-background-pan {
+  background-size: 200% 200%;
+  animation: background-pan 15s ease infinite;
+}
+
+/* 2. Fade-in Animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+/* 3. Glowing Input Focus */
+.focus-glow {
+  @apply focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300;
 }

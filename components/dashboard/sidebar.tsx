@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
@@ -14,6 +15,8 @@ import {
   PlusCircle,
   ChevronLeft,
   PieChart,
+  Building2,
+  User as UserIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -27,7 +30,6 @@ export function Sidebar() {
   const [isMarketingExpanded, setIsMarketingExpanded] = useState(true)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const supabase = createClient()
-  const [isDashboardsExpanded, setIsDashboardsExpanded] = useState(true)
 
   // Load collapsed state from localStorage on mount
   useEffect(() => {
@@ -56,17 +58,12 @@ export function Sidebar() {
       <div className="p-4 border-b border-m8bs-border bg-m8bs-card flex items-center justify-between h-14">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark text-white rounded-full p-2 w-8 h-8 flex items-center justify-center shadow-lg">
-              <PieChart className="h-4 w-4" />
-            </div>
-            <h2 className="text-lg font-extrabold text-white tracking-tight">M8BS</h2>
+            <Image src="/logo.png" alt="M8 Business Suite Logo" width={150} height={40} />
           </div>
         )}
         {isCollapsed && (
           <div className="mx-auto">
-            <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark text-white rounded-full p-2 w-8 h-8 flex items-center justify-center shadow-lg">
-              <PieChart className="h-4 w-4" />
-            </div>
+            <Image src="/logo.png" alt="M8 Business Suite Logo" width={32} height={32} />
           </div>
         )}
         <Button
@@ -81,20 +78,21 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-2">
+          {/* Marketing Section */}
           {!isCollapsed ? (
             <div>
               <button
-                onClick={() => setIsDashboardsExpanded(!isDashboardsExpanded)}
+                onClick={() => setIsMarketingExpanded(!isMarketingExpanded)}
                 className="flex items-center justify-between w-full rounded-md px-3 py-2 text-sm font-bold text-white hover:bg-m8bs-card-alt hover:text-white transition-all duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <LayoutDashboard className="h-5 w-5" />
-                  <span>Dashboards</span>
+                  <BarChart3 className="h-5 w-5" />
+                  <span>Marketing</span>
                 </div>
-                {isDashboardsExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                {isMarketingExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </button>
 
-              {isDashboardsExpanded && (
+              {isMarketingExpanded && (
                 <div className="pl-10 space-y-1 mt-1">
                   <Link
                     href="/dashboard"
@@ -118,51 +116,6 @@ export function Sidebar() {
                   >
                     <span>Multi Event Dashboard</span>
                   </Link>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <Link
-                href="/dashboard"
-                className={cn(
-                  "flex items-center justify-center rounded-md px-2 py-2 text-sm font-bold transition-all duration-200",
-                  pathname === "/dashboard"
-                    ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
-                    : "text-white hover:bg-m8bs-card-alt hover:text-white",
-                )}
-              >
-                <LayoutDashboard className="h-5 w-5" />
-              </Link>
-              <Link
-                href="/dashboard/analytics"
-                className={cn(
-                  "flex items-center justify-center rounded-md px-2 py-2 text-sm font-bold transition-all duration-200",
-                  pathname === "/dashboard/analytics"
-                    ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
-                    : "text-white hover:bg-m8bs-card-alt hover:text-white",
-                )}
-              >
-                <BarChart3 className="h-5 w-5" />
-              </Link>
-            </>
-          )}
-
-          {!isCollapsed ? (
-            <div>
-              <button
-                onClick={() => setIsMarketingExpanded(!isMarketingExpanded)}
-                className="flex items-center justify-between w-full rounded-md px-3 py-2 text-sm font-bold text-white hover:bg-m8bs-card-alt hover:text-white transition-all duration-200"
-              >
-                <div className="flex items-center gap-3">
-                  <FileSpreadsheet className="h-5 w-5" />
-                  <span>Marketing Data</span>
-                </div>
-                {isMarketingExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </button>
-
-              {isMarketingExpanded && (
-                <div className="pl-10 space-y-1 mt-1">
                   <Link
                     href="/dashboard/events"
                     className={cn(
@@ -191,18 +144,34 @@ export function Sidebar() {
             </div>
           ) : (
             <Link
-              href="/dashboard/events"
+              href="/dashboard"
               className={cn(
                 "flex items-center justify-center rounded-md px-2 py-2 text-sm font-bold transition-all duration-200",
-                pathname.includes("/dashboard/events")
+                pathname === "/dashboard"
                   ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                   : "text-white hover:bg-m8bs-card-alt hover:text-white",
               )}
             >
-              <FileSpreadsheet className="h-5 w-5" />
+              <BarChart3 className="h-5 w-5" />
             </Link>
           )}
 
+          {/* Advisor Basecamp Section */}
+          <Link
+            href="/business-dashboard"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+              pathname === "/business-dashboard"
+                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                : "text-white hover:bg-m8bs-card-alt hover:text-white",
+              isCollapsed && "justify-center px-2",
+            )}
+          >
+            <Building2 className="h-5 w-5" />
+            {!isCollapsed && <span>Advisor Basecamp</span>}
+          </Link>
+
+          {/* Settings */}
           <Link
             href="/dashboard/settings"
             className={cn(
@@ -215,6 +184,19 @@ export function Sidebar() {
           >
             <Settings className="h-5 w-5" />
             {!isCollapsed && <span>Settings</span>}
+          </Link>
+          <Link
+            href="/profile"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+              pathname === "/profile"
+                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                : "text-white hover:bg-m8bs-card-alt hover:text-white",
+              isCollapsed && "justify-center px-2",
+            )}
+          >
+            <UserIcon className="h-5 w-5" />
+            {!isCollapsed && <span>Profile</span>}
           </Link>
         </nav>
       </div>

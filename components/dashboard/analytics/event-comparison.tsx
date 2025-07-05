@@ -8,7 +8,7 @@ import { Check, ChevronsUpDown, BarChart3, TrendingUp, TrendingDown } from "luci
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
-import { format, parseISO } from "date-fns"
+import { format } from "date-fns"
 
 type MetricType = "ROI" | "Conversion" | "Revenue" | "Expenses" | "Profit" | "Attendees" | "Clients"
 
@@ -82,6 +82,15 @@ export function EventComparison({ events }: EventComparisonProps) {
     }
   }
 
+  // Helper function to create a timezone-safe local date from a string like "2024-05-19"
+  const createLocalDate = (dateString: string) => {
+    if (!dateString) return null;
+    const [year, month, day] = dateString.split('-').map(Number);
+    // Create a date in UTC to prevent any local timezone shifts.
+    // The month is 0-indexed in Date.UTC, so we subtract 1.
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
   // Transform data for the chart
   const chartData = getComparisonEvents().map((event) => {
     let metricValue = 0
@@ -140,11 +149,12 @@ export function EventComparison({ events }: EventComparisonProps) {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const localDate = createLocalDate(data.date);
       return (
         <div className="bg-[#131525] border border-[#1f2037] p-3 rounded-lg shadow-lg">
           <p className="font-bold text-white mb-1">{data.name}</p>
           <p className="text-sm text-gray-400 mb-1">
-            {data.date ? format(parseISO(data.date), "MMM d, yyyy") : 'No date'} • {data.location}
+            {localDate ? format(localDate, "MMM d, yyyy") : 'No date'} • {data.location}
           </p>
           <p className="text-sm font-semibold text-white">
             {activeMetric}: {formatValue(data.value, activeMetric)}
@@ -242,7 +252,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                           )}
                         />
                         <div className="flex flex-col">
-                          <span>{event.name} <span className="text-xs text-gray-400">({event.date ? format(parseISO(event.date), "MMM d, yyyy") : 'No date'} • {event.location || 'No location'})</span></span>
+                          <span>{event.name} <span className="text-xs text-gray-400">({event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date'} • {event.location || 'No location'})</span></span>
                         </div>
                       </CommandItem>
                     ))}
@@ -354,7 +364,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                           fontWeight="400"
                           dominantBaseline="middle"
                         >
-                          {event.date ? format(parseISO(event.date), "MMM d, yyyy") : 'No date'} • {event.location || 'No location'}
+                          {event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date'} • {event.location || 'No location'}
                         </text>
                       </g>
                     );
@@ -385,7 +395,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                 >
                   <td className="py-3 px-4 text-sm text-white font-medium">{event.name}</td>
                   <td className="py-3 px-4 text-sm text-gray-400">
-                    {event.date ? format(parseISO(event.date), "MMM d, yyyy") : 'No date'}
+                    {event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date'}
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-400">{event.location || 'No location'}</td>
                   <td className="py-3 px-4 text-sm text-gray-400">{event.type}</td>

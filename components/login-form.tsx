@@ -5,6 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { Eye, EyeOff, Mail, Lock, PieChart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,13 +63,6 @@ export function LoginForm() {
     <div className="min-h-screen flex flex-col md:flex-row">
       <div className="flex-1 bg-gradient-to-b from-[#0a0b14] to-[#131525] p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full p-2 w-10 h-10 flex items-center justify-center shadow-lg">
-              <PieChart className="h-5 w-5" />
-            </div>
-            <h2 className="text-xl font-bold text-white">M8 Business Suite</h2>
-          </div>
-
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 mb-2">
             Welcome back
           </h1>
@@ -152,42 +146,19 @@ export function LoginForm() {
       </div>
 
       <div className="hidden md:flex flex-1 bg-gradient-to-b from-[#0f1029] to-[#0a0b14] p-8 flex-col justify-center">
-        <div className="max-w-lg mx-auto">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 mb-4">
-            Optimize Your Marketing Performance
-          </h1>
-          <p className="text-white/80 mb-8">
-            Track, analyze, and improve your marketing campaigns with our comprehensive dashboard.
-          </p>
-
-          <div className="bg-gradient-to-b from-[#131525]/70 to-[#0f1029]/70 rounded-xl p-6 shadow-lg border border-[#1f2037]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full p-2 w-10 h-10 flex items-center justify-center shadow-lg">
-                <PieChart className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-white font-medium">M8 Business Suite</h3>
-                <p className="text-white/60 text-sm">Real-time analytics at your fingertips</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#1f2037]/50 p-4 rounded-lg border border-[#1f2037]/50 hover:border-blue-500/30 transition-colors">
-                <div className="text-blue-400 text-sm mb-1">ROI</div>
-                <div className="text-white text-2xl font-bold">274%</div>
-              </div>
-              <div className="bg-[#1f2037]/50 p-4 rounded-lg border border-[#1f2037]/50 hover:border-green-500/30 transition-colors">
-                <div className="text-green-400 text-sm mb-1">Conversion Rate</div>
-                <div className="text-white text-2xl font-bold">7.1%</div>
-              </div>
-              <div className="bg-[#1f2037]/50 p-4 rounded-lg border border-[#1f2037]/50 hover:border-purple-500/30 transition-colors">
-                <div className="text-purple-400 text-sm mb-1">Annuities Sold</div>
-                <div className="text-white text-2xl font-bold">2</div>
-              </div>
-              <div className="bg-[#1f2037]/50 p-4 rounded-lg border border-[#1f2037]/50 hover:border-yellow-500/30 transition-colors">
-                <div className="text-yellow-400 text-sm mb-1">Total Income</div>
-                <div className="text-white text-2xl font-bold">$258,991</div>
-              </div>
+        <div className="flex flex-col items-center justify-center h-full space-y-12">
+          <Image src="/logo.png" alt="M8 Business Suite Logo" width={400} height={100} />
+          
+          {/* Simple decorative elements */}
+          <div className="flex flex-col items-center space-y-6 text-center">
+            <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"></div>
+            <p className="text-white/60 text-lg max-w-sm">
+              Transform your marketing performance with real-time analytics and insights
+            </p>
+            <div className="flex space-x-4">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
             </div>
           </div>
         </div>

@@ -12,12 +12,11 @@ export const metadata: Metadata = {
   description: "Marketing and Business Management Dashboard",
   icons: {
     icon: [
-      { url: "/placeholder-logo.png", type: "image/png" },
-      { url: "/placeholder-logo.svg", type: "image/svg+xml" }
+      { url: "/logo.png", type: "image/png" },
     ],
-    shortcut: ["/placeholder-logo.png"],
+    shortcut: ["/logo.png"],
     apple: [
-      { url: "/placeholder-logo.png", type: "image/png" }
+      { url: "/logo.png", type: "image/png" }
     ]
   }
 }
