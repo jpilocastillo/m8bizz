@@ -14,11 +14,43 @@ interface DashboardMetricsProps {
 }
 
 export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }: DashboardMetricsProps) {
-  // Calculate metrics from real data
-  const clientsNeeded = clientMetrics?.monthly_ideal_prospects ? Math.ceil(clientMetrics.monthly_ideal_prospects * 12) : 0
-  const annualClosingProspects = clientMetrics?.monthly_ideal_prospects ? Math.ceil(clientMetrics.monthly_ideal_prospects * 12) : 0
-  const newAppointments = clientMetrics?.appointments_per_campaign || 0
-  const totalBooked = currentValues ? (currentValues.current_aum + currentValues.current_annuity) / 1000000 : 0
+  // Debug logging to track data updates
+  console.log('DashboardMetrics received data:', {
+    businessGoals,
+    currentValues,
+    clientMetrics
+  })
+
+  // Calculate metrics from real data using correct formulas
+  const currentAUM = currentValues?.current_aum || 0
+  const currentAnnuity = currentValues?.current_annuity || 0
+  const avgAnnuitySize = clientMetrics?.avg_annuity_size || 0
+  const avgAUMSize = clientMetrics?.avg_aum_size || 0
+  const annuityClosed = clientMetrics?.annuity_closed || 0
+  const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
+
+  console.log('Calculated metrics:', {
+    currentAUM,
+    currentAnnuity,
+    avgAnnuitySize,
+    avgAUMSize,
+    annuityClosed,
+    monthlyIdealProspects
+  })
+
+  // Calculate clients needed using correct formula: (E11 + E10) / 2
+  const E11 = avgAUMSize > 0 ? annuityClosed / avgAUMSize : 0 // D5/B11
+  const E10 = avgAnnuitySize > 0 ? currentAUM / avgAnnuitySize : 0 // D6/B10
+  const clientsNeeded = Math.ceil((E11 + E10) / 2)
+
+  // Annual closing prospects: monthly ideal prospects * 12
+  const annualClosingProspects = Math.ceil(monthlyIdealProspects * 12)
+
+  // New appointments: total new monthly appointments needed (monthly ideal prospects * 3)
+  const newAppointments = Math.ceil(monthlyIdealProspects * 3)
+
+  // Total booked: current AUM + current annuity (in millions)
+  const totalBooked = (currentAUM + currentAnnuity) / 1000000
 
   // Calculate progress percentages
   const clientsProgress = businessGoals?.business_goal ? Math.min((clientsNeeded / 50) * 100, 100) : 0
@@ -26,50 +58,71 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
   const appointmentsProgress = newAppointments > 0 ? Math.min((newAppointments / 15) * 100, 100) : 0
   const bookedProgress = businessGoals?.business_goal ? Math.min((totalBooked / (businessGoals.business_goal / 1000000)) * 100, 100) : 0
 
+  // Calculate realistic trends based on data relationships
+  const calculateTrend = (current: number, target: number, baseValue: number = 1) => {
+    if (target === 0 || baseValue === 0) return 0
+    const percentage = (current / target) * 100
+    // Return a realistic trend based on progress
+    if (percentage >= 100) return 15 // Exceeding target
+    if (percentage >= 80) return 8 // Close to target
+    if (percentage >= 60) return 2 // Making progress
+    if (percentage >= 40) return -3 // Behind but improving
+    return -8 // Significantly behind
+  }
+
+  const clientsTrend = calculateTrend(clientsNeeded, 50)
+  const prospectsTrend = calculateTrend(annualClosingProspects, 60)
+  const appointmentsTrend = calculateTrend(newAppointments, 15)
+  const bookedTrend = businessGoals?.business_goal ? calculateTrend(totalBooked, businessGoals.business_goal / 1000000) : 0
+
   const metrics = [
     {
       title: "Clients Needed",
       value: clientsNeeded.toString(),
       description: "Target for this year",
       icon: Users,
-      trend: -5,
+      trend: clientsTrend,
       trendLabel: "from last month",
       color: "red",
       tooltip: "Number of new clients needed to reach annual goal",
       progress: Math.round(clientsProgress),
+      shortDescription: "How many new clients you need to reach your annual goal.",
     },
     {
       title: "Annual Closing Prospects",
       value: annualClosingProspects.toString(),
       description: "Prospects needed",
       icon: Target,
-      trend: 12,
+      trend: prospectsTrend,
       trendLabel: "from last year",
       color: "purple",
       tooltip: "Number of prospects needed to close to reach annual goal",
       progress: Math.round(prospectsProgress),
+      shortDescription: "How many prospects you need to close to reach your annual goal.",
     },
     {
       title: "New Appointments",
       value: newAppointments.toString(),
       description: "Monthly target",
       icon: Calendar,
-      trend: 3,
+      trend: appointmentsTrend,
       trendLabel: "from last month",
       color: "blue",
       tooltip: "Number of new appointments needed monthly",
       progress: Math.round(appointmentsProgress),
+      shortDescription: "How many new appointments you need to reach your monthly target.",
     },
     {
       title: "Total Booked",
       value: `$${totalBooked.toFixed(1)}M`,
       description: "Current book value",
       icon: DollarSign,
-      trend: 18.5,
+      trend: bookedTrend,
       trendLabel: "from last year",
       color: "yellow",
       tooltip: "Total value of all booked business",
       progress: Math.round(bookedProgress),
+      shortDescription: "How much value of business you currently have booked.",
     },
   ]
 
@@ -102,7 +155,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 {metric.title}
-                <CardDescription>{metric.description}</CardDescription>
+                <CardDescription className="text-muted-foreground text-xs mt-1">{metric.shortDescription}</CardDescription>
               </CardTitle>
               <Tooltip>
                 <TooltipTrigger>

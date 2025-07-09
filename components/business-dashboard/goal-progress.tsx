@@ -166,14 +166,17 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
                       tickFormatter={(value) => `$${value / 1000000}M`}
                     />
                     <Tooltip
-                      formatter={(value) => [`$${(value as number).toLocaleString()}`, undefined]}
+                      formatter={(value) => [
+                        typeof value === 'number' ? `$${value.toLocaleString()}` : value,
+                        undefined
+                      ]}
                       contentStyle={{
-                        backgroundColor: "hsl(220 70% 8%)",
-                        borderRadius: "6px",
-                        border: "1px solid hsl(217.2 32.6% 17.5%)",
-                        color: "white",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        backgroundColor: '#18181b',
+                        color: '#fff',
+                        border: '1px solid #333',
+                        borderRadius: '6px',
                       }}
+                      labelStyle={{ color: '#fff' }}
                     />
                     <Legend />
                     <Bar name="Goal" dataKey="goal" fill="#64748b" radius={[4, 4, 0, 0]} />

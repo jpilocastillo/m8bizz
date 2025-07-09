@@ -14,6 +14,8 @@ import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
+import { RefreshCw } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function BusinessDashboard() {
   const { user } = useAuth()
@@ -23,6 +25,12 @@ export default function BusinessDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [profile, setProfile] = useState<any>(null)
   const [profileLoading, setProfileLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Debug logging to track data changes
+  useEffect(() => {
+    console.log('BusinessDashboard data updated:', data)
+  }, [data])
 
   useEffect(() => {
     setMounted(true)
@@ -47,6 +55,23 @@ export default function BusinessDashboard() {
     }
     fetchProfile()
   }, [user])
+
+  // Auto-refresh data every 30 seconds
+  useEffect(() => {
+    if (!user || !mounted) return
+
+    const interval = setInterval(() => {
+      loadData()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [user, mounted, loadData])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await loadData()
+    setRefreshing(false)
+  }
 
   // Helper: check if all sections are filled
   const isComplete = !!(
@@ -116,7 +141,16 @@ export default function BusinessDashboard() {
             Track your financial metrics, client acquisition, and business goals
           </p>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
           <Button variant="outline" onClick={() => setEditMode(true)}>
             Edit Business Data
           </Button>
@@ -124,6 +158,7 @@ export default function BusinessDashboard() {
       </div>
 
       <DashboardMetrics 
+        key={`metrics-${JSON.stringify(data)}`}
         businessGoals={data.businessGoals}
         currentValues={data.currentValues}
         clientMetrics={data.clientMetrics}
@@ -153,6 +188,7 @@ export default function BusinessDashboard() {
 
         <TabsContent value="overview" className="space-y-6">
           <PerformanceCharts 
+            key={`charts-${JSON.stringify(data)}`}
             businessGoals={data.businessGoals}
             currentValues={data.currentValues}
             clientMetrics={data.clientMetrics}
@@ -161,6 +197,7 @@ export default function BusinessDashboard() {
 
         <TabsContent value="goals" className="space-y-6">
           <GoalProgress 
+            key={`goals-${JSON.stringify(data)}`}
             businessGoals={data.businessGoals}
             currentValues={data.currentValues}
             clientMetrics={data.clientMetrics}
