@@ -65,7 +65,7 @@ const formSchema = z.object({
   trailIncomePercentage: z.string().min(1, "Trail income percentage is required"),
 })
 
-export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
+export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; onCancel?: () => void }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -952,7 +952,7 @@ export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
         </Tabs>
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline">
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
           <Button

@@ -120,6 +120,7 @@ export default function BusinessDashboard() {
       <div className="py-8">
         <DataEntryForm
           onSubmit={handleDataSubmitted}
+          onCancel={() => setEditMode(false)}
         />
       </div>
     )
