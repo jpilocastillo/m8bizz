@@ -108,21 +108,54 @@ class AdvisorBasecampService {
   }
 
   async upsertBusinessGoals(user: User, goals: BusinessGoals): Promise<BusinessGoals | null> {
-    const { data, error } = await this.supabase
-      .from('business_goals')
-      .upsert({
-        user_id: user.id,
-        ...goals
-      })
-      .select()
-      .single()
+    try {
+      // First check if a record exists for this user
+      const { data: existing } = await this.supabase
+        .from('business_goals')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-    if (error) {
-      console.error('Error upserting business goals:', error)
+      if (existing) {
+        // Update existing record
+        const { data, error } = await this.supabase
+          .from('business_goals')
+          .update({
+            ...goals,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error updating business goals:', error)
+          return null
+        }
+
+        return data
+      } else {
+        // Insert new record
+        const { data, error } = await this.supabase
+          .from('business_goals')
+          .insert({
+            user_id: user.id,
+            ...goals
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error inserting business goals:', error)
+          return null
+        }
+
+        return data
+      }
+    } catch (error) {
+      console.error('Error in upsertBusinessGoals:', error)
       return null
     }
-
-    return data
   }
 
   // Current Values
@@ -142,21 +175,54 @@ class AdvisorBasecampService {
   }
 
   async upsertCurrentValues(user: User, values: CurrentValues): Promise<CurrentValues | null> {
-    const { data, error } = await this.supabase
-      .from('current_values')
-      .upsert({
-        user_id: user.id,
-        ...values
-      })
-      .select()
-      .single()
+    try {
+      // First check if a record exists for this user
+      const { data: existing } = await this.supabase
+        .from('current_values')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-    if (error) {
-      console.error('Error upserting current values:', error)
+      if (existing) {
+        // Update existing record
+        const { data, error } = await this.supabase
+          .from('current_values')
+          .update({
+            ...values,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error updating current values:', error)
+          return null
+        }
+
+        return data
+      } else {
+        // Insert new record
+        const { data, error } = await this.supabase
+          .from('current_values')
+          .insert({
+            user_id: user.id,
+            ...values
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error inserting current values:', error)
+          return null
+        }
+
+        return data
+      }
+    } catch (error) {
+      console.error('Error in upsertCurrentValues:', error)
       return null
     }
-
-    return data
   }
 
   // Client Metrics
@@ -176,21 +242,54 @@ class AdvisorBasecampService {
   }
 
   async upsertClientMetrics(user: User, metrics: ClientMetrics): Promise<ClientMetrics | null> {
-    const { data, error } = await this.supabase
-      .from('client_metrics')
-      .upsert({
-        user_id: user.id,
-        ...metrics
-      })
-      .select()
-      .single()
+    try {
+      // First check if a record exists for this user
+      const { data: existing } = await this.supabase
+        .from('client_metrics')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-    if (error) {
-      console.error('Error upserting client metrics:', error)
+      if (existing) {
+        // Update existing record
+        const { data, error } = await this.supabase
+          .from('client_metrics')
+          .update({
+            ...metrics,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error updating client metrics:', error)
+          return null
+        }
+
+        return data
+      } else {
+        // Insert new record
+        const { data, error } = await this.supabase
+          .from('client_metrics')
+          .insert({
+            user_id: user.id,
+            ...metrics
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error inserting client metrics:', error)
+          return null
+        }
+
+        return data
+      }
+    } catch (error) {
+      console.error('Error in upsertClientMetrics:', error)
       return null
     }
-
-    return data
   }
 
   // Marketing Campaigns
@@ -276,21 +375,54 @@ class AdvisorBasecampService {
   }
 
   async upsertCommissionRates(user: User, rates: CommissionRates): Promise<CommissionRates | null> {
-    const { data, error } = await this.supabase
-      .from('commission_rates')
-      .upsert({
-        user_id: user.id,
-        ...rates
-      })
-      .select()
-      .single()
+    try {
+      // First check if a record exists for this user
+      const { data: existing } = await this.supabase
+        .from('commission_rates')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-    if (error) {
-      console.error('Error upserting commission rates:', error)
+      if (existing) {
+        // Update existing record
+        const { data, error } = await this.supabase
+          .from('commission_rates')
+          .update({
+            ...rates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error updating commission rates:', error)
+          return null
+        }
+
+        return data
+      } else {
+        // Insert new record
+        const { data, error } = await this.supabase
+          .from('commission_rates')
+          .insert({
+            user_id: user.id,
+            ...rates
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error inserting commission rates:', error)
+          return null
+        }
+
+        return data
+      }
+    } catch (error) {
+      console.error('Error in upsertCommissionRates:', error)
       return null
     }
-
-    return data
   }
 
   // Financial Book
@@ -310,21 +442,54 @@ class AdvisorBasecampService {
   }
 
   async upsertFinancialBook(user: User, book: FinancialBook): Promise<FinancialBook | null> {
-    const { data, error } = await this.supabase
-      .from('financial_book')
-      .upsert({
-        user_id: user.id,
-        ...book
-      })
-      .select()
-      .single()
+    try {
+      // First check if a record exists for this user
+      const { data: existing } = await this.supabase
+        .from('financial_book')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-    if (error) {
-      console.error('Error upserting financial book:', error)
+      if (existing) {
+        // Update existing record
+        const { data, error } = await this.supabase
+          .from('financial_book')
+          .update({
+            ...book,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error updating financial book:', error)
+          return null
+        }
+
+        return data
+      } else {
+        // Insert new record
+        const { data, error } = await this.supabase
+          .from('financial_book')
+          .insert({
+            user_id: user.id,
+            ...book
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error inserting financial book:', error)
+          return null
+        }
+
+        return data
+      }
+    } catch (error) {
+      console.error('Error in upsertFinancialBook:', error)
       return null
     }
-
-    return data
   }
 
   // Get all advisor basecamp data for a user
@@ -358,30 +523,57 @@ class AdvisorBasecampService {
   // Save all advisor basecamp data
   async saveAllAdvisorBasecampData(user: User, data: AdvisorBasecampData): Promise<boolean> {
     try {
-      const promises = []
-
+      console.log('Starting to save all advisor basecamp data for user:', user.id)
+      
+      // Save all data sequentially to avoid race conditions
       if (data.businessGoals) {
-        promises.push(this.upsertBusinessGoals(user, data.businessGoals))
+        console.log('Saving business goals...')
+        const savedGoals = await this.upsertBusinessGoals(user, data.businessGoals)
+        if (!savedGoals) {
+          console.error('Failed to save business goals')
+          return false
+        }
       }
 
       if (data.currentValues) {
-        promises.push(this.upsertCurrentValues(user, data.currentValues))
+        console.log('Saving current values...')
+        const savedValues = await this.upsertCurrentValues(user, data.currentValues)
+        if (!savedValues) {
+          console.error('Failed to save current values')
+          return false
+        }
       }
 
       if (data.clientMetrics) {
-        promises.push(this.upsertClientMetrics(user, data.clientMetrics))
+        console.log('Saving client metrics...')
+        const savedMetrics = await this.upsertClientMetrics(user, data.clientMetrics)
+        if (!savedMetrics) {
+          console.error('Failed to save client metrics')
+          return false
+        }
       }
 
       if (data.commissionRates) {
-        promises.push(this.upsertCommissionRates(user, data.commissionRates))
+        console.log('Saving commission rates...')
+        const savedRates = await this.upsertCommissionRates(user, data.commissionRates)
+        if (!savedRates) {
+          console.error('Failed to save commission rates')
+          return false
+        }
       }
 
       if (data.financialBook) {
-        promises.push(this.upsertFinancialBook(user, data.financialBook))
+        console.log('Saving financial book...')
+        const savedBook = await this.upsertFinancialBook(user, data.financialBook)
+        if (!savedBook) {
+          console.error('Failed to save financial book')
+          return false
+        }
       }
 
       // Handle campaigns separately since they're an array
       if (data.campaigns && data.campaigns.length > 0) {
+        console.log('Saving campaigns...')
         // First, delete existing campaigns
         const existingCampaigns = await this.getMarketingCampaigns(user)
         for (const campaign of existingCampaigns) {
@@ -390,11 +582,15 @@ class AdvisorBasecampService {
 
         // Then create new ones
         for (const campaign of data.campaigns) {
-          await this.createMarketingCampaign(user, campaign)
+          const savedCampaign = await this.createMarketingCampaign(user, campaign)
+          if (!savedCampaign) {
+            console.error('Failed to save campaign:', campaign.name)
+            return false
+          }
         }
       }
 
-      await Promise.all(promises)
+      console.log('All advisor basecamp data saved successfully')
       return true
     } catch (error) {
       console.error('Error saving all advisor basecamp data:', error)

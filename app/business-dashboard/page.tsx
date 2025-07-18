@@ -56,21 +56,20 @@ export default function BusinessDashboard() {
     fetchProfile()
   }, [user])
 
-  // Auto-refresh data every 30 seconds
-  useEffect(() => {
-    if (!user || !mounted) return
-
-    const interval = setInterval(() => {
-      loadData()
-    }, 30000) // 30 seconds
-
-    return () => clearInterval(interval)
-  }, [user, mounted, loadData])
+  // Removed auto-refresh interval - data will only refresh when:
+  // 1. User manually clicks refresh
+  // 2. User submits new data
+  // 3. Component mounts initially
 
   const handleRefresh = async () => {
     setRefreshing(true)
     await loadData()
     setRefreshing(false)
+  }
+
+  const handleDataSubmitted = async () => {
+    setEditMode(false)
+    await loadData() // Refresh data after successful submission
   }
 
   // Helper: check if all sections are filled
@@ -120,10 +119,7 @@ export default function BusinessDashboard() {
     return (
       <div className="py-8">
         <DataEntryForm
-          onSubmit={() => {
-            setEditMode(false)
-            loadData()
-          }}
+          onSubmit={handleDataSubmitted}
         />
       </div>
     )

@@ -63,20 +63,6 @@ const formSchema = z.object({
   aumCommission: z.string().min(1, "AUM commission percentage is required"),
   lifeCommission: z.string().min(1, "Life commission percentage is required"),
   trailIncomePercentage: z.string().min(1, "Trail income percentage is required"),
-
-  // Advanced Options
-  netWorthNeeded: z.string().min(1, "Net worth needed is required"),
-  annualIncome: z.string().min(1, "Annual income is required"),
-  approvalRate: z.string().min(1, "Approval rate is required"),
-  conversionRate: z.string().min(1, "Conversion rate is required"),
-  baseApprovalRate: z.string().min(1, "Base approval rate is required"),
-  lifeProduction: z.string().min(1, "Life production is required"),
-  // Income from different business parts
-  incomeFromAnnuity: z.string().min(1, "Income from annuity is required"),
-  incomeFromLifeInsurance: z.string().min(1, "Income from life insurance is required"),
-  incomeFromAUM: z.string().min(1, "Income from AUM is required"),
-  incomeTowardsLife: z.string().min(1, "Income towards life is required"),
-  incomeQualifiedMoney: z.string().min(1, "Income from qualified money is required"),
 })
 
 export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
@@ -121,17 +107,6 @@ export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
       lifeCommission: "1.0",
       trailIncomePercentage: "1.00",
       qualifiedMoneyValue: "1000000",
-      netWorthNeeded: "725000",
-      annualIncome: "820000",
-      approvalRate: "50",
-      conversionRate: "10",
-      baseApprovalRate: "50",
-      lifeProduction: "180000",
-      incomeFromAnnuity: "180000",
-      incomeFromLifeInsurance: "108000",
-      incomeFromAUM: "124000",
-      incomeTowardsLife: "62000",
-      incomeQualifiedMoney: "5190000",
     },
   })
 
@@ -177,8 +152,16 @@ export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
     console.log("Form submitted with values:", values)
     if (!user) {
       console.log("No user found")
+      toast({
+        title: "Error",
+        description: "No user found. Please log in again.",
+        variant: "destructive",
+      })
       return
     }
+    
+    console.log("User ID:", user.id)
+    
     // Transform form data to database format
     const advisorData = {
       businessGoals: {
@@ -194,7 +177,6 @@ export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
         current_aum: Number.parseFloat(values.currentAUM),
         current_annuity: Number.parseFloat(values.currentAnnuity),
         current_life_production: Number.parseFloat(values.currentLifeProduction),
-        qualified_money_value: Number.parseFloat(values.qualifiedMoneyValue),
       },
       clientMetrics: {
         avg_annuity_size: Number.parseFloat(values.avgAnnuitySize),
@@ -230,29 +212,29 @@ export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
         aum_book_value: 0,     // You can add a field for this if needed
         qualified_money_value: Number.parseFloat(values.qualifiedMoneyValue),
       },
-      advancedOptions: {
-        net_worth_needed: Number.parseFloat(values.netWorthNeeded),
-        annual_income: Number.parseFloat(values.annualIncome),
-        approval_rate: Number.parseFloat(values.approvalRate),
-        conversion_rate: Number.parseFloat(values.conversionRate),
-        base_approval_rate: Number.parseFloat(values.baseApprovalRate),
-        life_production: Number.parseFloat(values.lifeProduction),
-        income_from_annuity: Number.parseFloat(values.incomeFromAnnuity),
-        income_from_life_insurance: Number.parseFloat(values.incomeFromLifeInsurance),
-        income_from_aum: Number.parseFloat(values.incomeFromAUM),
-        income_towards_life: Number.parseFloat(values.incomeTowardsLife),
-        income_qualified_money: Number.parseFloat(values.incomeQualifiedMoney),
-      },
     }
     console.log("Saving advisor data:", advisorData)
+    console.log("Calling advisorBasecampService.saveAllAdvisorBasecampData...")
+    
     try {
-      await advisorBasecampService.saveAllAdvisorBasecampData(user, advisorData)
-      console.log("Data saved successfully")
-      toast({
-        title: "Data submitted successfully",
-        description: "Your dashboard will now update with the new data.",
-      })
-      onSubmit()
+      const result = await advisorBasecampService.saveAllAdvisorBasecampData(user, advisorData)
+      console.log("Save result:", result)
+      
+      if (result) {
+        console.log("Data saved successfully")
+        toast({
+          title: "Data submitted successfully",
+          description: "Your dashboard will now update with the new data.",
+        })
+        onSubmit()
+      } else {
+        console.error("Save returned false")
+        toast({
+          title: "Error",
+          description: "Failed to save data. Please try again.",
+          variant: "destructive",
+        })
+      }
     } catch (error) {
       console.error("Error saving data:", error)
       toast({
@@ -504,20 +486,7 @@ export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="netWorthNeeded"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Net Worth Needed</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="725000" {...field} />
-                      </FormControl>
-                      <FormDescription>Net worth needed for average client (for pie chart)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
               </CardContent>
             </Card>
           </TabsContent>
@@ -665,48 +634,7 @@ export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
                     )}
                   />
                 </div>
-                <FormField
-                  control={form.control}
-                  name="approvalRate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Approval Rate (%)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="50" {...field} />
-                      </FormControl>
-                      <FormDescription>Approval rate for qualified money (Option 3)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="conversionRate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Conversion Rate (%)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="10" {...field} />
-                      </FormControl>
-                      <FormDescription>Conversion rate for qualified money (Option 3)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="baseApprovalRate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Base Approval Rate (%)</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="50" {...field} />
-                      </FormControl>
-                      <FormDescription>Base approval rate for qualified money (Option 3)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
               </CardContent>
             </Card>
           </TabsContent>
@@ -1016,104 +944,7 @@ export function DataEntryForm({ onSubmit }: { onSubmit: () => void }) {
                     </div>
                   </div>
                 </div>
-                <FormField
-                  control={form.control}
-                  name="annualIncome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Annual Income</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="820000" {...field} />
-                      </FormControl>
-                      <FormDescription>Total annual income (for income details chart)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="lifeProduction"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Life Production</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="180000" {...field} />
-                      </FormControl>
-                      <FormDescription>Life production value (for income details)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="incomeFromAnnuity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Income from Annuity</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="180000" {...field} />
-                      </FormControl>
-                      <FormDescription>Income from annuity business part</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="incomeFromLifeInsurance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Income from Life Insurance</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="108000" {...field} />
-                      </FormControl>
-                      <FormDescription>Income from life insurance business part</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="incomeFromAUM"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Income from AUM</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="124000" {...field} />
-                      </FormControl>
-                      <FormDescription>Income from AUM business part</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="incomeTowardsLife"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Income Towards Life</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="62000" {...field} />
-                      </FormControl>
-                      <FormDescription>Income towards life (from AUM or other sources)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="incomeQualifiedMoney"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Income from Qualified Money</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="5190000" {...field} />
-                      </FormControl>
-                      <FormDescription>Income from qualified money (Option 3)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
               </CardContent>
             </Card>
           </TabsContent>

@@ -8,8 +8,6 @@ import { fetchUserEvents } from "@/lib/data"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
 import { DatabaseStatus } from "@/components/database-status"
 
-export const dynamic = "force-dynamic"
-
 export default async function DashboardLayout({
   children,
 }: {

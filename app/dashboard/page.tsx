@@ -9,8 +9,6 @@ import { DashboardSkeleton } from "@/components/dashboard/skeleton"
 import { DashboardContent } from "@/components/dashboard/dashboard-content"
 import { DashboardError } from "@/components/dashboard/dashboard-error"
 
-export const dynamic = "force-dynamic"
-
 export default async function Dashboard() {
   try {
     const supabase = await createClient()
@@ -39,9 +37,9 @@ export default async function Dashboard() {
     try {
       events = await fetchUserEvents(user.id)
       console.log(`Fetched ${events.length} events for user ${user.id}`)
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Error fetching user events:", e)
-      error = e.message || "Failed to load events"
+      error = e instanceof Error ? e.message : "Failed to load events"
     }
 
     // Fetch dashboard data for the most recent event (default)
@@ -58,9 +56,9 @@ export default async function Dashboard() {
           console.log("No events found, skipping dashboard data fetch")
           // No events to show, dashboardData remains null
         }
-      } catch (e) {
+      } catch (e: unknown) {
         console.error("Error loading dashboard data:", e)
-        error = e.message || "Failed to load dashboard data"
+        error = e instanceof Error ? e.message : "Failed to load dashboard data"
       }
     }
 

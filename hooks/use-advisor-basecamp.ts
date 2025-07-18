@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { 
   advisorBasecampService, 
@@ -18,6 +18,24 @@ export function useAdvisorBasecamp(user: User | null) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const loadData = useCallback(async () => {
+    if (!user) return
+
+    try {
+      setLoading(true)
+      setError(null)
+      console.log('Loading advisor basecamp data for user:', user.id)
+      const advisorData = await advisorBasecampService.getAllAdvisorBasecampData(user)
+      console.log('Loaded advisor basecamp data:', advisorData)
+      setData(advisorData)
+    } catch (err) {
+      console.error('Error loading advisor basecamp data:', err)
+      setError('Failed to load data')
+    } finally {
+      setLoading(false)
+    }
+  }, [user])
+
   // Load data when user changes
   useEffect(() => {
     if (!user) {
@@ -27,23 +45,7 @@ export function useAdvisorBasecamp(user: User | null) {
     }
 
     loadData()
-  }, [user])
-
-  const loadData = async () => {
-    if (!user) return
-
-    try {
-      setLoading(true)
-      setError(null)
-      const advisorData = await advisorBasecampService.getAllAdvisorBasecampData(user)
-      setData(advisorData)
-    } catch (err) {
-      console.error('Error loading advisor basecamp data:', err)
-      setError('Failed to load data')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [user, loadData])
 
   const updateBusinessGoals = async (goals: BusinessGoals) => {
     if (!user) return false

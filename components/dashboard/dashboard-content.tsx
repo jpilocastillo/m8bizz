@@ -112,83 +112,10 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
     }
   }, [selectedEventId, userId])
 
-  // Add real-time subscription for data updates
-  useEffect(() => {
-    const supabase = createClient()
-    
-    // Subscribe to changes in all related tables
-    const subscriptions = [
-      supabase
-        .channel('marketing_events_changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'marketing_events',
-          filter: selectedEventId ? `id=eq.${selectedEventId}` : undefined
-        }, () => {
-          if (selectedEventId) {
-            loadEventData(selectedEventId)
-          }
-        })
-        .subscribe(),
-      supabase
-        .channel('marketing_expenses_changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'marketing_expenses',
-          filter: selectedEventId ? `event_id=eq.${selectedEventId}` : undefined
-        }, () => {
-          if (selectedEventId) {
-            loadEventData(selectedEventId)
-          }
-        })
-        .subscribe(),
-      supabase
-        .channel('event_attendance_changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'event_attendance',
-          filter: selectedEventId ? `event_id=eq.${selectedEventId}` : undefined
-        }, () => {
-          if (selectedEventId) {
-            loadEventData(selectedEventId)
-          }
-        })
-        .subscribe(),
-      supabase
-        .channel('event_appointments_changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'event_appointments',
-          filter: selectedEventId ? `event_id=eq.${selectedEventId}` : undefined
-        }, () => {
-          if (selectedEventId) {
-            loadEventData(selectedEventId)
-          }
-        })
-        .subscribe(),
-      supabase
-        .channel('financial_production_changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'financial_production',
-          filter: selectedEventId ? `event_id=eq.${selectedEventId}` : undefined
-        }, () => {
-          if (selectedEventId) {
-            loadEventData(selectedEventId)
-          }
-        })
-        .subscribe()
-    ]
-
-    return () => {
-      subscriptions.forEach(sub => sub.unsubscribe())
-    }
-  }, [selectedEventId])
+  // Removed real-time subscriptions - data will only refresh when:
+  // 1. Component mounts initially
+  // 2. User selects a different event
+  // 3. User manually requests a refresh
 
   async function loadEventData(eventId: string) {
     setIsLoading(true)
