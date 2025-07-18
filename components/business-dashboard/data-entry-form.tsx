@@ -45,12 +45,8 @@ const formSchema = z.object({
   // Client Metrics
   avgAnnuitySize: z.string().min(1, "Average annuity size is required"),
   avgAUMSize: z.string().min(1, "Average AUM size is required"),
-  avgNetWorthNeeded: z.string().min(1, "Average net worth needed is required"),
   appointmentAttrition: z.string().min(1, "Appointment attrition is required"),
   avgCloseRatio: z.string().min(1, "Average close ratio is required"),
-  annuityClosed: z.string().min(1, "Number of annuity closed is required"),
-  aumAccounts: z.string().min(1, "Number of AUM accounts is required"),
-  monthlyIdealProspects: z.string().min(1, "Monthly ideal prospects is required"),
   appointmentsPerCampaign: z.string().min(1, "Appointments per campaign is required"),
 
   // Campaign Data - Now an array
@@ -81,12 +77,8 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
       currentLifeProduction: "0",
       avgAnnuitySize: "225000",
       avgAUMSize: "500000",
-      avgNetWorthNeeded: "725000",
       appointmentAttrition: "10",
       avgCloseRatio: "70",
-      annuityClosed: "36",
-      aumAccounts: "24",
-      monthlyIdealProspects: "10",
       appointmentsPerCampaign: "12",
       campaigns: [
         {
@@ -129,6 +121,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
     "planningFeesCount",
   ])
 
+  // Watch values needed for auto-calculations
+  const watchedClientMetrics = form.watch([
+    "currentAnnuity",
+    "currentAUM",
+    "avgAnnuitySize",
+    "avgAUMSize",
+    "appointmentAttrition",
+    "avgCloseRatio",
+  ])
+
   // Calculate goal amounts based on business goal and percentages
   const businessGoalAmount = Number.parseFloat(watchedValues[0] || "0")
   const aumGoalAmount = (businessGoalAmount * Number.parseFloat(watchedValues[1] || "0")) / 100
@@ -145,6 +147,26 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
   const trailIncome = (currentAUM * Number.parseFloat(watchedValues[7] || "0")) / 100
   const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * Number.parseFloat(watchedValues[9] || "0")
   const totalIncome = annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
+
+  // Auto-calculated client metrics
+  const currentAnnuityValue = Number.parseFloat(watchedClientMetrics[0] || "0")
+  const currentAUMValue = Number.parseFloat(watchedClientMetrics[1] || "0")
+  const avgAnnuitySizeValue = Number.parseFloat(watchedClientMetrics[2] || "0")
+  const avgAUMSizeValue = Number.parseFloat(watchedClientMetrics[3] || "0")
+  const appointmentAttritionValue = Number.parseFloat(watchedClientMetrics[4] || "0")
+  const avgCloseRatioValue = Number.parseFloat(watchedClientMetrics[5] || "0")
+
+  // Calculate auto-calculated fields
+  const annuitiesClosed = avgAnnuitySizeValue > 0 ? Math.round(currentAnnuityValue / avgAnnuitySizeValue) : 0
+  const aumAccountsCount = avgAUMSizeValue > 0 ? Math.round(currentAUMValue / avgAUMSizeValue) : 0
+  const avgNetWorthNeeded = avgAnnuitySizeValue + avgAUMSizeValue
+  
+  // Calculate prospects and appointments
+  const clientsNeeded = annuitiesClosed + aumAccountsCount
+  const annualIdealClosingProspects = avgCloseRatioValue > 0 ? (clientsNeeded / (avgCloseRatioValue / 100)) * (1 + appointmentAttritionValue / 100) : 0
+  const monthlyIdealProspects = annualIdealClosingProspects / 12
+  const totalNewMonthlyAppointments = monthlyIdealProspects * 3
+  const annualTotalProspectsNecessary = totalNewMonthlyAppointments * 12
 
   const { user } = useAuth()
 
@@ -181,12 +203,12 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
       clientMetrics: {
         avg_annuity_size: Number.parseFloat(values.avgAnnuitySize),
         avg_aum_size: Number.parseFloat(values.avgAUMSize),
-        avg_net_worth_needed: Number.parseFloat(values.avgNetWorthNeeded),
+        avg_net_worth_needed: avgNetWorthNeeded, // Use calculated value
         appointment_attrition: Number.parseFloat(values.appointmentAttrition),
         avg_close_ratio: Number.parseFloat(values.avgCloseRatio),
-        annuity_closed: Number.parseInt(values.annuityClosed),
-        aum_accounts: Number.parseInt(values.aumAccounts),
-        monthly_ideal_prospects: Number.parseFloat(values.monthlyIdealProspects),
+        annuity_closed: annuitiesClosed, // Use calculated value
+        aum_accounts: aumAccountsCount, // Use calculated value
+        monthly_ideal_prospects: monthlyIdealProspects, // Use calculated value
         appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign),
       },
       campaigns: values.campaigns.map(c => ({
@@ -532,20 +554,6 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="avgNetWorthNeeded"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Average Net Worth Needed ($)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="725000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
                     name="appointmentAttrition"
                     render={({ field }) => (
                       <FormItem>
@@ -557,9 +565,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="avgCloseRatio"
@@ -573,50 +579,52 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="annuityClosed"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Annuity Closed</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="36" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="aumAccounts"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of AUM Accounts</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="24" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormItem>
+                    <FormLabel>Average Net Worth Needed ($)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="725000" 
+                        value={avgNetWorthNeeded.toLocaleString()}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>Auto-calculated: Average Annuity Size + Average AUM Size</FormDescription>
+                  </FormItem>
+                </div>
 
-                  <FormField
-                    control={form.control}
-                    name="monthlyIdealProspects"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Monthly Ideal Prospects</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormItem>
+                    <FormLabel>Number of Annuities Closed</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="36" 
+                        value={annuitiesClosed}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>Auto-calculated: Current Annuity / Average Annuity Size</FormDescription>
+                  </FormItem>
+
+                  <FormItem>
+                    <FormLabel>Number of AUM Accounts</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="24" 
+                        value={aumAccountsCount}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>Auto-calculated: Current AUM / Average AUM Size</FormDescription>
+                  </FormItem>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -633,6 +641,62 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       </FormItem>
                     )}
                   />
+
+                  <FormItem>
+                    <FormLabel>Monthly Ideal Prospects</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        value={monthlyIdealProspects.toFixed(1)}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>Auto-calculated: Annual Ideal Closing Prospects / 12</FormDescription>
+                  </FormItem>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormItem>
+                    <FormLabel>Total New Monthly Appointments Needed</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        value={totalNewMonthlyAppointments.toFixed(1)}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>Auto-calculated: Monthly Ideal Prospects × 3</FormDescription>
+                  </FormItem>
+
+                  <FormItem>
+                    <FormLabel>Annual Ideal Closing Prospects Needed</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        value={annualIdealClosingProspects.toFixed(1)}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>Auto-calculated: (Clients Needed / Close Ratio) × (1 + Attrition)</FormDescription>
+                  </FormItem>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormItem>
+                    <FormLabel>Annual Total Prospects Necessary</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        value={annualTotalProspectsNecessary.toFixed(1)}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>Auto-calculated: Total New Monthly Appointments × 12</FormDescription>
+                  </FormItem>
                 </div>
 
               </CardContent>
