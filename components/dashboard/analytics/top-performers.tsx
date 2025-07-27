@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { format } from "date-fns"
 import { useState } from "react"
-import { Tooltip } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { motion } from "framer-motion"
+import { TrendingUp, Target, DollarSign, Users, Award } from "lucide-react"
 
 type MetricType = "ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients"
 
@@ -71,6 +73,24 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
     }
   }
 
+  // Get metric icon and color
+  const getMetricIcon = (metric: MetricType) => {
+    switch (metric) {
+      case "ROI":
+        return { icon: TrendingUp, color: "text-emerald-400", bgColor: "bg-emerald-500/20" }
+      case "Conversion":
+        return { icon: Target, color: "text-blue-400", bgColor: "bg-blue-500/20" }
+      case "Revenue":
+        return { icon: DollarSign, color: "text-green-400", bgColor: "bg-green-500/20" }
+      case "Attendees":
+        return { icon: Users, color: "text-purple-400", bgColor: "bg-purple-500/20" }
+      case "Clients":
+        return { icon: Award, color: "text-amber-400", bgColor: "bg-amber-500/20" }
+      default:
+        return { icon: TrendingUp, color: "text-blue-400", bgColor: "bg-blue-500/20" }
+    }
+  }
+
   // Tooltip content for event details
   const getTooltipContent = (event: any) => (
     <div className="text-xs text-left space-y-1">
@@ -86,78 +106,168 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
   )
 
   return (
-    <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-md card-hover">
-      <CardHeader className="px-0 pt-0">
-        <div className="flex flex-wrap gap-2 mb-4">
-          {(["ROI", "Conversion", "Revenue", "Attendees", "Clients"] as MetricType[]).map((metric) => (
-            <Button
+    <div className="space-y-3">
+      {/* Metric Selector */}
+      <div className="flex flex-wrap gap-1.5">
+        {(["ROI", "Conversion", "Revenue", "Attendees", "Clients"] as MetricType[]).map((metric) => {
+          const icon = getMetricIcon(metric)
+          return (
+            <motion.div
               key={metric}
-              variant="outline"
-              size="sm"
-              className={`border-[#1f2037] ${
-                activeMetric === metric
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-[#131525] text-white hover:bg-[#1f2037]"
-              }`}
-              onClick={() => onMetricChange(metric)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              {metric}
-            </Button>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent className="px-0 pb-0">
-        <div className="space-y-4">
-          {sortedEvents.length > 0 ? (
-            sortedEvents.map((event, index) => {
-              const value = getMetricValue(event)
-              const percent = topValue > 0 ? Math.max(0, Math.min(100, (value / topValue) * 100)) : 0
-              const isTop = index === 0
-              return (
-                <Tooltip key={event.id || index} content={getTooltipContent(event)}>
-                  <div
-                    className={`flex flex-col md:flex-row items-stretch justify-between p-6 rounded-xl transition-all border-2 gap-4 ${
-                      isTop
-                        ? "border-green-400 bg-gradient-to-r from-green-900/30 to-green-700/10 shadow-lg"
-                        : "border-[#1f2037] bg-[#131525]"
-                    } hover:border-blue-400 hover:bg-blue-900/10 cursor-pointer group min-h-[120px]`}
-                  >
-                    <div className="flex flex-row md:flex-col items-center md:items-start gap-4 md:gap-2 w-32 shrink-0">
-                      <div className={`flex items-center justify-center w-12 h-12 rounded-full font-bold text-xl ${isTop ? "bg-green-400 text-white" : "bg-blue-600 text-white"}`}>{index + 1}</div>
-                      <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide text-center md:text-left">{event.type || "Unknown type"}</div>
-                    </div>
-                    <div className="flex-1 flex flex-col justify-center min-w-0">
-                      <div className="font-bold text-white text-lg md:text-xl truncate">{event.name || "Unnamed Event"}</div>
-                      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-1 text-sm text-gray-300">
-                        <span>{event.date ? format(new Date(event.date), "MMM d, yyyy") : "No date"}</span>
-                        <span>{event.location || "Unknown location"}</span>
-                        <span>Topic: <span className="font-semibold text-white">{event.topic || "N/A"}</span></span>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`border-m8bs-border transition-all duration-200 ${
+                  activeMetric === metric
+                    ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white border-m8bs-blue shadow-lg"
+                    : "bg-m8bs-card text-white hover:bg-m8bs-card-alt hover:border-m8bs-blue/50"
+                }`}
+                onClick={() => onMetricChange(metric)}
+              >
+                <icon.icon className="h-4 w-4 mr-2" />
+                {metric}
+              </Button>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Events List */}
+      <div className="space-y-2">
+        {sortedEvents.length > 0 ? (
+          sortedEvents.map((event, index) => {
+            const value = getMetricValue(event)
+            const percent = topValue > 0 ? Math.max(0, Math.min(100, (value / topValue) * 100)) : 0
+            const isTop = index === 0
+            
+            return (
+              <motion.div
+                key={event.id || index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.02, y: -2 }}
+                className="group"
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={`relative overflow-hidden rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                        isTop
+                          ? "border-emerald-400/60 bg-gradient-to-r from-emerald-900/20 to-emerald-800/10 shadow-lg"
+                          : "border-m8bs-border bg-m8bs-card hover:border-m8bs-blue/50 hover:bg-m8bs-card-alt"
+                      }`}
+                    >
+                      {/* Background Pattern */}
+                      <div className="absolute inset-0 opacity-5">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-current to-transparent rounded-full -translate-y-16 translate-x-16"></div>
                       </div>
-                      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-gray-300">
-                        <span>Attendees: <span className="font-semibold text-white">{event.attendees || 0}</span></span>
-                        <span>Clients: <span className="font-semibold text-white">{event.clients || 0}</span></span>
-                        <span>Revenue: <span className="font-semibold text-white">{event.revenue ? `$${event.revenue.toLocaleString()}` : 0}</span></span>
-                        <span>ROI: <span className="font-semibold text-white">{event.roi?.value !== undefined ? `${event.roi.value.toFixed(1)}%` : "N/A"}</span></span>
+
+                      <div className="relative p-3">
+                        <div className="flex items-center justify-between">
+                          {/* Left Section - Rank and Event Info */}
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            {/* Rank Badge */}
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-base ${
+                              isTop 
+                                ? "bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg" 
+                                : "bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark text-white"
+                            }`}>
+                              {index + 1}
+                            </div>
+
+                            {/* Event Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-bold text-white text-base truncate">
+                                  {event.name || "Unnamed Event"}
+                                </h3>
+                                {isTop && (
+                                  <div className="flex-shrink-0 px-2 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full">
+                                    <span className="text-xs font-semibold text-emerald-400">TOP</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-m8bs-muted">
+                                <span className="flex items-center gap-1">
+                                  <span className="w-2 h-2 bg-m8bs-blue rounded-full"></span>
+                                  {event.date ? format(new Date(event.date), "MMM d, yyyy") : "No date"}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                  {event.location || "Unknown location"}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                  {event.type || "Unknown type"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right Section - Metric Value and Progress */}
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            {/* Key Metrics */}
+                            <div className="hidden md:flex flex-col items-end gap-1 text-sm">
+                              <div className="text-m8bs-muted">
+                                Attendees: <span className="text-white font-semibold">{event.attendees || 0}</span>
+                              </div>
+                              <div className="text-m8bs-muted">
+                                Clients: <span className="text-white font-semibold">{event.clients || 0}</span>
+                              </div>
+                              <div className="text-m8bs-muted">
+                                Revenue: <span className="text-white font-semibold">
+                                  {event.revenue ? `$${event.revenue.toLocaleString()}` : 0}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Main Metric Value */}
+                            <div className="text-right">
+                              <div className={`text-xl font-extrabold ${
+                                isTop ? "text-emerald-400" : "text-white"
+                              }`}>
+                                {formatValue(event, activeMetric)}
+                              </div>
+                              
+                              {/* Progress Bar */}
+                              <div className="w-20 h-1.5 bg-m8bs-card-alt rounded-full overflow-hidden mt-1.5">
+                                <motion.div
+                                  className={`h-full rounded-full ${
+                                    isTop 
+                                      ? "bg-gradient-to-r from-emerald-400 to-emerald-600" 
+                                      : "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark"
+                                  }`}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${percent}%` }}
+                                  transition={{ duration: 1, delay: index * 0.1 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end justify-center w-40 min-w-[120px]">
-                      <div className="font-extrabold text-white text-2xl md:text-3xl mb-1">{formatValue(event, activeMetric)}</div>
-                      <div className="w-full h-3 bg-[#23244a] rounded overflow-hidden mt-1">
-                        <div
-                          className={`h-full rounded transition-all duration-500 ${isTop ? "bg-yellow-400" : "bg-blue-600"}`}
-                          style={{ width: `${percent}%`, background: isTop ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)' : undefined }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-m8bs-card border-m8bs-border p-3">
+                    {getTooltipContent(event)}
+                  </TooltipContent>
                 </Tooltip>
-              )
-            })
-          ) : (
-            <div className="text-center py-6 text-gray-400">No events data available</div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+              </motion.div>
+            )
+          })
+        ) : (
+          <div className="text-center py-12 text-m8bs-muted bg-m8bs-card rounded-lg border border-m8bs-border">
+            <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">No events data available</p>
+            <p className="text-sm mt-2">Create some events to see top performers</p>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

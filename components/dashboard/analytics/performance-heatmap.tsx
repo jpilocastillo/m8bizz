@@ -3,6 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { motion } from "framer-motion"
+import { Activity, TrendingUp, Users, DollarSign, Target } from "lucide-react"
 
 type MetricType = "ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients"
 
@@ -24,8 +26,8 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
   const [colGroup, setColGroup] = useState<string>("location");
 
   // Extract unique values for rows and columns
-  const rowValues = [...new Set(data.events.map((event: any) => event[rowGroup] || "Unknown"))];
-  const colValues = [...new Set(data.events.map((event: any) => event[colGroup] || "Unknown"))];
+  const rowValues = [...new Set(data.events.map((event: any) => event[rowGroup] || "Unknown"))] as string[];
+  const colValues = [...new Set(data.events.map((event: any) => event[colGroup] || "Unknown"))] as string[];
 
   // Create a matrix of performance data
   const matrix = rowValues.map((row) => {
@@ -81,9 +83,9 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
     };
   });
 
-  // Get color based on metric value
+  // Get color based on metric value with enhanced gradients
   const getColor = (value: number | null, metric: MetricType) => {
-    if (value === null) return "bg-[#131525]"
+    if (value === null) return "bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border border-m8bs-border"
 
     // Define thresholds based on metric type
     let thresholds: number[] = []
@@ -106,12 +108,12 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
         break
     }
 
-    // Determine color based on thresholds
-    if (value <= thresholds[1]) return "bg-blue-900/30"
-    if (value <= thresholds[2]) return "bg-blue-700/40"
-    if (value <= thresholds[3]) return "bg-blue-600/60"
-    if (value <= thresholds[4]) return "bg-blue-500/80"
-    return "bg-blue-400"
+    // Enhanced color gradients
+    if (value <= thresholds[1]) return "bg-gradient-to-br from-red-900/20 to-red-800/30 border border-red-800/40"
+    if (value <= thresholds[2]) return "bg-gradient-to-br from-orange-800/30 to-orange-700/40 border border-orange-700/50"
+    if (value <= thresholds[3]) return "bg-gradient-to-br from-yellow-700/40 to-yellow-600/50 border border-yellow-600/60"
+    if (value <= thresholds[4]) return "bg-gradient-to-br from-green-600/50 to-green-500/60 border border-green-500/70"
+    return "bg-gradient-to-br from-emerald-500/60 to-emerald-400/70 border border-emerald-400/80"
   }
 
   // Format value based on metric type
@@ -132,31 +134,55 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
     }
   }
 
+  const getMetricIcon = (metric: MetricType) => {
+    switch (metric) {
+      case "ROI":
+        return <TrendingUp className="h-4 w-4" />
+      case "Conversion":
+        return <Target className="h-4 w-4" />
+      case "Revenue":
+        return <DollarSign className="h-4 w-4" />
+      case "Attendees":
+      case "Clients":
+        return <Users className="h-4 w-4" />
+      default:
+        return <Activity className="h-4 w-4" />
+    }
+  }
+
   return (
-    <Card className="bg-transparent border-none shadow-none">
-      <CardHeader className="px-0 pt-0">
-        <CardTitle className="text-lg font-medium text-white">Performance Heatmap</CardTitle>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {(["ROI", "Conversion", "Revenue", "Attendees", "Clients"] as MetricType[]).map((metric) => (
+    <div className="space-y-6">
+      {/* Metric Selector */}
+      <div className="flex flex-wrap gap-2">
+        {(["ROI", "Conversion", "Revenue", "Attendees", "Clients"] as MetricType[]).map((metric) => (
+          <motion.div
+            key={metric}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
             <Button
-              key={metric}
               variant="outline"
               size="sm"
-              className={`border-[#1f2037] ${
+              className={`border-m8bs-border transition-all duration-200 ${
                 activeMetric === metric
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-[#131525] text-white hover:bg-[#1f2037]"
+                  ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white border-m8bs-blue shadow-lg"
+                  : "bg-m8bs-card text-white hover:bg-m8bs-card-alt hover:border-m8bs-blue/50"
               }`}
               onClick={() => onMetricChange(metric)}
             >
-              {metric}
+              {getMetricIcon(metric)}
+              <span className="ml-2">{metric}</span>
             </Button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 mt-4 items-center">
-          <span className="text-sm text-gray-400 mr-2">Rows:</span>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Grouping Controls */}
+      <div className="flex flex-wrap gap-4 items-center p-4 bg-m8bs-card rounded-lg border border-m8bs-border">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-white">Rows:</span>
           <select
-            className="bg-[#131525] border border-[#1f2037] text-white rounded px-2 py-1 mr-4"
+            className="bg-m8bs-card-alt border border-m8bs-border text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-m8bs-blue"
             value={rowGroup}
             onChange={e => setRowGroup(e.target.value)}
           >
@@ -164,9 +190,11 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
-          <span className="text-sm text-gray-400 mr-2">Columns:</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-white">Columns:</span>
           <select
-            className="bg-[#131525] border border-[#1f2037] text-white rounded px-2 py-1"
+            className="bg-m8bs-card-alt border border-m8bs-border text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-m8bs-blue"
             value={colGroup}
             onChange={e => setColGroup(e.target.value)}
           >
@@ -175,47 +203,87 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
             ))}
           </select>
         </div>
-      </CardHeader>
-      <CardContent className="px-0 pb-0">
+      </div>
+
+      {/* Heatmap Table */}
+      <div className="overflow-x-auto">
         {matrix.length > 0 && colValues.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="bg-m8bs-card rounded-lg border border-m8bs-border p-4">
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-left p-2 text-sm font-medium text-gray-400">{groupingOptions.find(opt => opt.value === rowGroup)?.label || "Row"}</th>
+                  <th className="text-left p-3 text-sm font-semibold text-m8bs-muted border-b border-m8bs-border">
+                    {groupingOptions.find(opt => opt.value === rowGroup)?.label || "Row"}
+                  </th>
                   {colValues.map((col) => (
-                    <th key={col} className="p-2 text-sm font-medium text-gray-400 text-center">
+                    <th key={col} className="p-3 text-sm font-semibold text-m8bs-muted text-center border-b border-m8bs-border">
                       {col}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {matrix.map((row) => (
-                  <tr key={row.row}>
-                    <td className="p-2 text-sm font-medium text-white">{row.row}</td>
+                {matrix.map((row, rowIndex) => (
+                  <motion.tr 
+                    key={row.row}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: rowIndex * 0.1 }}
+                  >
+                    <td className="p-3 text-sm font-medium text-white border-b border-m8bs-border/50">
+                      {row.row}
+                    </td>
                     {row.cols.map((cell, i) => (
-                      <td
+                      <motion.td
                         key={`${row.row}-${colValues[i]}`}
-                        className={`p-2 text-center ${getColor(cell.value, activeMetric)} rounded-md m-1`}
+                        className={`p-3 text-center ${getColor(cell.value, activeMetric)} rounded-lg m-1 transition-all duration-300 hover:scale-105`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        <div className="text-sm font-medium text-white">{formatValue(cell.value, activeMetric)}</div>
+                        <div className="text-sm font-semibold text-white mb-1">
+                          {formatValue(cell.value, activeMetric)}
+                        </div>
                         {cell.count > 0 && (
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-white/70 bg-black/20 rounded-full px-2 py-1 inline-block">
                             {cell.count} event{cell.count !== 1 ? "s" : ""}
                           </div>
                         )}
-                      </td>
+                      </motion.td>
                     ))}
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="text-center py-6 text-gray-400">No data available for heatmap</div>
+          <div className="text-center py-12 text-m8bs-muted bg-m8bs-card rounded-lg border border-m8bs-border">
+            <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">No data available for heatmap</p>
+            <p className="text-sm mt-2">Try adjusting your filters or grouping options</p>
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 p-4 bg-m8bs-card rounded-lg border border-m8bs-border">
+        <span className="text-sm font-medium text-white">Performance Scale:</span>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gradient-to-br from-red-900/20 to-red-800/30 border border-red-800/40 rounded"></div>
+          <span className="text-xs text-m8bs-muted">Low</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gradient-to-br from-orange-800/30 to-orange-700/40 border border-orange-700/50 rounded"></div>
+          <span className="text-xs text-m8bs-muted">Medium</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gradient-to-br from-green-600/50 to-green-500/60 border border-green-500/70 rounded"></div>
+          <span className="text-xs text-m8bs-muted">High</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gradient-to-br from-emerald-500/60 to-emerald-400/70 border border-emerald-400/80 rounded"></div>
+          <span className="text-xs text-m8bs-muted">Excellent</span>
+        </div>
+      </div>
+    </div>
   )
 }

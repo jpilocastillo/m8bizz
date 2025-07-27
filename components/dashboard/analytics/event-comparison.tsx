@@ -4,11 +4,12 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList, Cell, Legend } from "recharts"
-import { Check, ChevronsUpDown, BarChart3, TrendingUp, TrendingDown } from "lucide-react"
+import { Check, ChevronsUpDown, BarChart3, TrendingUp, TrendingDown, Target, DollarSign, Users, Award, Activity } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import { motion } from "framer-motion"
 
 type MetricType = "ROI" | "Conversion" | "Revenue" | "Expenses" | "Profit" | "Attendees" | "Clients"
 
@@ -82,6 +83,28 @@ export function EventComparison({ events }: EventComparisonProps) {
     }
   }
 
+  // Get metric icon and color
+  const getMetricIcon = (metric: MetricType) => {
+    switch (metric) {
+      case "ROI":
+        return { icon: TrendingUp, color: "text-emerald-400", bgColor: "bg-emerald-500/20" }
+      case "Conversion":
+        return { icon: Target, color: "text-blue-400", bgColor: "bg-blue-500/20" }
+      case "Revenue":
+        return { icon: DollarSign, color: "text-green-400", bgColor: "bg-green-500/20" }
+      case "Expenses":
+        return { icon: Activity, color: "text-red-400", bgColor: "bg-red-500/20" }
+      case "Profit":
+        return { icon: TrendingUp, color: "text-purple-400", bgColor: "bg-purple-500/20" }
+      case "Attendees":
+        return { icon: Users, color: "text-amber-400", bgColor: "bg-amber-500/20" }
+      case "Clients":
+        return { icon: Award, color: "text-cyan-400", bgColor: "bg-cyan-500/20" }
+      default:
+        return { icon: TrendingUp, color: "text-blue-400", bgColor: "bg-blue-500/20" }
+    }
+  }
+
   // Helper function to create a timezone-safe local date from a string like "2024-05-19"
   const createLocalDate = (dateString: string) => {
     if (!dateString) return null;
@@ -151,9 +174,9 @@ export function EventComparison({ events }: EventComparisonProps) {
       const data = payload[0].payload;
       const localDate = createLocalDate(data.date);
       return (
-        <div className="bg-[#131525] border border-[#1f2037] p-3 rounded-lg shadow-lg">
+        <div className="bg-m8bs-card border border-m8bs-border p-3 rounded-lg shadow-lg">
           <p className="font-bold text-white mb-1">{data.name}</p>
-          <p className="text-sm text-gray-400 mb-1">
+          <p className="text-sm text-m8bs-muted mb-1">
             {localDate ? format(localDate, "MMM d, yyyy") : 'No date'} • {data.location}
           </p>
           <p className="text-sm font-semibold text-white">
@@ -169,21 +192,21 @@ export function EventComparison({ events }: EventComparisonProps) {
   const getGradientColors = (metric: MetricType) => {
     switch (metric) {
       case "ROI":
-        return { start: "#8B5CF6", end: "#C4B5FD" } // purple
+        return { start: "#10B981", end: "#34D399" } // emerald
       case "Conversion":
-        return { start: "#F97316", end: "#FDBA74" } // orange
+        return { start: "#3B82F6", end: "#60A5FA" } // blue
       case "Revenue":
-        return { start: "#10B981", end: "#6EE7B7" } // emerald
+        return { start: "#22C55E", end: "#4ADE80" } // green
       case "Expenses":
-        return { start: "#EF4444", end: "#FCA5A5" } // red
+        return { start: "#EF4444", end: "#F87171" } // red
       case "Profit":
-        return { start: "#3B82F6", end: "#93C5FD" } // blue
+        return { start: "#8B5CF6", end: "#A78BFA" } // purple
       case "Attendees":
-        return { start: "#F59E0B", end: "#FCD34D" } // amber
+        return { start: "#F59E0B", end: "#FBBF24" } // amber
       case "Clients":
-        return { start: "#0EA5E9", end: "#7DD3FC" } // sky
+        return { start: "#06B6D4", end: "#22D3EE" } // cyan
       default:
-        return { start: "#3B82F6", end: "#93C5FD" } // blue
+        return { start: "#3B82F6", end: "#60A5FA" } // blue
     }
   }
 
@@ -193,90 +216,142 @@ export function EventComparison({ events }: EventComparisonProps) {
   const metricOptions: MetricType[] = ["Conversion", "Revenue", "Expenses", "Profit", "Attendees", "Clients"];
 
   return (
-    <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-md card-hover">
-      <CardHeader className="pb-2">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
-          <div className="flex flex-wrap gap-2">
-            {metricOptions.map(
-              (metric) => (
-                <Button
-                  key={metric}
-                  variant="outline"
-                  size="sm"
-                  className={`border-[#1f2037] ${
-                    activeMetric === metric
-                      ? "bg-purple-600 text-white hover:bg-purple-700"
-                      : "bg-[#131525] text-white hover:bg-[#1f2037]"
-                  }`}
-                  onClick={() => setActiveMetric(metric)}
-                >
-                  {metric}
-                </Button>
-              ),
-            )}
-          </div>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
+    <div className="space-y-3">
+      {/* Metric Selector */}
+      <div className="flex flex-wrap gap-1.5">
+        {metricOptions.map((metric) => {
+          const icon = getMetricIcon(metric)
+          return (
+            <motion.div
+              key={metric}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className={`border-m8bs-border transition-all duration-200 ${
+                  activeMetric === metric
+                    ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white border-m8bs-blue shadow-lg"
+                    : "bg-m8bs-card text-white hover:bg-m8bs-card-alt hover:border-m8bs-blue/50"
+                }`}
+                onClick={() => setActiveMetric(metric)}
+              >
+                <icon.icon className="h-4 w-4 mr-2" />
+                {metric}
+              </Button>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Event Selector */}
+      <div className="flex items-center gap-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <motion.div whileHover={{ scale: 1.02 }}>
               <Button
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
-                className="w-full sm:w-[200px] justify-between bg-[#131525] border-[#1f2037] text-white"
+                className="w-full sm:w-[300px] justify-between bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt"
               >
-                {selectedEvents.length > 0 ? `${selectedEvents.length} events selected` : "Select events..."}
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  {selectedEvents.length > 0 ? `${selectedEvents.length} events selected` : "Select events to compare..."}
+                </div>
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-full sm:w-[400px] p-0 bg-[#131525] border-[#1f2037] text-white">
-              <Command className="bg-transparent">
-                <CommandInput placeholder="Search events..." className="border-none focus:ring-0" />
-                <CommandList>
-                  <CommandEmpty>No events found.</CommandEmpty>
-                  <CommandGroup className="max-h-[300px] overflow-auto">
-                    {events.map((event) => (
-                      <CommandItem
-                        key={event.id}
-                        value={event.id}
-                        onSelect={() => {
-                          setSelectedEvents(
-                            selectedEvents.includes(event.id)
-                              ? selectedEvents.filter((id) => id !== event.id)
-                              : [...selectedEvents, event.id],
-                          )
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedEvents.includes(event.id) ? "opacity-100" : "opacity-0",
-                          )}
-                        />
-                        <div className="flex flex-col">
-                          <span>{event.name} <span className="text-xs text-gray-400">({event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date'} • {event.location || 'No location'})</span></span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-[#131525] p-4 rounded-lg border border-[#1f2037]">
-              <p className="text-sm text-gray-400 mb-1">Average {activeMetric}</p>
-              <p className="text-xl font-bold text-white">{formatValue(summary.avg, activeMetric)}</p>
+            </motion.div>
+          </PopoverTrigger>
+          <PopoverContent className="w-full sm:w-[400px] p-0 bg-m8bs-card border-m8bs-border text-white">
+            <Command className="bg-transparent">
+              <CommandInput placeholder="Search events..." className="border-none focus:ring-0 bg-m8bs-card-alt" />
+              <CommandList>
+                <CommandEmpty>No events found.</CommandEmpty>
+                <CommandGroup className="max-h-[300px] overflow-auto">
+                  {events.map((event) => (
+                    <CommandItem
+                      key={event.id}
+                      value={event.id}
+                      onSelect={() => {
+                        setSelectedEvents(
+                          selectedEvents.includes(event.id)
+                            ? selectedEvents.filter((id) => id !== event.id)
+                            : [...selectedEvents, event.id],
+                        )
+                      }}
+                      className="bg-m8bs-card-alt hover:bg-m8bs-card"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedEvents.includes(event.id) ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{event.name}</span>
+                        <span className="text-xs text-m8bs-muted">
+                          {event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date'} • {event.location || 'No location'}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Summary Cards */}
+      {summary && (
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="bg-m8bs-card p-4 rounded-lg border border-m8bs-border">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`p-2 rounded-lg ${getMetricIcon(activeMetric).bgColor}`}>
+                <BarChart3 className={`h-4 w-4 ${getMetricIcon(activeMetric).color}`} />
+              </div>
+              <p className="text-sm text-m8bs-muted">Average {activeMetric}</p>
             </div>
-            <div className="bg-[#131525] p-4 rounded-lg border border-[#1f2037]">
-              <p className="text-sm text-gray-400 mb-1">Highest {activeMetric}</p>
-              <p className="text-xl font-bold text-white">{formatValue(summary.max, activeMetric)}</p>
-            </div>
+            <p className="text-xl font-bold text-white">{formatValue(summary.avg, activeMetric)}</p>
           </div>
-        )}
-        <div className="h-[600px] mt-6 w-full">
+          
+          <div className="bg-m8bs-card p-4 rounded-lg border border-m8bs-border">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-emerald-500/20">
+                <TrendingUp className="h-4 w-4 text-emerald-400" />
+              </div>
+              <p className="text-sm text-m8bs-muted">Highest {activeMetric}</p>
+            </div>
+            <p className="text-xl font-bold text-white">{formatValue(summary.max, activeMetric)}</p>
+          </div>
+          
+          <div className="bg-m8bs-card p-4 rounded-lg border border-m8bs-border">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-red-500/20">
+                <TrendingDown className="h-4 w-4 text-red-400" />
+              </div>
+              <p className="text-sm text-m8bs-muted">Lowest {activeMetric}</p>
+            </div>
+            <p className="text-xl font-bold text-white">{formatValue(summary.min, activeMetric)}</p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Chart */}
+      <motion.div 
+        className="bg-m8bs-card rounded-lg border border-m8bs-border p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="h-[400px] w-full">
           <svg className="w-0 h-0">
             <defs>
               <linearGradient id={`barGradient-${activeMetric}`} x1="0" y1="0" x2="1" y2="0">
@@ -374,46 +449,57 @@ export function EventComparison({ events }: EventComparisonProps) {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </motion.div>
 
-        {/* Data Table */}
-        <div className="mt-8 overflow-x-auto">
+      {/* Data Table */}
+      <motion.div 
+        className="bg-m8bs-card rounded-lg border border-m8bs-border overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-[#1f2037]">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Event Name</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Date</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Location</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Type</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-400">{activeMetric}</th>
+              <tr className="border-b border-m8bs-border bg-m8bs-card-alt">
+                <th className="text-left py-3 px-4 text-sm font-medium text-m8bs-muted">Event Name</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-m8bs-muted">Date</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-m8bs-muted">Location</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-m8bs-muted">Type</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-m8bs-muted">{activeMetric}</th>
               </tr>
             </thead>
             <tbody>
               {chartData.map((event, index) => (
-                <tr 
+                <motion.tr 
                   key={event.id} 
-                  className="border-b border-[#1f2037] hover:bg-[#1f2037]/50 transition-colors"
+                  className="border-b border-m8bs-border hover:bg-m8bs-card-alt transition-colors"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
                 >
                   <td className="py-3 px-4 text-sm text-white font-medium">{event.name}</td>
-                  <td className="py-3 px-4 text-sm text-gray-400">
+                  <td className="py-3 px-4 text-sm text-m8bs-muted">
                     {event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date'}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-400">{event.location || 'No location'}</td>
-                  <td className="py-3 px-4 text-sm text-gray-400">{event.type}</td>
+                  <td className="py-3 px-4 text-sm text-m8bs-muted">{event.location || 'No location'}</td>
+                  <td className="py-3 px-4 text-sm text-m8bs-muted">{event.type}</td>
                   <td className="py-3 px-4 text-sm text-white font-medium text-right">
                     {formatValue(event.value, activeMetric)}
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
         </div>
+      </motion.div>
 
-        <div className="mt-4 text-center text-sm text-gray-400">
-          {selectedEvents.length > 0
-            ? "Showing your selected events"
-            : `Showing top ${chartData.length} events by ${activeMetric}`}
-        </div>
-      </CardContent>
-    </Card>
+      {/* Footer Info */}
+      <div className="text-center text-sm text-m8bs-muted">
+        {selectedEvents.length > 0
+          ? "Showing your selected events"
+          : `Showing top ${chartData.length} events by ${activeMetric}`}
+      </div>
+    </div>
   )
 }

@@ -1,7 +1,8 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { BarChart3, DollarSign, LineChart, Percent, TrendingUp, Users } from "lucide-react"
+import { BarChart3, DollarSign, LineChart, Percent, TrendingUp, Users, Target, Activity } from "lucide-react"
+import { motion } from "framer-motion"
 
 interface AnalyticsSummaryData {
   totalEvents: number
@@ -63,105 +64,121 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
   // Display full calculated ROI, formatted with at most one decimal place
   const overallROI = safeData.overallROI
 
+  const summaryCards = [
+    {
+      title: "Total Events",
+      value: safeData.totalEvents,
+      icon: BarChart3,
+      color: "blue",
+      bgColor: "bg-m8bs-blue/20",
+      iconColor: "text-m8bs-blue",
+      subtitle: "Marketing campaigns"
+    },
+    {
+      title: "Total Revenue",
+      value: formatCurrency(safeData.totalRevenue),
+      icon: DollarSign,
+      color: "emerald",
+      bgColor: "bg-emerald-500/20",
+      iconColor: "text-emerald-500",
+      subtitle: `Avg: ${formatCurrency(avgRevenuePerEvent)} per event`
+    },
+    {
+      title: "Total Profit",
+      value: formatCurrency(safeData.totalProfit),
+      icon: TrendingUp,
+      color: "purple",
+      bgColor: "bg-purple-500/20",
+      iconColor: "text-purple-500",
+      subtitle: `ROI: ${formatPercent(overallROI)}`
+    },
+    {
+      title: "Total Attendees",
+      value: safeData.totalAttendees,
+      icon: Users,
+      color: "cyan",
+      bgColor: "bg-cyan-500/20",
+      iconColor: "text-cyan-500",
+      subtitle: `Avg: ${Math.round(safeData.avgAttendees)} per event`
+    },
+    {
+      title: "Total Clients",
+      value: safeData.totalClients,
+      icon: Target,
+      color: "amber",
+      bgColor: "bg-amber-500/20",
+      iconColor: "text-amber-500",
+      subtitle: `Conversion: ${formatPercent(conversionRate)}`
+    },
+    {
+      title: "Total Expenses",
+      value: formatCurrency(safeData.totalExpenses),
+      icon: LineChart,
+      color: "red",
+      bgColor: "bg-red-500/20",
+      iconColor: "text-red-500",
+      subtitle: "Marketing costs"
+    },
+    {
+      title: "Avg ROI",
+      value: formatPercent(overallROI),
+      icon: Activity,
+      color: "green",
+      bgColor: "bg-green-500/20",
+      iconColor: "text-green-500",
+      subtitle: "Return on investment"
+    }
+  ]
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <div className="grid grid-cols-7 gap-4 min-w-[900px]">
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-          <CardContent className="p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white font-bold tracking-wide">Total Events</span>
-              <div className="bg-m8bs-blue/20 p-1 rounded-md">
-                <BarChart3 className="h-4 w-4 text-m8bs-blue" />
-              </div>
-            </div>
-            <div className="text-2xl font-extrabold tracking-tight">{safeData.totalEvents}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-          <CardContent className="p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white font-bold tracking-wide">Total Revenue</span>
-              <div className="bg-emerald-500/20 p-1 rounded-md">
-                <DollarSign className="h-4 w-4 text-emerald-500" />
-              </div>
-            </div>
-            <div className="text-2xl font-extrabold tracking-tight">{formatCurrency(safeData.totalRevenue)}</div>
-            <div className="text-xs text-white mt-1 font-medium">
-              Avg: {formatCurrency(avgRevenuePerEvent)} per event
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-          <CardContent className="p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white font-bold tracking-wide">Total Profit</span>
-              <div className="bg-purple-500/20 p-1 rounded-md">
-                <TrendingUp className="h-4 w-4 text-purple-500" />
-              </div>
-            </div>
-            <div className="text-2xl font-extrabold tracking-tight">{formatCurrency(safeData.totalProfit)}</div>
-            <div className="text-xs text-white mt-1 font-medium">
-              Expenses: {formatCurrency(safeData.totalExpenses)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-          <CardContent className="p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white font-bold tracking-wide">Overall ROI</span>
-              <div className="bg-yellow-500/20 p-1 rounded-md">
-                <Percent className="h-4 w-4 text-yellow-500" />
-              </div>
-            </div>
-            <div className="text-2xl font-extrabold tracking-tight">{formatPercent(overallROI)}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-          <CardContent className="p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white font-bold tracking-wide">Total Attendees</span>
-              <div className="bg-amber-500/20 p-1 rounded-md">
-                <Users className="h-4 w-4 text-amber-500" />
-              </div>
-            </div>
-            <div className="text-2xl font-extrabold tracking-tight">{safeData.totalAttendees}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-          <CardContent className="p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white font-bold tracking-wide">Total Clients</span>
-              <div className="bg-purple-500/20 p-1 rounded-md">
-                <Users className="h-4 w-4 text-purple-500" />
-              </div>
-            </div>
-            <div className="text-2xl font-extrabold tracking-tight">{safeData.totalClients}</div>
-            <div className="text-xs text-white mt-1 font-medium">
-              Conversion Rate: {formatPercent(conversionRate)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md card-hover">
-          <CardContent className="p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white font-bold tracking-wide">Plate Lickers</span>
-              <div className="bg-blue-500/20 p-1 rounded-md">
-                <Users className="h-4 w-4 text-blue-500" />
-              </div>
-            </div>
-            <div className="text-2xl font-extrabold tracking-tight">{safeData.totalPlateLickers ?? 0}</div>
-            <div className="text-xs text-white mt-1 font-medium">
-              {safeData.totalAttendees > 0 ? (((safeData.totalPlateLickers ?? 0) / safeData.totalAttendees) * 100).toFixed(1) : 0}% of attendees
-            </div>
-          </CardContent>
-        </Card>
+    <motion.div 
+      className="overflow-x-auto"
+      variants={container}
+      initial="hidden"
+      animate="show"
+    >
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 min-w-[900px]">
+        {summaryCards.map((card, index) => (
+          <motion.div
+            key={card.title}
+            variants={item}
+            whileHover={{ scale: 1.05, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-lg card-hover h-full">
+              <CardContent className="p-3 flex flex-col h-full">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-white/80 font-medium tracking-wide">{card.title}</span>
+                  <div className={`${card.bgColor} p-2 rounded-lg`}>
+                    <card.icon className={`h-4 w-4 ${card.iconColor}`} />
+                  </div>
+                </div>
+                <div className="text-xl font-extrabold tracking-tight text-white mb-1">
+                  {card.value}
+                </div>
+                <div className="text-xs text-white/60 mt-auto font-medium">
+                  {card.subtitle}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
-    </div>
+    </motion.div>
   )
 }
