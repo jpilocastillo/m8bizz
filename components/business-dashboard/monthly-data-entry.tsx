@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Progress } from "@/components/ui/progress"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { useAuth } from "@/components/auth-provider"
 import { MonthlyDataEntry } from "@/lib/advisor-basecamp"
@@ -249,6 +250,10 @@ export function MonthlyDataEntryComponent() {
       aumGoal: data.businessGoals?.aum_goal || 0,
       annuityGoal: data.businessGoals?.annuity_goal || 0,
       lifeGoal: data.businessGoals?.life_target_goal || 0,
+      lifeTargetGoal: data.businessGoals?.life_target_goal || 0,
+      newClientsGoal: data.clientMetrics?.monthly_ideal_prospects ? Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3) : 0,
+      newAppointmentsGoal: data.clientMetrics?.monthly_ideal_prospects ? Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3) : 0,
+      newLeadsGoal: data.clientMetrics?.monthly_ideal_prospects ? Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3) : 0,
     }
   }
 
@@ -956,7 +961,7 @@ export function MonthlyDataEntryComponent() {
                 <CardTitle className="text-sm font-medium">
                   Appointments
                   <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Total appointments this year
+                    Total appointments this year vs target
                   </CardDescription>
                 </CardTitle>
                 <div className="rounded-full p-2 bg-green-500/10">
@@ -967,7 +972,20 @@ export function MonthlyDataEntryComponent() {
                 <div className="text-3xl font-bold text-green-500">{yearToDate.totalAppointments}</div>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
                   <span>Year to date</span>
+                  {data.clientMetrics?.monthly_ideal_prospects && (
+                    <span className="ml-2 text-xs">
+                      vs Target: {Math.ceil((data.clientMetrics.monthly_ideal_prospects * 3) * 12)}
+                    </span>
+                  )}
                 </div>
+                {data.clientMetrics?.monthly_ideal_prospects && (
+                  <div className="mt-2">
+                    <Progress 
+                      value={Math.min((yearToDate.totalAppointments / ((data.clientMetrics.monthly_ideal_prospects * 3) * 12)) * 100, 100)} 
+                      className="h-2" 
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1240,7 +1258,16 @@ export function MonthlyDataEntryComponent() {
                             {getProgressIcon(salesProgress)}
                           </div>
                         </TableCell>
-                        <TableCell>{entry.new_appointments}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {entry.new_appointments}
+                            {data.clientMetrics?.monthly_ideal_prospects && (
+                              <Badge variant="outline" className="text-xs">
+                                vs {Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3)}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{entry.new_leads}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">

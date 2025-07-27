@@ -101,16 +101,16 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       shortDescription: "How many prospects you need to close to reach your annual goal.",
     },
     {
-      title: "Monthly New Appointments Booked",
+      title: "Monthly New Appointments Needed",
       value: newAppointments.toString(),
       description: "Monthly target",
       icon: Calendar,
       trend: appointmentsTrend,
       trendLabel: "from last month",
       color: "blue",
-      tooltip: "Number of monthly new appointments booked",
+      tooltip: "Number of monthly new appointments needed",
       progress: Math.round(appointmentsProgress),
-      shortDescription: "How many monthly new appointments you have booked.",
+      shortDescription: "How many monthly new appointments you need to reach your goal.",
     },
     {
       title: "Total Advisor Book",
@@ -122,7 +122,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       color: "yellow",
       tooltip: "Total value of all advisor book business",
       progress: Math.round(bookedProgress),
-      shortDescription: "How much value of advisor book business you currently have.",
+      shortDescription: "How much your advisor book value is.",
     },
   ]
 
