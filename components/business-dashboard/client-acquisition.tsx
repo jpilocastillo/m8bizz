@@ -27,20 +27,20 @@ export function ClientAcquisition() {
     { name: "Clients", value: 30, color: "#ef4444" },
   ]
 
-  // Monthly client acquisition data
+  // Monthly client acquisition data - consistent amounts for each month
   const monthlyData = [
-    { name: "Jan", leads: 12, appointments: 4, prospects: 3, clients: 2 },
-    { name: "Feb", leads: 15, appointments: 5, prospects: 4, clients: 3 },
-    { name: "Mar", leads: 18, appointments: 6, prospects: 5, clients: 4 },
-    { name: "Apr", leads: 14, appointments: 5, prospects: 4, clients: 3 },
-    { name: "May", leads: 16, appointments: 6, prospects: 5, clients: 4 },
-    { name: "Jun", leads: 20, appointments: 7, prospects: 6, clients: 5 },
-    { name: "Jul", leads: 22, appointments: 8, prospects: 6, clients: 5 },
-    { name: "Aug", leads: 19, appointments: 7, prospects: 5, clients: 4 },
-    { name: "Sep", leads: 21, appointments: 7, prospects: 6, clients: 5 },
-    { name: "Oct", leads: 24, appointments: 8, prospects: 7, clients: 6 },
-    { name: "Nov", leads: 28, appointments: 9, prospects: 8, clients: 7 },
-    { name: "Dec", leads: 30, appointments: 10, prospects: 9, clients: 8 },
+    { name: "Jan", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Feb", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Mar", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Apr", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "May", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Jun", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Jul", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Aug", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Sep", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Oct", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Nov", leads: 12, appointments: 4, prospects: 3, clients: 3 },
+    { name: "Dec", leads: 12, appointments: 4, prospects: 3, clients: 3 },
   ]
 
   // Lead source data

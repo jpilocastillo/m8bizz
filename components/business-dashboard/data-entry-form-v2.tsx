@@ -36,7 +36,7 @@ const formSchema = z.object({
   // Current Values
   currentAUM: z.string().min(1, "Current AUM is required"),
   currentAnnuity: z.string().min(1, "Current annuity is required"),
-  currentLifeProduction: z.string().min(1, "Current life production is required"),
+  currentLifeProduction: z.string().min(1, "Life Insurance Cash Value is required"),
 
   // Client Metrics
   avgAnnuitySize: z.string().min(1, "Average annuity size is required"),
@@ -46,6 +46,8 @@ const formSchema = z.object({
   avgCloseRatio: z.string().min(1, "Average close ratio is required"),
   annuityClosed: z.string().min(1, "Number of annuity closed is required"),
   aumAccounts: z.string().min(1, "Number of AUM accounts is required"),
+  monthlyIdealProspects: z.string().min(1, "Monthly ideal prospects is required"),
+  appointmentsPerCampaign: z.string().min(1, "Appointments per campaign is required"),
 
   // Campaign Data
   campaigns: z.array(campaignSchema).min(1, "At least one campaign is required"),
@@ -90,6 +92,8 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
       avgCloseRatio: data.clientMetrics?.avg_close_ratio?.toString() || "",
       annuityClosed: data.clientMetrics?.annuity_closed?.toString() || "",
       aumAccounts: data.clientMetrics?.aum_accounts?.toString() || "",
+      monthlyIdealProspects: data.clientMetrics?.monthly_ideal_prospects?.toString() || "",
+      appointmentsPerCampaign: data.clientMetrics?.appointments_per_campaign?.toString() || "",
       campaigns: data.campaigns.length > 0 ? data.campaigns.map(c => ({
         name: c.name,
         budget: c.budget.toString(),
@@ -185,6 +189,8 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           avg_close_ratio: Number.parseFloat(values.avgCloseRatio),
           annuity_closed: Number.parseInt(values.annuityClosed),
           aum_accounts: Number.parseInt(values.aumAccounts),
+          monthly_ideal_prospects: Number.parseFloat(values.monthlyIdealProspects),
+          appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign),
         },
         campaigns: values.campaigns.map(c => ({
           name: c.name,
@@ -287,7 +293,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           <Tabs defaultValue="goals" className="w-full">
             <TabsList className="grid grid-cols-3 md:grid-cols-5 w-full">
               <TabsTrigger value="goals">Goals</TabsTrigger>
-              <TabsTrigger value="current">Current Values</TabsTrigger>
+              <TabsTrigger value="current">Advisor Book</TabsTrigger>
               <TabsTrigger value="clients">Client Metrics</TabsTrigger>
               <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
               <TabsTrigger value="income">Income & Book</TabsTrigger>
@@ -377,12 +383,12 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
               </Card>
             </TabsContent>
 
-            {/* Current Values Tab */}
+            {/* Advisor Book Tab */}
             <TabsContent value="current">
               <Card>
                 <CardHeader>
-                  <CardTitle>Current Values</CardTitle>
-                  <CardDescription>Your current business metrics</CardDescription>
+                  <CardTitle>Advisor Book</CardTitle>
+                  <CardDescription>Your current advisor book metrics</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -419,7 +425,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                       name="currentLifeProduction"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Current Life Production ($)</FormLabel>
+                          <FormLabel>Life Insurance Cash Value ($)</FormLabel>
                           <FormControl>
                             <Input type="number" {...field} />
                           </FormControl>

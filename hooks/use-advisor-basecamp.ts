@@ -8,7 +8,8 @@ import {
   ClientMetrics,
   MarketingCampaign,
   CommissionRates,
-  FinancialBook
+  FinancialBook,
+  MonthlyDataEntry
 } from '@/lib/advisor-basecamp'
 
 export function useAdvisorBasecamp(user: User | null) {
@@ -192,6 +193,66 @@ export function useAdvisorBasecamp(user: User | null) {
     }
   }
 
+  const addMonthlyDataEntry = async (entry: Omit<MonthlyDataEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) return false
+
+    try {
+      const newEntry = await advisorBasecampService.createMonthlyDataEntry(user, entry)
+      if (newEntry) {
+        setData(prev => ({ 
+          ...prev, 
+          monthlyDataEntries: [newEntry, ...(prev.monthlyDataEntries || [])] 
+        }))
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Error adding monthly data entry:', err)
+      setError('Failed to add monthly data entry')
+      return false
+    }
+  }
+
+  const updateMonthlyDataEntry = async (id: string, entry: Partial<MonthlyDataEntry>) => {
+    if (!user) return false
+
+    try {
+      const updated = await advisorBasecampService.updateMonthlyDataEntry(user, id, entry)
+      if (updated) {
+        setData(prev => ({ 
+          ...prev, 
+          monthlyDataEntries: prev.monthlyDataEntries?.map(e => e.id === id ? updated : e) || []
+        }))
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Error updating monthly data entry:', err)
+      setError('Failed to update monthly data entry')
+      return false
+    }
+  }
+
+  const deleteMonthlyDataEntry = async (id: string) => {
+    if (!user) return false
+
+    try {
+      const success = await advisorBasecampService.deleteMonthlyDataEntry(user, id)
+      if (success) {
+        setData(prev => ({ 
+          ...prev, 
+          monthlyDataEntries: prev.monthlyDataEntries?.filter(e => e.id !== id) || []
+        }))
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Error deleting monthly data entry:', err)
+      setError('Failed to delete monthly data entry')
+      return false
+    }
+  }
+
   const saveAllData = async (newData: AdvisorBasecampData) => {
     if (!user) return false
 
@@ -226,6 +287,9 @@ export function useAdvisorBasecamp(user: User | null) {
     deleteCampaign,
     updateCommissionRates,
     updateFinancialBook,
+    addMonthlyDataEntry,
+    updateMonthlyDataEntry,
+    deleteMonthlyDataEntry,
     saveAllData,
     clearError
   }

@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/components/ui/use-toast"
 import { Plus, Trash2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
+import { User } from "@supabase/supabase-js"
 import { useAuth } from "@/components/auth-provider"
 import { advisorBasecampService } from "@/lib/advisor-basecamp"
 
@@ -25,6 +27,23 @@ const campaignSchema = z.object({
   foodCosts: z.string().optional(),
 })
 
+// Currency formatting utility
+const formatCurrency = (value: string | number | undefined): string => {
+  if (!value) return ""
+  const numValue = typeof value === 'string' ? parseFloat(value.replace(/[$,]/g, '')) : value
+  if (isNaN(numValue)) return ""
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numValue)
+}
+
+const parseCurrency = (value: string): string => {
+  return value.replace(/[$,]/g, '')
+}
+
 // Update the form schema to remove notes field
 const formSchema = z.object({
   // Business Goals
@@ -39,7 +58,7 @@ const formSchema = z.object({
   // Current Values
   currentAUM: z.string().min(1, "Current AUM is required"),
   currentAnnuity: z.string().min(1, "Current annuity is required"),
-  currentLifeProduction: z.string().min(1, "Current life production is required"),
+  currentLifeProduction: z.string().min(1, "Life Insurance Cash Value is required"),
   qualifiedMoneyValue: z.string().min(1, "Qualified money value is required"),
 
   // Client Metrics
@@ -156,9 +175,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
   const appointmentAttritionValue = Number.parseFloat(watchedClientMetrics[4] || "0")
   const avgCloseRatioValue = Number.parseFloat(watchedClientMetrics[5] || "0")
 
-  // Calculate auto-calculated fields
-  const annuitiesClosed = avgAnnuitySizeValue > 0 ? Math.round(currentAnnuityValue / avgAnnuitySizeValue) : 0
-  const aumAccountsCount = avgAUMSizeValue > 0 ? Math.round(currentAUMValue / avgAUMSizeValue) : 0
+  // Calculate auto-calculated fields using GOAL values instead of current values
+  const annuitiesClosed = avgAnnuitySizeValue > 0 ? Math.round(annuityGoalAmount / avgAnnuitySizeValue) : 0
+  const aumAccountsCount = avgAUMSizeValue > 0 ? Math.round(aumGoalAmount / avgAUMSizeValue) : 0
   const avgNetWorthNeeded = avgAnnuitySizeValue + avgAUMSizeValue
   
   // Calculate prospects and appointments
@@ -293,7 +312,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
         <Tabs defaultValue="goals" className="w-full">
           <TabsList className="grid grid-cols-3 md:grid-cols-5 w-full">
             <TabsTrigger value="goals">Goals</TabsTrigger>
-            <TabsTrigger value="current">Current Values</TabsTrigger>
+            <TabsTrigger value="current">Advisor Book</TabsTrigger>
             <TabsTrigger value="clients">Client Metrics</TabsTrigger>
             <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
             <TabsTrigger value="income">Income</TabsTrigger>
@@ -312,11 +331,20 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                   name="businessGoal"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Business Goal ($)</FormLabel>
+                      <FormLabel>Business Goal</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="20000000" {...field} />
+                        <Input
+                          type="text"
+                          placeholder="$20,000,000"
+                          {...field}
+                          value={formatCurrency(field.value)}
+                          onChange={(e) => {
+                            const rawValue = parseCurrency(e.target.value)
+                            field.onChange(rawValue)
+                          }}
+                        />
                       </FormControl>
-                      <FormDescription>Your overall business goal in dollars</FormDescription>
+                      <FormDescription>Your total business goal for the year</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -331,10 +359,10 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         <FormLabel>AUM Goal ($)</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
-                            placeholder="12000000"
+                            type="text"
+                            placeholder="$12,000,000"
                             {...field}
-                            value={aumGoalAmount.toString()}
+                            value={formatCurrency(aumGoalAmount)}
                             readOnly
                             className="bg-muted"
                           />
@@ -370,10 +398,10 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         <FormLabel>Annuity Goal ($)</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
-                            placeholder="8000000"
+                            type="text"
+                            placeholder="$8,000,000"
                             {...field}
-                            value={annuityGoalAmount.toString()}
+                            value={formatCurrency(annuityGoalAmount)}
                             readOnly
                             className="bg-muted"
                           />
@@ -409,10 +437,10 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         <FormLabel>Life Target Goal ($)</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
-                            placeholder="200000"
+                            type="text"
+                            placeholder="$200,000"
                             {...field}
-                            value={lifeTargetGoalAmount.toString()}
+                            value={formatCurrency(lifeTargetGoalAmount)}
                             readOnly
                             className="bg-muted"
                           />
@@ -442,12 +470,12 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
             </Card>
           </TabsContent>
 
-          {/* Current Values Tab */}
+          {/* Advisor Book Tab */}
           <TabsContent value="current">
             <Card>
               <CardHeader>
-                <CardTitle>Current Values</CardTitle>
-                <CardDescription>Enter your current business values</CardDescription>
+                <CardTitle>Advisor Book</CardTitle>
+                <CardDescription>Enter your current advisor book values</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -457,7 +485,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     <FormItem>
                       <FormLabel>Current AUM ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="62000000" {...field} />
+                        <Input
+                          type="text"
+                          placeholder="$62,000,000"
+                          {...field}
+                          value={formatCurrency(field.value)}
+                          onChange={(e) => {
+                            const rawValue = parseCurrency(e.target.value)
+                            field.onChange(rawValue)
+                          }}
+                        />
                       </FormControl>
                       <FormDescription>Your current assets under management</FormDescription>
                       <FormMessage />
@@ -472,7 +509,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     <FormItem>
                       <FormLabel>Current Annuity ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="180000000" {...field} />
+                        <Input
+                          type="text"
+                          placeholder="$180,000,000"
+                          {...field}
+                          value={formatCurrency(field.value)}
+                          onChange={(e) => {
+                            const rawValue = parseCurrency(e.target.value)
+                            field.onChange(rawValue)
+                          }}
+                        />
                       </FormControl>
                       <FormDescription>Your current annuity value</FormDescription>
                       <FormMessage />
@@ -485,11 +531,20 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                   name="currentLifeProduction"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Life Production ($)</FormLabel>
+                      <FormLabel>Life Insurance Cash Value ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
+                        <Input
+                          type="text"
+                          placeholder="$0"
+                          {...field}
+                          value={formatCurrency(field.value)}
+                          onChange={(e) => {
+                            const rawValue = parseCurrency(e.target.value)
+                            field.onChange(rawValue)
+                          }}
+                        />
                       </FormControl>
-                      <FormDescription>Your current life production value</FormDescription>
+                      <FormDescription>Your life insurance cash value</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -502,8 +557,18 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     <FormItem>
                       <FormLabel>Qualified Money Value ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input
+                          type="text"
+                          placeholder="$1,000,000"
+                          {...field}
+                          value={formatCurrency(field.value)}
+                          onChange={(e) => {
+                            const rawValue = parseCurrency(e.target.value)
+                            field.onChange(rawValue)
+                          }}
+                        />
                       </FormControl>
+                      <FormDescription>Your qualified money value</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -529,7 +594,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       <FormItem>
                         <FormLabel>Average Annuity Size ($)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="225000" {...field} />
+                          <Input
+                            type="text"
+                            placeholder="$225,000"
+                            {...field}
+                            value={formatCurrency(field.value)}
+                            onChange={(e) => {
+                              const rawValue = parseCurrency(e.target.value)
+                              field.onChange(rawValue)
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -543,7 +617,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       <FormItem>
                         <FormLabel>Average AUM Size ($)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="500000" {...field} />
+                          <Input
+                            type="text"
+                            placeholder="$500,000"
+                            {...field}
+                            value={formatCurrency(field.value)}
+                            onChange={(e) => {
+                              const rawValue = parseCurrency(e.target.value)
+                              field.onChange(rawValue)
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -586,9 +669,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     <FormLabel>Average Net Worth Needed ($)</FormLabel>
                     <FormControl>
                       <Input 
-                        type="number" 
-                        placeholder="725000" 
-                        value={avgNetWorthNeeded.toLocaleString()}
+                        type="text" 
+                        placeholder="$725,000" 
+                        value={formatCurrency(avgNetWorthNeeded)}
                         readOnly
                         className="bg-muted"
                       />
@@ -609,7 +692,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         className="bg-muted"
                       />
                     </FormControl>
-                    <FormDescription>Auto-calculated: Current Annuity / Average Annuity Size</FormDescription>
+                    <FormDescription>Auto-calculated: Annuity Goal / Average Annuity Size</FormDescription>
                   </FormItem>
 
                   <FormItem>
@@ -623,7 +706,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         className="bg-muted"
                       />
                     </FormControl>
-                    <FormDescription>Auto-calculated: Current AUM / Average AUM Size</FormDescription>
+                    <FormDescription>Auto-calculated: AUM Goal / Average AUM Size</FormDescription>
                   </FormItem>
                 </div>
 
@@ -680,7 +763,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         className="bg-muted"
                       />
                     </FormControl>
-                    <FormDescription>Auto-calculated: (Clients Needed / Close Ratio) × (1 + Attrition)</FormDescription>
+                    <FormDescription>Auto-calculated: (Annual Total Prospects Necessary / Close Ratio) × (1 + Attrition)</FormDescription>
                   </FormItem>
                 </div>
 
@@ -776,7 +859,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormItem>
                             <FormLabel>Budget ($)</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="5198" {...field} />
+                              <Input
+                                type="text"
+                                placeholder="$5,198"
+                                {...field}
+                                value={formatCurrency(field.value)}
+                                onChange={(e) => {
+                                  const rawValue = parseCurrency(e.target.value)
+                                  field.onChange(rawValue)
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -804,7 +896,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormItem>
                             <FormLabel>Food Costs ($)</FormLabel>
                             <FormControl>
-                              <Input type="number" step="0.01" placeholder="800" {...field} />
+                              <Input
+                                type="text"
+                                placeholder="$800"
+                                {...field}
+                                value={formatCurrency(field.value || "")}
+                                onChange={(e) => {
+                                  const rawValue = parseCurrency(e.target.value)
+                                  field.onChange(rawValue)
+                                }}
+                              />
                             </FormControl>
                             <FormDescription>Cost of food/catering for events</FormDescription>
                             <FormMessage />
@@ -835,7 +936,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormItem>
                             <FormLabel>Cost Per Lead ($)</FormLabel>
                             <FormControl>
-                              <Input type="number" step="0.01" placeholder="259.90" {...field} />
+                              <Input
+                                type="text"
+                                placeholder="$259.90"
+                                {...field}
+                                value={formatCurrency(field.value || "")}
+                                onChange={(e) => {
+                                  const rawValue = parseCurrency(e.target.value)
+                                  field.onChange(rawValue)
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -849,7 +959,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormItem>
                             <FormLabel>Cost Per Client ($)</FormLabel>
                             <FormControl>
-                              <Input type="number" step="0.01" placeholder="1732.67" {...field} />
+                              <Input
+                                type="text"
+                                placeholder="$1,732.67"
+                                {...field}
+                                value={formatCurrency(field.value || "")}
+                                onChange={(e) => {
+                                  const rawValue = parseCurrency(e.target.value)
+                                  field.onChange(rawValue)
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

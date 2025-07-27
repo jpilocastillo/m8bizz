@@ -94,7 +94,7 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
       value2: (totalNewMonthlyAppointments * 12).toString(),
     },
     { metric: "Appointments Per Campaign", value: appointmentsPerCampaign.toString(), metric2: "# of Campaigns Monthly", value2: numCampaignsMonthly.toFixed(1) },
-    { metric: "Total New Monthly Appointments", value: totalNewMonthlyAppointments.toString(), metric2: "Clients Needed", value2: clientsNeeded.toFixed(1) },
+    { metric: "Total New Monthly Appointments", value: totalNewMonthlyAppointments.toString(), metric2: "Annual Total Prospects Necessary", value2: clientsNeeded.toFixed(1) },
   ]
 
   const chartData = goalData.map((item) => ({
@@ -106,12 +106,7 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
 
   return (
     <div className="grid gap-6">
-      <Tabs defaultValue="table" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="table">Table View</TabsTrigger>
-          <TabsTrigger value="chart">Chart View</TabsTrigger>
-        </TabsList>
-        <TabsContent value="table">
+
           <Card className="border-none shadow-lg">
             <CardHeader>
               <CardTitle>Goal Progress</CardTitle>
@@ -145,53 +140,6 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
-        <TabsContent value="chart">
-          <Card className="border-none shadow-lg">
-            <CardHeader>
-              <CardTitle>Goal Progress Visualization</CardTitle>
-              <CardDescription>Visual comparison of goals vs current values</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.2} />
-                    <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis
-                      stroke="#888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => `$${value / 1000000}M`}
-                    />
-                    <Tooltip
-                      formatter={(value) => [
-                        typeof value === 'number' ? `$${value.toLocaleString()}` : value,
-                        undefined
-                      ]}
-                      contentStyle={{
-                        backgroundColor: '#18181b',
-                        color: '#fff',
-                        border: '1px solid #333',
-                        borderRadius: '6px',
-                      }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Legend />
-                    <Bar name="Goal" dataKey="goal" fill="#64748b" radius={[4, 4, 0, 0]} />
-                    <Bar name="Current" dataKey="current" fill="#3b82f6" radius={[4, 4, 0, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-none shadow-lg">
@@ -240,7 +188,7 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
                     <TableCell className="font-medium">{item.metric}</TableCell>
                     <TableCell>{item.value}</TableCell>
                     <TableCell className="font-medium">{item.metric2}</TableCell>
-                    <TableCell className={item.metric2 === "Clients Needed" ? "text-red-500 font-bold" : ""}>
+                    <TableCell className={item.metric2 === "Annual Total Prospects Necessary" ? "text-red-500 font-bold" : ""}>
                       {item.value2}
                     </TableCell>
                   </TableRow>

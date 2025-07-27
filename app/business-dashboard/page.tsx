@@ -10,6 +10,7 @@ import { FinancialOptions } from "@/components/business-dashboard/financial-opti
 import { PerformanceCharts } from "@/components/business-dashboard/performance-charts"
 import { ClientAcquisition } from "@/components/business-dashboard/client-acquisition"
 import { DataEntryForm } from "@/components/business-dashboard/data-entry-form"
+import { MonthlyDataEntryComponent } from "@/components/business-dashboard/monthly-data-entry"
 import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { Button } from "@/components/ui/button"
@@ -162,7 +163,7 @@ export default function BusinessDashboard() {
       />
 
       <Tabs defaultValue="overview" className="space-y-6" onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full h-auto">
+        <TabsList className="grid grid-cols-2 md:grid-cols-7 w-full h-auto">
           <TabsTrigger value="overview" className="py-2">
             Overview
           </TabsTrigger>
@@ -180,6 +181,9 @@ export default function BusinessDashboard() {
           </TabsTrigger>
           <TabsTrigger value="options" className="py-2">
             Financial Options
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="py-2">
+            Monthly Data
           </TabsTrigger>
         </TabsList>
 
@@ -215,6 +219,9 @@ export default function BusinessDashboard() {
 
         <TabsContent value="options" className="space-y-6">
           <FinancialOptions />
+        </TabsContent>
+        <TabsContent value="monthly" className="space-y-6">
+          <MonthlyDataEntryComponent />
         </TabsContent>
       </Tabs>
     </div>

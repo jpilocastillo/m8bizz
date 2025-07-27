@@ -79,6 +79,22 @@ export interface FinancialBook {
   updated_at?: string
 }
 
+export interface MonthlyDataEntry {
+  id?: string
+  user_id?: string
+  month_year: string // Format: "YYYY-MM"
+  new_clients: number
+  new_appointments: number
+  new_leads: number
+  annuity_sales: number
+  aum_sales: number
+  life_sales: number
+  marketing_expenses: number
+  notes?: string
+  created_at?: string
+  updated_at?: string
+}
+
 export interface AdvisorBasecampData {
   businessGoals?: BusinessGoals | null
   currentValues?: CurrentValues | null
@@ -86,6 +102,7 @@ export interface AdvisorBasecampData {
   campaigns: MarketingCampaign[]
   commissionRates?: CommissionRates | null
   financialBook?: FinancialBook | null
+  monthlyDataEntries?: MonthlyDataEntry[]
 }
 
 class AdvisorBasecampService {
@@ -492,6 +509,90 @@ class AdvisorBasecampService {
     }
   }
 
+  // Monthly Data Entries
+  async getMonthlyDataEntries(user: User): Promise<MonthlyDataEntry[]> {
+    const { data, error } = await this.supabase
+      .from('monthly_data_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('month_year', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching monthly data entries:', error)
+      return []
+    }
+
+    return data || []
+  }
+
+  async createMonthlyDataEntry(user: User, entry: Omit<MonthlyDataEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<MonthlyDataEntry | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('monthly_data_entries')
+        .insert({
+          user_id: user.id,
+          ...entry
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating monthly data entry:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error in createMonthlyDataEntry:', error)
+      return null
+    }
+  }
+
+  async updateMonthlyDataEntry(user: User, id: string, entry: Partial<MonthlyDataEntry>): Promise<MonthlyDataEntry | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('monthly_data_entries')
+        .update({
+          ...entry,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating monthly data entry:', error)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error in updateMonthlyDataEntry:', error)
+      return null
+    }
+  }
+
+  async deleteMonthlyDataEntry(user: User, id: string): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('monthly_data_entries')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error deleting monthly data entry:', error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error in deleteMonthlyDataEntry:', error)
+      return false
+    }
+  }
+
   // Get all advisor basecamp data for a user
   async getAllAdvisorBasecampData(user: User): Promise<AdvisorBasecampData> {
     const [
@@ -500,14 +601,16 @@ class AdvisorBasecampService {
       clientMetrics,
       campaigns,
       commissionRates,
-      financialBook
+      financialBook,
+      monthlyDataEntries
     ] = await Promise.all([
       this.getBusinessGoals(user),
       this.getCurrentValues(user),
       this.getClientMetrics(user),
       this.getMarketingCampaigns(user),
       this.getCommissionRates(user),
-      this.getFinancialBook(user)
+      this.getFinancialBook(user),
+      this.getMonthlyDataEntries(user)
     ])
 
     return {
@@ -516,7 +619,8 @@ class AdvisorBasecampService {
       clientMetrics,
       campaigns,
       commissionRates,
-      financialBook
+      financialBook,
+      monthlyDataEntries
     }
   }
 

@@ -52,10 +52,9 @@ export function IncomeBreakdown() {
   return (
     <div className="grid gap-6">
       <Tabs defaultValue="table" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="table">Table View</TabsTrigger>
           <TabsTrigger value="chart">Chart View</TabsTrigger>
-          <TabsTrigger value="monthly">Monthly Breakdown</TabsTrigger>
         </TabsList>
         <TabsContent value="table">
           <Card className="border-none shadow-lg">
@@ -196,50 +195,7 @@ export function IncomeBreakdown() {
             </Card>
           </div>
         </TabsContent>
-        <TabsContent value="monthly">
-          <Card className="border-none shadow-lg">
-            <CardHeader>
-              <CardTitle>Monthly Income Trends</CardTitle>
-              <CardDescription>Income breakdown by month</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlyIncomeData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.2} />
-                    <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis
-                      stroke="#888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => {
-                        if (value >= 1000000) return `$${value / 1000000}M`
-                        if (value >= 1000) return `$${value / 1000}K`
-                        return `$${value}`
-                      }}
-                    />
-                    <Tooltip
-                      formatter={(value) => [`$${(value as number).toLocaleString()}`, undefined]}
-                      contentStyle={{
-                        backgroundColor: "var(--popover)",
-                        borderRadius: "6px",
-                        border: "1px solid var(--border)",
-                        color: "var(--popover-foreground)",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                      }}
-                    />
-                    <Legend />
-                    <Bar name="Annuity" dataKey="annuity" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar name="AUM" dataKey="aum" stackId="a" fill="#f97316" radius={[4, 4, 0, 0]} />
-                    <Bar name="Life Production" dataKey="life" stackId="a" fill="#a855f7" radius={[4, 4, 0, 0]} />
-                    <Bar name="Planning Fees" dataKey="fees" stackId="a" fill="#64748b" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
       </Tabs>
 
       <div className="grid gap-6 md:grid-cols-2">

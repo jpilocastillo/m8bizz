@@ -49,7 +49,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
   // New appointments: total new monthly appointments needed (monthly ideal prospects * 3)
   const newAppointments = Math.ceil(monthlyIdealProspects * 3)
 
-  // Total booked: current AUM + current annuity (in millions)
+  // Total advisor book: current AUM + current annuity (in millions)
   const totalBooked = (currentAUM + currentAnnuity) / 1000000
 
   // Calculate progress percentages
@@ -77,16 +77,16 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
 
   const metrics = [
     {
-      title: "Clients Needed",
+      title: "Annual Total Prospects Necessary",
       value: clientsNeeded.toString(),
       description: "Target for this year",
       icon: Users,
       trend: clientsTrend,
       trendLabel: "from last month",
       color: "red",
-      tooltip: "Number of new clients needed to reach annual goal",
+      tooltip: "Number of annual total prospects necessary to reach annual goal",
       progress: Math.round(clientsProgress),
-      shortDescription: "How many new clients you need to reach your annual goal.",
+      shortDescription: "How many annual total prospects you need to reach your annual goal.",
     },
     {
       title: "Annual Closing Prospects",
@@ -101,28 +101,28 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       shortDescription: "How many prospects you need to close to reach your annual goal.",
     },
     {
-      title: "New Appointments",
+      title: "Monthly New Appointments Booked",
       value: newAppointments.toString(),
       description: "Monthly target",
       icon: Calendar,
       trend: appointmentsTrend,
       trendLabel: "from last month",
       color: "blue",
-      tooltip: "Number of new appointments needed monthly",
+      tooltip: "Number of monthly new appointments booked",
       progress: Math.round(appointmentsProgress),
-      shortDescription: "How many new appointments you need to reach your monthly target.",
+      shortDescription: "How many monthly new appointments you have booked.",
     },
     {
-      title: "Total Booked",
+      title: "Total Advisor Book",
       value: `$${totalBooked.toFixed(1)}M`,
       description: "Current book value",
       icon: DollarSign,
       trend: bookedTrend,
       trendLabel: "from last year",
       color: "yellow",
-      tooltip: "Total value of all booked business",
+      tooltip: "Total value of all advisor book business",
       progress: Math.round(bookedProgress),
-      shortDescription: "How much value of business you currently have booked.",
+      shortDescription: "How much value of advisor book business you currently have.",
     },
   ]
 

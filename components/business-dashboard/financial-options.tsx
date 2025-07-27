@@ -1,8 +1,12 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
 import {
   Bar,
   BarChart,
@@ -18,30 +22,110 @@ import {
 } from "recharts"
 
 export function FinancialOptions() {
-  // Total book data
+  // Base values
+  const annuityBook = 180000000
+  const aumBook = 62000000
+  const qualifiedMoney = 157300000
+
+  // State for dynamic percentages
+  const [percentages, setPercentages] = useState({
+    // Option 1 - Annuity Book
+    surrenderPercent: 10,
+    incomeRiderPercent: 6,
+    freeWithdrawalPercent: 10,
+    lifeInsurancePercent: 10,
+    // Option 2 - AUM Book
+    lifeStrategy1Percent: 1,
+    lifeStrategy2Percent: 2,
+    // Option 3 - Qualified Money
+    iraTo7702Percent: 33,
+    approvalRatePercent: 50,
+  })
+
+  // State for rates
+  const [rates, setRates] = useState({
+    // Option 1 - Annuity Book
+    surrenderRate: 6,
+    incomeRiderRate: 10,
+    freeWithdrawalRate: 6,
+    lifeInsuranceRate: 10,
+    // Option 2 - AUM Book
+    lifeStrategy1Rate: 10,
+    lifeStrategy2Rate: 10,
+    // Option 3 - Qualified Money
+    iraTo7702Rate: 10,
+  })
+
+  // Calculate dynamic data based on percentages
+  const option1Data = useMemo(() => [
+    { 
+      name: "% out of Surrender", 
+      amount: (annuityBook * percentages.surrenderPercent) / 100, 
+      percentage: `${percentages.surrenderPercent}%`, 
+      income: (annuityBook * percentages.surrenderPercent * rates.surrenderRate) / 10000, 
+      rate: `${rates.surrenderRate}%` 
+    },
+    { 
+      name: "Average Income Rider %", 
+      amount: (annuityBook * percentages.incomeRiderPercent) / 100, 
+      percentage: `${percentages.incomeRiderPercent}%`, 
+      income: (annuityBook * percentages.incomeRiderPercent * rates.incomeRiderRate) / 10000, 
+      rate: `${rates.incomeRiderRate}%` 
+    },
+    { 
+      name: "% Free Withdrawal", 
+      amount: (annuityBook * percentages.freeWithdrawalPercent) / 100, 
+      percentage: `${percentages.freeWithdrawalPercent}%`, 
+      income: (annuityBook * percentages.freeWithdrawalPercent * rates.freeWithdrawalRate) / 10000, 
+      rate: `${rates.freeWithdrawalRate}%` 
+    },
+    { 
+      name: "Income From Life Insurance", 
+      amount: 0, 
+      percentage: `${percentages.lifeInsurancePercent}%`, 
+      income: (annuityBook * percentages.lifeInsurancePercent * rates.lifeInsuranceRate) / 10000, 
+      rate: `${rates.lifeInsuranceRate}%` 
+    },
+  ], [percentages, rates])
+
+  const option2Data = useMemo(() => [
+    { 
+      name: "Life Strategy", 
+      amount: (aumBook * percentages.lifeStrategy1Percent) / 100, 
+      percentage: `${percentages.lifeStrategy1Percent}%`, 
+      income: (aumBook * percentages.lifeStrategy1Percent * rates.lifeStrategy1Rate) / 10000, 
+      rate: `${rates.lifeStrategy1Rate}%` 
+    },
+    { 
+      name: "Life Strategy 2", 
+      amount: (aumBook * percentages.lifeStrategy2Percent) / 100, 
+      percentage: `${percentages.lifeStrategy2Percent}%`, 
+      income: (aumBook * percentages.lifeStrategy2Percent * rates.lifeStrategy2Rate) / 10000, 
+      rate: `${rates.lifeStrategy2Rate}%` 
+    },
+  ], [percentages, rates])
+
+  const option3Data = useMemo(() => [
+    { 
+      name: "IRA to 7702 Money", 
+      amount: (qualifiedMoney * percentages.iraTo7702Percent) / 100, 
+      percentage: `${percentages.iraTo7702Percent}%`, 
+      income: (qualifiedMoney * percentages.iraTo7702Percent * rates.iraTo7702Rate) / 10000, 
+      rate: `${rates.iraTo7702Rate}%` 
+    },
+    { 
+      name: "Approval Rate", 
+      amount: 0, 
+      percentage: `${percentages.approvalRatePercent}%`, 
+      income: (qualifiedMoney * percentages.iraTo7702Percent * rates.iraTo7702Rate * percentages.approvalRatePercent) / 1000000, 
+      rate: "-" 
+    },
+  ], [percentages, rates])
+
+  // Total advisor book data
   const totalBookData = [
-    { name: "Annuity Book", value: 180000000, color: "#3b82f6" },
-    { name: "AUM Book", value: 62000000, color: "#f97316" },
-  ]
-
-  // Option 1 data - Annuity Book
-  const option1Data = [
-    { name: "% out of Surrender", amount: 18000000, percentage: "10%", income: 1080000, rate: "6%" },
-    { name: "Average Income Rider %", amount: 10800000, percentage: "6%", income: 1080000, rate: "10%" },
-    { name: "% Free Withdrawal", amount: 18000000, percentage: "10%", income: 1080000, rate: "6%" },
-    { name: "Income From Life Insurance", amount: 0, percentage: "10%", income: 1800000, rate: "10%" },
-  ]
-
-  // Option 2 data - AUM Book
-  const option2Data = [
-    { name: "Life Strategy", amount: 620000, percentage: "1%", income: 62000, rate: "10%" },
-    { name: "Life Strategy 2", amount: 1240000, percentage: "2%", income: 124000, rate: "10%" },
-  ]
-
-  // Option 3 data - Qualified Money
-  const option3Data = [
-    { name: "IRA to 7702 Money", amount: 51909000, percentage: "33%", income: 5190900, rate: "10%" },
-    { name: "Approval Rate", amount: 0, percentage: "50%", income: 2595450, rate: "-" },
+    { name: "Annuity Book", value: annuityBook, color: "#3b82f6" },
+    { name: "AUM Book", value: aumBook, color: "#f97316" },
   ]
 
   // Chart data for option 1
@@ -53,7 +137,7 @@ export function FinancialOptions() {
 
   // Chart data for option 2
   const option2ChartData = [
-    { name: "Current AUM", value: 62000000 },
+    { name: "Current AUM", value: aumBook },
     ...option2Data.map((item) => ({
       name: item.name,
       value: item.amount,
@@ -63,22 +147,54 @@ export function FinancialOptions() {
 
   // Chart data for option 3
   const option3ChartData = [
-    { name: "Qualified Money", value: 157300000, color: "#64748b" },
-    { name: "IRA to 7702 Money", value: 51909000, color: "#22c55e" },
+    { name: "Qualified Money", value: qualifiedMoney, color: "#64748b" },
+    { name: "IRA to 7702 Money", value: (qualifiedMoney * percentages.iraTo7702Percent) / 100, color: "#22c55e" },
   ]
+
+  const handlePercentageChange = (key: string, value: string) => {
+    const numValue = parseFloat(value) || 0
+    setPercentages(prev => ({ ...prev, [key]: numValue }))
+  }
+
+  const handleRateChange = (key: string, value: string) => {
+    const numValue = parseFloat(value) || 0
+    setRates(prev => ({ ...prev, [key]: numValue }))
+  }
+
+  const resetToDefaults = () => {
+    setPercentages({
+      surrenderPercent: 10,
+      incomeRiderPercent: 6,
+      freeWithdrawalPercent: 10,
+      lifeInsurancePercent: 10,
+      lifeStrategy1Percent: 1,
+      lifeStrategy2Percent: 2,
+      iraTo7702Percent: 33,
+      approvalRatePercent: 50,
+    })
+    setRates({
+      surrenderRate: 6,
+      incomeRiderRate: 10,
+      freeWithdrawalRate: 6,
+      lifeInsuranceRate: 10,
+      lifeStrategy1Rate: 10,
+      lifeStrategy2Rate: 10,
+      iraTo7702Rate: 10,
+    })
+  }
 
   return (
     <div className="grid gap-6">
       <Card className="border-none shadow-lg">
         <CardHeader>
-          <CardTitle>Total Book</CardTitle>
-          <CardDescription>Overview of total book value</CardDescription>
+          <CardTitle>Total Advisor Book</CardTitle>
+          <CardDescription>Overview of total advisor book</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <div className="bg-gradient-to-r from-yellow-400 to-amber-500 p-6 text-center font-bold text-xl mb-6 rounded-lg shadow-md text-black">
-                $242,000,000.00
+                ${(annuityBook + aumBook).toLocaleString()}.00
               </div>
 
               <Table>
@@ -92,13 +208,13 @@ export function FinancialOptions() {
                 <TableBody>
                   <TableRow>
                     <TableCell className="font-medium">Current Annuity</TableCell>
-                    <TableCell>$180,000,000.00</TableCell>
-                    <TableCell>74.4%</TableCell>
+                    <TableCell>${annuityBook.toLocaleString()}.00</TableCell>
+                    <TableCell>{((annuityBook / (annuityBook + aumBook)) * 100).toFixed(1)}%</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium">Current AUM</TableCell>
-                    <TableCell>$62,000,000.00</TableCell>
-                    <TableCell>25.6%</TableCell>
+                    <TableCell>${aumBook.toLocaleString()}.00</TableCell>
+                    <TableCell>{((aumBook / (annuityBook + aumBook)) * 100).toFixed(1)}%</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -145,22 +261,113 @@ export function FinancialOptions() {
           <TabsTrigger value="option2">Option 2 - AUM Book</TabsTrigger>
           <TabsTrigger value="option3">Option 3 - Qualified Money</TabsTrigger>
         </TabsList>
+        
         <TabsContent value="option1">
           <Card className="border-none shadow-lg">
             <CardHeader>
               <CardTitle>Option 1 - Annuity Book</CardTitle>
-              <CardDescription>Current annuity: $180,000,000.00</CardDescription>
+              <CardDescription>Current annuity: ${annuityBook.toLocaleString()}.00</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
+                  <div className="mb-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="surrenderPercent">% out of Surrender</Label>
+                        <Input
+                          id="surrenderPercent"
+                          type="number"
+                          value={percentages.surrenderPercent}
+                          onChange={(e) => handlePercentageChange('surrenderPercent', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="surrenderRate">Rate (%)</Label>
+                        <Input
+                          id="surrenderRate"
+                          type="number"
+                          value={rates.surrenderRate}
+                          onChange={(e) => handleRateChange('surrenderRate', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="incomeRiderPercent">Average Income Rider %</Label>
+                        <Input
+                          id="incomeRiderPercent"
+                          type="number"
+                          value={percentages.incomeRiderPercent}
+                          onChange={(e) => handlePercentageChange('incomeRiderPercent', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="incomeRiderRate">Rate (%)</Label>
+                        <Input
+                          id="incomeRiderRate"
+                          type="number"
+                          value={rates.incomeRiderRate}
+                          onChange={(e) => handleRateChange('incomeRiderRate', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="freeWithdrawalPercent">% Free Withdrawal</Label>
+                        <Input
+                          id="freeWithdrawalPercent"
+                          type="number"
+                          value={percentages.freeWithdrawalPercent}
+                          onChange={(e) => handlePercentageChange('freeWithdrawalPercent', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="freeWithdrawalRate">Rate (%)</Label>
+                        <Input
+                          id="freeWithdrawalRate"
+                          type="number"
+                          value={rates.freeWithdrawalRate}
+                          onChange={(e) => handleRateChange('freeWithdrawalRate', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="lifeInsurancePercent">Income From Life Insurance %</Label>
+                        <Input
+                          id="lifeInsurancePercent"
+                          type="number"
+                          value={percentages.lifeInsurancePercent}
+                          onChange={(e) => handlePercentageChange('lifeInsurancePercent', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lifeInsuranceRate">Rate (%)</Label>
+                        <Input
+                          id="lifeInsuranceRate"
+                          type="number"
+                          value={rates.lifeInsuranceRate}
+                          onChange={(e) => handleRateChange('lifeInsuranceRate', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Option</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Percentage</TableHead>
-                        <TableHead>Income</TableHead>
+                        <TableHead>Annuity Production</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -174,12 +381,6 @@ export function FinancialOptions() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="font-bold">
-                        <TableCell>Total Potential Income</TableCell>
-                        <TableCell colSpan={3}>
-                          ${option1Data.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
                     </TableBody>
                   </Table>
                 </div>
@@ -215,15 +416,62 @@ export function FinancialOptions() {
             </CardContent>
           </Card>
         </TabsContent>
+        
         <TabsContent value="option2">
           <Card className="border-none shadow-lg">
             <CardHeader>
               <CardTitle>Option 2 - AUM Book</CardTitle>
-              <CardDescription>Current AUM: $62,000,000.00</CardDescription>
+              <CardDescription>Current AUM: ${aumBook.toLocaleString()}.00</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
+                  <div className="mb-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="lifeStrategy1Percent">Life Strategy %</Label>
+                        <Input
+                          id="lifeStrategy1Percent"
+                          type="number"
+                          value={percentages.lifeStrategy1Percent}
+                          onChange={(e) => handlePercentageChange('lifeStrategy1Percent', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lifeStrategy1Rate">Rate (%)</Label>
+                        <Input
+                          id="lifeStrategy1Rate"
+                          type="number"
+                          value={rates.lifeStrategy1Rate}
+                          onChange={(e) => handleRateChange('lifeStrategy1Rate', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="lifeStrategy2Percent">Life Strategy 2 %</Label>
+                        <Input
+                          id="lifeStrategy2Percent"
+                          type="number"
+                          value={percentages.lifeStrategy2Percent}
+                          onChange={(e) => handlePercentageChange('lifeStrategy2Percent', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lifeStrategy2Rate">Rate (%)</Label>
+                        <Input
+                          id="lifeStrategy2Rate"
+                          type="number"
+                          value={rates.lifeStrategy2Rate}
+                          onChange={(e) => handleRateChange('lifeStrategy2Rate', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -236,7 +484,7 @@ export function FinancialOptions() {
                     <TableBody>
                       <TableRow className="font-bold">
                         <TableCell>Current AUM</TableCell>
-                        <TableCell>$62,000,000.00</TableCell>
+                        <TableCell>${aumBook.toLocaleString()}.00</TableCell>
                         <TableCell>-</TableCell>
                         <TableCell>-</TableCell>
                       </TableRow>
@@ -250,12 +498,6 @@ export function FinancialOptions() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="font-bold">
-                        <TableCell>Total Potential Income</TableCell>
-                        <TableCell colSpan={3}>
-                          ${option2Data.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
                     </TableBody>
                   </Table>
                 </div>
@@ -295,15 +537,57 @@ export function FinancialOptions() {
             </CardContent>
           </Card>
         </TabsContent>
+        
         <TabsContent value="option3">
           <Card className="border-none shadow-lg">
             <CardHeader>
               <CardTitle>Option 3 - Qualified Money</CardTitle>
-              <CardDescription>Qualified Money: $157,300,000.00</CardDescription>
+              <CardDescription>Qualified Money: ${qualifiedMoney.toLocaleString()}.00</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
+                  <div className="mb-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="iraTo7702Percent">IRA to 7702 Money %</Label>
+                        <Input
+                          id="iraTo7702Percent"
+                          type="number"
+                          value={percentages.iraTo7702Percent}
+                          onChange={(e) => handlePercentageChange('iraTo7702Percent', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="iraTo7702Rate">Rate (%)</Label>
+                        <Input
+                          id="iraTo7702Rate"
+                          type="number"
+                          value={rates.iraTo7702Rate}
+                          onChange={(e) => handleRateChange('iraTo7702Rate', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="approvalRatePercent">Approval Rate %</Label>
+                        <Input
+                          id="approvalRatePercent"
+                          type="number"
+                          value={percentages.approvalRatePercent}
+                          onChange={(e) => handlePercentageChange('approvalRatePercent', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Button onClick={resetToDefaults} variant="outline" className="w-full">
+                          Reset to Defaults
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -316,7 +600,7 @@ export function FinancialOptions() {
                     <TableBody>
                       <TableRow className="font-bold">
                         <TableCell>Qualified Money</TableCell>
-                        <TableCell>$157,300,000.00</TableCell>
+                        <TableCell>${qualifiedMoney.toLocaleString()}.00</TableCell>
                         <TableCell>65%</TableCell>
                         <TableCell>-</TableCell>
                       </TableRow>
@@ -330,12 +614,6 @@ export function FinancialOptions() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      <TableRow className="font-bold">
-                        <TableCell>Total Potential Income</TableCell>
-                        <TableCell colSpan={3}>
-                          ${option3Data.reduce((sum, item) => sum + item.income, 0).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
                     </TableBody>
                   </Table>
                 </div>

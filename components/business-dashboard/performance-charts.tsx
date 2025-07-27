@@ -35,7 +35,7 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
     clientMetrics
   })
 
-  // Calculate total book value from actual data
+  // Calculate total advisor book value from actual data
   const totalBookValue = (currentValues?.current_annuity || 0) + (currentValues?.current_aum || 0)
   const annuityPercentage = totalBookValue > 0 ? ((currentValues?.current_annuity || 0) / totalBookValue) * 100 : 0
   const aumPercentage = totalBookValue > 0 ? ((currentValues?.current_aum || 0) / totalBookValue) * 100 : 0
@@ -117,162 +117,94 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
 
   return (
     <div className="grid gap-6">
-      <Tabs defaultValue="distribution" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="distribution">Book Distribution</TabsTrigger>
-          <TabsTrigger value="trends">Performance Trends</TabsTrigger>
-        </TabsList>
-        <TabsContent value="distribution">
-          <Card className="border-none shadow-lg">
-            <CardHeader>
-              <CardTitle>Book Distribution</CardTitle>
-              <CardDescription>Annuity vs AUM distribution</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <defs>
-                      <linearGradient id="pieAnnuity" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#1e40af" stopOpacity={0.7} />
-                      </linearGradient>
-                      <linearGradient id="pieAum" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#f97316" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#b45309" stopOpacity={0.7} />
-                      </linearGradient>
-                    </defs>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={90}
-                      outerRadius={120}
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      isAnimationActive={true}
-                      animationDuration={900}
-                      labelLine={false}
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={`url(#${entry.name === 'Annuity' ? 'pieAnnuity' : 'pieAum'})`} filter="url(#shadow)" />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value, name, props) => {
-                        const color = props.payload?.color || '#fff';
-                        return [<span style={{ color, fontWeight: 600 }}>{`$${value.toLocaleString()}`}</span>];
-                      }}
-                      contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      iconType="circle"
-                      wrapperStyle={{ color: '#fff', fontWeight: 500, fontSize: 14 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Distribution Charts - Side by Side */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle>Book Distribution</CardTitle>
+            <CardDescription>Annuity vs AUM distribution</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <defs>
+                    <linearGradient id="pieAnnuity" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#1e40af" stopOpacity={0.7} />
+                    </linearGradient>
+                    <linearGradient id="pieAum" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#f97316" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#b45309" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={90}
+                    outerRadius={120}
+                    paddingAngle={5}
+                    dataKey="value"
+                    label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    isAnimationActive={true}
+                    animationDuration={900}
+                    labelLine={false}
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={`url(#${entry.name === 'Annuity' ? 'pieAnnuity' : 'pieAum'})`} filter="url(#shadow)" />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, name, props) => {
+                      const color = props.payload?.color || '#fff';
+                      return [<span style={{ color, fontWeight: 600 }}>{`$${value.toLocaleString()}`}</span>];
+                    }}
+                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
+                    labelStyle={{ color: '#fff' }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    iconType="circle"
+                    wrapperStyle={{ color: '#fff', fontWeight: 500, fontSize: 14 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="border-none shadow-lg">
-            <CardHeader>
-              <CardTitle>Account Distribution</CardTitle>
-              <CardDescription>Annuity Closed vs AUM Accounts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart data={accountData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.2} />
-                    <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      formatter={(value, name, props) => {
-                        const color = props.payload?.color || '#fff';
-                        return [<span style={{ color }}>{`${value} accounts`}</span>];
-                      }}
-                      contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                      {accountData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="trends">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="border-none shadow-lg md:col-span-2">
-              <CardHeader>
-                <CardTitle>Performance Trends</CardTitle>
-                <CardDescription>Monthly growth and total value</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={performanceTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.2} />
-                      <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis
-                        yAxisId="left"
-                        stroke="#888"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(value) => formatCurrency(value)}
-                      />
-                      <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        stroke="#888"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(value) => `${value}%`}
-                      />
-                      <Tooltip
-                        formatter={(value, name) => {
-                          if (name === "total") return [formatCurrency(value as number), "Total Value"]
-                          if (name === "growth") return [`${(value as number).toFixed(1)}%`, "Growth Rate"]
-                          return [value, name]
-                        }}
-                        contentStyle={{
-                          backgroundColor: '#18181b',
-                          color: '#fff',
-                          border: '1px solid #333',
-                          borderRadius: '6px',
-                        }}
-                        labelStyle={{ color: '#fff' }}
-                      />
-                      <Legend />
-                      <Bar yAxisId="left" name="Total Value" dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      <Line
-                        yAxisId="right"
-                        name="Growth Rate"
-                        type="monotone"
-                        dataKey="growth"
-                        stroke="#10b981"
-                        strokeWidth={3}
-                        dot={{ r: 5 }}
-                        activeDot={{ r: 8 }}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle>Account Distribution</CardTitle>
+            <CardDescription>Annuity Closed vs AUM Accounts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={accountData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.2} />
+                  <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    formatter={(value, name, props) => {
+                      const color = props.payload?.color || '#fff';
+                      return [<span style={{ color }}>{`${value} accounts`}</span>];
+                    }}
+                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
+                    labelStyle={{ color: '#fff' }}
+                  />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                    {accountData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="border-none shadow-lg">
@@ -347,14 +279,14 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
 
         <Card className="border-none shadow-lg">
           <CardHeader>
-            <CardTitle>Total Book Value</CardTitle>
-            <CardDescription>Current total book value</CardDescription>
+            <CardTitle>Total Advisor Book Value</CardTitle>
+            <CardDescription>Current total advisor book value</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center h-[300px]">
             <div className="text-6xl font-bold text-center mb-4 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
               {formatCurrency(totalBookValue)}
             </div>
-            <div className="text-xl text-center mb-6">Total Book Value</div>
+            <div className="text-xl text-center mb-6">Total Advisor Book Value</div>
             <div className="grid grid-cols-2 gap-6 w-full">
               <div className="flex flex-col items-center">
                 <div className="text-2xl font-semibold text-blue-500">{formatCurrency(currentValues?.current_annuity || 0)}</div>
