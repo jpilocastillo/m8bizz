@@ -222,6 +222,7 @@ export function MonthlyDataEntryComponent() {
     
     return yearEntries.reduce((acc, entry) => ({
       totalSales: acc.totalSales + entry.annuity_sales + entry.aum_sales + entry.life_sales,
+      totalCommissionIncome: acc.totalCommissionIncome + calculateCommissionIncome(entry),
       totalClients: acc.totalClients + entry.new_clients,
       totalAppointments: acc.totalAppointments + entry.new_appointments,
       totalLeads: acc.totalLeads + entry.new_leads,
@@ -231,6 +232,7 @@ export function MonthlyDataEntryComponent() {
       lifeSales: acc.lifeSales + entry.life_sales,
     }), {
       totalSales: 0,
+      totalCommissionIncome: 0,
       totalClients: 0,
       totalAppointments: 0,
       totalLeads: 0,
@@ -257,6 +259,18 @@ export function MonthlyDataEntryComponent() {
     }
   }
 
+  // Calculate commission income for a given entry
+  const calculateCommissionIncome = (entry: MonthlyDataEntry) => {
+    const commissionRates = data.commissionRates
+    if (!commissionRates) return 0
+    
+    const annuityCommission = (entry.annuity_sales * commissionRates.annuity_commission) / 100
+    const aumCommission = (entry.aum_sales * commissionRates.aum_commission) / 100
+    const lifeCommission = (entry.life_sales * commissionRates.life_commission) / 100
+    
+    return annuityCommission + aumCommission + lifeCommission
+  }
+
   const yearToDate = calculateYearToDate()
   const goals = getGoals()
 
@@ -269,13 +283,15 @@ export function MonthlyDataEntryComponent() {
     
     return yearEntries.map(entry => {
       const totalSales = entry.annuity_sales + entry.aum_sales + entry.life_sales
+      const commissionIncome = calculateCommissionIncome(entry)
       const roi = entry.marketing_expenses > 0 
-        ? ((totalSales - entry.marketing_expenses) / entry.marketing_expenses) * 100 
+        ? ((commissionIncome - entry.marketing_expenses) / entry.marketing_expenses) * 100 
         : 0
       
       return {
         month: format(parseISO(entry.month_year + "-01"), "MMM"),
         totalSales,
+        commissionIncome,
         annuitySales: entry.annuity_sales,
         aumSales: entry.aum_sales,
         lifeSales: entry.life_sales,
@@ -724,7 +740,7 @@ export function MonthlyDataEntryComponent() {
                 <div className="text-sm font-medium text-muted-foreground">Marketing ROI</div>
                 <div className="text-xl font-semibold">
                   {selectedMonthData.marketing_expenses > 0 
-                    ? (((selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales - selectedMonthData.marketing_expenses) / selectedMonthData.marketing_expenses) * 100).toFixed(0)
+                    ? (((calculateCommissionIncome(selectedMonthData) - selectedMonthData.marketing_expenses) / selectedMonthData.marketing_expenses) * 100).toFixed(0)
                     : "0"}%
                 </div>
               </div>
@@ -1026,7 +1042,7 @@ export function MonthlyDataEntryComponent() {
               <CardContent>
                 <div className="text-3xl font-bold text-orange-500">
                   {yearToDate.totalMarketingExpenses > 0 
-                    ? ((yearToDate.totalSales - yearToDate.totalMarketingExpenses) / yearToDate.totalMarketingExpenses * 100).toFixed(0)
+                    ? ((yearToDate.totalCommissionIncome - yearToDate.totalMarketingExpenses) / yearToDate.totalMarketingExpenses * 100).toFixed(0)
                     : 0}%
                 </div>
                 <div className="flex items-center text-xs text-muted-foreground mt-1">
@@ -1232,8 +1248,9 @@ export function MonthlyDataEntryComponent() {
                 <TableBody>
                   {monthlyEntries.map((entry) => {
                     const totalSales = entry.annuity_sales + entry.aum_sales + entry.life_sales
+                    const commissionIncome = calculateCommissionIncome(entry)
                     const roi = entry.marketing_expenses > 0 
-                      ? ((totalSales - entry.marketing_expenses) / entry.marketing_expenses) * 100 
+                      ? ((commissionIncome - entry.marketing_expenses) / entry.marketing_expenses) * 100 
                       : 0
                     
                     // Calculate progress against goals (if available)

@@ -4,8 +4,6 @@ import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import {
   Bar,
@@ -27,8 +25,8 @@ export function FinancialOptions() {
   const aumBook = 62000000
   const qualifiedMoney = 157300000
 
-  // State for dynamic percentages
-  const [percentages, setPercentages] = useState({
+  // Default percentages (these would come from the business data entry form)
+  const percentages = {
     // Option 1 - Annuity Book
     surrenderPercent: 10,
     incomeRiderPercent: 6,
@@ -40,10 +38,10 @@ export function FinancialOptions() {
     // Option 3 - Qualified Money
     iraTo7702Percent: 33,
     approvalRatePercent: 50,
-  })
+  }
 
-  // State for rates
-  const [rates, setRates] = useState({
+  // Default rates (these would come from the business data entry form)
+  const rates = {
     // Option 1 - Annuity Book
     surrenderRate: 6,
     incomeRiderRate: 10,
@@ -54,7 +52,7 @@ export function FinancialOptions() {
     lifeStrategy2Rate: 10,
     // Option 3 - Qualified Money
     iraTo7702Rate: 10,
-  })
+  }
 
   // Calculate dynamic data based on percentages
   const option1Data = useMemo(() => [
@@ -151,38 +149,6 @@ export function FinancialOptions() {
     { name: "IRA to 7702 Money", value: (qualifiedMoney * percentages.iraTo7702Percent) / 100, color: "#22c55e" },
   ]
 
-  const handlePercentageChange = (key: string, value: string) => {
-    const numValue = parseFloat(value) || 0
-    setPercentages(prev => ({ ...prev, [key]: numValue }))
-  }
-
-  const handleRateChange = (key: string, value: string) => {
-    const numValue = parseFloat(value) || 0
-    setRates(prev => ({ ...prev, [key]: numValue }))
-  }
-
-  const resetToDefaults = () => {
-    setPercentages({
-      surrenderPercent: 10,
-      incomeRiderPercent: 6,
-      freeWithdrawalPercent: 10,
-      lifeInsurancePercent: 10,
-      lifeStrategy1Percent: 1,
-      lifeStrategy2Percent: 2,
-      iraTo7702Percent: 33,
-      approvalRatePercent: 50,
-    })
-    setRates({
-      surrenderRate: 6,
-      incomeRiderRate: 10,
-      freeWithdrawalRate: 6,
-      lifeInsuranceRate: 10,
-      lifeStrategy1Rate: 10,
-      lifeStrategy2Rate: 10,
-      iraTo7702Rate: 10,
-    })
-  }
-
   return (
     <div className="grid gap-6">
       <Card className="border-none shadow-lg">
@@ -271,96 +237,6 @@ export function FinancialOptions() {
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <div className="mb-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="surrenderPercent">% out of Surrender</Label>
-                        <Input
-                          id="surrenderPercent"
-                          type="number"
-                          value={percentages.surrenderPercent}
-                          onChange={(e) => handlePercentageChange('surrenderPercent', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="surrenderRate">Rate (%)</Label>
-                        <Input
-                          id="surrenderRate"
-                          type="number"
-                          value={rates.surrenderRate}
-                          onChange={(e) => handleRateChange('surrenderRate', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="incomeRiderPercent">Average Income Rider %</Label>
-                        <Input
-                          id="incomeRiderPercent"
-                          type="number"
-                          value={percentages.incomeRiderPercent}
-                          onChange={(e) => handlePercentageChange('incomeRiderPercent', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="incomeRiderRate">Rate (%)</Label>
-                        <Input
-                          id="incomeRiderRate"
-                          type="number"
-                          value={rates.incomeRiderRate}
-                          onChange={(e) => handleRateChange('incomeRiderRate', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="freeWithdrawalPercent">% Free Withdrawal</Label>
-                        <Input
-                          id="freeWithdrawalPercent"
-                          type="number"
-                          value={percentages.freeWithdrawalPercent}
-                          onChange={(e) => handlePercentageChange('freeWithdrawalPercent', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="freeWithdrawalRate">Rate (%)</Label>
-                        <Input
-                          id="freeWithdrawalRate"
-                          type="number"
-                          value={rates.freeWithdrawalRate}
-                          onChange={(e) => handleRateChange('freeWithdrawalRate', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="lifeInsurancePercent">Income From Life Insurance %</Label>
-                        <Input
-                          id="lifeInsurancePercent"
-                          type="number"
-                          value={percentages.lifeInsurancePercent}
-                          onChange={(e) => handlePercentageChange('lifeInsurancePercent', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="lifeInsuranceRate">Rate (%)</Label>
-                        <Input
-                          id="lifeInsuranceRate"
-                          type="number"
-                          value={rates.lifeInsuranceRate}
-                          onChange={(e) => handleRateChange('lifeInsuranceRate', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -426,52 +302,6 @@ export function FinancialOptions() {
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <div className="mb-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="lifeStrategy1Percent">Life Strategy %</Label>
-                        <Input
-                          id="lifeStrategy1Percent"
-                          type="number"
-                          value={percentages.lifeStrategy1Percent}
-                          onChange={(e) => handlePercentageChange('lifeStrategy1Percent', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="lifeStrategy1Rate">Rate (%)</Label>
-                        <Input
-                          id="lifeStrategy1Rate"
-                          type="number"
-                          value={rates.lifeStrategy1Rate}
-                          onChange={(e) => handleRateChange('lifeStrategy1Rate', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="lifeStrategy2Percent">Life Strategy 2 %</Label>
-                        <Input
-                          id="lifeStrategy2Percent"
-                          type="number"
-                          value={percentages.lifeStrategy2Percent}
-                          onChange={(e) => handlePercentageChange('lifeStrategy2Percent', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="lifeStrategy2Rate">Rate (%)</Label>
-                        <Input
-                          id="lifeStrategy2Rate"
-                          type="number"
-                          value={rates.lifeStrategy2Rate}
-                          onChange={(e) => handleRateChange('lifeStrategy2Rate', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -547,47 +377,6 @@ export function FinancialOptions() {
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                  <div className="mb-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="iraTo7702Percent">IRA to 7702 Money %</Label>
-                        <Input
-                          id="iraTo7702Percent"
-                          type="number"
-                          value={percentages.iraTo7702Percent}
-                          onChange={(e) => handlePercentageChange('iraTo7702Percent', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="iraTo7702Rate">Rate (%)</Label>
-                        <Input
-                          id="iraTo7702Rate"
-                          type="number"
-                          value={rates.iraTo7702Rate}
-                          onChange={(e) => handleRateChange('iraTo7702Rate', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="approvalRatePercent">Approval Rate %</Label>
-                        <Input
-                          id="approvalRatePercent"
-                          type="number"
-                          value={percentages.approvalRatePercent}
-                          onChange={(e) => handlePercentageChange('approvalRatePercent', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <Button onClick={resetToDefaults} variant="outline" className="w-full">
-                          Reset to Defaults
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
                   <Table>
                     <TableHeader>
                       <TableRow>

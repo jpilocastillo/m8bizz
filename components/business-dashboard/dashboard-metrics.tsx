@@ -1,10 +1,9 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, TrendingDown, TrendingUp, Users, Target, Calendar } from "lucide-react"
+import { DollarSign, Users, Target, Calendar } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { Progress } from "@/components/ui/progress"
 import { BusinessGoals, CurrentValues, ClientMetrics } from "@/lib/advisor-basecamp"
 
 interface DashboardMetricsProps {
@@ -58,28 +57,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
   // Total advisor book: current AUM + current annuity (in millions)
   const totalBooked = (currentAUM + currentAnnuity) / 1000000
 
-  // Calculate progress percentages
-  const clientsProgress = businessGoals?.business_goal ? Math.min((clientsNeeded / 50) * 100, 100) : 0
-  const prospectsProgress = businessGoals?.business_goal ? Math.min((annualClosingProspects / 60) * 100, 100) : 0
-  const appointmentsProgress = newAppointments > 0 ? Math.min((newAppointments / 15) * 100, 100) : 0
-  const bookedProgress = businessGoals?.business_goal ? Math.min((totalBooked / (businessGoals.business_goal / 1000000)) * 100, 100) : 0
 
-  // Calculate realistic trends based on data relationships
-  const calculateTrend = (current: number, target: number, baseValue: number = 1) => {
-    if (target === 0 || baseValue === 0) return 0
-    const percentage = (current / target) * 100
-    // Return a realistic trend based on progress
-    if (percentage >= 100) return 15 // Exceeding target
-    if (percentage >= 80) return 8 // Close to target
-    if (percentage >= 60) return 2 // Making progress
-    if (percentage >= 40) return -3 // Behind but improving
-    return -8 // Significantly behind
-  }
-
-  const clientsTrend = calculateTrend(clientsNeeded, 50)
-  const prospectsTrend = calculateTrend(annualClosingProspects, 60)
-  const appointmentsTrend = calculateTrend(newAppointments, 15)
-  const bookedTrend = businessGoals?.business_goal ? calculateTrend(totalBooked, businessGoals.business_goal / 1000000) : 0
 
   const metrics = [
     {
@@ -87,11 +65,8 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       value: clientsNeeded.toString(),
       description: "Target clients needed",
       icon: Users,
-      trend: clientsTrend,
-      trendLabel: "from last month",
       color: "red",
       tooltip: "Number of clients needed: (# of AUM accounts + # of annuity closed) / 2",
-      progress: Math.round(clientsProgress),
       shortDescription: "How many clients you need based on your AUM and annuity metrics.",
     },
     {
@@ -99,11 +74,8 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       value: newAppointments.toString(),
       description: "Monthly target",
       icon: Calendar,
-      trend: appointmentsTrend,
-      trendLabel: "from last month",
       color: "blue",
       tooltip: "Number of monthly new appointments needed",
-      progress: Math.round(appointmentsProgress),
       shortDescription: "How many monthly new appointments you need to reach your goal.",
     },
     {
@@ -111,11 +83,8 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       value: annualClosingProspects.toString(),
       description: "Prospects needed",
       icon: Target,
-      trend: prospectsTrend,
-      trendLabel: "from last year",
       color: "green",
       tooltip: "Number of prospects needed to close to reach annual goal",
-      progress: Math.round(prospectsProgress),
       shortDescription: "How many prospects you need to close to reach your annual goal.",
     },
     {
@@ -123,11 +92,8 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       value: (totalNewMonthlyAppointments * 12).toString(),
       description: "Annual prospects needed",
       icon: Target,
-      trend: prospectsTrend,
-      trendLabel: "from last year",
       color: "purple",
       tooltip: "Number of annual total prospects necessary to reach annual goal",
-      progress: Math.round(prospectsProgress),
       shortDescription: "How many annual total prospects you need to reach your annual goal.",
     },
     {
@@ -135,11 +101,8 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       value: `$${totalBooked.toFixed(1)}M`,
       description: "Current book value",
       icon: DollarSign,
-      trend: bookedTrend,
-      trendLabel: "from last year",
       color: "yellow",
       tooltip: "Total value of all advisor book business",
-      progress: Math.round(bookedProgress),
       shortDescription: "How much your advisor book value is.",
     },
   ]
@@ -191,24 +154,6 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
             <CardContent>
               <div className={cn("text-3xl font-bold", getTextColor(metric.color))}>
                 {metric.value}
-              </div>
-              <div className="flex items-center text-xs text-muted-foreground mt-1">
-                {metric.trend > 0 ? (
-                  <TrendingUp className="mr-1 h-3 w-3 text-green-500" />
-                ) : (
-                  <TrendingDown className="mr-1 h-3 w-3 text-red-500" />
-                )}
-                <span className={cn(metric.trend > 0 ? "text-green-500" : "text-red-500")}>
-                  {Math.abs(metric.trend)}%
-                </span>
-                <span className="ml-1">{metric.trendLabel}</span>
-              </div>
-              <div className="mt-3">
-                <div className="flex justify-between text-xs mb-1">
-                  <span>Progress</span>
-                  <span>{metric.progress}%</span>
-                </div>
-                <Progress value={metric.progress} className="h-1.5" />
               </div>
             </CardContent>
           </Card>
