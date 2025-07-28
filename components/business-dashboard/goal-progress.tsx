@@ -66,6 +66,11 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
   const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
   const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
 
+  // Calculate clients needed using formulas
+  const E11 = avgAUMSize > 0 ? annuityClosed / avgAUMSize : 0 // D5/B11
+  const E10 = avgAnnuitySize > 0 ? currentAUM / avgAnnuitySize : 0 // D6/B10
+  const clientsNeeded = (E11 + E10) / 2
+
   const clientMetricsData = [
     { metric: "Avg Annuity Size", value: `$${avgAnnuitySize.toLocaleString()}` },
     { metric: "Avg AUM Size", value: `$${avgAUMSize.toLocaleString()}` },
@@ -74,16 +79,12 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
     { metric: "Average Close Ratio", value: `${avgCloseRatio}%` },
     { metric: "# of Annuity Closed", value: annuityClosed.toString() },
     { metric: "# of AUM Accounts", value: aumAccounts.toString() },
+    { metric: "Clients Needed", value: clientMetrics?.clients_needed?.toString() || clientsNeeded.toFixed(1) },
   ]
 
   // Calculate appointment metrics using formulas
   const totalNewMonthlyAppointments = monthlyIdealProspects * 3 // H8 = H6 * 3
   const numCampaignsMonthly = appointmentsPerCampaign > 0 ? totalNewMonthlyAppointments / appointmentsPerCampaign : 0 // H8 / H12
-
-  // Calculate clients needed using formulas
-  const E11 = avgAUMSize > 0 ? annuityClosed / avgAUMSize : 0 // D5/B11
-  const E10 = avgAnnuitySize > 0 ? currentAUM / avgAnnuitySize : 0 // D6/B10
-  const clientsNeeded = (E11 + E10) / 2
 
   const appointmentMetrics = [
     { metric: "Monthly Ideal Prospects", value: monthlyIdealProspects.toString(), metric2: "Total New Monthly Appointments Needed", value2: totalNewMonthlyAppointments.toString() },

@@ -38,7 +38,10 @@ interface AnalyticsDashboardProps {
 export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   // Initialize state with the provided data or defaults
   const [filteredData, setFilteredData] = useState(() => analyticsData || defaultData)
-  const [activeMetric, setActiveMetric] = useState<"ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients">("ROI")
+  
+  // Separate metric states for each component
+  const [topPerformersMetric, setTopPerformersMetric] = useState<"ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients">("ROI")
+  const [heatmapMetric, setHeatmapMetric] = useState<"ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients">("ROI")
 
   const container = {
     hidden: { opacity: 0 },
@@ -103,8 +106,8 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
             <CardContent className="pt-2">
               <TopPerformers
                 data={filteredData?.events || []}
-                activeMetric={activeMetric}
-                onMetricChange={setActiveMetric}
+                activeMetric={topPerformersMetric}
+                onMetricChange={setTopPerformersMetric}
               />
             </CardContent>
           </Card>
@@ -119,8 +122,8 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
             <CardContent className="pt-2">
               <PerformanceHeatmap
                 data={filteredData}
-                activeMetric={activeMetric}
-                onMetricChange={setActiveMetric}
+                activeMetric={heatmapMetric}
+                onMetricChange={setHeatmapMetric}
               />
             </CardContent>
           </Card>

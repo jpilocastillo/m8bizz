@@ -227,6 +227,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
         avg_close_ratio: Number.parseFloat(values.avgCloseRatio),
         annuity_closed: annuitiesClosed, // Use calculated value
         aum_accounts: aumAccountsCount, // Use calculated value
+        clients_needed: Math.round((annuitiesClosed + aumAccountsCount) / 2), // Use calculated value
         monthly_ideal_prospects: monthlyIdealProspects, // Use calculated value
         appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign),
       },

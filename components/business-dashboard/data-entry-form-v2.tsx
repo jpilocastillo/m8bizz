@@ -189,6 +189,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           avg_close_ratio: Number.parseFloat(values.avgCloseRatio),
           annuity_closed: Number.parseInt(values.annuityClosed),
           aum_accounts: Number.parseInt(values.aumAccounts),
+          clients_needed: Math.round((Number.parseInt(values.annuityClosed) + Number.parseInt(values.aumAccounts)) / 2),
           monthly_ideal_prospects: Number.parseFloat(values.monthlyIdealProspects),
           appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign),
         },

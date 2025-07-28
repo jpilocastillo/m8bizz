@@ -86,10 +86,11 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
     { name: "Average Close Ratio", value: clientMetrics?.avg_close_ratio || 0 },
   ]
 
-  // Annuity Closed vs AUM Accounts data
+  // Annuity Closed vs AUM Accounts vs Clients Needed data
   const accountData = [
     { name: "Annuity Closed", value: clientMetrics?.annuity_closed || 0, color: "#3b82f6" },
     { name: "AUM Accounts", value: clientMetrics?.aum_accounts || 0, color: "#f97316" },
+    { name: "Clients Needed", value: clientMetrics?.clients_needed || 0, color: "#22c55e" },
   ]
 
   // Performance trend data

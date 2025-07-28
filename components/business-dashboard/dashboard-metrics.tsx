@@ -41,13 +41,19 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
   // Calculate clients needed using correct formula: (E11 + E10) / 2
   const E11 = avgAUMSize > 0 ? annuityClosed / avgAUMSize : 0 // D5/B11
   const E10 = avgAnnuitySize > 0 ? currentAUM / avgAnnuitySize : 0 // D6/B10
-  const clientsNeeded = Math.ceil((E11 + E10) / 2)
+  const calculatedClientsNeeded = Math.ceil((E11 + E10) / 2)
+  
+  // Use the stored clients_needed value from the database, fallback to calculated value
+  const clientsNeeded = clientMetrics?.clients_needed || calculatedClientsNeeded
 
   // Annual closing prospects: monthly ideal prospects * 12
   const annualClosingProspects = Math.ceil(monthlyIdealProspects * 12)
 
   // New appointments: total new monthly appointments needed (monthly ideal prospects * 3)
   const newAppointments = Math.ceil(monthlyIdealProspects * 3)
+  
+  // Total new monthly appointments needed
+  const totalNewMonthlyAppointments = Math.ceil(monthlyIdealProspects * 3)
 
   // Total advisor book: current AUM + current annuity (in millions)
   const totalBooked = (currentAUM + currentAnnuity) / 1000000
@@ -77,28 +83,16 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
 
   const metrics = [
     {
-      title: "Annual Total Prospects Necessary",
+      title: "Clients Needed",
       value: clientsNeeded.toString(),
-      description: "Target for this year",
+      description: "Target clients needed",
       icon: Users,
       trend: clientsTrend,
       trendLabel: "from last month",
       color: "red",
-      tooltip: "Number of annual total prospects necessary to reach annual goal",
+      tooltip: "Number of clients needed: (# of AUM accounts + # of annuity closed) / 2",
       progress: Math.round(clientsProgress),
-      shortDescription: "How many annual total prospects you need to reach your annual goal.",
-    },
-    {
-      title: "Annual Closing Prospects",
-      value: annualClosingProspects.toString(),
-      description: "Prospects needed",
-      icon: Target,
-      trend: prospectsTrend,
-      trendLabel: "from last year",
-      color: "purple",
-      tooltip: "Number of prospects needed to close to reach annual goal",
-      progress: Math.round(prospectsProgress),
-      shortDescription: "How many prospects you need to close to reach your annual goal.",
+      shortDescription: "How many clients you need based on your AUM and annuity metrics.",
     },
     {
       title: "Monthly New Appointments Needed",
@@ -111,6 +105,30 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       tooltip: "Number of monthly new appointments needed",
       progress: Math.round(appointmentsProgress),
       shortDescription: "How many monthly new appointments you need to reach your goal.",
+    },
+    {
+      title: "Annual Ideal Closing Prospects Needed",
+      value: annualClosingProspects.toString(),
+      description: "Prospects needed",
+      icon: Target,
+      trend: prospectsTrend,
+      trendLabel: "from last year",
+      color: "green",
+      tooltip: "Number of prospects needed to close to reach annual goal",
+      progress: Math.round(prospectsProgress),
+      shortDescription: "How many prospects you need to close to reach your annual goal.",
+    },
+    {
+      title: "Annual Total Prospects Necessary",
+      value: (totalNewMonthlyAppointments * 12).toString(),
+      description: "Annual prospects needed",
+      icon: Target,
+      trend: prospectsTrend,
+      trendLabel: "from last year",
+      color: "purple",
+      tooltip: "Number of annual total prospects necessary to reach annual goal",
+      progress: Math.round(prospectsProgress),
+      shortDescription: "How many annual total prospects you need to reach your annual goal.",
     },
     {
       title: "Total Advisor Book",
@@ -132,6 +150,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       purple: "bg-purple-500 text-purple-500 bg-purple-500/10",
       blue: "bg-blue-500 text-blue-500 bg-blue-500/10",
       yellow: "bg-yellow-500 text-yellow-500 bg-yellow-500/10",
+      green: "bg-green-500 text-green-500 bg-green-500/10",
     }
     return colorMap[color as keyof typeof colorMap] || "bg-gray-500 text-gray-500 bg-gray-500/10"
   }
@@ -142,13 +161,14 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       purple: "text-purple-500",
       blue: "text-blue-500",
       yellow: "text-yellow-500",
+      green: "text-green-500",
     }
     return colorMap[color as keyof typeof colorMap] || "text-gray-500"
   }
 
   return (
     <TooltipProvider>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {metrics.map((metric, index) => (
           <Card key={index} className="border-none shadow-lg overflow-hidden">
             <div className={cn("h-1 w-full", getColorClasses(metric.color).split(" ")[0])}></div>

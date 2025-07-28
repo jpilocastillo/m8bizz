@@ -45,7 +45,7 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
       switch (activeMetric) {
         case "ROI":
           metricValue =
-            eventsAtCell.reduce((sum: number, event: any) => sum + (event.roi || 0), 0) / eventsAtCell.length;
+            eventsAtCell.reduce((sum: number, event: any) => sum + (event.roi?.value || 0), 0) / eventsAtCell.length;
           break;
         case "Conversion":
           metricValue =

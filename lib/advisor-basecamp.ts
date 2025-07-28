@@ -35,6 +35,7 @@ export interface ClientMetrics {
   avg_close_ratio: number
   annuity_closed: number
   aum_accounts: number
+  clients_needed: number
   monthly_ideal_prospects: number
   appointments_per_campaign: number
   created_at?: string
