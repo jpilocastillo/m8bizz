@@ -102,18 +102,7 @@ export default function BusinessDashboard() {
     )
   }
 
-  // If user is not allowed, show Coming Soon
-  if (!profile?.basecamp_access) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold mb-4">Advisor Basecamp</h2>
-          <p className="text-lg text-muted-foreground">Coming Soon</p>
-          <p className="mt-2 text-muted-foreground">You do not have access to this feature yet.</p>
-        </div>
-      </div>
-    )
-  }
+  // Access control removed - all authenticated users can access the business dashboard
 
   // Show data entry form if not complete or in edit mode
   if (!isComplete || editMode) {
