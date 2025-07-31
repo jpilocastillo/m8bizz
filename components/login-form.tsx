@@ -146,7 +146,7 @@ export function LoginForm() {
       </div>
 
       <div className="hidden md:flex flex-1 bg-gradient-to-b from-[#0f1029] to-[#0a0b14] p-8 flex-col">
-        <div className="flex flex-col items-center pt-40 space-y-6">
+        <div className="flex flex-col items-center pt-52 space-y-6">
           <Image src="/logo.png" alt="M8 Business Suite Logo" width={400} height={100} />
           
           {/* Simple decorative elements */}
