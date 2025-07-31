@@ -145,15 +145,15 @@ export function LoginForm() {
         </div>
       </div>
 
-      <div className="hidden md:flex flex-1 bg-gradient-to-b from-[#0f1029] to-[#0a0b14] p-8 flex-col justify-center">
-        <div className="flex flex-col items-center justify-center h-full space-y-12">
+      <div className="hidden md:flex flex-1 bg-gradient-to-b from-[#0f1029] to-[#0a0b14] p-8 flex-col">
+        <div className="flex flex-col items-center pt-40 space-y-6">
           <Image src="/logo.png" alt="M8 Business Suite Logo" width={400} height={100} />
           
           {/* Simple decorative elements */}
-          <div className="flex flex-col items-center space-y-6 text-center">
+          <div className="flex flex-col items-center space-y-3 text-center">
             <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"></div>
             <p className="text-white/60 text-lg max-w-sm">
-              Transform your marketing performance with real-time analytics and insights
+              A Platform for Performance Tracking & Marketing Analytics
             </p>
             <div className="flex space-x-4">
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
