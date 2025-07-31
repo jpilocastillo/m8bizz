@@ -172,14 +172,12 @@ export function ClientAcquisition() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value) => [`${value} leads`, undefined]}
-                    contentStyle={{
-                      backgroundColor: "var(--popover)",
-                      borderRadius: "6px",
-                      border: "1px solid var(--border)",
-                      color: "var(--popover-foreground)",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    formatter={(value, name, props) => {
+                      const color = props.payload?.color || '#fff';
+                      return [<span style={{ color, fontWeight: 600 }}>{`${value} leads`}</span>];
                     }}
+                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
+                    labelStyle={{ color: '#fff' }}
                   />
                   <Legend />
                 </PieChart>

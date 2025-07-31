@@ -127,14 +127,12 @@ export function IncomeBreakdown() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value) => [`$${(value as number).toLocaleString()}`, undefined]}
-                        contentStyle={{
-                          backgroundColor: "var(--popover)",
-                          borderRadius: "6px",
-                          border: "1px solid var(--border)",
-                          color: "var(--popover-foreground)",
-                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        formatter={(value, name, props) => {
+                          const color = props.payload?.color || '#fff';
+                          return [<span style={{ color, fontWeight: 600 }}>{`$${value.toLocaleString()}`}</span>];
                         }}
+                        contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
+                        labelStyle={{ color: '#fff' }}
                       />
                       <Legend />
                     </PieChart>
@@ -176,11 +174,14 @@ export function IncomeBreakdown() {
                       <Tooltip
                         formatter={(value) => [`$${(value as number).toLocaleString()}`, undefined]}
                         contentStyle={{
-                          backgroundColor: "var(--popover)",
+                          backgroundColor: "hsl(var(--popover))",
                           borderRadius: "6px",
-                          border: "1px solid var(--border)",
-                          color: "var(--popover-foreground)",
+                          border: "1px solid hsl(var(--border))",
+                          color: "hsl(var(--foreground))",
                           boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          padding: "8px 12px",
                         }}
                       />
                       <Bar dataKey="value" radius={[0, 8, 8, 0]}>

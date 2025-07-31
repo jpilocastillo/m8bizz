@@ -191,10 +191,10 @@ export function AppointmentTrends({
               <div key={step.label} className="flex items-center justify-center w-full">
                 <div
                   className={`rounded-full p-2 transition-all duration-300 ${
-                    activeStep === index ? `${step.color} text-white scale-110 shadow-lg` : "bg-gray-800 text-gray-400"
+                    activeStep === index ? `${step.color} text-white scale-110 shadow-lg` : "bg-gray-800"
                   }`}
                 >
-                  <step.icon className={`h-5 w-5 ${activeStep === index ? "animate-pulse" : ""}`} />
+                  <step.icon className={`h-5 w-5 ${activeStep === index ? "animate-pulse text-white" : step.color.replace('bg-', 'text-')}`} />
                 </div>
               </div>
             ))}

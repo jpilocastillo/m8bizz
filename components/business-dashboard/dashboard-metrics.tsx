@@ -62,7 +62,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
   const metrics = [
     {
       title: "Clients Needed",
-      value: clientsNeeded.toString(),
+      value: clientsNeeded.toFixed(2),
       description: "Target clients needed",
       icon: Users,
       color: "red",
@@ -71,7 +71,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
     },
     {
       title: "Monthly New Appointments Needed",
-      value: newAppointments.toString(),
+      value: newAppointments.toFixed(2),
       description: "Monthly target",
       icon: Calendar,
       color: "blue",
@@ -80,7 +80,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
     },
     {
       title: "Annual Ideal Closing Prospects Needed",
-      value: annualClosingProspects.toString(),
+      value: annualClosingProspects.toFixed(2),
       description: "Prospects needed",
       icon: Target,
       color: "green",
@@ -89,7 +89,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
     },
     {
       title: "Annual Total Prospects Necessary",
-      value: (totalNewMonthlyAppointments * 12).toString(),
+      value: (totalNewMonthlyAppointments * 12).toFixed(2),
       description: "Annual prospects needed",
       icon: Target,
       color: "purple",

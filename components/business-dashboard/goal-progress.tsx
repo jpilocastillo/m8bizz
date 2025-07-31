@@ -87,15 +87,15 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
   const numCampaignsMonthly = appointmentsPerCampaign > 0 ? totalNewMonthlyAppointments / appointmentsPerCampaign : 0 // H8 / H12
 
   const appointmentMetrics = [
-    { metric: "Monthly Ideal Prospects", value: monthlyIdealProspects.toString(), metric2: "Total New Monthly Appointments Needed", value2: totalNewMonthlyAppointments.toString() },
+    { metric: "Monthly Ideal Prospects", value: monthlyIdealProspects.toFixed(2), metric2: "Total New Monthly Appointments Needed", value2: totalNewMonthlyAppointments.toFixed(2) },
     {
       metric: "Annual Ideal Closing Prospects Needed",
-      value: (monthlyIdealProspects * 12).toString(),
+      value: (monthlyIdealProspects * 12).toFixed(2),
       metric2: "Annual Total Prospects Necessary",
-      value2: (totalNewMonthlyAppointments * 12).toString(),
+      value2: (totalNewMonthlyAppointments * 12).toFixed(2),
     },
-    { metric: "Appointments Per Campaign", value: appointmentsPerCampaign.toString(), metric2: "# of Campaigns Monthly", value2: numCampaignsMonthly.toFixed(1) },
-    { metric: "Total New Monthly Appointments", value: totalNewMonthlyAppointments.toString(), metric2: "Annual Total Prospects Necessary", value2: clientsNeeded.toFixed(1) },
+    { metric: "Appointments Per Campaign", value: appointmentsPerCampaign.toFixed(2), metric2: "# of Campaigns Monthly", value2: numCampaignsMonthly.toFixed(2) },
+    { metric: "Total New Monthly Appointments", value: totalNewMonthlyAppointments.toFixed(2), metric2: "Annual Total Prospects Necessary", value2: clientsNeeded.toFixed(2) },
   ]
 
   const chartData = goalData.map((item) => ({
