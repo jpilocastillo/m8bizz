@@ -10,14 +10,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { DataEntryForm } from "@/components/business-dashboard/data-entry-form"
+import { DataEntryFormV2 } from "@/components/business-dashboard/data-entry-form-v2"
 import { PlusCircle } from "lucide-react"
 
-export function DataEntryModal({ onDataSubmit }: { onDataSubmit: (data: any) => void }) {
+export function DataEntryModal({ onDataSubmit, user }: { onDataSubmit: (data: any) => void; user: any }) {
   const [open, setOpen] = useState(false)
 
-  const handleSubmit = (data: any) => {
-    onDataSubmit(data)
+  const handleSubmit = () => {
+    onDataSubmit({})
     setOpen(false)
   }
 
@@ -37,7 +37,7 @@ export function DataEntryModal({ onDataSubmit }: { onDataSubmit: (data: any) => 
           <DialogTitle>Business Data Entry</DialogTitle>
           <DialogDescription>Enter your business data to generate visualizations and insights.</DialogDescription>
         </DialogHeader>
-        <DataEntryForm onSubmit={handleSubmit} />
+        <DataEntryFormV2 user={user} onComplete={handleSubmit} />
       </DialogContent>
     </Dialog>
   )

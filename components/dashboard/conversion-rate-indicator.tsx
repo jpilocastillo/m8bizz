@@ -34,18 +34,12 @@ export function ConversionRateIndicator({
     const numericString = assetString.replace(/[^0-9.]/g, "")
     const value = Number.parseFloat(numericString)
 
-    // If we can extract a number, use it; otherwise use a default value
+    // If we can extract a number, use it; otherwise return 0
     if (!isNaN(value)) {
       return value
     }
 
-    // Default values based on common ranges
-    if (assetString.includes("100,000")) return 100000
-    if (assetString.includes("250,000")) return 250000
-    if (assetString.includes("500,000")) return 500000
-    if (assetString.includes("million") || assetString.includes("1M")) return 1000000
-
-    return 100000 // Default fallback
+    return 0 // Return 0 instead of hard-coded fallback
   }
 
   const assetValue = extractNumericValue(incomeAssets)

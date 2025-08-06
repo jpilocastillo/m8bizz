@@ -1,6 +1,7 @@
 "use client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
+import { useEffect } from "react"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -78,32 +79,23 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      businessGoal: data.businessGoals?.business_goal?.toString() || "",
-      aumGoalPercentage: data.businessGoals?.aum_goal_percentage?.toString() || "",
-      annuityGoalPercentage: data.businessGoals?.annuity_goal_percentage?.toString() || "",
-      lifeTargetGoalPercentage: data.businessGoals?.life_target_goal_percentage?.toString() || "",
-      currentAUM: data.currentValues?.current_aum?.toString() || "",
-      currentAnnuity: data.currentValues?.current_annuity?.toString() || "",
-      currentLifeProduction: data.currentValues?.current_life_production?.toString() || "",
-      avgAnnuitySize: data.clientMetrics?.avg_annuity_size?.toString() || "",
-      avgAUMSize: data.clientMetrics?.avg_aum_size?.toString() || "",
-      avgNetWorthNeeded: data.clientMetrics?.avg_net_worth_needed?.toString() || "",
-      appointmentAttrition: data.clientMetrics?.appointment_attrition?.toString() || "",
-      avgCloseRatio: data.clientMetrics?.avg_close_ratio?.toString() || "",
-      annuityClosed: data.clientMetrics?.annuity_closed?.toString() || "",
-      aumAccounts: data.clientMetrics?.aum_accounts?.toString() || "",
-      monthlyIdealProspects: data.clientMetrics?.monthly_ideal_prospects?.toString() || "",
-      appointmentsPerCampaign: data.clientMetrics?.appointments_per_campaign?.toString() || "",
-      campaigns: data.campaigns.length > 0 ? data.campaigns.map(c => ({
-        name: c.name,
-        budget: c.budget.toString(),
-        events: c.events.toString(),
-        leads: c.leads.toString(),
-        status: c.status,
-        costPerLead: c.cost_per_lead?.toString() || "",
-        costPerClient: c.cost_per_client?.toString() || "",
-        foodCosts: c.food_costs?.toString() || "",
-      })) : [
+      businessGoal: "",
+      aumGoalPercentage: "",
+      annuityGoalPercentage: "",
+      lifeTargetGoalPercentage: "",
+      currentAUM: "",
+      currentAnnuity: "",
+      currentLifeProduction: "",
+      avgAnnuitySize: "",
+      avgAUMSize: "",
+      avgNetWorthNeeded: "",
+      appointmentAttrition: "",
+      avgCloseRatio: "",
+      annuityClosed: "",
+      aumAccounts: "",
+      monthlyIdealProspects: "",
+      appointmentsPerCampaign: "",
+      campaigns: [
         {
           name: "",
           budget: "",
@@ -115,17 +107,71 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           foodCosts: "",
         },
       ],
-      planningFeeRate: data.commissionRates?.planning_fee_rate?.toString() || "",
-      planningFeesCount: data.commissionRates?.planning_fees_count?.toString() || "",
-      annuityCommission: data.commissionRates?.annuity_commission?.toString() || "",
-      aumCommission: data.commissionRates?.aum_commission?.toString() || "",
-      lifeCommission: data.commissionRates?.life_commission?.toString() || "",
-      trailIncomePercentage: data.commissionRates?.trail_income_percentage?.toString() || "",
-      annuityBookValue: data.financialBook?.annuity_book_value?.toString() || "",
-      aumBookValue: data.financialBook?.aum_book_value?.toString() || "",
-      qualifiedMoneyValue: data.financialBook?.qualified_money_value?.toString() || "",
+      planningFeeRate: "",
+      planningFeesCount: "",
+      annuityCommission: "",
+      aumCommission: "",
+      lifeCommission: "",
+      trailIncomePercentage: "",
+      annuityBookValue: "",
+      aumBookValue: "",
+      qualifiedMoneyValue: "",
     },
   })
+
+  // Reset form when data changes
+  useEffect(() => {
+    if (data && !loading) {
+      form.reset({
+        businessGoal: data.businessGoals?.business_goal?.toString() || "",
+        aumGoalPercentage: data.businessGoals?.aum_goal_percentage?.toString() || "",
+        annuityGoalPercentage: data.businessGoals?.annuity_goal_percentage?.toString() || "",
+        lifeTargetGoalPercentage: data.businessGoals?.life_target_goal_percentage?.toString() || "",
+        currentAUM: data.currentValues?.current_aum?.toString() || "",
+        currentAnnuity: data.currentValues?.current_annuity?.toString() || "",
+        currentLifeProduction: data.currentValues?.current_life_production?.toString() || "",
+        avgAnnuitySize: data.clientMetrics?.avg_annuity_size?.toString() || "",
+        avgAUMSize: data.clientMetrics?.avg_aum_size?.toString() || "",
+        avgNetWorthNeeded: data.clientMetrics?.avg_net_worth_needed?.toString() || "",
+        appointmentAttrition: data.clientMetrics?.appointment_attrition?.toString() || "",
+        avgCloseRatio: data.clientMetrics?.avg_close_ratio?.toString() || "",
+        annuityClosed: data.clientMetrics?.annuity_closed?.toString() || "",
+        aumAccounts: data.clientMetrics?.aum_accounts?.toString() || "",
+        monthlyIdealProspects: data.clientMetrics?.monthly_ideal_prospects?.toString() || "",
+        appointmentsPerCampaign: data.clientMetrics?.appointments_per_campaign?.toString() || "",
+        campaigns: data.campaigns.length > 0 ? data.campaigns.map(c => ({
+          name: c.name,
+          budget: c.budget.toString(),
+          events: c.events.toString(),
+          leads: c.leads.toString(),
+          status: c.status,
+          costPerLead: c.cost_per_lead?.toString() || "",
+          costPerClient: c.cost_per_client?.toString() || "",
+          foodCosts: c.food_costs?.toString() || "",
+        })) : [
+          {
+            name: "",
+            budget: "",
+            events: "",
+            leads: "",
+            status: "Active" as const,
+            costPerLead: "",
+            costPerClient: "",
+            foodCosts: "",
+          },
+        ],
+        planningFeeRate: data.commissionRates?.planning_fee_rate?.toString() || "",
+        planningFeesCount: data.commissionRates?.planning_fees_count?.toString() || "",
+        annuityCommission: data.commissionRates?.annuity_commission?.toString() || "",
+        aumCommission: data.commissionRates?.aum_commission?.toString() || "",
+        lifeCommission: data.commissionRates?.life_commission?.toString() || "",
+        trailIncomePercentage: data.commissionRates?.trail_income_percentage?.toString() || "",
+        annuityBookValue: data.financialBook?.annuity_book_value?.toString() || "",
+        aumBookValue: data.financialBook?.aum_book_value?.toString() || "",
+        qualifiedMoneyValue: data.financialBook?.qualified_money_value?.toString() || "",
+      })
+    }
+  }, [data, loading, form])
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,

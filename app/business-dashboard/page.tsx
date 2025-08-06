@@ -9,7 +9,7 @@ import { CampaignTable } from "@/components/business-dashboard/campaign-table"
 import { FinancialOptions } from "@/components/business-dashboard/financial-options"
 import { PerformanceCharts } from "@/components/business-dashboard/performance-charts"
 import { ClientAcquisition } from "@/components/business-dashboard/client-acquisition"
-import { DataEntryForm } from "@/components/business-dashboard/data-entry-form"
+import { DataEntryFormV2 } from "@/components/business-dashboard/data-entry-form-v2"
 import { MonthlyDataEntryComponent } from "@/components/business-dashboard/monthly-data-entry"
 import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
@@ -108,9 +108,10 @@ export default function BusinessDashboard() {
   if (!isComplete || editMode) {
     return (
       <div className="py-8">
-        <DataEntryForm
-          onSubmit={handleDataSubmitted}
-          onCancel={() => setEditMode(false)}
+        <DataEntryFormV2
+          user={user}
+          onComplete={handleDataSubmitted}
+          isEditMode={editMode}
         />
       </div>
     )
