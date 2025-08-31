@@ -35,6 +35,18 @@ export function EventSelector({ events, selectedEventId, onSelect, isLoading = f
   // Sort events by date (most recent first)
   const sortedEvents = [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
+  // Helper function to format date consistently
+  const formatEventDate = (dateString: string) => {
+    try {
+      // Parse the date string and create a local date to avoid timezone issues
+      const [year, month, day] = dateString.split('-').map(Number)
+      const date = new Date(year, month - 1, day) // month is 0-indexed
+      return format(date, "M/d/yy") // Format as "8/26/25" to match event naming pattern
+    } catch {
+      return dateString
+    }
+  }
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -52,31 +64,33 @@ export function EventSelector({ events, selectedEventId, onSelect, isLoading = f
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[280px] bg-[#131525] border-[#1f2037] text-white">
+      <DropdownMenuContent align="end" className="w-[280px] bg-[#131525] border-[#1f2037] text-white max-h-[300px] overflow-hidden">
         <DropdownMenuLabel>Marketing Events</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-[#1f2037]" />
-        {sortedEvents.length > 0 ? (
-          sortedEvents.map((event) => (
-            <DropdownMenuItem
-              key={event.id}
-              className={`flex flex-col items-start cursor-pointer ${
-                event.id === selectedEventId ? "bg-blue-600/20" : ""
-              } hover:bg-[#1f2037]`}
-              onClick={() => {
-                onSelect(event.id)
-                setIsOpen(false)
-              }}
-            >
-              <div className="font-medium">{event.name}</div>
-              <div className="text-xs text-gray-400 flex items-center gap-2">
-                <Calendar className="h-3 w-3" />
-                {format(new Date(event.date), "MMM d, yyyy")} • {event.location}
-              </div>
-            </DropdownMenuItem>
-          ))
-        ) : (
-          <div className="px-2 py-4 text-center text-sm text-gray-400">No events found</div>
-        )}
+        <div className="max-h-[240px] overflow-y-auto">
+          {sortedEvents.length > 0 ? (
+            sortedEvents.map((event) => (
+              <DropdownMenuItem
+                key={event.id}
+                className={`flex flex-col items-start cursor-pointer ${
+                  event.id === selectedEventId ? "bg-blue-600/20" : ""
+                } hover:bg-[#1f2037]`}
+                onClick={() => {
+                  onSelect(event.id)
+                  setIsOpen(false)
+                }}
+              >
+                <div className="font-medium">{event.name}</div>
+                <div className="text-xs text-gray-400 flex items-center gap-2">
+                  <Calendar className="h-3 w-3" />
+                  {formatEventDate(event.date)} • {event.location}
+                </div>
+              </DropdownMenuItem>
+            ))
+          ) : (
+            <div className="px-2 py-4 text-center text-sm text-gray-400">No events found</div>
+          )}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )

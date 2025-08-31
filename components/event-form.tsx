@@ -382,6 +382,161 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     else if (activeTab === "expenses") setActiveTab("event")
   }
 
+  const handleUpdateEvent = async () => {
+    console.log('Update event triggered from tab:', activeTab)
+    setIsSubmitting(true)
+
+    try {
+      const currentUserId = userId || user?.id
+      console.log('Current user ID:', currentUserId)
+      
+      if (!currentUserId) {
+        console.error("No user ID available")
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to update an event.",
+        })
+        return
+      }
+
+      // Validate required fields
+      const requiredFields = {
+        name,
+        date,
+        location,
+        marketingType,
+        topic
+      }
+
+      console.log('Validating required fields:', requiredFields)
+
+      const missingFields = Object.entries(requiredFields)
+        .filter(([_, value]) => !value)
+        .map(([key]) => {
+          switch (key) {
+            case 'name': return 'Event Name'
+            case 'date': return 'Date'
+            case 'location': return 'Location'
+            case 'marketingType': return 'Marketing Type'
+            case 'topic': return 'Topic'
+            default: return key
+          }
+        })
+
+      if (missingFields.length > 0) {
+        console.log('Missing required fields:', missingFields)
+        toast({
+          variant: "destructive",
+          title: "Missing Required Fields",
+          description: `Please fill in the following fields: ${missingFields.join(", ")}`,
+        })
+        return
+      }
+
+      // Prepare the event data
+      const time24 = hour && minute ? to24HourFormat(hour, minute, ampm) : null;
+      const eventData = {
+        name,
+        date,
+        location,
+        marketing_type: marketingType,
+        topic,
+        time: time24,
+        age_range: ageRange,
+        mile_radius: mileRadius,
+        income_assets: incomeAssets,
+        marketing_audience:
+          marketingAudience === "" || marketingAudience === null
+            ? null
+            : parseInt(marketingAudience, 10),
+        status: 'active',
+        relatedData: {
+          attendance: {
+            registrant_responses: parseInt(registrantResponses) || 0,
+            confirmations: parseInt(confirmations) || 0,
+            attendees: parseInt(attendees) || 0,
+            clients_from_event: parseInt(clientsFromEvent) || 0,
+            plate_lickers: parseInt(plateLickers) || 0
+          },
+          expenses: {
+            advertising_cost: parseFloat(advertisingCost) || 0,
+            food_venue_cost: parseFloat(foodVenueCost) || 0,
+            other_costs: parseFloat(otherCosts) || 0
+          },
+          appointments: {
+            set_at_event: parseInt(setAtEvent) || 0,
+            set_after_event: parseInt(setAfterEvent) || 0,
+            first_appointment_attended: parseInt(firstAppointmentAttended) || 0,
+            first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
+            second_appointment_attended: parseInt(secondAppointmentAttended) || 0,
+            not_qualified: parseInt(notQualified) || 0
+          },
+          financialProduction: {
+            annuity_premium: parseFloat(annuityPremium) || 0,
+            life_insurance_premium: parseFloat(lifeInsurancePremium) || 0,
+            aum: parseFloat(aum) || 0,
+            financial_planning: parseFloat(financialPlanning) || 0,
+            annuities_sold: parseInt(annuitiesSold) || 0,
+            life_policies_sold: parseInt(lifePoliciesSold) || 0,
+            annuity_commission: parseFloat(annuityCommission) || 0,
+            life_insurance_commission: parseFloat(lifeInsuranceCommission) || 0,
+            aum_fees: parseFloat(aumFees) || 0,
+            aum_accounts_opened: parseInt(aumAccountsOpened) || 0,
+            financial_plans_sold: parseInt(financialPlansSold) || 0,
+          }
+        }
+      }
+
+      console.log('Updating event data:', eventData);
+
+      if (!initialData?.eventId) {
+        console.error("No event ID available for update")
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Event ID not found. Cannot update event.",
+        })
+        return
+      }
+
+      const result = await updateEvent(initialData.eventId, eventData)
+
+      if (!result.success) {
+        console.error("Error updating event:", result.error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error || "Failed to update event. Please try again.",
+        })
+        return
+      }
+
+      console.log('Event updated successfully')
+
+      toast({
+        title: "Success",
+        description: "Event updated successfully!",
+      })
+
+      router.refresh()
+    } catch (error) {
+      console.error('Detailed error:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        cause: error instanceof Error ? error.cause : undefined
+      })
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -577,6 +732,16 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
+              {isEditing && (
+                <Button
+                  type="button"
+                  onClick={handleUpdateEvent}
+                  disabled={isSubmitting}
+                  className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 transition-colors"
+                >
+                  {isSubmitting ? "Updating..." : "Update Event"}
+                </Button>
+              )}
               <Button
                 type="button"
                 onClick={handleNextTab}
@@ -670,13 +835,25 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               >
                 Previous
               </Button>
-              <Button
-                type="button"
-                onClick={handleNextTab}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
-              >
-                Next
-              </Button>
+              <div className="flex gap-2">
+                {isEditing && (
+                  <Button
+                    type="button"
+                    onClick={handleUpdateEvent}
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 transition-colors"
+                  >
+                    {isSubmitting ? "Updating..." : "Update Event"}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  onClick={handleNextTab}
+                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
+                >
+                  Next
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -781,13 +958,25 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               >
                 Previous
               </Button>
-              <Button
-                type="button"
-                onClick={handleNextTab}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
-              >
-                Next
-              </Button>
+              <div className="flex gap-2">
+                {isEditing && (
+                  <Button
+                    type="button"
+                    onClick={handleUpdateEvent}
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 transition-colors"
+                  >
+                    {isSubmitting ? "Updating..." : "Update Event"}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  onClick={handleNextTab}
+                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
+                >
+                  Next
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -905,13 +1094,25 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               >
                 Previous
               </Button>
-              <Button
-                type="button"
-                onClick={handleNextTab}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
-              >
-                Next
-              </Button>
+              <div className="flex gap-2">
+                {isEditing && (
+                  <Button
+                    type="button"
+                    onClick={handleUpdateEvent}
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 transition-colors"
+                  >
+                    {isSubmitting ? "Updating..." : "Update Event"}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  onClick={handleNextTab}
+                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
+                >
+                  Next
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         </TabsContent>

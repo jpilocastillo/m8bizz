@@ -366,10 +366,15 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
       const latestExpenses = Array.isArray(event.marketing_expenses) ? event.marketing_expenses[0] : event.marketing_expenses;
       const latestAppointments = Array.isArray(event.event_appointments) ? event.event_appointments[0] : event.event_appointments;
 
-      const total = (typeof latestFinancial?.annuity_premium === 'number' ? latestFinancial.annuity_premium : 0)
-        + (typeof latestFinancial?.life_insurance_premium === 'number' ? latestFinancial.life_insurance_premium : 0)
-        + (typeof latestFinancial?.aum === 'number' ? latestFinancial.aum : 0)
-        + (typeof latestFinancial?.financial_planning === 'number' ? latestFinancial.financial_planning : 0);
+      // Calculate revenue from commissions and fees (not premiums)
+      const annuityCommission = typeof latestFinancial?.annuity_commission === 'number' ? latestFinancial.annuity_commission : 0
+      const lifeInsuranceCommission = typeof latestFinancial?.life_insurance_commission === 'number' ? latestFinancial.life_insurance_commission : 0
+      const aumFees = typeof latestFinancial?.aum_fees === 'number' ? latestFinancial.aum_fees : 0
+      const financialPlanning = typeof latestFinancial?.financial_planning === 'number' ? latestFinancial.financial_planning : 0
+      
+      const total = annuityCommission + lifeInsuranceCommission + aumFees + financialPlanning
+      
+
 
       // Calculate day of week from event.date
       const eventDateObj = event.date ? new Date(event.date) : null;
@@ -537,16 +542,11 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
     // Calculate totals and metrics
     const totalExpenses = expenses.total_cost || 0
     
-    // Calculate AUM fees (assuming 1% annual fee, divided by 12 for monthly)
-    const aumFeePercentage = 0.01 // 1% annual fee
-    const monthlyAumFees = (financial.aum || 0) * aumFeePercentage / 12
-    const annualAumFees = (financial.aum || 0) * aumFeePercentage
-
-    const totalIncome = (financial.annuity_premium || 0) + 
-                       (financial.life_insurance_premium || 0) + 
-                       (financial.aum || 0) + 
-                       (financial.financial_planning || 0) +
-                       annualAumFees // Add annual AUM fees to total income
+    // Calculate revenue from commissions and fees (not premiums)
+    const totalIncome = (financial.annuity_commission || 0) + 
+                       (financial.life_insurance_commission || 0) + 
+                       (financial.aum_fees || 0) + 
+                       (financial.financial_planning || 0)
 
     const roi = totalExpenses > 0 ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) : 0
 
@@ -581,11 +581,10 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
       income: {
         total: totalIncome,
         breakdown: {
-          fixedAnnuity: financial.annuity_premium || 0,
-          life: financial.life_insurance_premium || 0,
-          aum: financial.aum || 0,
-          financialPlanning: financial.financial_planning || 0,
-          aumFees: annualAumFees // Add AUM fees to income breakdown
+          annuityCommission: financial.annuity_commission || 0,
+          lifeInsuranceCommission: financial.life_insurance_commission || 0,
+          aumFees: financial.aum_fees || 0,
+          financialPlanning: financial.financial_planning || 0
         }
       },
       conversionRate: {
@@ -648,7 +647,7 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         life_policies_sold: financial.life_policies_sold || 0,
         annuity_commission: financial.annuity_commission || 0,
         life_insurance_commission: financial.life_insurance_commission || 0,
-        aum_fees: annualAumFees,
+        aum_fees: financial.aum_fees || 0,
         aum_accounts_opened: financial.aum_accounts_opened || 0,
         financial_plans_sold: financial.financial_plans_sold || 0
       }

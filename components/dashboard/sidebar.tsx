@@ -17,6 +17,12 @@ import {
   PieChart,
   Building2,
   User as UserIcon,
+  Wrench,
+  Calculator,
+  Target,
+  TrendingUp,
+  Users,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -28,6 +34,7 @@ export function Sidebar() {
   const router = useRouter()
   const { signOut } = useAuth()
   const [isMarketingExpanded, setIsMarketingExpanded] = useState(true)
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const supabase = createClient()
 
@@ -78,6 +85,21 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-2">
+          {/* Homepage - Standalone */}
+          <Link
+            href="/"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+              pathname === "/"
+                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                : "text-white hover:bg-m8bs-card-alt hover:text-white",
+              isCollapsed && "justify-center px-2",
+            )}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            {!isCollapsed && <span>Homepage</span>}
+          </Link>
+
           {/* Marketing Section */}
           {!isCollapsed ? (
             <div>
@@ -95,10 +117,10 @@ export function Sidebar() {
               {isMarketingExpanded && (
                 <div className="pl-10 space-y-1 mt-1">
                   <Link
-                    href="/dashboard"
+                    href="/dashboard/single-event"
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-                      pathname === "/dashboard"
+                      pathname === "/dashboard/single-event"
                         ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                         : "text-white hover:bg-m8bs-card-alt hover:text-white",
                     )}
@@ -144,10 +166,10 @@ export function Sidebar() {
             </div>
           ) : (
             <Link
-              href="/dashboard"
+              href="/dashboard/analytics"
               className={cn(
                 "flex items-center justify-center rounded-md px-2 py-2 text-sm font-bold transition-all duration-200",
-                pathname === "/dashboard"
+                pathname.startsWith("/dashboard")
                   ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                   : "text-white hover:bg-m8bs-card-alt hover:text-white",
               )}
@@ -170,6 +192,111 @@ export function Sidebar() {
             <Building2 className="h-5 w-5" />
             {!isCollapsed && <span>Advisor Basecamp</span>}
           </Link>
+
+          {/* Tools Section */}
+          {!isCollapsed ? (
+            <div>
+              <button
+                onClick={() => setIsToolsExpanded(!isToolsExpanded)}
+                className="flex items-center justify-between w-full rounded-md px-3 py-2 text-sm font-bold text-white hover:bg-m8bs-card-alt hover:text-white transition-all duration-200"
+              >
+                <div className="flex items-center gap-3">
+                  <Wrench className="h-5 w-5" />
+                  <span>Tools</span>
+                </div>
+                {isToolsExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+
+              {isToolsExpanded && (
+                <div className="pl-10 space-y-1 mt-1">
+                  <Link
+                    href="/tools/bucket-plan"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+                      pathname === "/tools/bucket-plan"
+                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
+                    )}
+                  >
+                    <Calculator className="h-4 w-4" />
+                    <span>Bucket Plan</span>
+                  </Link>
+                  <Link
+                    href="/tools/annuity-analysis"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+                      pathname === "/tools/annuity-analysis"
+                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
+                    )}
+                  >
+                    <Target className="h-4 w-4" />
+                    <span>Annuity Analysis Program</span>
+                  </Link>
+                  <Link
+                    href="/tools/eight-elements"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+                      pathname === "/tools/eight-elements"
+                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
+                    )}
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Eight Elements Reporting Tool</span>
+                  </Link>
+                  <Link
+                    href="/tools/missing-money"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+                      pathname === "/tools/missing-money"
+                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
+                    )}
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Missing Money Report</span>
+                  </Link>
+                  <Link
+                    href="/tools/annual-planner"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+                      pathname === "/tools/annual-planner"
+                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
+                    )}
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span>Annual Business Planner</span>
+                  </Link>
+                  <Link
+                    href="/tools/behavior-scorecard"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+                      pathname === "/tools/behavior-scorecard"
+                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
+                    )}
+                  >
+                    <Calculator className="h-4 w-4" />
+                    <span>Business Behavior Scorecard</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/tools"
+              className={cn(
+                "flex items-center justify-center rounded-md px-2 py-2 text-sm font-bold transition-all duration-200",
+                pathname.startsWith("/tools")
+                  ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                  : "text-white hover:bg-m8bs-card-alt hover:text-white",
+              )}
+            >
+              <Wrench className="h-5 w-5" />
+            </Link>
+          )}
 
           {/* Settings */}
           <Link

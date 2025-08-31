@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "create-admin": "ts-node scripts/create-admin.ts",
+    "make-admin": "ts-node scripts/make-admin.ts",
+    "create-test-users": "ts-node scripts/create-test-users.ts",
+    "update-test-users": "ts-node scripts/update-test-users.ts",
+    "check-users": "ts-node scripts/check-users.ts"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "^1.2.2",
