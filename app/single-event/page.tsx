@@ -63,7 +63,7 @@ export default async function SingleEventDashboard() {
     }
 
     return (
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-white">Single Event</h1>
@@ -73,7 +73,7 @@ export default async function SingleEventDashboard() {
           </div>
           <div className="flex gap-2">
             <Button className="btn-blue-gradient">
-              <Link href="/dashboard/events/new" className="flex items-center">
+              <Link href="/events/new" className="flex items-center">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 New Event
               </Link>
@@ -100,7 +100,7 @@ export default async function SingleEventDashboard() {
                     </p>
                   </div>
                   <Button className="btn-blue-gradient">
-                    <Link href="/dashboard/events/new" className="flex items-center">
+                    <Link href="/events/new" className="flex items-center">
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Create First Event
                     </Link>

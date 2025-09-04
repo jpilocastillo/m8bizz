@@ -348,8 +348,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         description: `Event ${isEditing ? 'updated' : 'created'} successfully!`,
       })
 
-      console.log('Redirecting to dashboard...')
-      router.push("/dashboard")
+      console.log('Redirecting to homepage...')
+      router.push("/")
       router.refresh()
     } catch (error) {
       console.error('Detailed error:', {

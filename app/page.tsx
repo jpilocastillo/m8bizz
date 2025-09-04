@@ -694,7 +694,7 @@ export default function Homepage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Link href="/dashboard/events/new">
+                  <Link href="/events/new">
                     <Button className="w-full justify-start" variant="outline">
                       <Plus className="h-4 w-4 mr-2" />
                       Create New Event
@@ -708,21 +708,21 @@ export default function Homepage() {
                       <ArrowRight className="h-4 w-4 ml-auto" />
                     </Button>
                   </Link>
-                  <Link href="/dashboard/analytics">
+                  <Link href="/analytics">
                     <Button className="w-full justify-start" variant="outline">
                       <BarChart3 className="h-4 w-4 mr-2" />
                       View Analytics
                       <ArrowRight className="h-4 w-4 ml-auto" />
                     </Button>
                   </Link>
-                  <Link href="/dashboard/events">
+                  <Link href="/events">
                     <Button className="w-full justify-start" variant="outline">
                       <Calendar className="h-4 w-4 mr-2" />
                       Manage Events
                       <ArrowRight className="h-4 w-4 ml-auto" />
                     </Button>
                   </Link>
-                  <Link href="/dashboard/settings">
+                  <Link href="/settings">
                     <Button className="w-full justify-start" variant="outline">
                       <Settings className="h-4 w-4 mr-2" />
                       Settings

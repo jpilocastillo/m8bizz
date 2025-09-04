@@ -45,7 +45,7 @@ export function LoginForm() {
           title: "Login successful",
           description: "Welcome to your dashboard",
         })
-        router.push("/dashboard")
+        router.push("/")
         router.refresh()
       }
     } catch (error) {

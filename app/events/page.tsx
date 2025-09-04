@@ -30,13 +30,13 @@ export default async function EventsPage() {
     const events = await fetchAllEvents(data.user.id)
 
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Marketing Events</h1>
             <p className="text-muted-foreground">Manage and track your marketing events</p>
           </div>
-          <Link href="/dashboard/events/new">
+          <Link href="/events/new">
             <Button className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white">
               <PlusCircle className="mr-2 h-4 w-4" />
               New Event

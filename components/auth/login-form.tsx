@@ -42,7 +42,7 @@ export function LoginForm() {
         form.reset()
 
         // Use replace instead of push to avoid back button issues
-        router.replace("/dashboard")
+        router.replace("/")
 
         // Force a refresh to ensure all components update with the new auth state
         router.refresh()

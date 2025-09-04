@@ -8,7 +8,7 @@ import { fetchUserEvents } from "@/lib/data"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
 import { DatabaseStatus } from "@/components/database-status"
 
-export default async function DashboardLayout({
+export default async function SettingsLayout({
   children,
 }: {
   children: React.ReactNode
@@ -41,7 +41,7 @@ export default async function DashboardLayout({
       }
     }
   } catch (error) {
-    console.error("Error in dashboard layout:", error)
+    console.error("Error in settings layout:", error)
   }
 
   // Only redirect if we're certain the user is not authenticated
@@ -63,4 +63,4 @@ export default async function DashboardLayout({
       </div>
     </div>
   )
-}
+} 

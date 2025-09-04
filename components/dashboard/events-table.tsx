@@ -27,14 +27,13 @@ import {
 } from "@/components/ui/tooltip"
 import { format, parseISO } from "date-fns"
 
-interface Event {
+interface MarketingEvent {
   id: string
   date: string
   name: string
   location: string
-  type: string
+  marketing_type: string
   topic?: string
-  budget: number
   status: string
   attendance?: {
     attendees: number
@@ -43,16 +42,21 @@ interface Event {
     confirmations: number
   }
   financial_production?: {
-    total: number
+    annuity_premium: number
+    life_insurance_premium: number
+    aum: number
+    financial_planning: number
+    annuity_commission: number
+    life_insurance_commission: number
   }
 }
 
 interface EventsTableProps {
-  events: Event[]
+  events: MarketingEvent[]
 }
 
 export function EventsTable({ events: initialEvents }: EventsTableProps) {
-  const [sortColumn, setSortColumn] = useState<keyof Event>("date")
+  const [sortColumn, setSortColumn] = useState<keyof MarketingEvent>("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [eventToDelete, setEventToDelete] = useState<string | null>(null)
@@ -67,7 +71,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
     return (
       event.name.toLowerCase().includes(searchLower) ||
       event.location.toLowerCase().includes(searchLower) ||
-      event.type.toLowerCase().includes(searchLower) ||
+      event.marketing_type.toLowerCase().includes(searchLower) ||
       event.topic?.toLowerCase().includes(searchLower)
     )
   })
@@ -96,7 +100,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
     return 0
   })
 
-  const handleSort = (column: keyof Event) => {
+  const handleSort = (column: keyof MarketingEvent) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
     } else {
@@ -196,7 +200,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
                   <ArrowUpDown className="h-4 w-4" />
                 </div>
               </TableHead>
-              <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("type")}>
+              <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("marketing_type")}>
                 <div className="flex items-center gap-2">
                   Type
                   <ArrowUpDown className="h-4 w-4" />
@@ -216,7 +220,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
                   </div>
                 </TableCell>
                 <TableCell className="text-white">{event.location}</TableCell>
-                <TableCell className="text-white">{event.type}</TableCell>
+                <TableCell className="text-white">{event.marketing_type}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <TooltipProvider>
@@ -225,7 +229,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => router.push(`/dashboard?event=${event.id}`)}
+                            onClick={() => router.push(`/?event=${event.id}`)}
                             className="h-8 w-8 text-white hover:bg-m8bs-blue/20"
                           >
                             <Eye className="h-4 w-4" />
@@ -241,7 +245,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => router.push(`/dashboard/events/edit/${event.id}`)}
+                            onClick={() => router.push(`/events/edit/${event.id}`)}
                             className="h-8 w-8 text-white hover:bg-m8bs-blue/20"
                           >
                             <Edit className="h-4 w-4" />

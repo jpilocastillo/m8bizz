@@ -113,7 +113,7 @@ export function DashboardHeader({
                 Edit Profile
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => router.push("/dashboard/settings")}
+                onClick={() => router.push("/settings")}
                 className="hover:bg-m8bs-card-alt cursor-pointer font-medium"
               >
                 Settings

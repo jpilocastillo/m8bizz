@@ -117,10 +117,10 @@ export function Sidebar() {
               {isMarketingExpanded && (
                 <div className="pl-10 space-y-1 mt-1">
                   <Link
-                    href="/dashboard/single-event"
+                    href="/single-event"
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-                      pathname === "/dashboard/single-event"
+                      pathname === "/single-event"
                         ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                         : "text-white hover:bg-m8bs-card-alt hover:text-white",
                     )}
@@ -128,10 +128,10 @@ export function Sidebar() {
                     <span>Single Event Dashboard</span>
                   </Link>
                   <Link
-                    href="/dashboard/analytics"
+                    href="/analytics"
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-                      pathname === "/dashboard/analytics"
+                      pathname === "/analytics"
                         ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                         : "text-white hover:bg-m8bs-card-alt hover:text-white",
                     )}
@@ -139,10 +139,10 @@ export function Sidebar() {
                     <span>Multi Event Dashboard</span>
                   </Link>
                   <Link
-                    href="/dashboard/events"
+                    href="/events"
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-                      pathname === "/dashboard/events"
+                      pathname === "/events"
                         ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                         : "text-white hover:bg-m8bs-card-alt hover:text-white",
                     )}
@@ -150,10 +150,10 @@ export function Sidebar() {
                     <span>View All Events</span>
                   </Link>
                   <Link
-                    href="/dashboard/events/new"
+                    href="/events/new"
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-                      pathname === "/dashboard/events/new"
+                      pathname === "/events/new"
                         ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                         : "text-white hover:bg-m8bs-card-alt hover:text-white",
                     )}
@@ -166,10 +166,10 @@ export function Sidebar() {
             </div>
           ) : (
             <Link
-              href="/dashboard/analytics"
+              href="/analytics"
               className={cn(
                 "flex items-center justify-center rounded-md px-2 py-2 text-sm font-bold transition-all duration-200",
-                pathname.startsWith("/dashboard")
+                pathname.startsWith("/analytics")
                   ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                   : "text-white hover:bg-m8bs-card-alt hover:text-white",
               )}
@@ -300,10 +300,10 @@ export function Sidebar() {
 
           {/* Settings */}
           <Link
-            href="/dashboard/settings"
+            href="/settings"
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-              pathname === "/dashboard/settings"
+              pathname === "/settings"
                 ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
                 : "text-white hover:bg-m8bs-card-alt hover:text-white",
               isCollapsed && "justify-center px-2",

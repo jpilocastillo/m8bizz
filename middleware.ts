@@ -65,25 +65,25 @@ export async function middleware(req: NextRequest) {
   }
 
   // Handle regular dashboard routes
-  if (req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname.startsWith('/business-dashboard')) {
+  if (req.nextUrl.pathname.startsWith('/business-dashboard')) {
     if (!session) {
       return NextResponse.redirect(new URL('/login', req.url))
     }
   }
 
-                // Handle login page - redirect if already authenticated
-              if (req.nextUrl.pathname === '/login') {
-                if (session) {
-                  return NextResponse.redirect(new URL('/', req.url))
-                }
-              }
+  // Handle login page - redirect if already authenticated
+  if (req.nextUrl.pathname === '/login') {
+    if (session) {
+      return NextResponse.redirect(new URL('/', req.url))
+    }
+  }
 
-              // Handle root page - redirect to login if not authenticated
-              if (req.nextUrl.pathname === '/') {
-                if (!session) {
-                  return NextResponse.redirect(new URL('/login', req.url))
-                }
-              }
+  // Handle root page - redirect to login if not authenticated
+  if (req.nextUrl.pathname === '/') {
+    if (!session) {
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
+  }
 
   return res
 }
@@ -91,7 +91,6 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/',
-    '/dashboard/:path*',
     '/business-dashboard/:path*',
     '/admin/:path*',
     '/login',
