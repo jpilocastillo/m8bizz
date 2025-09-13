@@ -146,11 +146,17 @@ export default function Homepage() {
     const summary = events.reduce((acc, event) => {
       const attendance = event.attendance || {}
       const expenses = event.marketing_expenses || {}
+      
+      // Calculate revenue consistently with getTopEvents function
+      const totalProduction = (event.financial_production?.aum_fees || 0) + 
+                            (event.financial_production?.annuity_commission || 0) + 
+                            (event.financial_production?.life_insurance_commission || 0) + 
+                            (event.financial_production?.financial_planning || 0)
 
       return {
         totalEvents: acc.totalEvents + 1,
         totalAttendees: acc.totalAttendees + (attendance.attendees || 0),
-        totalRevenue: acc.totalRevenue + (event.revenue || 0),
+        totalRevenue: acc.totalRevenue + totalProduction,
         totalExpenses: acc.totalExpenses + (expenses.total_cost || 0),
         totalClients: acc.totalClients + (attendance.clients_from_event || 0)
       }
@@ -425,11 +431,11 @@ export default function Homepage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-m8bs-muted">Business Goal</span>
                         <span className="text-white">
-                          ${advisorData.currentValues?.current_aum?.toLocaleString() || 0} / ${advisorData.businessGoals.business_goal?.toLocaleString()}
+                          ${((advisorData.currentValues?.current_aum || 0) + (advisorData.currentValues?.current_annuity || 0) + (advisorData.currentValues?.current_life_production || 0)).toLocaleString()} / ${advisorData.businessGoals.business_goal?.toLocaleString()}
                         </span>
                       </div>
                       <Progress 
-                        value={calculateGoalProgress(advisorData.currentValues?.current_aum || 0, advisorData.businessGoals.business_goal || 0)} 
+                        value={calculateGoalProgress((advisorData.currentValues?.current_aum || 0) + (advisorData.currentValues?.current_annuity || 0) + (advisorData.currentValues?.current_life_production || 0), advisorData.businessGoals.business_goal || 0)} 
                         className="h-2" 
                       />
                     </div>
@@ -501,7 +507,7 @@ export default function Homepage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {advisorData?.financialBook ? (
+                {advisorData?.currentValues ? (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-3">
                       <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
@@ -510,7 +516,7 @@ export default function Homepage() {
                           <span className="text-m8bs-muted">Annuity Book</span>
                         </div>
                         <span className="text-white font-semibold">
-                          ${advisorData.financialBook.annuity_book_value?.toLocaleString() || 0}
+                          ${advisorData.currentValues.current_annuity?.toLocaleString() || 0}
                         </span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
@@ -519,16 +525,16 @@ export default function Homepage() {
                           <span className="text-m8bs-muted">AUM Book</span>
                         </div>
                         <span className="text-white font-semibold">
-                          ${advisorData.financialBook.aum_book_value?.toLocaleString() || 0}
+                          ${advisorData.currentValues.current_aum?.toLocaleString() || 0}
                         </span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                          <span className="text-m8bs-muted">Qualified Money</span>
+                          <span className="text-m8bs-muted">Life Production</span>
                         </div>
                         <span className="text-white font-semibold">
-                          ${advisorData.financialBook.qualified_money_value?.toLocaleString() || 0}
+                          ${advisorData.currentValues.current_life_production?.toLocaleString() || 0}
                         </span>
                       </div>
                     </div>
@@ -536,9 +542,9 @@ export default function Homepage() {
                       <div className="flex justify-between items-center">
                         <span className="text-m8bs-muted font-medium">Total Book Value</span>
                         <span className="text-white font-bold text-lg">
-                          ${((advisorData.financialBook.annuity_book_value || 0) + 
-                             (advisorData.financialBook.aum_book_value || 0) + 
-                             (advisorData.financialBook.qualified_money_value || 0)).toLocaleString()}
+                          ${((advisorData.currentValues.current_annuity || 0) + 
+                             (advisorData.currentValues.current_aum || 0) + 
+                             (advisorData.currentValues.current_life_production || 0)).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -547,7 +553,7 @@ export default function Homepage() {
                   <div className="text-center py-8 text-m8bs-muted">
                     <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No book data available</p>
-                    <p className="text-sm mt-2">Set up your financial book in the Advisor Basecamp</p>
+                    <p className="text-sm mt-2">Set up your current values in the Advisor Basecamp</p>
                   </div>
                 )}
               </CardContent>
@@ -627,13 +633,13 @@ export default function Homepage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {advisorData?.financialBook ? (
+                {advisorData?.currentValues ? (
                   <div className="space-y-4">
                     {(() => {
-                      const annuity = advisorData.financialBook.annuity_book_value || 0
-                      const aum = advisorData.financialBook.aum_book_value || 0
-                      const qualified = advisorData.financialBook.qualified_money_value || 0
-                      const total = annuity + aum + qualified
+                      const annuity = advisorData.currentValues.current_annuity || 0
+                      const aum = advisorData.currentValues.current_aum || 0
+                      const life = advisorData.currentValues.current_life_production || 0
+                      const total = annuity + aum + life
                       
                       if (total === 0) {
                         return (
@@ -662,10 +668,10 @@ export default function Homepage() {
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                              <span className="text-m8bs-muted">Qualified Money</span>
-                              <span className="text-white">{((qualified / total) * 100).toFixed(1)}%</span>
+                              <span className="text-m8bs-muted">Life Production</span>
+                              <span className="text-white">{((life / total) * 100).toFixed(1)}%</span>
                             </div>
-                            <Progress value={(qualified / total) * 100} className="h-2" />
+                            <Progress value={(life / total) * 100} className="h-2" />
                           </div>
                         </div>
                       )
@@ -675,7 +681,7 @@ export default function Homepage() {
                   <div className="text-center py-8 text-m8bs-muted">
                     <PieChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No book data available</p>
-                    <p className="text-sm mt-2">Set up your financial book in the Advisor Basecamp</p>
+                    <p className="text-sm mt-2">Set up your current values in the Advisor Basecamp</p>
                   </div>
                 )}
               </CardContent>
