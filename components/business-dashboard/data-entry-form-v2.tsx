@@ -17,12 +17,12 @@ import { User } from "@supabase/supabase-js"
 // Campaign schema
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
-  budget: z.string().min(1, "Budget is required"),
+  budget: z.string().min(1, "Marketing costs is required"),
   events: z.string().min(1, "Number of events is required"),
   leads: z.string().min(1, "Leads generated is required"),
   status: z.enum(["Active", "Planned", "Completed", "Paused"]),
-  costPerLead: z.string().optional(),
-  costPerClient: z.string().optional(),
+  costPerLead: z.string().optional(), // Auto-calculated field
+  costPerClient: z.string().optional(), // Auto-calculated field
   foodCosts: z.string().optional(),
 })
 
@@ -42,7 +42,7 @@ const formSchema = z.object({
   // Client Metrics
   avgAnnuitySize: z.string().min(1, "Average annuity size is required"),
   avgAUMSize: z.string().min(1, "Average AUM size is required"),
-  avgNetWorthNeeded: z.string().min(1, "Average net worth needed is required"),
+  avgNetWorthNeeded: z.string().optional(), // Auto-calculated field
   appointmentAttrition: z.string().min(1, "Appointment attrition is required"),
   avgCloseRatio: z.string().min(1, "Average close ratio is required"),
   annuityClosed: z.string().min(1, "Number of annuity closed is required"),
@@ -192,6 +192,17 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
     "planningFeesCount",
   ])
 
+  // Watch client metrics for auto-calculation
+  const avgAnnuitySize = Number.parseFloat(form.watch("avgAnnuitySize") || "0")
+  const avgAUMSize = Number.parseFloat(form.watch("avgAUMSize") || "0")
+  const avgNetWorthNeeded = avgAnnuitySize + avgAUMSize
+
+  // Update the form field with calculated value
+  useEffect(() => {
+    form.setValue("avgNetWorthNeeded", avgNetWorthNeeded.toFixed(2))
+  }, [avgNetWorthNeeded, form])
+
+
   // Calculate goal amounts based on business goal and percentages
   const businessGoalAmount = Number.parseFloat(watchedValues[0] || "0")
   const aumGoalAmount = (businessGoalAmount * Number.parseFloat(watchedValues[1] || "0")) / 100
@@ -230,7 +241,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         clientMetrics: {
           avg_annuity_size: Number.parseFloat(values.avgAnnuitySize),
           avg_aum_size: Number.parseFloat(values.avgAUMSize),
-          avg_net_worth_needed: Number.parseFloat(values.avgNetWorthNeeded),
+          avg_net_worth_needed: avgNetWorthNeeded, // Use calculated value
           appointment_attrition: Number.parseFloat(values.appointmentAttrition),
           avg_close_ratio: Number.parseFloat(values.avgCloseRatio),
           annuity_closed: Number.parseInt(values.annuityClosed),
@@ -239,16 +250,28 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           monthly_ideal_prospects: Number.parseFloat(values.monthlyIdealProspects),
           appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign),
         },
-        campaigns: values.campaigns.map(c => ({
-          name: c.name,
-          budget: Number.parseFloat(c.budget),
-          events: Number.parseInt(c.events),
-          leads: Number.parseInt(c.leads),
-          status: c.status,
-          cost_per_lead: c.costPerLead ? Number.parseFloat(c.costPerLead) : undefined,
-          cost_per_client: c.costPerClient ? Number.parseFloat(c.costPerClient) : undefined,
-          food_costs: c.foodCosts ? Number.parseFloat(c.foodCosts) : undefined,
-        })),
+        campaigns: values.campaigns.map(c => {
+          const marketingCosts = Number.parseFloat(c.budget)
+          const leads = Number.parseInt(c.leads)
+          const foodCosts = Number.parseFloat(c.foodCosts || "0")
+          const avgCloseRatio = Number.parseFloat(values.avgCloseRatio)
+          
+          // Calculate cost per lead and cost per client
+          const costPerLead = leads > 0 ? (marketingCosts + foodCosts) / leads : 0
+          const closeRatioDecimal = avgCloseRatio / 100
+          const costPerClient = closeRatioDecimal > 0 ? costPerLead / closeRatioDecimal : 0
+          
+          return {
+            name: c.name,
+            budget: marketingCosts,
+            events: Number.parseInt(c.events),
+            leads: leads,
+            status: c.status,
+            cost_per_lead: costPerLead,
+            cost_per_client: costPerClient,
+            food_costs: foodCosts,
+          }
+        }),
         commissionRates: {
           planning_fee_rate: Number.parseFloat(values.planningFeeRate),
           planning_fees_count: Number.parseFloat(values.planningFeesCount),
@@ -531,8 +554,14 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         <FormItem>
                           <FormLabel>Average Net Worth Needed ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} />
+                            <Input 
+                              type="number" 
+                              {...field}
+                              readOnly
+                              className="bg-muted"
+                            />
                           </FormControl>
+                          <FormDescription>Auto-calculated: Average Annuity Size + Average AUM Size</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -670,7 +699,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           name={`campaigns.${index}.budget`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Budget ($)</FormLabel>
+                              <FormLabel>Marketing Costs ($)</FormLabel>
                               <FormControl>
                                 <Input type="number" {...field} />
                               </FormControl>
@@ -712,29 +741,63 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         <FormField
                           control={form.control}
                           name={`campaigns.${index}.costPerLead`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Cost per Lead ($)</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          render={({ field }) => {
+                            const marketingCosts = Number.parseFloat(form.watch(`campaigns.${index}.budget`) || "0")
+                            const leads = Number.parseFloat(form.watch(`campaigns.${index}.leads`) || "0")
+                            const foodCosts = Number.parseFloat(form.watch(`campaigns.${index}.foodCosts`) || "0")
+                            const costPerLead = leads > 0 ? (marketingCosts + foodCosts) / leads : 0
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel>Cost per Lead ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    value={costPerLead.toFixed(2)}
+                                    readOnly
+                                    className="bg-muted"
+                                    onChange={() => {}} // Prevent changes
+                                    onBlur={() => {}} // Prevent blur events
+                                  />
+                                </FormControl>
+                                <FormDescription>Auto-calculated: (Marketing Costs + Food Costs) ÷ Leads Generated</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }}
                         />
 
                         <FormField
                           control={form.control}
                           name={`campaigns.${index}.costPerClient`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Cost per Client ($)</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          render={({ field }) => {
+                            const marketingCosts = Number.parseFloat(form.watch(`campaigns.${index}.budget`) || "0")
+                            const leads = Number.parseFloat(form.watch(`campaigns.${index}.leads`) || "0")
+                            const foodCosts = Number.parseFloat(form.watch(`campaigns.${index}.foodCosts`) || "0")
+                            const avgCloseRatio = Number.parseFloat(form.watch("avgCloseRatio") || "0")
+                            
+                            const costPerLead = leads > 0 ? (marketingCosts + foodCosts) / leads : 0
+                            const closeRatioDecimal = avgCloseRatio / 100
+                            const costPerClient = closeRatioDecimal > 0 ? costPerLead / closeRatioDecimal : 0
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel>Cost per Client ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    value={costPerClient.toFixed(2)}
+                                    readOnly
+                                    className="bg-muted"
+                                    onChange={() => {}} // Prevent changes
+                                    onBlur={() => {}} // Prevent blur events
+                                  />
+                                </FormControl>
+                                <FormDescription>Auto-calculated: Cost per Lead ÷ Close Ratio</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }}
                         />
 
                         <FormField

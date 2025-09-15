@@ -197,3 +197,88 @@ export async function deleteUser(userId: string) {
     return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
+
+export async function updateUser(userId: string, updates: {
+  full_name?: string;
+  email?: string;
+  company?: string;
+  role?: string;
+}) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase environment variables")
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+
+    // Update profile
+    const { data, error } = await adminClient
+      .from("profiles")
+      .update(updates)
+      .eq("id", userId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error updating profile:", error)
+      return { success: false, error: error.message }
+    }
+
+    // If email is being updated, also update auth
+    if (updates.email) {
+      const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
+        email: updates.email
+      })
+
+      if (authError) {
+        console.error("Error updating auth email:", authError)
+        return { success: false, error: authError.message }
+      }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error("Error in updateUser:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
+  }
+}
+
+export async function resetUserPassword(userId: string, newPassword: string) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase environment variables")
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+
+    const { error } = await adminClient.auth.admin.updateUserById(userId, {
+      password: newPassword
+    })
+
+    if (error) {
+      console.error("Error resetting password:", error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error in resetUserPassword:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
+  }
+}

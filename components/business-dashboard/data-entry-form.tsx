@@ -18,7 +18,7 @@ import { advisorBasecampService } from "@/lib/advisor-basecamp"
 // Campaign schema
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
-  budget: z.string().min(1, "Budget is required"),
+  budget: z.string().min(1, "Marketing costs is required"),
   events: z.string().min(1, "Number of events is required"),
   leads: z.string().min(1, "Leads generated is required"),
   status: z.enum(["Active", "Planned", "Completed", "Paused"]),
@@ -1169,7 +1169,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.budget`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Budget ($)</FormLabel>
+                            <FormLabel>Marketing Costs ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="text"

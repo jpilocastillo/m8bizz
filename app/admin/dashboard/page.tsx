@@ -21,9 +21,14 @@ import {
   LogOut,
   Search,
   Eye,
-  Shield
+  Shield,
+  Plus,
+  Edit,
+  Trash2,
+  Key
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { UserManagementModal } from "@/components/admin/user-management-modal"
 
 interface UserProfile {
   id: string
@@ -56,6 +61,9 @@ export default function AdminDashboard() {
   const [filterRole, setFilterRole] = useState("all")
   const [userDetails, setUserDetails] = useState<any>(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState<"create" | "edit" | "delete" | "reset-password">("create")
+  const [selectedUserForAction, setSelectedUserForAction] = useState<UserProfile | null>(null)
 
   useEffect(() => {
     checkAdminAccess()
@@ -193,6 +201,38 @@ export default function AdminDashboard() {
     router.push("/admin/login")
   }
 
+  const handleCreateUser = () => {
+    setModalMode("create")
+    setSelectedUserForAction(null)
+    setModalOpen(true)
+  }
+
+  const handleEditUser = (userProfile: UserProfile) => {
+    setModalMode("edit")
+    setSelectedUserForAction(userProfile)
+    setModalOpen(true)
+  }
+
+  const handleDeleteUser = (userProfile: UserProfile) => {
+    setModalMode("delete")
+    setSelectedUserForAction(userProfile)
+    setModalOpen(true)
+  }
+
+  const handleResetPassword = (userProfile: UserProfile) => {
+    setModalMode("reset-password")
+    setSelectedUserForAction(userProfile)
+    setModalOpen(true)
+  }
+
+  const handleModalSuccess = () => {
+    loadUsers() // Refresh the users list
+    if (selectedUser?.profile.id === selectedUserForAction?.id) {
+      setSelectedUser(null)
+      setUserDetails(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -228,11 +268,19 @@ export default function AdminDashboard() {
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Users className="h-5 w-5" />
-                  <span>Users ({filteredUsers.length})</span>
-                </CardTitle>
-                <CardDescription>Select a user to view their data</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Users className="h-5 w-5" />
+                      <span>Users ({filteredUsers.length})</span>
+                    </CardTitle>
+                    <CardDescription>Select a user to view their data</CardDescription>
+                  </div>
+                  <Button onClick={handleCreateUser} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add User
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Search and Filter */}
@@ -289,6 +337,43 @@ export default function AdminDashboard() {
                             {userData.profile.role}
                           </Badge>
                         </div>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-end space-x-1 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditUser(userData.profile)
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleResetPassword(userData.profile)
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Key className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteUser(userData.profile)
+                          }}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                       <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
                         <span>{userData.events_count} events</span>
@@ -468,6 +553,15 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* User Management Modal */}
+      <UserManagementModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        mode={modalMode}
+        user={selectedUserForAction}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   )
 } 
