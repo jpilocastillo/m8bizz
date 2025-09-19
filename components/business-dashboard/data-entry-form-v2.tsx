@@ -304,6 +304,10 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
   const totalIncome = annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
+    console.log('🚀 Form submission started!')
+    console.log('Form values:', values)
+    console.log('Form errors:', form.formState.errors)
+    
     try {
       // Transform form data to database format
       const advisorData = {
@@ -1444,7 +1448,24 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           </Tabs>
 
           <div className="flex justify-end space-x-4">
-            <Button type="submit" size="lg">
+            <Button 
+              type="submit" 
+              size="lg"
+              onClick={() => {
+                console.log('🔘 Submit button clicked!')
+                console.log('Form is valid:', form.formState.isValid)
+                console.log('Form errors:', form.formState.errors)
+                console.log('Form values:', form.getValues())
+                
+                // Check if form is valid before submission
+                if (!form.formState.isValid) {
+                  console.log('❌ Form is not valid, preventing submission')
+                  form.trigger() // Trigger validation to show errors
+                  return
+                }
+                console.log('✅ Form is valid, proceeding with submission')
+              }}
+            >
               {isEditMode ? "Update Data" : "Complete Setup"}
             </Button>
           </div>

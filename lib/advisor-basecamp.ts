@@ -115,7 +115,7 @@ class AdvisorBasecampService {
       .from('business_goals')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error fetching business goals:', error)
@@ -132,7 +132,7 @@ class AdvisorBasecampService {
         .from('business_goals')
         .select('id')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         // Update existing record
@@ -182,7 +182,7 @@ class AdvisorBasecampService {
       .from('current_values')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error fetching current values:', error)
@@ -199,7 +199,7 @@ class AdvisorBasecampService {
         .from('current_values')
         .select('id')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         // Update existing record
@@ -249,7 +249,7 @@ class AdvisorBasecampService {
       .from('client_metrics')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error fetching client metrics:', error)
@@ -266,7 +266,7 @@ class AdvisorBasecampService {
         .from('client_metrics')
         .select('id')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         // Update existing record
@@ -382,7 +382,7 @@ class AdvisorBasecampService {
       .from('commission_rates')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error fetching commission rates:', error)
@@ -399,7 +399,7 @@ class AdvisorBasecampService {
         .from('commission_rates')
         .select('id')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         // Update existing record
@@ -449,7 +449,7 @@ class AdvisorBasecampService {
       .from('financial_book')
       .select('*')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('Error fetching financial book:', error)
@@ -466,7 +466,7 @@ class AdvisorBasecampService {
         .from('financial_book')
         .select('id')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         // Update existing record
