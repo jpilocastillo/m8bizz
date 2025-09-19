@@ -55,7 +55,6 @@ const formSchema = z.object({
 
   // Commission Percentages
   planningFeeRate: z.string().min(1, "Planning fee rate is required"),
-  planningFeesCount: z.string().min(1, "Planning fees count is required"),
   annuityCommission: z.string().min(1, "Annuity commission percentage is required"),
   aumCommission: z.string().min(1, "AUM commission percentage is required"),
   lifeCommission: z.string().min(1, "Life commission percentage is required"),
@@ -127,7 +126,6 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         },
       ],
       planningFeeRate: "",
-      planningFeesCount: "",
       annuityCommission: "",
       aumCommission: "",
       lifeCommission: "",
@@ -199,7 +197,6 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           },
         ],
         planningFeeRate: data.commissionRates?.planning_fee_rate?.toString() || "",
-        planningFeesCount: data.commissionRates?.planning_fees_count?.toString() || "",
         annuityCommission: data.commissionRates?.annuity_commission?.toString() || "",
         aumCommission: data.commissionRates?.aum_commission?.toString() || "",
         lifeCommission: data.commissionRates?.life_commission?.toString() || "",
@@ -246,7 +243,6 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
     "lifeCommission",
     "trailIncomePercentage",
     "planningFeeRate",
-    "planningFeesCount",
   ])
 
   // Watch client metrics for auto-calculation
@@ -274,7 +270,9 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
   const aumIncome = (aumGoalAmount * Number.parseFloat(watchedValues[5] || "0")) / 100
   const lifeIncome = (lifeTargetGoalAmount * Number.parseFloat(watchedValues[6] || "0")) / 100
   const trailIncome = (currentAUM * Number.parseFloat(watchedValues[7] || "0")) / 100
-  const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * Number.parseFloat(watchedValues[9] || "0")
+  // Calculate planning fees count as clients needed
+  const clientsNeeded = Math.round((Number.parseInt(form.watch("annuityClosed") || "0") + Number.parseInt(form.watch("aumAccounts") || "0")) / 2)
+  const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * clientsNeeded
   const totalIncome = annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
@@ -331,7 +329,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         }),
         commissionRates: {
           planning_fee_rate: Number.parseFloat(values.planningFeeRate),
-          planning_fees_count: Number.parseFloat(values.planningFeesCount),
+          planning_fees_count: clientsNeeded, // Automatically calculated from clients needed
           annuity_commission: Number.parseFloat(values.annuityCommission),
           aum_commission: Number.parseFloat(values.aumCommission),
           life_commission: Number.parseFloat(values.lifeCommission),
@@ -923,19 +921,6 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="planningFeesCount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Planning Fees Count (#)</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

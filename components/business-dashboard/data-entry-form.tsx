@@ -92,7 +92,6 @@ const formSchema = z.object({
 
   // Commission Percentages
   planningFeeRate: z.string().min(1, "Planning fee rate is required"),
-  planningFeesCount: z.string().min(1, "Planning fees count is required"),
   annuityCommission: z.string().min(1, "Annuity commission percentage is required"),
   aumCommission: z.string().min(1, "AUM commission percentage is required"),
   lifeCommission: z.string().min(1, "Life commission percentage is required"),
@@ -152,7 +151,6 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
         },
       ],
       planningFeeRate: "1000",
-      planningFeesCount: "29.78",
       annuityCommission: "6.50",
       aumCommission: "1.00",
       lifeCommission: "1.0",
@@ -176,7 +174,6 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
     "lifeCommission",
     "trailIncomePercentage",
     "planningFeeRate",
-    "planningFeesCount",
   ])
 
   // Watch values needed for auto-calculations
@@ -203,7 +200,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
   const aumIncome = (aumGoalAmount * Number.parseFloat(watchedValues[5] || "0")) / 100
   const lifeIncome = (lifeTargetGoalAmount * Number.parseFloat(watchedValues[6] || "0")) / 100
   const trailIncome = (currentAUM * Number.parseFloat(watchedValues[7] || "0")) / 100
-  const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * Number.parseFloat(watchedValues[9] || "0")
+  // Calculate planning fees count as clients needed
+  const clientsNeeded = Math.round((annuitiesClosed + aumAccountsCount) / 2)
+  const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * clientsNeeded
   const totalIncome = annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
 
   // Auto-calculated client metrics
@@ -299,7 +298,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
       })),
       commissionRates: {
         planning_fee_rate: Number.parseFloat(values.planningFeeRate),
-        planning_fees_count: Number.parseFloat(values.planningFeesCount),
+        planning_fees_count: clientsNeeded, // Automatically calculated from clients needed
         annuity_commission: Number.parseFloat(values.annuityCommission),
         aum_commission: Number.parseFloat(values.aumCommission),
         life_commission: Number.parseFloat(values.lifeCommission),
@@ -1327,20 +1326,6 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="planningFeesCount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Planning Fees</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" placeholder="29.78" {...field} />
-                        </FormControl>
-                        <FormDescription>Total count of planning fees</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1412,7 +1397,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       <div className="flex justify-between">
                         <span>
                           Planning Fees (${Number.parseFloat(watchedValues[8] || "0").toLocaleString()} × $
-                          {Number.parseFloat(watchedValues[9] || "0")}):
+                          {clientsNeeded} clients):
                         </span>
                         <span className="font-medium">${planningFeesValue.toLocaleString()}</span>
                       </div>
