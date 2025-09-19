@@ -45,8 +45,8 @@ const formSchema = z.object({
   avgNetWorthNeeded: z.string().optional(), // Auto-calculated field
   appointmentAttrition: z.string().min(1, "Appointment attrition is required"),
   avgCloseRatio: z.string().min(1, "Average close ratio is required"),
-  annuityClosed: z.string().min(1, "Number of annuity closed is required"),
-  aumAccounts: z.string().min(1, "Number of AUM accounts is required"),
+  annuityClosed: z.string().optional(), // Auto-calculated field
+  aumAccounts: z.string().optional(), // Auto-calculated field
   monthlyIdealProspects: z.string().min(1, "Monthly ideal prospects is required"),
   appointmentsPerCampaign: z.string().min(1, "Appointments per campaign is required"),
 
@@ -250,16 +250,27 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
   const avgAUMSize = Number.parseFloat(form.watch("avgAUMSize") || "0")
   const avgNetWorthNeeded = avgAnnuitySize + avgAUMSize
 
-  // Update the form field with calculated value
+  // Calculate goal amounts for auto-calculation
+  const businessGoalAmount = Number.parseFloat(form.watch("businessGoal") || "0")
+  const aumGoalPercentage = Number.parseFloat(form.watch("aumGoalPercentage") || "0")
+  const annuityGoalPercentage = Number.parseFloat(form.watch("annuityGoalPercentage") || "0")
+  
+  const aumGoalAmount = (businessGoalAmount * aumGoalPercentage) / 100
+  const annuityGoalAmount = (businessGoalAmount * annuityGoalPercentage) / 100
+  
+  // Auto-calculate annuity closed and AUM accounts using formulas
+  const calculatedAnnuityClosed = avgAnnuitySize > 0 ? Math.round(annuityGoalAmount / avgAnnuitySize) : 0
+  const calculatedAUMAccounts = avgAUMSize > 0 ? Math.round(aumGoalAmount / avgAUMSize) : 0
+
+  // Update the form fields with calculated values
   useEffect(() => {
     form.setValue("avgNetWorthNeeded", avgNetWorthNeeded.toFixed(2))
-  }, [avgNetWorthNeeded, form])
+    form.setValue("annuityClosed", calculatedAnnuityClosed.toString())
+    form.setValue("aumAccounts", calculatedAUMAccounts.toString())
+  }, [avgNetWorthNeeded, calculatedAnnuityClosed, calculatedAUMAccounts, form])
 
 
-  // Calculate goal amounts based on business goal and percentages
-  const businessGoalAmount = Number.parseFloat(watchedValues[0] || "0")
-  const aumGoalAmount = (businessGoalAmount * Number.parseFloat(watchedValues[1] || "0")) / 100
-  const annuityGoalAmount = (businessGoalAmount * Number.parseFloat(watchedValues[2] || "0")) / 100
+  // Calculate life target goal amount
   const lifeTargetGoalAmount = (businessGoalAmount * Number.parseFloat(watchedValues[3] || "0")) / 100
 
   // Get current AUM for trail income calculation
@@ -270,8 +281,8 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
   const aumIncome = (aumGoalAmount * Number.parseFloat(watchedValues[5] || "0")) / 100
   const lifeIncome = (lifeTargetGoalAmount * Number.parseFloat(watchedValues[6] || "0")) / 100
   const trailIncome = (currentAUM * Number.parseFloat(watchedValues[7] || "0")) / 100
-  // Calculate planning fees count as clients needed
-  const clientsNeeded = Math.round((Number.parseInt(form.watch("annuityClosed") || "0") + Number.parseInt(form.watch("aumAccounts") || "0")) / 2)
+  // Calculate planning fees count as clients needed using calculated values
+  const clientsNeeded = Math.round((calculatedAnnuityClosed + calculatedAUMAccounts) / 2)
   const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * clientsNeeded
   const totalIncome = annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
 
@@ -299,9 +310,9 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           avg_net_worth_needed: avgNetWorthNeeded, // Use calculated value
           appointment_attrition: Number.parseFloat(values.appointmentAttrition),
           avg_close_ratio: Number.parseFloat(values.avgCloseRatio),
-          annuity_closed: Number.parseInt(values.annuityClosed),
-          aum_accounts: Number.parseInt(values.aumAccounts),
-          clients_needed: Math.round((Number.parseInt(values.annuityClosed) + Number.parseInt(values.aumAccounts)) / 2),
+          annuity_closed: calculatedAnnuityClosed, // Use calculated value
+          aum_accounts: calculatedAUMAccounts, // Use calculated value
+          clients_needed: clientsNeeded, // Use calculated value
           monthly_ideal_prospects: Number.parseFloat(values.monthlyIdealProspects),
           appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign),
         },
@@ -669,33 +680,31 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="annuityClosed"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Annuities Closed (#)</FormLabel>
-                          <FormControl>
-                            <Input type="number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormItem>
+                      <FormLabel>Annuities Closed (#)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          value={calculatedAnnuityClosed}
+                          readOnly
+                          className="bg-muted"
+                        />
+                      </FormControl>
+                      <FormDescription>Auto-calculated: Annuity Goal / Average Annuity Size</FormDescription>
+                    </FormItem>
 
-                    <FormField
-                      control={form.control}
-                      name="aumAccounts"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>AUM Accounts (#)</FormLabel>
-                          <FormControl>
-                            <Input type="number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormItem>
+                      <FormLabel>AUM Accounts (#)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          value={calculatedAUMAccounts}
+                          readOnly
+                          className="bg-muted"
+                        />
+                      </FormControl>
+                      <FormDescription>Auto-calculated: AUM Goal / Average AUM Size</FormDescription>
+                    </FormItem>
                   </div>
                 </CardContent>
               </Card>

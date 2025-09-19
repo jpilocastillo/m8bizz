@@ -56,6 +56,17 @@ export function PDFExport({ data, profile }: PDFExportProps) {
     // Calculate total advisor book value
     const totalBookValue = (data.currentValues?.current_annuity || 0) + (data.currentValues?.current_aum || 0)
     
+    // Auto-calculate client metrics using formulas
+    const annuityGoal = data.businessGoals?.annuity_goal || 0
+    const aumGoal = data.businessGoals?.aum_goal || 0
+    const avgAnnuitySize = data.clientMetrics?.avg_annuity_size || 0
+    const avgAUMSize = data.clientMetrics?.avg_aum_size || 0
+    
+    // Calculate auto-populated values using formulas
+    const calculatedAnnuityClosed = avgAnnuitySize > 0 ? Math.round(annuityGoal / avgAnnuitySize) : 0
+    const calculatedAUMAccounts = avgAUMSize > 0 ? Math.round(aumGoal / avgAUMSize) : 0
+    const calculatedClientsNeeded = Math.round((calculatedAnnuityClosed + calculatedAUMAccounts) / 2)
+    
     // Annuity vs AUM pie chart data
     const pieData = [
       { name: "Annuity", value: data.currentValues?.current_annuity || 0, color: "#3b82f6" },
@@ -89,11 +100,11 @@ export function PDFExport({ data, profile }: PDFExportProps) {
       { name: "Life Target", value: data.businessGoals?.life_target_goal || 0, color: "#a855f7" },
     ]
 
-    // Account distribution data
+    // Account distribution data - using calculated values
     const accountData = [
-      { name: "Annuity Closed", value: data.clientMetrics?.annuity_closed || 0, color: "#3b82f6" },
-      { name: "AUM Accounts", value: data.clientMetrics?.aum_accounts || 0, color: "#f97316" },
-      { name: "Clients Needed", value: data.clientMetrics?.clients_needed || 0, color: "#22c55e" },
+      { name: "Annuity Closed", value: calculatedAnnuityClosed, color: "#3b82f6" },
+      { name: "AUM Accounts", value: calculatedAUMAccounts, color: "#f97316" },
+      { name: "Clients Needed", value: calculatedClientsNeeded, color: "#22c55e" },
     ]
 
     return {
@@ -101,7 +112,10 @@ export function PDFExport({ data, profile }: PDFExportProps) {
       monthlyData,
       goalData,
       accountData,
-      totalBookValue
+      totalBookValue,
+      calculatedAnnuityClosed,
+      calculatedAUMAccounts,
+      calculatedClientsNeeded
     }
   }
 
@@ -283,7 +297,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
               </CardHeader>
               <CardContent className="flex-1 flex items-center justify-center">
                 <div className="text-4xl font-bold text-red-500 text-center">
-                  {data.clientMetrics?.clients_needed || 0}
+                  {chartData.calculatedClientsNeeded}
                 </div>
               </CardContent>
             </Card>
@@ -708,15 +722,15 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                       </tr>
                       <tr className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700"># of Annuity Closed</td>
-                        <td className="p-4 text-right text-gray-600">{formatNumber(data.clientMetrics?.annuity_closed || 0)}</td>
+                        <td className="p-4 text-right text-gray-600">{formatNumber(chartData.calculatedAnnuityClosed)}</td>
                       </tr>
                       <tr className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700"># of AUM Accounts</td>
-                        <td className="p-4 text-right text-gray-600">{formatNumber(data.clientMetrics?.aum_accounts || 0)}</td>
+                        <td className="p-4 text-right text-gray-600">{formatNumber(chartData.calculatedAUMAccounts)}</td>
                       </tr>
                       <tr className="hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700">Clients Needed</td>
-                        <td className="p-4 text-right font-semibold text-blue-600">{formatNumber(data.clientMetrics?.clients_needed || 0)}</td>
+                        <td className="p-4 text-right font-semibold text-blue-600">{formatNumber(chartData.calculatedClientsNeeded)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -770,7 +784,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                       </tr>
                       <tr className="hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700">Clients Needed</td>
-                        <td className="p-4 text-right font-semibold text-blue-600">{formatNumber(data.clientMetrics?.clients_needed || 0)}</td>
+                        <td className="p-4 text-right font-semibold text-blue-600">{formatNumber(chartData.calculatedClientsNeeded)}</td>
                       </tr>
                     </tbody>
                   </table>
