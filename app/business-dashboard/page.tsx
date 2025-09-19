@@ -79,8 +79,14 @@ export default function BusinessDashboard() {
   }
 
   const handleDataSubmitted = async () => {
+    console.log('handleDataSubmitted called - refreshing data...')
     setEditMode(false)
+    
+    // Add a small delay to ensure the database has been updated
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
     await loadData() // Refresh data after successful submission
+    console.log('Data refresh completed')
   }
 
   // Helper: check if all sections are filled
@@ -92,6 +98,18 @@ export default function BusinessDashboard() {
     data.commissionRates &&
     data.financialBook
   )
+
+  // Debug completion check
+  console.log('Completion check details:', {
+    businessGoals: data.businessGoals,
+    currentValues: data.currentValues,
+    clientMetrics: data.clientMetrics,
+    campaigns: data.campaigns,
+    campaignsLength: data.campaigns?.length,
+    commissionRates: data.commissionRates,
+    financialBook: data.financialBook,
+    isComplete
+  })
 
   if (!user) {
     return (
@@ -116,6 +134,7 @@ export default function BusinessDashboard() {
 
   // Show data entry form if not complete or in edit mode
   if (!isComplete || editMode) {
+    console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode)
     return (
       <div className="py-8">
         <DataEntryFormV2
@@ -126,6 +145,8 @@ export default function BusinessDashboard() {
       </div>
     )
   }
+
+  console.log('Showing dashboard - all data is complete')
 
   // Show dashboard if all sections are filled
   return (

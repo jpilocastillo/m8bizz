@@ -392,6 +392,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
       console.log('Save result:', success)
       
       if (success) {
+        console.log('Form submission successful, calling onComplete...')
         toast({
           title: isEditMode ? "Data updated successfully" : "Business data setup complete!",
           description: isEditMode 
@@ -400,7 +401,10 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         })
         
         if (onComplete) {
+          console.log('Calling onComplete callback')
           onComplete()
+        } else {
+          console.log('No onComplete callback provided')
         }
       } else {
         toast({

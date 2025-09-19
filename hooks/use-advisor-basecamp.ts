@@ -257,9 +257,15 @@ export function useAdvisorBasecamp(user: User | null) {
     if (!user) return false
 
     try {
+      console.log('saveAllData: Starting save process...')
       const success = await advisorBasecampService.saveAllAdvisorBasecampData(user, newData)
+      console.log('saveAllData: Save result:', success)
+      
       if (success) {
-        setData(newData)
+        console.log('saveAllData: Save successful, reloading data from database...')
+        // Reload data from database to ensure we have the latest state
+        await loadData()
+        console.log('saveAllData: Data reloaded successfully')
         return true
       }
       return false
