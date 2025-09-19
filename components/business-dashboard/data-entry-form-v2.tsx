@@ -64,8 +64,8 @@ const formSchema = z.object({
   avgCloseRatio: z.string().min(1, "Average close ratio is required"),
   annuityClosed: z.string().optional(), // Auto-calculated field
   aumAccounts: z.string().optional(), // Auto-calculated field
-  monthlyIdealProspects: z.string().min(1, "Monthly ideal prospects is required"),
-  appointmentsPerCampaign: z.string().min(1, "Appointments per campaign is required"),
+  monthlyIdealProspects: z.string().optional(),
+  appointmentsPerCampaign: z.string().optional(),
 
   // Campaign Data
   campaigns: z.array(campaignSchema).min(1, "At least one campaign is required"),
@@ -334,8 +334,8 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           annuity_closed: calculatedAnnuityClosed, // Use calculated value
           aum_accounts: calculatedAUMAccounts, // Use calculated value
           clients_needed: clientsNeeded, // Use calculated value
-          monthly_ideal_prospects: Number.parseFloat(values.monthlyIdealProspects),
-          appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign),
+          monthly_ideal_prospects: Number.parseFloat(values.monthlyIdealProspects || "0"),
+          appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign || "0"),
         },
         campaigns: values.campaigns.map(c => {
           const marketingCosts = Number.parseFloat(c.budget)
@@ -1451,16 +1451,28 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
             <Button 
               type="submit" 
               size="lg"
-              onClick={() => {
+              onClick={async () => {
                 console.log('🔘 Submit button clicked!')
                 console.log('Form is valid:', form.formState.isValid)
                 console.log('Form errors:', form.formState.errors)
                 console.log('Form values:', form.getValues())
                 
+                // Force validation check
+                console.log('🔍 Triggering validation...')
+                const isValid = await form.trigger()
+                console.log('🔍 Validation result:', isValid)
+                console.log('🔍 Form errors after trigger:', form.formState.errors)
+                
                 // Check if form is valid before submission
-                if (!form.formState.isValid) {
+                if (!isValid) {
                   console.log('❌ Form is not valid, preventing submission')
-                  form.trigger() // Trigger validation to show errors
+                  console.log('❌ Validation errors:', JSON.stringify(form.formState.errors, null, 2))
+                  
+                  // Show specific field errors
+                  Object.keys(form.formState.errors).forEach(field => {
+                    console.log(`❌ Field "${field}":`, form.formState.errors[field])
+                  })
+                  
                   return
                 }
                 console.log('✅ Form is valid, proceeding with submission')
