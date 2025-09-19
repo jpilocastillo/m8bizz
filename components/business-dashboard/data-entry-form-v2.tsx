@@ -14,6 +14,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { User } from "@supabase/supabase-js"
 
+// Currency formatting utility functions
+const formatCurrency = (value: string | number | undefined): string => {
+  if (!value) return ""
+  const numValue = typeof value === 'string' ? parseFloat(value.replace(/[$,]/g, '')) : value
+  if (isNaN(numValue)) return ""
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numValue)
+}
+
+const parseCurrency = (value: string): string => {
+  return value.replace(/[$,]/g, '')
+}
+
 // Campaign schema
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
@@ -467,7 +484,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                       <FormItem>
                         <FormLabel>Business Goal ($)</FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input
+                            type="text"
+                            placeholder="$0"
+                            {...field}
+                            value={formatCurrency(field.value)}
+                            onChange={(e) => {
+                              const rawValue = parseCurrency(e.target.value)
+                              field.onChange(rawValue)
+                            }}
+                          />
                         </FormControl>
                         <FormDescription>Your overall business goal in dollars</FormDescription>
                         <FormMessage />
@@ -552,7 +578,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         <FormItem>
                           <FormLabel>Current AUM ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} />
+                            <Input
+                              type="text"
+                              placeholder="$0"
+                              {...field}
+                              value={formatCurrency(field.value)}
+                              onChange={(e) => {
+                                const rawValue = parseCurrency(e.target.value)
+                                field.onChange(rawValue)
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -566,7 +601,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         <FormItem>
                           <FormLabel>Current Annuity ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} />
+                            <Input
+                              type="text"
+                              placeholder="$0"
+                              {...field}
+                              value={formatCurrency(field.value)}
+                              onChange={(e) => {
+                                const rawValue = parseCurrency(e.target.value)
+                                field.onChange(rawValue)
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -580,7 +624,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         <FormItem>
                           <FormLabel>Life Insurance Cash Value ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} />
+                            <Input
+                              type="text"
+                              placeholder="$0"
+                              {...field}
+                              value={formatCurrency(field.value)}
+                              onChange={(e) => {
+                                const rawValue = parseCurrency(e.target.value)
+                                field.onChange(rawValue)
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -607,7 +660,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         <FormItem>
                           <FormLabel>Average Annuity Size ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} />
+                            <Input
+                              type="text"
+                              placeholder="$0"
+                              {...field}
+                              value={formatCurrency(field.value)}
+                              onChange={(e) => {
+                                const rawValue = parseCurrency(e.target.value)
+                                field.onChange(rawValue)
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -621,7 +683,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         <FormItem>
                           <FormLabel>Average AUM Size ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" {...field} />
+                            <Input
+                              type="text"
+                              placeholder="$0"
+                              {...field}
+                              value={formatCurrency(field.value)}
+                              onChange={(e) => {
+                                const rawValue = parseCurrency(e.target.value)
+                                field.onChange(rawValue)
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -638,8 +709,10 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           <FormLabel>Average Net Worth Needed ($)</FormLabel>
                           <FormControl>
                             <Input 
-                              type="number" 
+                              type="text"
+                              placeholder="$0"
                               {...field}
+                              value={formatCurrency(field.value)}
                               readOnly
                               className="bg-muted"
                             />
@@ -782,7 +855,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                             <FormItem>
                               <FormLabel>Marketing Costs ($)</FormLabel>
                               <FormControl>
-                                <Input type="number" {...field} />
+                                <Input
+                                  type="text"
+                                  placeholder="$0"
+                                  {...field}
+                                  value={formatCurrency(field.value)}
+                                  onChange={(e) => {
+                                    const rawValue = parseCurrency(e.target.value)
+                                    field.onChange(rawValue)
+                                  }}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1020,7 +1102,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           <FormItem>
                             <FormLabel>Annuity Book Value ($)</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <Input
+                                type="text"
+                                placeholder="$0"
+                                {...field}
+                                value={formatCurrency(field.value)}
+                                onChange={(e) => {
+                                  const rawValue = parseCurrency(e.target.value)
+                                  field.onChange(rawValue)
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1034,7 +1125,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           <FormItem>
                             <FormLabel>AUM Book Value ($)</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <Input
+                                type="text"
+                                placeholder="$0"
+                                {...field}
+                                value={formatCurrency(field.value)}
+                                onChange={(e) => {
+                                  const rawValue = parseCurrency(e.target.value)
+                                  field.onChange(rawValue)
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1048,7 +1148,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           <FormItem>
                             <FormLabel>Qualified Money Value ($)</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <Input
+                                type="text"
+                                placeholder="$0"
+                                {...field}
+                                value={formatCurrency(field.value)}
+                                onChange={(e) => {
+                                  const rawValue = parseCurrency(e.target.value)
+                                  field.onChange(rawValue)
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

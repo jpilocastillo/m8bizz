@@ -1311,20 +1311,29 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="planningFeeRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Planning Fee Rate ($)</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" placeholder="1000" {...field} />
-                        </FormControl>
-                        <FormDescription>Rate per planning fee</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <FormField
+                          control={form.control}
+                          name="planningFeeRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Planning Fee Rate ($)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="text"
+                                  placeholder="$1,000"
+                                  {...field}
+                                  value={formatCurrency(field.value)}
+                                  onChange={(e) => {
+                                    const rawValue = parseCurrency(e.target.value)
+                                    field.onChange(rawValue)
+                                  }}
+                                />
+                              </FormControl>
+                              <FormDescription>Rate per planning fee</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
                 </div>
 
