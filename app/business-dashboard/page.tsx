@@ -212,7 +212,7 @@ export default function BusinessDashboard() {
         </TabsContent>
 
         <TabsContent value="options" className="space-y-6">
-          <FinancialOptions />
+          <FinancialOptions data={data} />
         </TabsContent>
         <TabsContent value="monthly" className="space-y-6">
           <MonthlyDataEntryComponent />

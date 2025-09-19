@@ -65,6 +65,25 @@ const formSchema = z.object({
   annuityBookValue: z.string().min(1, "Annuity book value is required"),
   aumBookValue: z.string().min(1, "AUM book value is required"),
   qualifiedMoneyValue: z.string().min(1, "Qualified money value is required"),
+
+  // Financial Options Percentages
+  surrenderPercent: z.string().min(1, "Surrender percentage is required"),
+  incomeRiderPercent: z.string().min(1, "Income rider percentage is required"),
+  freeWithdrawalPercent: z.string().min(1, "Free withdrawal percentage is required"),
+  lifeInsurancePercent: z.string().min(1, "Life insurance percentage is required"),
+  lifeStrategy1Percent: z.string().min(1, "Life strategy 1 percentage is required"),
+  lifeStrategy2Percent: z.string().min(1, "Life strategy 2 percentage is required"),
+  iraTo7702Percent: z.string().min(1, "IRA to 7702 percentage is required"),
+  approvalRatePercent: z.string().min(1, "Approval rate percentage is required"),
+
+  // Financial Options Rates
+  surrenderRate: z.string().min(1, "Surrender rate is required"),
+  incomeRiderRate: z.string().min(1, "Income rider rate is required"),
+  freeWithdrawalRate: z.string().min(1, "Free withdrawal rate is required"),
+  lifeInsuranceRate: z.string().min(1, "Life insurance rate is required"),
+  lifeStrategy1Rate: z.string().min(1, "Life strategy 1 rate is required"),
+  lifeStrategy2Rate: z.string().min(1, "Life strategy 2 rate is required"),
+  iraTo7702Rate: z.string().min(1, "IRA to 7702 rate is required"),
 })
 
 interface DataEntryFormV2Props {
@@ -116,6 +135,25 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
       annuityBookValue: "",
       aumBookValue: "",
       qualifiedMoneyValue: "",
+
+      // Financial Options Percentages
+      surrenderPercent: "10",
+      incomeRiderPercent: "6",
+      freeWithdrawalPercent: "10",
+      lifeInsurancePercent: "10",
+      lifeStrategy1Percent: "1",
+      lifeStrategy2Percent: "2",
+      iraTo7702Percent: "33",
+      approvalRatePercent: "50",
+
+      // Financial Options Rates
+      surrenderRate: "6",
+      incomeRiderRate: "10",
+      freeWithdrawalRate: "6",
+      lifeInsuranceRate: "10",
+      lifeStrategy1Rate: "10",
+      lifeStrategy2Rate: "10",
+      iraTo7702Rate: "10",
     },
   })
 
@@ -169,6 +207,25 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         annuityBookValue: data.financialBook?.annuity_book_value?.toString() || "",
         aumBookValue: data.financialBook?.aum_book_value?.toString() || "",
         qualifiedMoneyValue: data.financialBook?.qualified_money_value?.toString() || "",
+
+        // Financial Options Percentages
+        surrenderPercent: data.financialOptions?.surrender_percent?.toString() || "10",
+        incomeRiderPercent: data.financialOptions?.income_rider_percent?.toString() || "6",
+        freeWithdrawalPercent: data.financialOptions?.free_withdrawal_percent?.toString() || "10",
+        lifeInsurancePercent: data.financialOptions?.life_insurance_percent?.toString() || "10",
+        lifeStrategy1Percent: data.financialOptions?.life_strategy1_percent?.toString() || "1",
+        lifeStrategy2Percent: data.financialOptions?.life_strategy2_percent?.toString() || "2",
+        iraTo7702Percent: data.financialOptions?.ira_to_7702_percent?.toString() || "33",
+        approvalRatePercent: data.financialOptions?.approval_rate_percent?.toString() || "50",
+
+        // Financial Options Rates
+        surrenderRate: data.financialOptions?.surrender_rate?.toString() || "6",
+        incomeRiderRate: data.financialOptions?.income_rider_rate?.toString() || "10",
+        freeWithdrawalRate: data.financialOptions?.free_withdrawal_rate?.toString() || "6",
+        lifeInsuranceRate: data.financialOptions?.life_insurance_rate?.toString() || "10",
+        lifeStrategy1Rate: data.financialOptions?.life_strategy1_rate?.toString() || "10",
+        lifeStrategy2Rate: data.financialOptions?.life_strategy2_rate?.toString() || "10",
+        iraTo7702Rate: data.financialOptions?.ira_to_7702_rate?.toString() || "10",
       })
     }
   }, [data, loading, form])
@@ -284,6 +341,23 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           annuity_book_value: Number.parseFloat(values.annuityBookValue),
           aum_book_value: Number.parseFloat(values.aumBookValue),
           qualified_money_value: Number.parseFloat(values.qualifiedMoneyValue),
+        },
+        financialOptions: {
+          surrender_percent: Number.parseFloat(values.surrenderPercent),
+          income_rider_percent: Number.parseFloat(values.incomeRiderPercent),
+          free_withdrawal_percent: Number.parseFloat(values.freeWithdrawalPercent),
+          life_insurance_percent: Number.parseFloat(values.lifeInsurancePercent),
+          life_strategy1_percent: Number.parseFloat(values.lifeStrategy1Percent),
+          life_strategy2_percent: Number.parseFloat(values.lifeStrategy2Percent),
+          ira_to_7702_percent: Number.parseFloat(values.iraTo7702Percent),
+          approval_rate_percent: Number.parseFloat(values.approvalRatePercent),
+          surrender_rate: Number.parseFloat(values.surrenderRate),
+          income_rider_rate: Number.parseFloat(values.incomeRiderRate),
+          free_withdrawal_rate: Number.parseFloat(values.freeWithdrawalRate),
+          life_insurance_rate: Number.parseFloat(values.lifeInsuranceRate),
+          life_strategy1_rate: Number.parseFloat(values.lifeStrategy1Rate),
+          life_strategy2_rate: Number.parseFloat(values.lifeStrategy2Rate),
+          ira_to_7702_rate: Number.parseFloat(values.iraTo7702Rate),
         },
       }
 
@@ -986,6 +1060,263 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           </FormItem>
                         )}
                       />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Financial Options Percentages</CardTitle>
+                    <CardDescription>Configure percentages for different financial options</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Option 1 - Annuity Book Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium border-b pb-2">Option 1 - Annuity Book Percentages</h3>
+                      <p className="text-sm text-muted-foreground">Configure percentages for annuity book opportunities</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="surrenderPercent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Surrender Percentage (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
+                              </FormControl>
+                              <FormDescription>% of current annuity book for surrender opportunities</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="surrenderRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Surrender Rate (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="6" {...field} />
+                              </FormControl>
+                              <FormDescription>Commission rate for surrender transactions</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="incomeRiderPercent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Income Rider Percentage (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" max="100" step="0.1" placeholder="6" {...field} />
+                              </FormControl>
+                              <FormDescription>% of current annuity book for income rider opportunities</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="incomeRiderRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Income Rider Rate (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="10" {...field} />
+                              </FormControl>
+                              <FormDescription>Commission rate for income rider transactions</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="freeWithdrawalPercent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Free Withdrawal Percentage (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
+                              </FormControl>
+                              <FormDescription>% of current annuity book for free withdrawal opportunities</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="freeWithdrawalRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Free Withdrawal Rate (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="6" {...field} />
+                              </FormControl>
+                              <FormDescription>Commission rate for free withdrawal transactions</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="lifeInsurancePercent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Life Insurance Percentage (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
+                              </FormControl>
+                              <FormDescription>% of current annuity book for life insurance opportunities</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="lifeInsuranceRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Life Insurance Rate (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="10" {...field} />
+                              </FormControl>
+                              <FormDescription>Commission rate for life insurance transactions</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Option 2 - AUM Book Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium border-b pb-2">Option 2 - AUM Book Percentages</h3>
+                      <p className="text-sm text-muted-foreground">Configure percentages for AUM book opportunities</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="lifeStrategy1Percent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Life Strategy 1 Percentage (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" max="100" step="0.1" placeholder="1" {...field} />
+                              </FormControl>
+                              <FormDescription>% of current AUM for life strategy 1 opportunities</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="lifeStrategy1Rate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Life Strategy 1 Rate (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="10" {...field} />
+                              </FormControl>
+                              <FormDescription>Commission rate for life strategy 1 transactions</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="lifeStrategy2Percent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Life Strategy 2 Percentage (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" max="100" step="0.1" placeholder="2" {...field} />
+                              </FormControl>
+                              <FormDescription>% of current AUM for life strategy 2 opportunities</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="lifeStrategy2Rate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Life Strategy 2 Rate (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="10" {...field} />
+                              </FormControl>
+                              <FormDescription>Commission rate for life strategy 2 transactions</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Option 3 - Qualified Money Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium border-b pb-2">Option 3 - Qualified Money Percentages</h3>
+                      <p className="text-sm text-muted-foreground">Configure percentages for qualified money opportunities</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="iraTo7702Percent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>IRA to 7702 Percentage (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" max="100" step="0.1" placeholder="33" {...field} />
+                              </FormControl>
+                              <FormDescription>% of qualified money for IRA to 7702 opportunities</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="iraTo7702Rate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>IRA to 7702 Rate (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="10" {...field} />
+                              </FormControl>
+                              <FormDescription>Commission rate for IRA to 7702 transactions</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="approvalRatePercent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Approval Rate Percentage (%)</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" max="100" step="0.1" placeholder="50" {...field} />
+                              </FormControl>
+                              <FormDescription>% approval rate for qualified money opportunities</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

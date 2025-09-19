@@ -19,39 +19,68 @@ import {
   YAxis,
 } from "recharts"
 
-export function FinancialOptions() {
-  // Base values
-  const annuityBook = 180000000
-  const aumBook = 62000000
-  const qualifiedMoney = 157300000
+interface FinancialOptionsProps {
+  data?: {
+    currentValues?: {
+      current_annuity?: number
+      current_aum?: number
+    }
+    financialBook?: {
+      qualified_money_value?: number
+    }
+    financialOptions?: {
+      surrender_percent?: number
+      income_rider_percent?: number
+      free_withdrawal_percent?: number
+      life_insurance_percent?: number
+      life_strategy1_percent?: number
+      life_strategy2_percent?: number
+      ira_to_7702_percent?: number
+      approval_rate_percent?: number
+      surrender_rate?: number
+      income_rider_rate?: number
+      free_withdrawal_rate?: number
+      life_insurance_rate?: number
+      life_strategy1_rate?: number
+      life_strategy2_rate?: number
+      ira_to_7702_rate?: number
+    }
+  }
+}
 
-  // Default percentages (these would come from the business data entry form)
+export function FinancialOptions({ data }: FinancialOptionsProps) {
+  // Base values from data or defaults
+  const annuityBook = data?.currentValues?.current_annuity || 180000000
+  const aumBook = data?.currentValues?.current_aum || 62000000
+  const qualifiedMoney = data?.financialBook?.qualified_money_value || 157300000
+
+  // Dynamic percentages from data or defaults
   const percentages = {
     // Option 1 - Annuity Book
-    surrenderPercent: 10,
-    incomeRiderPercent: 6,
-    freeWithdrawalPercent: 10,
-    lifeInsurancePercent: 10,
+    surrenderPercent: data?.financialOptions?.surrender_percent || 10,
+    incomeRiderPercent: data?.financialOptions?.income_rider_percent || 6,
+    freeWithdrawalPercent: data?.financialOptions?.free_withdrawal_percent || 10,
+    lifeInsurancePercent: data?.financialOptions?.life_insurance_percent || 10,
     // Option 2 - AUM Book
-    lifeStrategy1Percent: 1,
-    lifeStrategy2Percent: 2,
+    lifeStrategy1Percent: data?.financialOptions?.life_strategy1_percent || 1,
+    lifeStrategy2Percent: data?.financialOptions?.life_strategy2_percent || 2,
     // Option 3 - Qualified Money
-    iraTo7702Percent: 33,
-    approvalRatePercent: 50,
+    iraTo7702Percent: data?.financialOptions?.ira_to_7702_percent || 33,
+    approvalRatePercent: data?.financialOptions?.approval_rate_percent || 50,
   }
 
-  // Default rates (these would come from the business data entry form)
+  // Dynamic rates from data or defaults
   const rates = {
     // Option 1 - Annuity Book
-    surrenderRate: 6,
-    incomeRiderRate: 10,
-    freeWithdrawalRate: 6,
-    lifeInsuranceRate: 10,
+    surrenderRate: data?.financialOptions?.surrender_rate || 6,
+    incomeRiderRate: data?.financialOptions?.income_rider_rate || 10,
+    freeWithdrawalRate: data?.financialOptions?.free_withdrawal_rate || 6,
+    lifeInsuranceRate: data?.financialOptions?.life_insurance_rate || 10,
     // Option 2 - AUM Book
-    lifeStrategy1Rate: 10,
-    lifeStrategy2Rate: 10,
+    lifeStrategy1Rate: data?.financialOptions?.life_strategy1_rate || 10,
+    lifeStrategy2Rate: data?.financialOptions?.life_strategy2_rate || 10,
     // Option 3 - Qualified Money
-    iraTo7702Rate: 10,
+    iraTo7702Rate: data?.financialOptions?.ira_to_7702_rate || 10,
   }
 
   // Calculate dynamic data based on percentages

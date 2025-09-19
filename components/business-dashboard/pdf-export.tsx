@@ -814,19 +814,19 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                     <tr className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="p-4 font-medium text-gray-700">Annuity</td>
                       <td className="p-4 text-right text-gray-600">{formatCurrency(data.currentValues?.current_annuity || 0)}</td>
-                      <td className="p-4 text-right font-semibold text-blue-600">6.50%</td>
+                      <td className="p-4 text-right font-semibold text-blue-600">{data.commissionRates?.annuity_commission?.toFixed(2) || '6.50'}%</td>
                       <td className="p-4 text-right font-semibold text-blue-600">99.9%</td>
                     </tr>
                     <tr className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="p-4 font-medium text-gray-700">AUM</td>
                       <td className="p-4 text-right text-gray-600">{formatCurrency(data.currentValues?.current_aum || 0)}</td>
-                      <td className="p-4 text-right font-semibold text-orange-600">1.00%</td>
+                      <td className="p-4 text-right font-semibold text-orange-600">{data.commissionRates?.aum_commission?.toFixed(2) || '1.00'}%</td>
                       <td className="p-4 text-right font-semibold text-orange-600">0.1%</td>
                     </tr>
                     <tr className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="p-4 font-medium text-gray-700">Life Production</td>
                       <td className="p-4 text-right text-gray-600">{formatCurrency(data.currentValues?.current_life_production || 0)}</td>
-                      <td className="p-4 text-right font-semibold text-purple-600">1.0%</td>
+                      <td className="p-4 text-right font-semibold text-purple-600">{data.commissionRates?.life_commission?.toFixed(2) || '1.0'}%</td>
                       <td className="p-4 text-right font-semibold text-purple-600">0.0%</td>
                     </tr>
                     <tr className="border-b-2 border-gray-200 bg-gray-50">
@@ -941,27 +941,27 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                       <tr className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700">Fixed Annuities</td>
                         <td className="p-4 text-right text-gray-600">$10,000</td>
-                        <td className="p-4 text-right font-semibold text-blue-600">6.5%</td>
+                        <td className="p-4 text-right font-semibold text-blue-600">{data.commissionRates?.annuity_commission?.toFixed(1) || '6.5'}%</td>
                       </tr>
                       <tr className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700">Variable Annuities</td>
                         <td className="p-4 text-right text-gray-600">$25,000</td>
-                        <td className="p-4 text-right font-semibold text-blue-600">5.0%</td>
+                        <td className="p-4 text-right font-semibold text-blue-600">{((data.commissionRates?.annuity_commission || 6.5) * 0.77).toFixed(1)}%</td>
                       </tr>
                       <tr className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700">Index Annuities</td>
                         <td className="p-4 text-right text-gray-600">$15,000</td>
-                        <td className="p-4 text-right font-semibold text-blue-600">7.0%</td>
+                        <td className="p-4 text-right font-semibold text-blue-600">{((data.commissionRates?.annuity_commission || 6.5) * 1.08).toFixed(1)}%</td>
                       </tr>
                       <tr className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700">AUM Management</td>
                         <td className="p-4 text-right text-gray-600">$100,000</td>
-                        <td className="p-4 text-right font-semibold text-orange-600">1.0%</td>
+                        <td className="p-4 text-right font-semibold text-orange-600">{data.commissionRates?.aum_commission?.toFixed(1) || '1.0'}%</td>
                       </tr>
                       <tr className="hover:bg-gray-50">
                         <td className="p-4 font-medium text-gray-700">Life Insurance</td>
                         <td className="p-4 text-right text-gray-600">$5,000</td>
-                        <td className="p-4 text-right font-semibold text-purple-600">80.0%</td>
+                        <td className="p-4 text-right font-semibold text-purple-600">{data.commissionRates?.life_commission?.toFixed(1) || '80.0'}%</td>
                       </tr>
                     </tbody>
                   </table>
