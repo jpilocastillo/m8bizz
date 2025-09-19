@@ -32,6 +32,15 @@ export default function BusinessDashboard() {
   // Debug logging to track data changes
   useEffect(() => {
     console.log('BusinessDashboard data updated:', data)
+    console.log('Data completeness check:', {
+      businessGoals: !!data.businessGoals,
+      currentValues: !!data.currentValues,
+      clientMetrics: !!data.clientMetrics,
+      campaigns: data.campaigns && data.campaigns.length > 0,
+      commissionRates: !!data.commissionRates,
+      financialBook: !!data.financialBook,
+      isComplete: !!(data.businessGoals && data.currentValues && data.clientMetrics && data.campaigns && data.campaigns.length > 0 && data.commissionRates && data.financialBook)
+    })
   }, [data])
 
   useEffect(() => {

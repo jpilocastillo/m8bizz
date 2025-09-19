@@ -387,7 +387,9 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         },
       }
 
+      console.log('Submitting advisor data:', advisorData)
       const success = await saveAllData(advisorData)
+      console.log('Save result:', success)
       
       if (success) {
         toast({
@@ -403,9 +405,10 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
       } else {
         toast({
           title: "Error",
-          description: "Failed to save data. Please try again.",
+          description: "Failed to save data. Please check the console for details and try again.",
           variant: "destructive",
         })
+        console.error('Failed to save advisor data')
       }
     } catch (error) {
       console.error("Error submitting form:", error)
@@ -450,6 +453,15 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
             : "Complete your business profile to access your personalized advisor dashboard."
           }
         </p>
+        {!isEditMode && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <p className="text-sm text-blue-800">
+              <strong>New User Setup:</strong> Fill out all 5 tabs completely, then click "Submit Data" at the bottom. 
+              Once submitted, you'll automatically see your personalized advisor basecamp dashboard with charts, metrics, and insights.
+              All currency fields will be automatically formatted with commas and decimals.
+            </p>
+          </div>
+        )}
       </div>
 
       {error && (
