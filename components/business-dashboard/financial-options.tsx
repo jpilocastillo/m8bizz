@@ -117,7 +117,7 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
 
   const option2Data = useMemo(() => [
     { 
-      name: "Life Strategy", 
+      name: "Life Strategy 1", 
       amount: (aumBook * percentages.lifeStrategy1Percent) / 100, 
       percentage: `${percentages.lifeStrategy1Percent}%`, 
       income: (aumBook * percentages.lifeStrategy1Percent * rates.lifeStrategy1Rate) / 10000, 
@@ -154,6 +154,10 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
     { name: "Annuity Book", value: annuityBook, color: "#3b82f6" },
     { name: "AUM Book", value: aumBook, color: "#f97316" },
   ]
+  
+  // Debug: Log the data to see what's happening
+  console.log('Total Book Data:', totalBookData)
+  console.log('Annuity Book:', annuityBook, 'AUM Book:', aumBook)
 
   // Chart data for option 1
   const option1ChartData = option1Data.map((item) => ({
@@ -171,6 +175,9 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
       income: item.income,
     })),
   ]
+  
+  // Debug: Log the option 2 chart data
+  console.log('Option 2 Chart Data:', option2ChartData)
 
   // Chart data for option 3
   const option3ChartData = [
@@ -214,7 +221,7 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                 </TableBody>
               </Table>
             </div>
-            <div className="h-[300px]">
+            <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -225,8 +232,34 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                     outerRadius={120}
                     paddingAngle={5}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
-                    labelLine={false}
+                    label={({ name, percent, cx, cy, midAngle, innerRadius, outerRadius, fill }) => {
+                      // Debug: Log label data
+                      console.log('Label data:', { name, percent, fill })
+                      
+                      // Show all labels for the total advisor book chart
+                      if (percent < 0.01) return ''; // Only hide if less than 1%
+                      
+                      // Calculate label position outside the chart
+                      const RADIAN = Math.PI / 180;
+                      const radius = outerRadius + 30; // Position further outside the chart
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      
+                      return (
+                        <text 
+                          x={x} 
+                          y={y} 
+                          fill={fill} 
+                          textAnchor={x > cx ? 'start' : 'end'} 
+                          dominantBaseline="central"
+                          fontSize="12"
+                          fontWeight="bold"
+                        >
+                          {`${name} ${(percent * 100).toFixed(1)}%`}
+                        </text>
+                      );
+                    }}
+                    labelLine={true}
                   >
                     {totalBookData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -240,7 +273,15 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                     contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
                     labelStyle={{ color: '#fff' }}
                   />
-                  <Legend />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36}
+                    wrapperStyle={{
+                      paddingTop: '20px',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -361,7 +402,7 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="h-[300px]">
+                <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -372,8 +413,33 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                         outerRadius={120}
                         paddingAngle={5}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
-                        labelLine={false}
+                        label={({ name, percent, cx, cy, midAngle, innerRadius, outerRadius, fill }) => {
+                          // Debug: Log label data for option 2
+                          console.log('Option 2 Label data:', { name, percent, fill })
+                          
+                          // Show ALL labels for the AUM book chart - no percentage threshold
+                          
+                          // Calculate label position outside the chart
+                          const RADIAN = Math.PI / 180;
+                          const radius = outerRadius + 30; // Position further outside the chart
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          
+                          return (
+                            <text 
+                              x={x} 
+                              y={y} 
+                              fill={fill} 
+                              textAnchor={x > cx ? 'start' : 'end'} 
+                              dominantBaseline="central"
+                              fontSize="12"
+                              fontWeight="bold"
+                            >
+                              {`${name} ${(percent * 100).toFixed(1)}%`}
+                            </text>
+                          );
+                        }}
+                        labelLine={true}
                       >
                         <Cell fill="#f97316" />
                         <Cell fill="#3b82f6" />
@@ -387,7 +453,15 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                         contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
                         labelStyle={{ color: '#fff' }}
                       />
-                      <Legend />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36}
+                        wrapperStyle={{
+                          paddingTop: '20px',
+                          fontSize: '14px',
+                          fontWeight: '500'
+                        }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -434,7 +508,7 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="h-[300px]">
+                <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -445,8 +519,31 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                         outerRadius={120}
                         paddingAngle={5}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
-                        labelLine={false}
+                        label={({ name, percent, cx, cy, midAngle, innerRadius, outerRadius, fill }) => {
+                          // Show all labels for the qualified money chart
+                          if (percent < 0.01) return ''; // Only hide if less than 1%
+                          
+                          // Calculate label position outside the chart
+                          const RADIAN = Math.PI / 180;
+                          const radius = outerRadius + 30; // Position further outside the chart
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          
+                          return (
+                            <text 
+                              x={x} 
+                              y={y} 
+                              fill={fill} 
+                              textAnchor={x > cx ? 'start' : 'end'} 
+                              dominantBaseline="central"
+                              fontSize="12"
+                              fontWeight="bold"
+                            >
+                              {`${name} ${(percent * 100).toFixed(1)}%`}
+                            </text>
+                          );
+                        }}
+                        labelLine={true}
                       >
                         {option3ChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -460,7 +557,15 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                         contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
                         labelStyle={{ color: '#fff' }}
                       />
-                      <Legend />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36}
+                        wrapperStyle={{
+                          paddingTop: '20px',
+                          fontSize: '14px',
+                          fontWeight: '500'
+                        }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
