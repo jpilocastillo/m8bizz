@@ -279,12 +279,35 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
   const calculatedAnnuityClosed = avgAnnuitySize > 0 ? Math.round(annuityGoalAmount / avgAnnuitySize) : 0
   const calculatedAUMAccounts = avgAUMSize > 0 ? Math.round(aumGoalAmount / avgAUMSize) : 0
 
+  // Calculate clients needed
+  const clientsNeeded = Math.round((calculatedAnnuityClosed + calculatedAUMAccounts) / 2)
+
+  // Get additional metrics for proper calculations
+  const appointmentAttrition = Number.parseFloat(form.watch("appointmentAttrition") || "0")
+  const avgCloseRatio = Number.parseFloat(form.watch("avgCloseRatio") || "0")
+
+  // Calculate proper formulas for the three key metrics
+  // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+  const annualIdealClosingProspects = avgCloseRatio > 0 
+    ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
+    : 0
+
+  // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
+  const monthlyIdealProspects = annualIdealClosingProspects / 12
+
+  // Monthly New Appointments Needed = Monthly Ideal Prospects * 3
+  const monthlyNewAppointments = monthlyIdealProspects * 3
+
+  // Annual Total Prospects Necessary = Monthly New Appointments * 12
+  const annualTotalProspects = monthlyNewAppointments * 12
+
   // Update the form fields with calculated values
   useEffect(() => {
     form.setValue("avgNetWorthNeeded", avgNetWorthNeeded.toFixed(2))
     form.setValue("annuityClosed", calculatedAnnuityClosed.toString())
     form.setValue("aumAccounts", calculatedAUMAccounts.toString())
-  }, [avgNetWorthNeeded, calculatedAnnuityClosed, calculatedAUMAccounts, form])
+    form.setValue("monthlyIdealProspects", monthlyIdealProspects.toFixed(2))
+  }, [avgNetWorthNeeded, calculatedAnnuityClosed, calculatedAUMAccounts, monthlyIdealProspects, form])
 
 
   // Calculate life target goal amount
@@ -299,7 +322,6 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
   const lifeIncome = (lifeTargetGoalAmount * Number.parseFloat(watchedValues[6] || "0")) / 100
   const trailIncome = (currentAUM * Number.parseFloat(watchedValues[7] || "0")) / 100
   // Calculate planning fees count as clients needed using calculated values
-  const clientsNeeded = Math.round((calculatedAnnuityClosed + calculatedAUMAccounts) / 2)
   const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * clientsNeeded
   const totalIncome = annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
 
@@ -334,7 +356,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           annuity_closed: calculatedAnnuityClosed, // Use calculated value
           aum_accounts: calculatedAUMAccounts, // Use calculated value
           clients_needed: clientsNeeded, // Use calculated value
-          monthly_ideal_prospects: Number.parseFloat(values.monthlyIdealProspects || "0"),
+          monthly_ideal_prospects: monthlyIdealProspects, // Use calculated value
           appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign || "0"),
         },
         campaigns: values.campaigns.map(c => {

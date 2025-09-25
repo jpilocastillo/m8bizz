@@ -82,20 +82,36 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
     { metric: "Clients Needed", value: clientMetrics?.clients_needed?.toString() || clientsNeeded.toFixed(1) },
   ]
 
-  // Calculate appointment metrics using formulas
-  const totalNewMonthlyAppointments = monthlyIdealProspects * 3 // H8 = H6 * 3
+  // Calculate appointment metrics using proper formulas
+  // Note: appointmentAttrition and avgCloseRatio are already defined above
+
+  // Calculate proper formulas based on business logic
+  // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+  const annualIdealClosingProspects = avgCloseRatio > 0 
+    ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
+    : monthlyIdealProspects * 12 // Fallback to stored value
+
+  // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
+  const calculatedMonthlyIdealProspects = annualIdealClosingProspects / 12
+
+  // Monthly New Appointments = Monthly Ideal Prospects * 3
+  const totalNewMonthlyAppointments = calculatedMonthlyIdealProspects * 3
+  
+  // Annual Total Prospects Necessary = Monthly New Appointments * 12
+  const annualTotalProspects = totalNewMonthlyAppointments * 12
+  
   const numCampaignsMonthly = appointmentsPerCampaign > 0 ? totalNewMonthlyAppointments / appointmentsPerCampaign : 0 // H8 / H12
 
   const appointmentMetrics = [
-    { metric: "Monthly Ideal Prospects", value: monthlyIdealProspects.toFixed(2), metric2: "Total New Monthly Appointments Needed", value2: totalNewMonthlyAppointments.toFixed(2) },
+    { metric: "Monthly Ideal Prospects", value: calculatedMonthlyIdealProspects.toFixed(2), metric2: "Total New Monthly Appointments Needed", value2: totalNewMonthlyAppointments.toFixed(2) },
     {
       metric: "Annual Ideal Closing Prospects Needed",
-      value: (monthlyIdealProspects * 12).toFixed(2),
+      value: annualIdealClosingProspects.toFixed(2),
       metric2: "Annual Total Prospects Necessary",
-      value2: (totalNewMonthlyAppointments * 12).toFixed(2),
+      value2: annualTotalProspects.toFixed(2),
     },
     { metric: "Appointments Per Campaign", value: appointmentsPerCampaign.toFixed(2), metric2: "# of Campaigns Monthly", value2: numCampaignsMonthly.toFixed(2) },
-    { metric: "Total New Monthly Appointments", value: totalNewMonthlyAppointments.toFixed(2), metric2: "Annual Total Prospects Necessary", value2: clientsNeeded.toFixed(2) },
+    { metric: "Total New Monthly Appointments", value: totalNewMonthlyAppointments.toFixed(2), metric2: "Annual Total Prospects Necessary", value2: annualTotalProspects.toFixed(2) },
   ]
 
   const chartData = goalData.map((item) => ({

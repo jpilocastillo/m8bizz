@@ -315,7 +315,23 @@ export function PDFExport({ data, profile }: PDFExportProps) {
               </CardHeader>
               <CardContent className="flex-1 flex items-center justify-center">
                 <div className="text-4xl font-bold text-blue-500 text-center">
-                  {Math.ceil((data.clientMetrics?.monthly_ideal_prospects || 0) * 3)}
+                  {(() => {
+                    // Calculate proper formula for monthly new appointments
+                    const clientsNeeded = data.clientMetrics?.clients_needed || 0
+                    const appointmentAttrition = data.clientMetrics?.appointment_attrition || 0
+                    const avgCloseRatio = data.clientMetrics?.avg_close_ratio || 0
+                    
+                    // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+                    const annualIdealClosingProspects = avgCloseRatio > 0 
+                      ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
+                      : (data.clientMetrics?.monthly_ideal_prospects || 0) * 12
+                    
+                    // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
+                    const monthlyIdealProspects = annualIdealClosingProspects / 12
+                    
+                    // Monthly New Appointments = Monthly Ideal Prospects * 3
+                    return Math.ceil(monthlyIdealProspects * 3)
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -333,7 +349,19 @@ export function PDFExport({ data, profile }: PDFExportProps) {
               </CardHeader>
               <CardContent className="flex-1 flex items-center justify-center">
                 <div className="text-4xl font-bold text-green-500 text-center">
-                  {Math.ceil((data.clientMetrics?.monthly_ideal_prospects || 0) * 12)}
+                  {(() => {
+                    // Calculate proper formula for annual ideal closing prospects
+                    const clientsNeeded = data.clientMetrics?.clients_needed || 0
+                    const appointmentAttrition = data.clientMetrics?.appointment_attrition || 0
+                    const avgCloseRatio = data.clientMetrics?.avg_close_ratio || 0
+                    
+                    // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+                    const annualIdealClosingProspects = avgCloseRatio > 0 
+                      ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
+                      : (data.clientMetrics?.monthly_ideal_prospects || 0) * 12
+                    
+                    return Math.ceil(annualIdealClosingProspects)
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -351,7 +379,26 @@ export function PDFExport({ data, profile }: PDFExportProps) {
               </CardHeader>
               <CardContent className="flex-1 flex items-center justify-center">
                 <div className="text-4xl font-bold text-purple-500 text-center">
-                  {Math.ceil((data.clientMetrics?.monthly_ideal_prospects || 0) * 3 * 12)}
+                  {(() => {
+                    // Calculate proper formula for annual total prospects necessary
+                    const clientsNeeded = data.clientMetrics?.clients_needed || 0
+                    const appointmentAttrition = data.clientMetrics?.appointment_attrition || 0
+                    const avgCloseRatio = data.clientMetrics?.avg_close_ratio || 0
+                    
+                    // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+                    const annualIdealClosingProspects = avgCloseRatio > 0 
+                      ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
+                      : (data.clientMetrics?.monthly_ideal_prospects || 0) * 12
+                    
+                    // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
+                    const monthlyIdealProspects = annualIdealClosingProspects / 12
+                    
+                    // Monthly New Appointments = Monthly Ideal Prospects * 3
+                    const monthlyNewAppointments = monthlyIdealProspects * 3
+                    
+                    // Annual Total Prospects Necessary = Monthly New Appointments * 12
+                    return Math.ceil(monthlyNewAppointments * 12)
+                  })()}
                 </div>
               </CardContent>
             </Card>

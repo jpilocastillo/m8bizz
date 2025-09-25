@@ -45,14 +45,24 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
   // Use the stored clients_needed value from the database, fallback to calculated value
   const clientsNeeded = clientMetrics?.clients_needed || calculatedClientsNeeded
 
-  // Annual closing prospects: monthly ideal prospects * 12
-  const annualClosingProspects = Math.ceil(monthlyIdealProspects * 12)
+  // Get additional metrics needed for proper calculations
+  const appointmentAttrition = clientMetrics?.appointment_attrition || 0
+  const avgCloseRatio = clientMetrics?.avg_close_ratio || 0
 
-  // New appointments: total new monthly appointments needed (monthly ideal prospects * 3)
-  const newAppointments = Math.ceil(monthlyIdealProspects * 3)
+  // Calculate proper formulas based on business logic
+  // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+  const annualClosingProspects = avgCloseRatio > 0 
+    ? Math.ceil((clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100))
+    : Math.ceil(monthlyIdealProspects * 12) // Fallback to stored value
+
+  // Monthly Ideal Prospects = Annual Closing Prospects / 12
+  const calculatedMonthlyIdealProspects = annualClosingProspects / 12
+
+  // Monthly New Appointments = Monthly Ideal Prospects * 3
+  const newAppointments = Math.ceil(calculatedMonthlyIdealProspects * 3)
   
   // Total new monthly appointments needed
-  const totalNewMonthlyAppointments = Math.ceil(monthlyIdealProspects * 3)
+  const totalNewMonthlyAppointments = Math.ceil(calculatedMonthlyIdealProspects * 3)
 
   // Total advisor book: current AUM + current annuity (in millions)
   const totalBooked = (currentAUM + currentAnnuity) / 1000000

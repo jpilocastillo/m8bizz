@@ -253,9 +253,57 @@ export function MonthlyDataEntryComponent() {
       annuityGoal: data.businessGoals?.annuity_goal || 0,
       lifeGoal: data.businessGoals?.life_target_goal || 0,
       lifeTargetGoal: data.businessGoals?.life_target_goal || 0,
-      newClientsGoal: data.clientMetrics?.monthly_ideal_prospects ? Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3) : 0,
-      newAppointmentsGoal: data.clientMetrics?.monthly_ideal_prospects ? Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3) : 0,
-      newLeadsGoal: data.clientMetrics?.monthly_ideal_prospects ? Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3) : 0,
+      newClientsGoal: (() => {
+        // Calculate proper formula for monthly new appointments
+        const clientsNeeded = data.clientMetrics?.clients_needed || 0
+        const appointmentAttrition = data.clientMetrics?.appointment_attrition || 0
+        const avgCloseRatio = data.clientMetrics?.avg_close_ratio || 0
+        
+        // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+        const annualIdealClosingProspects = avgCloseRatio > 0 
+          ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
+          : (data.clientMetrics?.monthly_ideal_prospects || 0) * 12
+        
+        // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
+        const monthlyIdealProspects = annualIdealClosingProspects / 12
+        
+        // Monthly New Appointments = Monthly Ideal Prospects * 3
+        return Math.ceil(monthlyIdealProspects * 3)
+      })(),
+      newAppointmentsGoal: (() => {
+        // Calculate proper formula for monthly new appointments
+        const clientsNeeded = data.clientMetrics?.clients_needed || 0
+        const appointmentAttrition = data.clientMetrics?.appointment_attrition || 0
+        const avgCloseRatio = data.clientMetrics?.avg_close_ratio || 0
+        
+        // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+        const annualIdealClosingProspects = avgCloseRatio > 0 
+          ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
+          : (data.clientMetrics?.monthly_ideal_prospects || 0) * 12
+        
+        // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
+        const monthlyIdealProspects = annualIdealClosingProspects / 12
+        
+        // Monthly New Appointments = Monthly Ideal Prospects * 3
+        return Math.ceil(monthlyIdealProspects * 3)
+      })(),
+      newLeadsGoal: (() => {
+        // Calculate proper formula for monthly new appointments
+        const clientsNeeded = data.clientMetrics?.clients_needed || 0
+        const appointmentAttrition = data.clientMetrics?.appointment_attrition || 0
+        const avgCloseRatio = data.clientMetrics?.avg_close_ratio || 0
+        
+        // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+        const annualIdealClosingProspects = avgCloseRatio > 0 
+          ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
+          : (data.clientMetrics?.monthly_ideal_prospects || 0) * 12
+        
+        // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
+        const monthlyIdealProspects = annualIdealClosingProspects / 12
+        
+        // Monthly New Appointments = Monthly Ideal Prospects * 3
+        return Math.ceil(monthlyIdealProspects * 3)
+      })(),
     }
   }
 

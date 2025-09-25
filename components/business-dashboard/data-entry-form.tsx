@@ -218,11 +218,21 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
   const aumAccountsCount = avgAUMSizeValue > 0 ? Math.round(aumGoalAmount / avgAUMSizeValue) : 0
   const avgNetWorthNeeded = avgAnnuitySizeValue + avgAUMSizeValue
   
-  // Calculate prospects and appointments
+  // Calculate prospects and appointments using proper formulas
   const clientsNeeded = annuitiesClosed + aumAccountsCount
-  const annualIdealClosingProspects = avgCloseRatioValue > 0 ? (clientsNeeded / (avgCloseRatioValue / 100)) * (1 + appointmentAttritionValue / 100) : 0
+  
+  // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
+  const annualIdealClosingProspects = avgCloseRatioValue > 0 
+    ? (clientsNeeded / (avgCloseRatioValue / 100)) * (1 + appointmentAttritionValue / 100) 
+    : 0
+  
+  // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
   const monthlyIdealProspects = annualIdealClosingProspects / 12
+  
+  // Monthly New Appointments Needed = Monthly Ideal Prospects * 3
   const totalNewMonthlyAppointments = monthlyIdealProspects * 3
+  
+  // Annual Total Prospects Necessary = Monthly New Appointments * 12
   const annualTotalProspectsNecessary = totalNewMonthlyAppointments * 12
 
   const { user } = useAuth()
