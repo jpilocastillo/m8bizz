@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AnalyticsDashboard } from "@/components/dashboard/analytics/analytics-dashboard"
+import { AnalyticsSkeleton } from "@/components/dashboard/analytics/analytics-skeleton"
 import { DashboardError } from "@/components/dashboard/dashboard-error"
 import { fetchAllEvents } from "@/lib/data"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Suspense } from "react"
 
 export const dynamic = "force-dynamic"
 
@@ -231,11 +233,13 @@ export default async function AnalyticsPage() {
       </pre>
     )
 
-    return <>
+    return (
       <TooltipProvider>
-        <AnalyticsDashboard analyticsData={analyticsData} />
+        <Suspense fallback={<AnalyticsSkeleton />}>
+          <AnalyticsDashboard analyticsData={analyticsData} />
+        </Suspense>
       </TooltipProvider>
-    </>
+    )
   } catch (error) {
     console.error("Error in AnalyticsPage:", error)
     return <DashboardError error="An error occurred loading the analytics. Please try again later." />

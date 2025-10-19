@@ -264,7 +264,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
-                className="w-full sm:w-[300px] justify-between bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt"
+                className="w-full sm:w-[300px] lg:w-[400px] justify-between bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt"
               >
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
@@ -274,7 +274,7 @@ export function EventComparison({ events }: EventComparisonProps) {
               </Button>
             </motion.div>
           </PopoverTrigger>
-          <PopoverContent className="w-full sm:w-[400px] p-0 bg-m8bs-card border-m8bs-border text-white">
+          <PopoverContent className="w-full sm:w-[400px] lg:w-[500px] p-0 bg-m8bs-card border-m8bs-border text-white">
             <Command className="bg-transparent">
               <CommandInput placeholder="Search events..." className="border-none focus:ring-0 bg-m8bs-card-alt" />
               <CommandList>
@@ -317,7 +317,7 @@ export function EventComparison({ events }: EventComparisonProps) {
       {/* Summary Cards */}
       {summary && (
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -361,7 +361,7 @@ export function EventComparison({ events }: EventComparisonProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <div className="h-[400px] w-full">
+        <div className="h-[240px] w-full">
           <svg className="w-0 h-0">
             <defs>
               <linearGradient id={`barGradient-${activeMetric}`} x1="0" y1="0" x2="1" y2="0">
@@ -374,13 +374,13 @@ export function EventComparison({ events }: EventComparisonProps) {
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ top: 20, right: 200, left: 20, bottom: 20 }}
-              barGap={16}
+              margin={{ top: 20, right: 120, left: 20, bottom: 20 }}
+                barGap={12}
             >
               <XAxis
                 type="number"
                 stroke="#888888"
-                fontSize={14}
+                fontSize={12}
                 tick={{ style: { fill: '#94a3b8' } }}
                 tickLine={false}
                 axisLine={false}
@@ -398,18 +398,20 @@ export function EventComparison({ events }: EventComparisonProps) {
                 dataKey="label"
                 type="category"
                 stroke="#888888"
-                fontSize={14}
+                fontSize={12}
                 tick={{ style: { fill: '#94a3b8' } }}
                 tickLine={false}
                 axisLine={false}
-                width={180}
+                width={140}
               />
               <Bar
                 dataKey="value"
-                animationDuration={1500}
+                animationDuration={2000}
                 animationEasing="ease-out"
                 radius={[0, 8, 8, 0]}
-                barSize={32}
+                barSize={28}
+                animationBegin={0}
+                animationEnd={1}
               >
                 {chartData.map((entry, index) => (
                   <Cell
@@ -418,8 +420,9 @@ export function EventComparison({ events }: EventComparisonProps) {
                     style={{
                       filter: "drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.2))",
                       opacity: animate ? 1 : 0,
-                      transition: `opacity 0.5s ease-in-out ${index * 0.1}s, transform 0.5s ease-out ${index * 0.1}s`,
-                      transform: animate ? "translateX(0)" : "translateX(-20px)",
+                      transition: `opacity 0.8s ease-in-out ${index * 0.15}s, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.15}s`,
+                      transform: animate ? "translateX(0) scaleY(1)" : "translateX(-30px) scaleY(0.3)",
+                      transformOrigin: "left center",
                     }}
                   />
                 ))}
@@ -435,7 +438,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                           x={Number(x) + Number(width) + 8}
                           y={Number(y) + Number(height) / 2 - 10}
                           fill="#fff"
-                          fontSize={14}
+                          fontSize={12}
                           fontWeight="600"
                           dominantBaseline="middle"
                         >
@@ -445,7 +448,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                           x={Number(x) + Number(width) + 8}
                           y={Number(y) + Number(height) / 2 + 10}
                           fill="#94a3b8"
-                          fontSize={12}
+                          fontSize={10}
                           fontWeight="400"
                           dominantBaseline="middle"
                         >

@@ -21,6 +21,7 @@ import { format, parseISO } from "date-fns"
 import { DashboardError } from "./dashboard-error"
 import { createClient } from "@/lib/supabase/client"
 import { PlateLickerCard } from "@/components/dashboard/plate-licker-card"
+import { SingleEventExport } from "@/components/dashboard/single-event-export"
 
 interface DashboardContentProps {
   initialData: any
@@ -218,6 +219,20 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
     return <DashboardError error={error} />
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-m8bs-blue mx-auto"></div>
+          <div className="text-white">
+            <h3 className="text-lg font-semibold">Loading Event Data</h3>
+            <p className="text-m8bs-muted">Preparing your dashboard...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!dashboardData) {
     return <DashboardError error="No dashboard data available. Please create an event." />
   }
@@ -302,23 +317,29 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center text-white">
-          <Calendar className="h-5 w-5 mr-2 text-m8bs-blue" />
+    <div className="space-y-6" role="main" aria-label="Single Event Marketing Dashboard">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+        <div className="flex items-center text-white" aria-label={`Event Date: ${formattedDate}`}>
+          <Calendar className="h-5 w-5 mr-2 text-m8bs-blue" aria-hidden="true" />
           <span className="font-medium">Event Date:</span>
           <span className="ml-2 font-bold">{formattedDate}</span>
         </div>
-        <EventSelector
-          events={events}
-          selectedEventId={selectedEventId}
-          onSelect={setSelectedEventId}
-        />
+        <div className="flex items-center gap-3">
+          <EventSelector
+            events={events}
+            selectedEventId={selectedEventId}
+            onSelect={setSelectedEventId}
+          />
+          <SingleEventExport 
+            data={dashboardData} 
+            eventName={dashboardData.eventDetails?.name || 'Event'} 
+          />
+        </div>
       </div>
 
       {/* Top metrics */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6"
         variants={container}
         initial="hidden"
         animate="show"

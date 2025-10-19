@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { BarChart3, DollarSign, LineChart, Percent, TrendingUp, Users, Target, Activity } from "lucide-react"
 import { motion } from "framer-motion"
@@ -21,7 +22,7 @@ interface AnalyticsSummaryProps {
   data: AnalyticsSummaryData
 }
 
-export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
+export const AnalyticsSummary = memo(function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
   console.log('AnalyticsSummary data:', data)
 
   // Ensure data exists with default values
@@ -147,12 +148,12 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
 
   return (
     <motion.div 
-      className="overflow-x-auto"
+      className="w-full"
       variants={container}
       initial="hidden"
       animate="show"
     >
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 min-w-[900px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
         {summaryCards.map((card, index) => (
           <motion.div
             key={card.title}
@@ -160,18 +161,22 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
             whileHover={{ scale: 1.05, y: -5 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-lg card-hover h-full">
+            <Card 
+              className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-lg card-hover h-full"
+              role="article"
+              aria-label={`${card.title}: ${card.value}`}
+            >
               <CardContent className="p-3 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-white/80 font-medium tracking-wide">{card.title}</span>
-                  <div className={`${card.bgColor} p-2 rounded-lg`}>
+                  <div className={`${card.bgColor} p-2 rounded-lg`} aria-hidden="true">
                     <card.icon className={`h-4 w-4 ${card.iconColor}`} />
                   </div>
                 </div>
-                <div className="text-xl font-extrabold tracking-tight text-white mb-1">
+                <div className="text-xl font-extrabold tracking-tight text-white mb-1" aria-label={`Value: ${card.value}`}>
                   {card.value}
                 </div>
-                <div className="text-xs text-white/60 mt-auto font-medium">
+                <div className="text-xs text-white/60 mt-auto font-medium" aria-label={`Additional info: ${card.subtitle}`}>
                   {card.subtitle}
                 </div>
               </CardContent>
@@ -181,4 +186,4 @@ export function AnalyticsSummary({ data }: AnalyticsSummaryProps) {
       </div>
     </motion.div>
   )
-}
+})

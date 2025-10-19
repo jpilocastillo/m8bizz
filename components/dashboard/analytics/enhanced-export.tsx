@@ -94,7 +94,7 @@ export function EnhancedExport({ data }: EnhancedExportProps) {
         <Button
           variant="outline"
           size="sm"
-          className="bg-[#1f2037] border-[#1f2037] text-white hover:bg-[#2a2b47]"
+          className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt"
           disabled={isExporting}
         >
           {isExporting ? (
@@ -110,12 +110,12 @@ export function EnhancedExport({ data }: EnhancedExportProps) {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-[#131525] border-[#1f2037] text-white">
-        <DropdownMenuItem onClick={exportAsCSV} className="cursor-pointer hover:bg-[#1f2037]">
+      <DropdownMenuContent className="bg-m8bs-card border-m8bs-border text-white">
+        <DropdownMenuItem onClick={exportAsCSV} className="cursor-pointer hover:bg-m8bs-card-alt">
           <FileSpreadsheet className="mr-2 h-4 w-4" />
           Export as CSV
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportAsJSON} className="cursor-pointer hover:bg-[#1f2037]">
+        <DropdownMenuItem onClick={exportAsJSON} className="cursor-pointer hover:bg-m8bs-card-alt">
           <FileText className="mr-2 h-4 w-4" />
           Export as JSON
         </DropdownMenuItem>

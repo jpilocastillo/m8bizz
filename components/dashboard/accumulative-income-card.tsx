@@ -23,7 +23,7 @@ export function AccumulativeIncomeCard({
   const aumFeesPercentage = totalIncome > 0 ? (aumFees / totalIncome) * 100 : 0
 
   return (
-    <Card className="overflow-hidden border-0 bg-gradient-to-b from-[#131525] to-[#0f1029] shadow-md">
+    <Card className="bg-gradient-to-b from-m8bs-card to-m8bs-card-alt border border-m8bs-border rounded-xl shadow-xl">
       <CardHeader className="pb-2">
         <CardTitle className="text-xl flex items-center gap-2 text-white">
           <span className="text-green-400">
@@ -36,7 +36,7 @@ export function AccumulativeIncomeCard({
         <div className="grid gap-6">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
-              <span className="text-sm text-gray-400">Total Income</span>
+              <span className="text-sm text-m8bs-muted">Total Income</span>
               <span className="text-2xl font-bold text-white">${totalIncome.toLocaleString()}</span>
             </div>
             <div className="bg-green-500/10 p-2.5 rounded-full">
@@ -50,11 +50,11 @@ export function AccumulativeIncomeCard({
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
-                  <span className="text-gray-300">Life Insurance Commission</span>
+                  <span className="text-m8bs-muted">Life Insurance Commission</span>
                 </div>
                 <span className="font-medium text-white">${lifeInsuranceCommission.toLocaleString()}</span>
               </div>
-              <div className="h-2 bg-[#1f2037] rounded-full overflow-hidden">
+              <div className="h-2 bg-m8bs-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-purple-500 rounded-full transition-all duration-500 ease-in-out"
                   style={{ width: `${lifeInsurancePercentage}%` }}
@@ -67,11 +67,11 @@ export function AccumulativeIncomeCard({
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                  <span className="text-gray-300">Annuity Commission</span>
+                  <span className="text-m8bs-muted">Annuity Commission</span>
                 </div>
                 <span className="font-medium text-white">${annuityCommission.toLocaleString()}</span>
               </div>
-              <div className="h-2 bg-[#1f2037] rounded-full overflow-hidden">
+              <div className="h-2 bg-m8bs-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-in-out"
                   style={{ width: `${annuityPercentage}%` }}
@@ -84,11 +84,11 @@ export function AccumulativeIncomeCard({
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                  <span className="text-gray-300">Financial Planning</span>
+                  <span className="text-m8bs-muted">Financial Planning</span>
                 </div>
                 <span className="font-medium text-white">${financialPlanning.toLocaleString()}</span>
               </div>
-              <div className="h-2 bg-[#1f2037] rounded-full overflow-hidden">
+              <div className="h-2 bg-m8bs-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-green-500 rounded-full transition-all duration-500 ease-in-out"
                   style={{ width: `${financialPlanningPercentage}%` }}
@@ -101,11 +101,11 @@ export function AccumulativeIncomeCard({
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
-                  <span className="text-gray-300">AUM Fees</span>
+                  <span className="text-m8bs-muted">AUM Fees</span>
                 </div>
                 <span className="font-medium text-white">${aumFees.toLocaleString()}</span>
               </div>
-              <div className="h-2 bg-[#1f2037] rounded-full overflow-hidden">
+              <div className="h-2 bg-m8bs-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-amber-500 rounded-full transition-all duration-500 ease-in-out"
                   style={{ width: `${aumFeesPercentage}%` }}

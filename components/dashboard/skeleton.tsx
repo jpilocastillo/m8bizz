@@ -3,18 +3,24 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-pulse">
+      {/* Event Selector Skeleton */}
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-10 w-64 bg-m8bs-border rounded-lg" />
+        <Skeleton className="h-10 w-32 bg-m8bs-border rounded-lg" />
+      </div>
+
       {/* Key metrics row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="bg-m8bs-card border-m8bs-border p-6">
+          <Card key={i} className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <Skeleton className="h-4 w-24 bg-m8bs-border" />
-              <Skeleton className="h-6 w-6 rounded-full bg-m8bs-border" />
+              <Skeleton className="h-4 w-24 bg-m8bs-border/50" />
+              <Skeleton className="h-6 w-6 rounded-full bg-m8bs-border/50" />
             </div>
             <div className="flex items-center justify-between">
-              <Skeleton className="h-8 w-32 bg-m8bs-border" />
-              <Skeleton className="h-10 w-16 bg-m8bs-border" />
+              <Skeleton className="h-8 w-32 bg-m8bs-border/50" />
+              <Skeleton className="h-10 w-16 bg-m8bs-border/50" />
             </div>
           </Card>
         ))}
@@ -23,11 +29,11 @@ export function DashboardSkeleton() {
       {/* Event details row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[...Array(3)].map((_, i) => (
-          <Card key={i} className="bg-m8bs-card border-m8bs-border p-6">
+          <Card key={i} className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <Skeleton className="h-4 w-24 bg-m8bs-border" />
+              <Skeleton className="h-4 w-24 bg-m8bs-border/50" />
             </div>
-            <Skeleton className="h-8 w-32 bg-m8bs-border" />
+            <Skeleton className="h-8 w-32 bg-m8bs-border/50" />
           </Card>
         ))}
       </div>
@@ -35,40 +41,40 @@ export function DashboardSkeleton() {
       {/* Marketing and attendance section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2">
-          <Card className="bg-m8bs-card border-m8bs-border p-6">
+          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <Skeleton className="h-4 w-32 bg-m8bs-border" />
+              <Skeleton className="h-4 w-32 bg-m8bs-border/50" />
             </div>
-            <Skeleton className="h-8 w-40 bg-m8bs-border mb-4" />
+            <Skeleton className="h-8 w-40 bg-m8bs-border/50 mb-4" />
             <div className="flex justify-center mb-6">
-              <Skeleton className="h-32 w-32 rounded-full bg-m8bs-border" />
+              <Skeleton className="h-32 w-32 rounded-full bg-m8bs-border/50" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Skeleton className="h-4 w-24 bg-m8bs-border mb-2" />
-                <Skeleton className="h-6 w-20 bg-m8bs-border" />
+                <Skeleton className="h-4 w-24 bg-m8bs-border/50 mb-2" />
+                <Skeleton className="h-6 w-20 bg-m8bs-border/50" />
               </div>
               <div>
-                <Skeleton className="h-4 w-24 bg-m8bs-border mb-2" />
-                <Skeleton className="h-6 w-20 bg-m8bs-border" />
+                <Skeleton className="h-4 w-24 bg-m8bs-border/50 mb-2" />
+                <Skeleton className="h-6 w-20 bg-m8bs-border/50" />
               </div>
             </div>
           </Card>
         </div>
 
         <div className="md:col-span-1">
-          <Card className="bg-m8bs-card border-m8bs-border p-6">
+          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <Skeleton className="h-4 w-32 bg-m8bs-border" />
+              <Skeleton className="h-4 w-32 bg-m8bs-border/50" />
             </div>
             <div className="space-y-6">
               {[...Array(3)].map((_, i) => (
                 <div key={i}>
                   <div className="flex justify-between items-center mb-2">
-                    <Skeleton className="h-4 w-24 bg-m8bs-border" />
+                    <Skeleton className="h-4 w-24 bg-m8bs-border/50" />
                     <div className="flex items-center">
-                      <Skeleton className="h-6 w-8 bg-m8bs-border mr-3" />
-                      <Skeleton className="h-6 w-6 rounded-full bg-m8bs-border" />
+                      <Skeleton className="h-6 w-8 bg-m8bs-border/50 mr-3" />
+                      <Skeleton className="h-6 w-6 rounded-full bg-m8bs-border/50" />
                     </div>
                   </div>
                 </div>
@@ -79,16 +85,16 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Accumulated income section */}
-      <Card className="bg-m8bs-card border-m8bs-border p-6">
-        <Skeleton className="h-4 w-32 bg-m8bs-border mb-4" />
-        <Skeleton className="h-8 w-40 bg-m8bs-border mb-6" />
-        <Skeleton className="h-3 w-full bg-m8bs-border mb-6" />
+      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border p-6">
+        <Skeleton className="h-4 w-32 bg-m8bs-border/50 mb-4" />
+        <Skeleton className="h-8 w-40 bg-m8bs-border/50 mb-6" />
+        <Skeleton className="h-3 w-full bg-m8bs-border/50 mb-6" />
         <div className="grid grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
             <div key={i}>
-              <Skeleton className="h-4 w-24 bg-m8bs-border mb-2" />
-              <Skeleton className="h-6 w-28 bg-m8bs-border mb-1" />
-              <Skeleton className="h-3 w-16 bg-m8bs-border" />
+              <Skeleton className="h-4 w-24 bg-m8bs-border/50 mb-2" />
+              <Skeleton className="h-6 w-28 bg-m8bs-border/50 mb-1" />
+              <Skeleton className="h-3 w-16 bg-m8bs-border/50" />
             </div>
           ))}
         </div>
@@ -97,16 +103,16 @@ export function DashboardSkeleton() {
       {/* Client acquisition and conversion section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[...Array(2)].map((_, i) => (
-          <Card key={i} className="bg-m8bs-card border-m8bs-border p-6">
-            <Skeleton className="h-4 w-32 bg-m8bs-border mb-6" />
+          <Card key={i} className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border p-6">
+            <Skeleton className="h-4 w-32 bg-m8bs-border/50 mb-6" />
             <div className="flex justify-center mb-6">
-              <Skeleton className="h-32 w-32 rounded-full bg-m8bs-border" />
+              <Skeleton className="h-32 w-32 rounded-full bg-m8bs-border/50" />
             </div>
             <div className="space-y-4">
               {[...Array(3)].map((_, j) => (
                 <div key={j} className="flex justify-between items-center">
-                  <Skeleton className="h-4 w-32 bg-m8bs-border" />
-                  <Skeleton className="h-4 w-16 bg-m8bs-border" />
+                  <Skeleton className="h-4 w-32 bg-m8bs-border/50" />
+                  <Skeleton className="h-4 w-16 bg-m8bs-border/50" />
                 </div>
               ))}
             </div>

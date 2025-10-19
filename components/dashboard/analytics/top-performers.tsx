@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { format } from "date-fns"
-import { useState } from "react"
+import { useState, memo, useMemo } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
 import { TrendingUp, Target, DollarSign, Users, Award } from "lucide-react"
@@ -15,26 +15,28 @@ interface TopPerformersProps {
   onMetricChange: (metric: MetricType) => void
 }
 
-export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerformersProps) {
+export const TopPerformers = memo(function TopPerformers({ data, activeMetric, onMetricChange }: TopPerformersProps) {
   // Sort events based on the active metric
-  const sortedEvents = [...data]
-    .sort((a, b) => {
-      switch (activeMetric) {
-        case "ROI":
-          return (b.roi?.value || 0) - (a.roi?.value || 0)
-        case "Conversion":
-          return (b.clients / b.attendees || 0) - (a.clients / a.attendees || 0)
-        case "Revenue":
-          return (b.revenue || 0) - (a.revenue || 0)
-        case "Attendees":
-          return (b.attendees || 0) - (a.attendees || 0)
-        case "Clients":
-          return (b.clients || 0) - (a.clients || 0)
-        default:
-          return 0
-      }
-    })
-    .slice(0, 5) // Get top 5
+  const sortedEvents = useMemo(() => {
+    return [...data]
+      .sort((a, b) => {
+        switch (activeMetric) {
+          case "ROI":
+            return (b.roi?.value || 0) - (a.roi?.value || 0)
+          case "Conversion":
+            return (b.clients / b.attendees || 0) - (a.clients / a.attendees || 0)
+          case "Revenue":
+            return (b.revenue || 0) - (a.revenue || 0)
+          case "Attendees":
+            return (b.attendees || 0) - (a.attendees || 0)
+          case "Clients":
+            return (b.clients || 0) - (a.clients || 0)
+          default:
+            return 0
+        }
+      })
+      .slice(0, 5) // Get top 5
+  }, [data, activeMetric])
 
   // Get the top value for progress scaling
   const getMetricValue = (event: any) => {
@@ -53,7 +55,9 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
         return 0
     }
   }
-  const topValue = sortedEvents.length > 0 ? getMetricValue(sortedEvents[0]) : 1
+  const topValue = useMemo(() => {
+    return sortedEvents.length > 0 ? getMetricValue(sortedEvents[0]) : 1
+  }, [sortedEvents])
 
   // Format value based on metric type
   const formatValue = (event: any, metric: MetricType) => {
@@ -134,8 +138,10 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
                     : "bg-m8bs-card text-white hover:bg-m8bs-card-alt hover:border-m8bs-blue/50"
                 }`}
                 onClick={() => onMetricChange(metric)}
+                aria-pressed={activeMetric === metric}
+                aria-label={`Sort by ${metric}`}
               >
-                <icon.icon className="h-4 w-4 mr-2" />
+                <icon.icon className="h-4 w-4 mr-2" aria-hidden="true" />
                 {metric}
               </Button>
             </motion.div>
@@ -168,6 +174,15 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
                           ? "border-emerald-400/60 bg-gradient-to-r from-emerald-900/20 to-emerald-800/10 shadow-lg"
                           : "border-m8bs-border bg-m8bs-card hover:border-m8bs-blue/50 hover:bg-m8bs-card-alt"
                       }`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Event: ${event.name || "Unnamed Event"}, Rank: ${index + 1}, ${activeMetric}: ${formatValue(event, activeMetric)}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          // Handle click action if needed
+                        }
+                      }}
                     >
                       {/* Background Pattern */}
                       <div className="absolute inset-0 opacity-5">
@@ -226,9 +241,9 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
                           </div>
 
                           {/* Right Section - Metric Value and Progress */}
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            {/* Key Metrics */}
-                            <div className="hidden md:flex flex-col items-end gap-1 text-sm">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                            {/* Key Metrics - Hidden on mobile, shown on larger screens */}
+                            <div className="hidden lg:flex flex-col items-end gap-1 text-sm">
                               <div className="text-m8bs-muted">
                                 Attendees: <span className="text-white font-semibold">{event.attendees || 0}</span>
                               </div>
@@ -244,14 +259,14 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
 
                             {/* Main Metric Value */}
                             <div className="text-right">
-                              <div className={`text-xl font-extrabold ${
+                              <div className={`text-lg sm:text-xl font-extrabold ${
                                 isTop ? "text-emerald-400" : "text-white"
                               }`}>
                                 {formatValue(event, activeMetric)}
                               </div>
                               
                               {/* Progress Bar */}
-                              <div className="w-20 h-1.5 bg-m8bs-card-alt rounded-full overflow-hidden mt-1.5">
+                              <div className="w-16 sm:w-20 h-1.5 bg-m8bs-card-alt rounded-full overflow-hidden mt-1.5">
                                 <motion.div
                                   className={`h-full rounded-full ${
                                     isTop 
@@ -286,4 +301,4 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
       </div>
     </div>
   )
-}
+})

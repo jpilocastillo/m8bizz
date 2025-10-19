@@ -1,361 +1,367 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Calendar, Check, ChevronDown, Filter, X, Target, MapPin, Clock } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { format } from "date-fns"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { Calendar } from "@/components/ui/calendar"
 import { Badge } from "@/components/ui/badge"
+import { Filter, X, Calendar as CalendarIcon, Search, MapPin, Tag, Clock } from "lucide-react"
+import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
 
 interface AnalyticsFiltersProps {
-  analyticsData: any
-  onFilterChange: (filteredData: any) => void
+  onFiltersChange: (filters: FilterState) => void
+  events: any[]
 }
 
-export function AnalyticsFilters({ analyticsData, onFilterChange }: AnalyticsFiltersProps) {
-  // Extract unique values for filters
-  const allEvents = analyticsData?.events || []
+interface FilterState {
+  search: string
+  dateRange: {
+    from: Date | undefined
+    to: Date | undefined
+  }
+  locations: string[]
+  types: string[]
+  topics: string[]
+  timeSlots: string[]
+}
 
-  const uniqueTopics = [...new Set(allEvents.map((event: any) => event.type || "Unknown"))]
-  const uniqueLocations = [...new Set(allEvents.map((event: any) => event.location || "Unknown"))]
-
-  // Get min and max dates - parse manually to avoid timezone issues
-  const dates = allEvents.map((event: any) => {
-    try {
-      const [year, month, day] = event.date.split('-').map(Number)
-      return new Date(year, month - 1, day)
-    } catch {
-      return new Date()
-    }
+export function AnalyticsFilters({ onFiltersChange, events }: AnalyticsFiltersProps) {
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    dateRange: {
+      from: undefined,
+      to: undefined,
+    },
+    locations: [],
+    types: [],
+    topics: [],
+    timeSlots: [],
   })
-  const minDate = dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : new Date()
-  const maxDate = dates.length ? new Date(Math.max(...dates.map((d) => d.getTime()))) : new Date()
 
-  // Filter state
-  const [filters, setFilters] = useState({
-    dateRange: { from: minDate, to: maxDate },
-    topics: [] as string[],
-    locations: [] as string[],
-  })
+  const [isOpen, setIsOpen] = useState(false)
 
-  // Open state for popovers
-  const [openDateRange, setOpenDateRange] = useState(false)
-  const [openTopics, setOpenTopics] = useState(false)
-  const [openLocations, setOpenLocations] = useState(false)
+  // Extract unique values for filter options
+  const uniqueLocations = [...new Set(events.map(event => event.location).filter(Boolean))]
+  const uniqueTypes = [...new Set(events.map(event => event.type).filter(Boolean))]
+  const uniqueTopics = [...new Set(events.map(event => event.topic).filter(Boolean))]
+  const uniqueTimeSlots = [...new Set(events.map(event => event.time).filter(Boolean))]
 
-  // Memoize the filter function to prevent recreation on every render
-  const applyFilters = useCallback(() => {
-    // Skip processing if analyticsData is not available
-    if (!analyticsData || !analyticsData.events) {
-      return
-    }
-
-    // Filter events based on selected criteria
-    const filteredEvents = allEvents.filter((event: any) => {
-      // Parse date manually to avoid timezone issues
-      let eventDate: Date
-      try {
-        const [year, month, day] = event.date.split('-').map(Number)
-        eventDate = new Date(year, month - 1, day)
-      } catch {
-        eventDate = new Date()
-      }
-      const dateInRange = eventDate >= filters.dateRange.from && eventDate <= filters.dateRange.to
-
-      const topicMatches = filters.topics.length === 0 || filters.topics.includes(event.type || "Unknown")
-      const locationMatches = filters.locations.length === 0 || filters.locations.includes(event.location || "Unknown")
-
-      return dateInRange && topicMatches && locationMatches
-    })
-
-    // Calculate summary metrics for filtered events
-    const summary = {
-      totalEvents: filteredEvents.length,
-      totalAttendees: filteredEvents.reduce((sum: number, event: any) => sum + (event.attendees || 0), 0),
-      avgAttendees:
-        filteredEvents.length > 0
-          ? filteredEvents.reduce((sum: number, event: any) => sum + (event.attendees || 0), 0) / filteredEvents.length
-          : 0,
-      totalRevenue: filteredEvents.reduce((sum: number, event: any) => sum + (event.revenue || 0), 0),
-      totalExpenses: filteredEvents.reduce((sum: number, event: any) => sum + (event.expenses || 0), 0),
-      totalProfit: filteredEvents.reduce(
-        (sum: number, event: any) => sum + ((event.revenue || 0) - (event.expenses || 0)),
-        0,
-      ),
-      overallROI:
-        filteredEvents.length > 0
-          ? filteredEvents.reduce((sum: number, event: any) => sum + (event.roi || 0), 0) / filteredEvents.length
-          : 0,
-      totalClients: filteredEvents.reduce((sum: number, event: any) => sum + (event.clients || 0), 0),
-      overallConversionRate:
-        filteredEvents.reduce((sum: number, event: any) => sum + (event.attendees || 0), 0) > 0
-          ? (filteredEvents.reduce((sum: number, event: any) => sum + (event.clients || 0), 0) /
-              filteredEvents.reduce((sum: number, event: any) => sum + (event.attendees || 0), 0)) *
-            100
-          : 0,
-    }
-
-    // Pass filtered data to parent component
-    onFilterChange({
-      events: filteredEvents,
-      summary,
-    })
-  }, [filters, allEvents, analyticsData, onFilterChange])
-
-  // Apply filters when filters change
-  useEffect(() => {
-    applyFilters()
-  }, [applyFilters])
-
-  // Reset all filters
-  const resetFilters = () => {
-    setFilters({
-      dateRange: { from: minDate, to: maxDate },
-      topics: [],
-      locations: [],
-    })
+  const updateFilters = (newFilters: Partial<FilterState>) => {
+    const updatedFilters = { ...filters, ...newFilters }
+    setFilters(updatedFilters)
+    onFiltersChange(updatedFilters)
   }
 
-  // Check if any filters are active
-  const hasActiveFilters = filters.topics.length > 0 || filters.locations.length > 0 || 
-    filters.dateRange.from !== minDate || filters.dateRange.to !== maxDate
+  const clearFilters = () => {
+    const clearedFilters: FilterState = {
+      search: "",
+      dateRange: { from: undefined, to: undefined },
+      locations: [],
+      types: [],
+      topics: [],
+      timeSlots: [],
+    }
+    setFilters(clearedFilters)
+    onFiltersChange(clearedFilters)
+  }
+
+  const toggleArrayFilter = (array: string[], value: string, key: keyof FilterState) => {
+    const newArray = array.includes(value)
+      ? array.filter(item => item !== value)
+      : [...array, value]
+    updateFilters({ [key]: newArray })
+  }
+
+  const getActiveFiltersCount = () => {
+    let count = 0
+    if (filters.search) count++
+    if (filters.dateRange.from || filters.dateRange.to) count++
+    if (filters.locations.length > 0) count++
+    if (filters.types.length > 0) count++
+    if (filters.topics.length > 0) count++
+    if (filters.timeSlots.length > 0) count++
+    return count
+  }
+
+  const activeFiltersCount = getActiveFiltersCount()
 
   return (
-    <motion.div 
-      className="bg-gradient-to-r from-m8bs-card to-m8bs-card-alt border border-m8bs-border rounded-xl p-6 shadow-lg"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-m8bs-blue/20 p-2 rounded-lg">
-            <Filter className="h-5 w-5 text-m8bs-blue" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-white">Filter Analytics</h3>
-            <p className="text-sm text-m8bs-muted">Refine your data view</p>
-          </div>
+    <div className="space-y-4">
+      {/* Filter Toggle Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-m8bs-muted" />
+          <span className="text-sm font-medium text-white">Filters</span>
+          {activeFiltersCount > 0 && (
+            <Badge variant="secondary" className="bg-m8bs-blue text-white">
+              {activeFiltersCount}
+            </Badge>
+          )}
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Date Range Filter */}
-          <Popover open={openDateRange} onOpenChange={setOpenDateRange}>
-            <PopoverTrigger asChild>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "bg-m8bs-card-alt border-m8bs-border text-white hover:bg-m8bs-card hover:border-m8bs-blue/50",
-                    hasActiveFilters && "border-m8bs-blue/50"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {filters.dateRange.from && filters.dateRange.to ? (
-                    `${format(filters.dateRange.from, "MMM dd")} - ${format(filters.dateRange.to, "MMM dd, yyyy")}`
-                  ) : (
-                    "Select date range"
-                  )}
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </motion.div>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 bg-m8bs-card border-m8bs-border" align="start">
-              <CalendarComponent
-                initialFocus
-                mode="range"
-                defaultMonth={filters.dateRange.from}
-                selected={filters.dateRange}
-                onSelect={(range) => {
-                  if (range?.from && range?.to) {
-                    setFilters(prev => ({ ...prev, dateRange: range }))
-                  }
-                }}
-                numberOfMonths={2}
-                className="bg-m8bs-card text-white"
-              />
-            </PopoverContent>
-          </Popover>
-
-          {/* Topics Filter */}
-          <Popover open={openTopics} onOpenChange={setOpenTopics}>
-            <PopoverTrigger asChild>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "bg-m8bs-card-alt border-m8bs-border text-white hover:bg-m8bs-card hover:border-m8bs-blue/50",
-                    filters.topics.length > 0 && "border-m8bs-blue/50"
-                  )}
-                >
-                  <Target className="mr-2 h-4 w-4" />
-                  Topics
-                  {filters.topics.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 bg-m8bs-blue text-white">
-                      {filters.topics.length}
-                    </Badge>
-                  )}
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </motion.div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 bg-m8bs-card border-m8bs-border" align="start">
-              <Command>
-                <CommandInput placeholder="Search topics..." className="bg-m8bs-card-alt border-m8bs-border text-white" />
-                <CommandList>
-                  <CommandEmpty>No topics found.</CommandEmpty>
-                  <CommandGroup>
-                    {uniqueTopics.map((topic) => (
-                      <CommandItem
-                        key={topic}
-                        onSelect={() => {
-                          setFilters(prev => ({
-                            ...prev,
-                            topics: prev.topics.includes(topic)
-                              ? prev.topics.filter(t => t !== topic)
-                              : [...prev.topics, topic]
-                          }))
-                        }}
-                        className="bg-m8bs-card-alt hover:bg-m8bs-card text-white"
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            filters.topics.includes(topic) ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {topic}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-
-          {/* Locations Filter */}
-          <Popover open={openLocations} onOpenChange={setOpenLocations}>
-            <PopoverTrigger asChild>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "bg-m8bs-card-alt border-m8bs-border text-white hover:bg-m8bs-card hover:border-m8bs-blue/50",
-                    filters.locations.length > 0 && "border-m8bs-blue/50"
-                  )}
-                >
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Locations
-                  {filters.locations.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 bg-m8bs-blue text-white">
-                      {filters.locations.length}
-                    </Badge>
-                  )}
-                  <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </motion.div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0 bg-m8bs-card border-m8bs-border" align="start">
-              <Command>
-                <CommandInput placeholder="Search locations..." className="bg-m8bs-card-alt border-m8bs-border text-white" />
-                <CommandList>
-                  <CommandEmpty>No locations found.</CommandEmpty>
-                  <CommandGroup>
-                    {uniqueLocations.map((location) => (
-                      <CommandItem
-                        key={location}
-                        onSelect={() => {
-                          setFilters(prev => ({
-                            ...prev,
-                            locations: prev.locations.includes(location)
-                              ? prev.locations.filter(l => l !== location)
-                              : [...prev.locations, location]
-                          }))
-                        }}
-                        className="bg-m8bs-card-alt hover:bg-m8bs-card text-white"
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            filters.locations.includes(location) ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {location}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-
-          {/* Reset Filters */}
-          {hasActiveFilters && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+        <div className="flex items-center gap-2">
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="text-m8bs-muted hover:text-white"
             >
+              <X className="h-4 w-4 mr-1" />
+              Clear All
+            </Button>
+          )}
+          <Popover open={isOpen} onOpenChange={setIsOpen}>
+            <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                onClick={resetFilters}
-                className="bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30 hover:border-red-500/50"
+                size="sm"
+                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt"
               >
-                <X className="mr-2 h-4 w-4" />
-                Clear All
+                <Filter className="h-4 w-4 mr-2" />
+                Advanced Filters
               </Button>
-            </motion.div>
-          )}
+            </PopoverTrigger>
+            <PopoverContent className="w-80 sm:w-96 p-0 bg-m8bs-card border-m8bs-border" align="end">
+              <Card className="border-0 bg-transparent">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg text-white">Filter Events</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Search */}
+                  <div className="space-y-2">
+                    <Label htmlFor="search" className="text-white">Search Events</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-m8bs-muted" />
+                      <Input
+                        id="search"
+                        placeholder="Search by name, location, or topic..."
+                        value={filters.search}
+                        onChange={(e) => updateFilters({ search: e.target.value })}
+                        className="pl-10 bg-m8bs-card-alt border-m8bs-border text-white placeholder:text-m8bs-muted"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date Range */}
+                  <div className="space-y-2">
+                    <Label className="text-white">Date Range</Label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal bg-m8bs-card-alt border-m8bs-border text-white",
+                              !filters.dateRange.from && "text-m8bs-muted"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {filters.dateRange.from ? format(filters.dateRange.from, "PPP") : "From date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-m8bs-card border-m8bs-border" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={filters.dateRange.from}
+                            onSelect={(date) => updateFilters({ dateRange: { ...filters.dateRange, from: date } })}
+                            initialFocus
+                            className="bg-m8bs-card text-white"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal bg-m8bs-card-alt border-m8bs-border text-white",
+                              !filters.dateRange.to && "text-m8bs-muted"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {filters.dateRange.to ? format(filters.dateRange.to, "PPP") : "To date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-m8bs-card border-m8bs-border" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={filters.dateRange.to}
+                            onSelect={(date) => updateFilters({ dateRange: { ...filters.dateRange, to: date } })}
+                            initialFocus
+                            className="bg-m8bs-card text-white"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  {/* Locations */}
+                  <div className="space-y-2">
+                    <Label className="text-white flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Locations
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueLocations.map((location) => (
+                        <Badge
+                          key={location}
+                          variant={filters.locations.includes(location) ? "default" : "outline"}
+                          className={cn(
+                            "cursor-pointer transition-colors",
+                            filters.locations.includes(location)
+                              ? "bg-m8bs-blue text-white"
+                              : "border-m8bs-border text-m8bs-muted hover:bg-m8bs-card-alt"
+                          )}
+                          onClick={() => toggleArrayFilter(filters.locations, location, "locations")}
+                        >
+                          {location}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Types */}
+                  <div className="space-y-2">
+                    <Label className="text-white flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      Event Types
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueTypes.map((type) => (
+                        <Badge
+                          key={type}
+                          variant={filters.types.includes(type) ? "default" : "outline"}
+                          className={cn(
+                            "cursor-pointer transition-colors",
+                            filters.types.includes(type)
+                              ? "bg-m8bs-blue text-white"
+                              : "border-m8bs-border text-m8bs-muted hover:bg-m8bs-card-alt"
+                          )}
+                          onClick={() => toggleArrayFilter(filters.types, type, "types")}
+                        >
+                          {type}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Topics */}
+                  <div className="space-y-2">
+                    <Label className="text-white">Topics</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueTopics.map((topic) => (
+                        <Badge
+                          key={topic}
+                          variant={filters.topics.includes(topic) ? "default" : "outline"}
+                          className={cn(
+                            "cursor-pointer transition-colors",
+                            filters.topics.includes(topic)
+                              ? "bg-m8bs-blue text-white"
+                              : "border-m8bs-border text-m8bs-muted hover:bg-m8bs-card-alt"
+                          )}
+                          onClick={() => toggleArrayFilter(filters.topics, topic, "topics")}
+                        >
+                          {topic}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Time Slots */}
+                  <div className="space-y-2">
+                    <Label className="text-white flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Time Slots
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueTimeSlots.map((time) => (
+                        <Badge
+                          key={time}
+                          variant={filters.timeSlots.includes(time) ? "default" : "outline"}
+                          className={cn(
+                            "cursor-pointer transition-colors",
+                            filters.timeSlots.includes(time)
+                              ? "bg-m8bs-blue text-white"
+                              : "border-m8bs-border text-m8bs-muted hover:bg-m8bs-card-alt"
+                          )}
+                          onClick={() => toggleArrayFilter(filters.timeSlots, time, "timeSlots")}
+                        >
+                          {time}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
       {/* Active Filters Display */}
-      {(filters.topics.length > 0 || filters.locations.length > 0) && (
-        <motion.div 
-          className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-m8bs-border"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-        >
-          <span className="text-sm text-m8bs-muted mr-2">Active filters:</span>
-          {filters.topics.map((topic) => (
-            <Badge
-              key={topic}
-              variant="secondary"
-              className="bg-m8bs-blue/20 text-m8bs-blue border-m8bs-blue/30"
-            >
-              <Target className="mr-1 h-3 w-3" />
-              {topic}
-              <button
-                onClick={() => setFilters(prev => ({ ...prev, topics: prev.topics.filter(t => t !== topic) }))}
-                className="ml-1 hover:bg-m8bs-blue/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
+      {activeFiltersCount > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {filters.search && (
+            <Badge variant="secondary" className="bg-m8bs-blue text-white">
+              Search: {filters.search}
+              <X
+                className="ml-1 h-3 w-3 cursor-pointer"
+                onClick={() => updateFilters({ search: "" })}
+              />
             </Badge>
-          ))}
+          )}
+          {(filters.dateRange.from || filters.dateRange.to) && (
+            <Badge variant="secondary" className="bg-m8bs-blue text-white">
+              Date: {filters.dateRange.from ? format(filters.dateRange.from, "MMM d") : "..."} - {filters.dateRange.to ? format(filters.dateRange.to, "MMM d") : "..."}
+              <X
+                className="ml-1 h-3 w-3 cursor-pointer"
+                onClick={() => updateFilters({ dateRange: { from: undefined, to: undefined } })}
+              />
+            </Badge>
+          )}
           {filters.locations.map((location) => (
-            <Badge
-              key={location}
-              variant="secondary"
-              className="bg-green-500/20 text-green-400 border-green-500/30"
-            >
-              <MapPin className="mr-1 h-3 w-3" />
+            <Badge key={location} variant="secondary" className="bg-m8bs-blue text-white">
               {location}
-              <button
-                onClick={() => setFilters(prev => ({ ...prev, locations: prev.locations.filter(l => l !== location) }))}
-                className="ml-1 hover:bg-green-500/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
+              <X
+                className="ml-1 h-3 w-3 cursor-pointer"
+                onClick={() => toggleArrayFilter(filters.locations, location, "locations")}
+              />
             </Badge>
           ))}
-        </motion.div>
+          {filters.types.map((type) => (
+            <Badge key={type} variant="secondary" className="bg-m8bs-blue text-white">
+              {type}
+              <X
+                className="ml-1 h-3 w-3 cursor-pointer"
+                onClick={() => toggleArrayFilter(filters.types, type, "types")}
+              />
+            </Badge>
+          ))}
+          {filters.topics.map((topic) => (
+            <Badge key={topic} variant="secondary" className="bg-m8bs-blue text-white">
+              {topic}
+              <X
+                className="ml-1 h-3 w-3 cursor-pointer"
+                onClick={() => toggleArrayFilter(filters.topics, topic, "topics")}
+              />
+            </Badge>
+          ))}
+          {filters.timeSlots.map((time) => (
+            <Badge key={time} variant="secondary" className="bg-m8bs-blue text-white">
+              {time}
+              <X
+                className="ml-1 h-3 w-3 cursor-pointer"
+                onClick={() => toggleArrayFilter(filters.timeSlots, time, "timeSlots")}
+              />
+            </Badge>
+          ))}
+        </div>
       )}
-    </motion.div>
+    </div>
   )
 }
