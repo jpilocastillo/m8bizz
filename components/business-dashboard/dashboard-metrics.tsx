@@ -20,6 +20,28 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
     clientMetrics
   })
 
+  // Show loading state if data is not available
+  if (!businessGoals || !currentValues || !clientMetrics) {
+    return (
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 w-full max-w-full">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Card key={index} className="border-none shadow-lg overflow-hidden h-full flex flex-col bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse">
+            <div className="h-1 w-full bg-gray-600"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-4">
+              <div className="flex-1 pr-2">
+                <div className="h-4 bg-gray-600 rounded w-3/4 mb-2"></div>
+              </div>
+              <div className="rounded-full p-2 bg-gray-600 w-8 h-8"></div>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center px-4 pb-4">
+              <div className="h-8 bg-gray-600 rounded w-16"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
   // Calculate metrics from real data using correct formulas
   const currentAUM = currentValues?.current_aum || 0
   const currentAnnuity = currentValues?.current_annuity || 0
@@ -141,23 +163,31 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
 
   return (
     <TooltipProvider>
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 w-full max-w-full">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 w-full max-w-full">
         {metrics.map((metric, index) => (
-          <Card key={index} className="border-none shadow-lg overflow-hidden h-full flex flex-col bg-gradient-to-br from-gray-800 to-gray-900 hover:shadow-xl transition-all duration-300">
+          <Card 
+            key={index} 
+            className="border-none shadow-lg overflow-hidden h-full flex flex-col bg-gradient-to-br from-gray-800 to-gray-900 hover:shadow-xl transition-all duration-300"
+            role="article"
+            aria-label={`${metric.title}: ${metric.value}`}
+          >
             <div className={cn("h-1 w-full", getColorClasses(metric.color).split(" ")[0])}></div>
             
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-4">
-              <div className="flex-1 pr-2">
-                <CardTitle className="text-sm font-semibold leading-tight text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-3 sm:pb-3 sm:pt-4 sm:px-4">
+              <div className="flex-1 pr-2 min-w-0">
+                <CardTitle className="text-xs sm:text-sm font-semibold leading-tight text-white truncate">
                   {metric.title}
                 </CardTitle>
               </div>
               
               <Tooltip>
-                <TooltipTrigger>
-                  <div className={cn("rounded-full p-2 flex-shrink-0", getColorClasses(metric.color).split(" ")[2])}>
-                    <metric.icon className={cn("h-4 w-4", getTextColor(metric.color))} />
-                  </div>
+                <TooltipTrigger asChild>
+                  <button 
+                    className={cn("rounded-full p-1.5 sm:p-2 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500", getColorClasses(metric.color).split(" ")[2])}
+                    aria-label={`More information about ${metric.title}`}
+                  >
+                    <metric.icon className={cn("h-3 w-3 sm:h-4 sm:w-4", getTextColor(metric.color))} />
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{metric.tooltip}</p>
@@ -165,13 +195,13 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
               </Tooltip>
             </CardHeader>
             
-            <CardContent className="flex-1 flex items-center justify-center px-4 pb-4">
+            <CardContent className="flex-1 flex items-center justify-center px-3 pb-3 sm:px-4 sm:pb-4">
               <div className={cn(
                 "font-bold text-center leading-none tracking-tight", 
                 getTextColor(metric.color),
-                "min-h-[2.5rem] flex items-center justify-center w-full",
+                "min-h-[2rem] sm:min-h-[2.5rem] flex items-center justify-center w-full",
                 // Adjust font size for currency values to maintain alignment
-                metric.title === "Total Advisor Book" ? "text-2xl" : "text-3xl"
+                metric.title === "Total Advisor Book" ? "text-lg sm:text-2xl" : "text-xl sm:text-3xl"
               )}>
                 <span className="block w-full text-center">
                   {metric.value}

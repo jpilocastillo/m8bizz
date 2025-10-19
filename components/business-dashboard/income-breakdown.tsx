@@ -31,6 +31,27 @@ export function IncomeBreakdown({
   clientMetrics, 
   commissionRates 
 }: IncomeBreakdownProps) {
+  // Show loading state if data is not available
+  if (!businessGoals || !currentValues || !clientMetrics || !commissionRates) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-none">
+          <CardHeader>
+            <CardTitle className="text-white">Income Breakdown</CardTitle>
+            <CardDescription className="text-gray-300">Loading income data...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-600 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-600 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-600 rounded w-2/3"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // Calculate income values from business data
   const calculateIncomeData = () => {
     if (!businessGoals || !currentValues || !clientMetrics || !commissionRates) {

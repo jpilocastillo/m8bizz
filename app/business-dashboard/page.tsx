@@ -12,6 +12,8 @@ import { ClientAcquisition } from "@/components/business-dashboard/client-acquis
 import { DataEntryFormV2 } from "@/components/business-dashboard/data-entry-form-v2"
 import { MonthlyDataEntryComponent } from "@/components/business-dashboard/monthly-data-entry"
 import { PDFExport } from "@/components/business-dashboard/pdf-export"
+import { CSVExport } from "@/components/business-dashboard/csv-export"
+import { DataValidation } from "@/components/business-dashboard/data-validation"
 import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { Button } from "@/components/ui/button"
@@ -124,8 +126,14 @@ export default function BusinessDashboard() {
 
   if (!mounted || loading || profileLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
+          <div className="text-white">
+            <h3 className="text-lg font-semibold">Loading Advisor Basecamp</h3>
+            <p className="text-gray-300">Preparing your dashboard...</p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -136,7 +144,11 @@ export default function BusinessDashboard() {
   if (!isComplete || editMode) {
     console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode)
     return (
-      <div className="py-8">
+      <div className="py-8 space-y-6">
+        <DataValidation 
+          data={data} 
+          onEditData={() => setEditMode(true)} 
+        />
         <DataEntryFormV2
           user={user}
           onComplete={handleDataSubmitted}
@@ -170,6 +182,7 @@ export default function BusinessDashboard() {
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+          <CSVExport data={data} profile={profile} />
           <Button variant="outline" onClick={() => setEditMode(true)}>
             Edit Business Data
           </Button>
@@ -247,7 +260,18 @@ export default function BusinessDashboard() {
         </TabsContent>
 
         <TabsContent value="options" className="space-y-6">
-          <FinancialOptions data={data} />
+          <FinancialOptions 
+            data={{
+              currentValues: data.currentValues ? {
+                current_annuity: data.currentValues.current_annuity,
+                current_aum: data.currentValues.current_aum
+              } : undefined,
+              financialBook: data.financialBook ? {
+                qualified_money_value: data.financialBook.qualified_money_value
+              } : undefined,
+              financialOptions: undefined
+            } as any} 
+          />
         </TabsContent>
         <TabsContent value="monthly" className="space-y-6">
           <MonthlyDataEntryComponent />
