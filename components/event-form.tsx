@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import { createEvent, createEventExpenses, createEventAttendance, createEventAppointments, createEventFinancialProduction, updateEvent } from "@/lib/data"
 import { useAuth } from "@/components/auth-provider"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { 
+  Calendar, 
+  MapPin, 
+  Users, 
+  DollarSign, 
+  Target, 
+  Clock, 
+  TrendingUp, 
+  CheckCircle, 
+  AlertCircle,
+  Save,
+  Calculator
+} from "lucide-react"
 
 interface EventFormProps {
   initialData?: any
@@ -23,6 +39,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState("event")
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const { user } = useAuth()
 
   // Event details
@@ -77,6 +94,98 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [hour, setHour] = useState("");
   const [minute, setMinute] = useState("");
   const [ampm, setAmpm] = useState("AM");
+
+  // Form validation and progress tracking
+  const validateField = (field: string, value: string | number) => {
+    const errors = { ...formErrors }
+    
+    switch (field) {
+      case 'name':
+        if (!value || value.toString().trim().length < 2) {
+          errors.name = 'Event name must be at least 2 characters'
+        } else {
+          delete errors.name
+        }
+        break
+      case 'date':
+        if (!value) {
+          errors.date = 'Event date is required'
+        } else {
+          const eventDate = new Date(value.toString())
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          if (eventDate < today) {
+            errors.date = 'Event date cannot be in the past'
+          } else {
+            delete errors.date
+          }
+        }
+        break
+      case 'location':
+        if (!value || value.toString().trim().length < 2) {
+          errors.location = 'Location must be at least 2 characters'
+        } else {
+          delete errors.location
+        }
+        break
+      case 'marketingType':
+        if (!value) {
+          errors.marketingType = 'Marketing type is required'
+        } else {
+          delete errors.marketingType
+        }
+        break
+      case 'topic':
+        if (!value || value.toString().trim().length < 2) {
+          errors.topic = 'Topic must be at least 2 characters'
+        } else {
+          delete errors.topic
+        }
+        break
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Calculate form completion progress
+  const formProgress = useMemo(() => {
+    const requiredFields = [
+      { key: 'name', value: name },
+      { key: 'date', value: date },
+      { key: 'location', value: location },
+      { key: 'marketingType', value: marketingType },
+      { key: 'topic', value: topic }
+    ]
+    
+    const completedFields = requiredFields.filter(field => 
+      field.value && field.value.toString().trim().length > 0
+    ).length
+    
+    return Math.round((completedFields / requiredFields.length) * 100)
+  }, [name, date, location, marketingType, topic])
+
+  // Auto-calculate financial fields
+  useEffect(() => {
+    if (aum && aumFeePercentage) {
+      const calculated = (parseFloat(aum) * parseFloat(aumFeePercentage)) / 100
+      setAumFees(calculated.toFixed(2))
+    }
+  }, [aum, aumFeePercentage])
+
+  useEffect(() => {
+    if (annuityPremium && annuityCommissionPercentage) {
+      const calculated = (parseFloat(annuityPremium) * parseFloat(annuityCommissionPercentage)) / 100
+      setAnnuityCommission(calculated.toFixed(2))
+    }
+  }, [annuityPremium, annuityCommissionPercentage])
+
+  useEffect(() => {
+    if (lifeInsurancePremium && lifeInsuranceCommissionPercentage) {
+      const calculated = (parseFloat(lifeInsurancePremium) * parseFloat(lifeInsuranceCommissionPercentage)) / 100
+      setLifeInsuranceCommission(calculated.toFixed(2))
+    }
+  }, [lifeInsurancePremium, lifeInsuranceCommissionPercentage])
 
   useEffect(() => {
     if (initialData) {
@@ -537,90 +646,183 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     }
   }
 
+  // Calculate total revenue
+  const calculateTotalRevenue = () => {
+    const annuityValue = parseFloat(annuityPremium) || 0
+    const lifeValue = parseFloat(lifeInsurancePremium) || 0
+    const aumValue = parseFloat(aum) || 0
+    const planningValue = parseFloat(financialPlanning) || 0
+    return annuityValue + lifeValue + aumValue + planningValue
+  }
+
+  // Calculate total commissions
+  const calculateTotalCommissions = () => {
+    const annuityCommissionValue = parseFloat(annuityCommission) || 0
+    const lifeCommissionValue = parseFloat(lifeInsuranceCommission) || 0
+    const aumFeesValue = parseFloat(aumFees) || 0
+    const planningValue = parseFloat(financialPlanning) || 0
+    return annuityCommissionValue + lifeCommissionValue + aumFeesValue + planningValue
+  }
+
   return (
-    <form onSubmit={handleSubmit}>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-gradient-to-r from-[#131525] to-[#0f1029] p-1 border border-[#1f2037] rounded-lg">
-          <TabsTrigger value="event" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            Event Details
-          </TabsTrigger>
-          <TabsTrigger value="expenses" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            Expenses
-          </TabsTrigger>
-          <TabsTrigger value="attendance" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            Attendance
-          </TabsTrigger>
-          <TabsTrigger value="appointments" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            Appointments
-          </TabsTrigger>
-          <TabsTrigger value="financial" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            Financial
-          </TabsTrigger>
-        </TabsList>
+    <div className="space-y-6">
+      {/* Form Header with Progress */}
+      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
+                <Calendar className="h-6 w-6 text-m8bs-blue" />
+                {isEditing ? 'Edit Event' : 'Create New Event'}
+              </CardTitle>
+              <CardDescription className="text-m8bs-muted mt-1">
+                {isEditing ? 'Update your marketing event details' : 'Set up a new marketing event with comprehensive tracking'}
+              </CardDescription>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-white">Form Completion</span>
+              <Badge variant="secondary" className="bg-m8bs-blue/20 text-m8bs-blue border-m8bs-blue/50">
+                {formProgress}%
+              </Badge>
+            </div>
+            <Progress value={formProgress} className="h-2 bg-m8bs-border" />
+            {formProgress === 100 && (
+              <div className="flex items-center gap-2 mt-2 text-green-400">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">Ready to submit!</span>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+      </Card>
+
+
+      {/* Form Errors Alert */}
+      {Object.keys(formErrors).length > 0 && (
+        <Alert className="bg-red-900/20 border-red-800/40 text-red-200">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Please fix the following errors: {Object.values(formErrors).join(', ')}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="bg-gradient-to-r from-m8bs-card to-m8bs-card-alt p-1 border border-m8bs-border rounded-lg shadow-lg">
+            <TabsTrigger value="event" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Event Details
+            </TabsTrigger>
+            <TabsTrigger value="expenses" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Expenses
+            </TabsTrigger>
+            <TabsTrigger value="attendance" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Attendance
+            </TabsTrigger>
+            <TabsTrigger value="appointments" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Appointments
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Financial
+            </TabsTrigger>
+          </TabsList>
 
         <TabsContent value="event" className="space-y-4">
-          <Card className="bg-gradient-to-b from-[#131525] to-[#0f1029] border-gray-800 shadow-lg">
-            <CardHeader className="pb-2">
+          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+            <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
-                <svg
-                  className="h-5 w-5 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
+                <Calendar className="h-5 w-5 text-m8bs-blue" />
                 Event Information
               </CardTitle>
-              <CardDescription>Enter the basic details about your marketing event</CardDescription>
+              <CardDescription className="text-m8bs-muted">
+                Enter the basic details about your marketing event. Fields marked with * are required.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-gray-300 font-medium">
-                    Event Name
+                  <Label htmlFor="name" className="text-white font-medium flex items-center gap-1">
+                    Event Name <span className="text-red-400">*</span>
                   </Label>
                   <Input
                     id="name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    onChange={(e) => {
+                      setName(e.target.value)
+                      validateField('name', e.target.value)
+                    }}
+                    className={`bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
+                      formErrors.name ? 'border-red-500 focus:border-red-500' : ''
+                    }`}
+                    placeholder="Enter event name (e.g., Retirement Planning Seminar)"
                     required
                   />
+                  {formErrors.name && (
+                    <p className="text-red-400 text-sm flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {formErrors.name}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="date" className="text-gray-300 font-medium">
-                    Event Date
+                  <Label htmlFor="date" className="text-white font-medium flex items-center gap-1">
+                    Event Date <span className="text-red-400">*</span>
                   </Label>
                   <Input
                     id="date"
                     type="date"
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    onChange={(e) => {
+                      setDate(e.target.value)
+                      validateField('date', e.target.value)
+                    }}
+                    className={`bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
+                      formErrors.date ? 'border-red-500 focus:border-red-500' : ''
+                    }`}
                     required
                   />
+                  {formErrors.date && (
+                    <p className="text-red-400 text-sm flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {formErrors.date}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="location" className="text-gray-300 font-medium">
-                    Location
+                  <Label htmlFor="location" className="text-white font-medium flex items-center gap-1">
+                    Location <span className="text-red-400">*</span>
                   </Label>
                   <Input
                     id="location"
                     value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    onChange={(e) => {
+                      setLocation(e.target.value)
+                      validateField('location', e.target.value)
+                    }}
+                    className={`bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
+                      formErrors.location ? 'border-red-500 focus:border-red-500' : ''
+                    }`}
+                    placeholder="Enter venue location"
                     required
                   />
+                  {formErrors.location && (
+                    <p className="text-red-400 text-sm flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {formErrors.location}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time" className="text-gray-300 font-medium">
+                  <Label htmlFor="time" className="text-white font-medium">
                     Time
                   </Label>
                   <div className="flex gap-2 items-center">
@@ -654,69 +856,69 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="marketingType" className="text-gray-300 font-medium">
+                  <Label htmlFor="marketingType" className="text-white font-medium">
                     Marketing Type
                   </Label>
                   <Input
                     id="marketingType"
                     value={marketingType}
                     onChange={(e) => setMarketingType(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="e.g. MBI Mailer, Facebook Ads"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="topic" className="text-gray-300 font-medium">
+                  <Label htmlFor="topic" className="text-white font-medium">
                     Topic
                   </Label>
                   <Input
                     id="topic"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="e.g. Retirement Outlook"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ageRange" className="text-gray-300 font-medium">
+                  <Label htmlFor="ageRange" className="text-white font-medium">
                     Age Range
                   </Label>
                   <Input
                     id="ageRange"
                     value={ageRange}
                     onChange={(e) => setAgeRange(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="e.g. 58-71"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="mileRadius" className="text-gray-300 font-medium">
+                  <Label htmlFor="mileRadius" className="text-white font-medium">
                     Mile Radius
                   </Label>
                   <Input
                     id="mileRadius"
                     value={mileRadius}
                     onChange={(e) => setMileRadius(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="e.g. 10-15 Mi"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="incomeAssets" className="text-gray-300 font-medium">
+                  <Label htmlFor="incomeAssets" className="text-white font-medium">
                     Income/Assets
                   </Label>
                   <Input
                     id="incomeAssets"
                     value={incomeAssets}
                     onChange={(e) => setIncomeAssets(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="e.g. 500k-2m"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="marketingAudience" className="text-gray-300 font-medium">
+                  <Label htmlFor="marketingAudience" className="text-white font-medium">
                     Marketing Audience Size
                   </Label>
                   <Input
@@ -725,7 +927,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     min="0"
                     value={marketingAudience ?? ""}
                     onChange={e => setMarketingAudience(e.target.value === "" ? null : e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="Enter total number of people"
                   />
                 </div>
@@ -754,31 +956,20 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         </TabsContent>
 
         <TabsContent value="expenses" className="space-y-4">
-          <Card className="bg-gradient-to-b from-[#131525] to-[#0f1029] border-gray-800 shadow-lg">
-            <CardHeader className="pb-2">
+          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+            <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
-                <svg
-                  className="h-5 w-5 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
+                <DollarSign className="h-5 w-5 text-m8bs-blue" />
                 Marketing Expenses
               </CardTitle>
-              <CardDescription>Enter the expenses associated with this marketing event</CardDescription>
+              <CardDescription className="text-m8bs-muted">
+                Enter the expenses associated with this marketing event
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="advertisingCost" className="text-gray-300 font-medium">
+                  <Label htmlFor="advertisingCost" className="text-white font-medium">
                     Advertising Cost ($)
                   </Label>
                   <Input
@@ -787,12 +978,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     step="0.01"
                     value={advertisingCost}
                     onChange={(e) => setAdvertisingCost(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
-                    required
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    placeholder="Enter advertising costs"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="foodVenueCost" className="text-gray-300 font-medium">
+                  <Label htmlFor="foodVenueCost" className="text-white font-medium">
                     Food/Venue Cost ($)
                   </Label>
                   <Input
@@ -801,12 +992,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     step="0.01"
                     value={foodVenueCost}
                     onChange={(e) => setFoodVenueCost(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
-                    required
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    placeholder="Enter food and venue costs"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="otherCosts" className="text-gray-300 font-medium">
+                  <Label htmlFor="otherCosts" className="text-white font-medium">
                     Other Costs ($)
                   </Label>
                   <Input
@@ -815,12 +1006,13 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     step="0.01"
                     value={otherCosts}
                     onChange={(e) => setOtherCosts(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    placeholder="Enter other miscellaneous costs"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Total Cost ($)</Label>
-                  <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                  <Label className="text-white font-medium">Total Cost ($)</Label>
+                  <div className="bg-m8bs-card-alt border border-m8bs-border rounded-md p-3 text-white font-medium">
                     ${calculateTotalCost().toFixed(2)}
                   </div>
                 </div>
@@ -831,7 +1023,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 type="button"
                 variant="outline"
                 onClick={handlePrevTab}
-                className="border-[#1f2037] bg-[#1f2037] text-white hover:bg-[#2a2b47] hover:text-white transition-colors"
+                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt transition-colors"
               >
                 Previous
               </Button>
@@ -841,7 +1033,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="button"
                     onClick={handleUpdateEvent}
                     disabled={isSubmitting}
-                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 transition-colors"
+                    className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
                   >
                     {isSubmitting ? "Updating..." : "Update Event"}
                   </Button>
@@ -849,7 +1041,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 <Button
                   type="button"
                   onClick={handleNextTab}
-                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
+                  className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
                 >
                   Next
                 </Button>
@@ -859,8 +1051,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-4">
-          <Card className="bg-gradient-to-b from-[#131525] to-[#0f1029] border-gray-800 shadow-lg">
-            <CardHeader className="pb-2">
+          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+            <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <svg
                   className="h-5 w-5 text-blue-400"
@@ -883,7 +1075,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="registrantResponses" className="text-gray-300 font-medium">
+                  <Label htmlFor="registrantResponses" className="text-white font-medium">
                     Registrant Responses (BU)
                   </Label>
                   <Input
@@ -891,12 +1083,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={registrantResponses}
                     onChange={(e) => setRegistrantResponses(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmations" className="text-gray-300 font-medium">
+                  <Label htmlFor="confirmations" className="text-white font-medium">
                     Confirmations (BU)
                   </Label>
                   <Input
@@ -904,12 +1096,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={confirmations}
                     onChange={(e) => setConfirmations(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="attendees" className="text-gray-300 font-medium">
+                  <Label htmlFor="attendees" className="text-white font-medium">
                     Attendees (BU)
                   </Label>
                   <Input
@@ -917,12 +1109,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={attendees}
                     onChange={(e) => setAttendees(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clientsFromEvent" className="text-gray-300 font-medium">
+                  <Label htmlFor="clientsFromEvent" className="text-white font-medium">
                     Clients From Event
                   </Label>
                   <Input
@@ -930,12 +1122,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={clientsFromEvent}
                     onChange={(e) => setClientsFromEvent(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="plateLickers" className="text-gray-300 font-medium">
+                  <Label htmlFor="plateLickers" className="text-white font-medium">
                     Plate Lickers
                   </Label>
                   <Input
@@ -943,7 +1135,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={plateLickers}
                     onChange={(e) => setPlateLickers(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="No interest in appointments or services"
                   />
                 </div>
@@ -954,7 +1146,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 type="button"
                 variant="outline"
                 onClick={handlePrevTab}
-                className="border-[#1f2037] bg-[#1f2037] text-white hover:bg-[#2a2b47] hover:text-white transition-colors"
+                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt transition-colors"
               >
                 Previous
               </Button>
@@ -964,7 +1156,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="button"
                     onClick={handleUpdateEvent}
                     disabled={isSubmitting}
-                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 transition-colors"
+                    className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
                   >
                     {isSubmitting ? "Updating..." : "Update Event"}
                   </Button>
@@ -972,7 +1164,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 <Button
                   type="button"
                   onClick={handleNextTab}
-                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
+                  className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
                 >
                   Next
                 </Button>
@@ -982,8 +1174,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         </TabsContent>
 
         <TabsContent value="appointments" className="space-y-4">
-          <Card className="bg-gradient-to-b from-[#131525] to-[#0f1029] border-gray-800 shadow-lg">
-            <CardHeader className="pb-2">
+          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+            <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <svg
                   className="h-5 w-5 text-blue-400"
@@ -1006,7 +1198,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="setAtEvent" className="text-gray-300 font-medium">
+                  <Label htmlFor="setAtEvent" className="text-white font-medium">
                     Appointments Set at Event
                   </Label>
                   <Input
@@ -1014,12 +1206,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={setAtEvent}
                     onChange={(e) => setSetAtEvent(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="setAfterEvent" className="text-gray-300 font-medium">
+                  <Label htmlFor="setAfterEvent" className="text-white font-medium">
                     Appointments Set After Event
                   </Label>
                   <Input
@@ -1027,12 +1219,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={setAfterEvent}
                     onChange={(e) => setSetAfterEvent(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="firstAppointmentAttended" className="text-gray-300 font-medium">
+                  <Label htmlFor="firstAppointmentAttended" className="text-white font-medium">
                     First Appointments Attended
                   </Label>
                   <Input
@@ -1040,12 +1232,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={firstAppointmentAttended}
                     onChange={(e) => setFirstAppointmentAttended(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="firstAppointmentNoShows" className="text-gray-300 font-medium">
+                  <Label htmlFor="firstAppointmentNoShows" className="text-white font-medium">
                     First Appointment No-Shows
                   </Label>
                   <Input
@@ -1053,12 +1245,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={firstAppointmentNoShows}
                     onChange={(e) => setFirstAppointmentNoShows(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="secondAppointmentAttended" className="text-gray-300 font-medium">
+                  <Label htmlFor="secondAppointmentAttended" className="text-white font-medium">
                     Second Appointments Attended
                   </Label>
                   <Input
@@ -1066,12 +1258,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={secondAppointmentAttended}
                     onChange={(e) => setSecondAppointmentAttended(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notQualified" className="text-gray-300 font-medium">
+                  <Label htmlFor="notQualified" className="text-white font-medium">
                     Not Qualified
                   </Label>
                   <Input
@@ -1079,7 +1271,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={notQualified}
                     onChange={(e) => setNotQualified(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="Number of prospects not qualified"
                   />
                 </div>
@@ -1090,7 +1282,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 type="button"
                 variant="outline"
                 onClick={handlePrevTab}
-                className="border-[#1f2037] bg-[#1f2037] text-white hover:bg-[#2a2b47] hover:text-white transition-colors"
+                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt transition-colors"
               >
                 Previous
               </Button>
@@ -1100,7 +1292,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="button"
                     onClick={handleUpdateEvent}
                     disabled={isSubmitting}
-                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 transition-colors"
+                    className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
                   >
                     {isSubmitting ? "Updating..." : "Update Event"}
                   </Button>
@@ -1108,7 +1300,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 <Button
                   type="button"
                   onClick={handleNextTab}
-                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
+                  className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
                 >
                   Next
                 </Button>
@@ -1118,32 +1310,21 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         </TabsContent>
 
         <TabsContent value="financial" className="space-y-4">
-          <Card className="bg-gradient-to-b from-[#131525] to-[#0f1029] border-gray-800 shadow-lg">
-            <CardHeader className="pb-2">
+          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+            <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
-                <svg
-                  className="h-5 w-5 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
+                <TrendingUp className="h-5 w-5 text-m8bs-blue" />
                 Financial Production
               </CardTitle>
-              <CardDescription>Enter financial results from this marketing event</CardDescription>
+              <CardDescription className="text-m8bs-muted">
+                Enter financial results from this marketing event. Auto-calculations will help you determine commissions and fees.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="annuityPremium" className="text-gray-300 font-medium">
-                    Annuity Premium ($)
+                  <Label htmlFor="annuityPremium" className="text-white font-medium flex items-center gap-1">
+                    Annuity Premium ($) <Calculator className="h-3 w-3 text-m8bs-blue" />
                   </Label>
                   <Input
                     id="annuityPremium"
@@ -1151,13 +1332,19 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     step="0.01"
                     value={annuityPremium}
                     onChange={(e) => setAnnuityPremium(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
-                    required
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    placeholder="Enter annuity premium amount"
                   />
+                  {annuityPremium && annuityCommissionPercentage && (
+                    <div className="text-xs text-m8bs-muted flex items-center gap-1">
+                      <Calculator className="h-3 w-3" />
+                      Auto-calculated commission: ${annuityCommission}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lifeInsurancePremium" className="text-gray-300 font-medium">
-                    Life Insurance Premium ($)
+                  <Label htmlFor="lifeInsurancePremium" className="text-white font-medium flex items-center gap-1">
+                    Life Insurance Premium ($) <Calculator className="h-3 w-3 text-m8bs-blue" />
                   </Label>
                   <Input
                     id="lifeInsurancePremium"
@@ -1165,12 +1352,18 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     step="0.01"
                     value={lifeInsurancePremium}
                     onChange={(e) => setLifeInsurancePremium(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
-                    required
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    placeholder="Enter life insurance premium amount"
                   />
+                  {lifeInsurancePremium && lifeInsuranceCommissionPercentage && (
+                    <div className="text-xs text-m8bs-muted flex items-center gap-1">
+                      <Calculator className="h-3 w-3" />
+                      Auto-calculated commission: ${lifeInsuranceCommission}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aumAccountsOpened" className="text-gray-300 font-medium">
+                  <Label htmlFor="aumAccountsOpened" className="text-white font-medium">
                     AUM Accounts Opened
                   </Label>
                   <Input
@@ -1179,12 +1372,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     min="0"
                     value={aumAccountsOpened}
                     onChange={e => setAumAccountsOpened(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="Number of AUM accounts opened"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aum" className="text-gray-300 font-medium">
+                  <Label htmlFor="aum" className="text-white font-medium">
                     AUM ($)
                   </Label>
                   <Input
@@ -1193,12 +1386,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     step="0.01"
                     value={aum}
                     onChange={(e) => setAum(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aumFeePercentage" className="text-gray-300 font-medium">
+                  <Label htmlFor="aumFeePercentage" className="text-white font-medium">
                     AUM Fee Percentage (%)
                   </Label>
                   <Input
@@ -1209,12 +1402,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     max="100"
                     value={aumFeePercentage}
                     onChange={(e) => setAumFeePercentage(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aumFees" className="text-gray-300 font-medium">
+                  <Label htmlFor="aumFees" className="text-white font-medium">
                     Annual AUM Fees ($)
                   </Label>
                   <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
@@ -1222,7 +1415,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="financialPlansSold" className="text-gray-300 font-medium">
+                  <Label htmlFor="financialPlansSold" className="text-white font-medium">
                     Financial Plans Sold
                   </Label>
                   <Input
@@ -1231,12 +1424,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     min="0"
                     value={financialPlansSold}
                     onChange={e => setFinancialPlansSold(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="Number of financial plans sold"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="financialPlanning" className="text-gray-300 font-medium">
+                  <Label htmlFor="financialPlanning" className="text-white font-medium">
                     Financial Planning ($)
                   </Label>
                   <Input
@@ -1245,7 +1438,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     step="0.01"
                     value={financialPlanning}
                     onChange={(e) => setFinancialPlanning(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1256,7 +1449,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="annuitiesSold" className="text-gray-300 font-medium">
+                  <Label htmlFor="annuitiesSold" className="text-white font-medium">
                     Annuities Sold
                   </Label>
                   <Input
@@ -1264,12 +1457,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={annuitiesSold}
                     onChange={(e) => setAnnuitiesSold(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lifePoliciesSold" className="text-gray-300 font-medium">
+                  <Label htmlFor="lifePoliciesSold" className="text-white font-medium">
                     Life Policies Sold
                   </Label>
                   <Input
@@ -1277,12 +1470,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={lifePoliciesSold}
                     onChange={(e) => setLifePoliciesSold(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="annuityCommissionPercentage" className="text-gray-300 font-medium">
+                  <Label htmlFor="annuityCommissionPercentage" className="text-white font-medium">
                     Annuity Commission Percentage (%)
                   </Label>
                   <Input
@@ -1293,12 +1486,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     max="100"
                     value={annuityCommissionPercentage}
                     onChange={(e) => setAnnuityCommissionPercentage(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="annuityCommission" className="text-gray-300 font-medium">
+                  <Label htmlFor="annuityCommission" className="text-white font-medium">
                     Annuity Commission ($)
                   </Label>
                   <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
@@ -1306,7 +1499,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lifeInsuranceCommissionPercentage" className="text-gray-300 font-medium">
+                  <Label htmlFor="lifeInsuranceCommissionPercentage" className="text-white font-medium">
                     Life Insurance Commission Percentage (%)
                   </Label>
                   <Input
@@ -1317,12 +1510,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     max="100"
                     value={lifeInsuranceCommissionPercentage}
                     onChange={(e) => setLifeInsuranceCommissionPercentage(e.target.value)}
-                    className="bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lifeInsuranceCommission" className="text-gray-300 font-medium">
+                  <Label htmlFor="lifeInsuranceCommission" className="text-white font-medium">
                     Life Insurance Commission ($)
                   </Label>
                   <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
@@ -1331,32 +1524,56 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePrevTab}
-                className="border-[#1f2037] bg-[#1f2037] text-white hover:bg-[#2a2b47] hover:text-white transition-colors"
-              >
-                Previous
-              </Button>
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
-                disabled={isSubmitting}
-              >
-                {isSubmitting
-                  ? isEditing
-                    ? "Updating Event..."
-                    : "Creating Event..."
-                  : isEditing
-                    ? "Update Event"
-                    : "Create Event"}
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
+
+
+      {/* Form Actions */}
+      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-m8bs-muted">
+                Form completion: <span className="text-white font-medium">{formProgress}%</span>
+              </div>
+              {Object.keys(formErrors).length > 0 && (
+                <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/50">
+                  {Object.keys(formErrors).length} error{Object.keys(formErrors).length > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || Object.keys(formErrors).length > 0 || formProgress < 100}
+                className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    {isEditing ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    {isEditing ? 'Update Event' : 'Create Event'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </form>
+    </div>
   )
 }

@@ -14,6 +14,7 @@ import { MonthlyDataEntryComponent } from "@/components/business-dashboard/month
 import { PDFExport } from "@/components/business-dashboard/pdf-export"
 import { CSVExport } from "@/components/business-dashboard/csv-export"
 import { DataValidation } from "@/components/business-dashboard/data-validation"
+import { DataCompletionGuide } from "@/components/data-completion-guide"
 import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { Button } from "@/components/ui/button"
@@ -145,15 +146,35 @@ export default function BusinessDashboard() {
     console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode)
     return (
       <div className="py-8 space-y-6">
-        <DataValidation 
-          data={data} 
-          onEditData={() => setEditMode(true)} 
-        />
-        <DataEntryFormV2
-          user={user}
-          onComplete={handleDataSubmitted}
-          isEditMode={editMode}
-        />
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              M8 Advisor Basecamp
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Complete your profile to unlock all dashboard features
+            </p>
+          </div>
+          
+          <DataCompletionGuide 
+            data={data} 
+            onNavigate={(section) => {
+              console.log('Navigate to section:', section)
+              // You can add navigation logic here if needed
+            }}
+          />
+          
+          <DataValidation 
+            data={data} 
+            onEditData={() => setEditMode(true)} 
+          />
+          
+          <DataEntryFormV2
+            user={user}
+            onComplete={handleDataSubmitted}
+            isEditMode={editMode}
+          />
+        </div>
       </div>
     )
   }
@@ -188,6 +209,17 @@ export default function BusinessDashboard() {
           </Button>
         </div>
       </div>
+
+      <DataCompletionGuide 
+        data={data} 
+        onNavigate={(section) => {
+          console.log('Navigate to section:', section)
+          if (section === 'campaigns') {
+            // Navigate to events page
+            window.location.href = '/events'
+          }
+        }}
+      />
 
       <DashboardMetrics 
         key={`metrics-${JSON.stringify(data)}`}
