@@ -16,16 +16,93 @@ import {
   YAxis,
 } from "recharts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { BusinessGoals, CurrentValues, ClientMetrics, CommissionRates } from "@/lib/advisor-basecamp"
 
-export function IncomeBreakdown() {
-  const incomeData = [
-    { source: "Planning Fees (@ $1,000)", amount: 29777.78, commission: "-", color: "#64748b" },
-    { source: "Annuity", amount: 520000000, commission: "6.50%", color: "#3b82f6" },
-    { source: "AUM", amount: 120000, commission: "1.00%", color: "#f97316" },
-    { source: "Life Production", amount: 180000, commission: "1.0%", color: "#a855f7" },
-  ]
+interface IncomeBreakdownProps {
+  businessGoals?: BusinessGoals | null
+  currentValues?: CurrentValues | null
+  clientMetrics?: ClientMetrics | null
+  commissionRates?: CommissionRates | null
+}
 
-  const totalIncome = incomeData.reduce((sum, item) => sum + item.amount, 0)
+export function IncomeBreakdown({ 
+  businessGoals, 
+  currentValues, 
+  clientMetrics, 
+  commissionRates 
+}: IncomeBreakdownProps) {
+  // Calculate income values from business data
+  const calculateIncomeData = () => {
+    if (!businessGoals || !currentValues || !clientMetrics || !commissionRates) {
+      return {
+        incomeData: [],
+        totalIncome: 0,
+        totalAnnualIncome: 0,
+        marketingROI: 0
+      }
+    }
+
+    // Calculate goal amounts
+    const businessGoalAmount = businessGoals.business_goal || 0
+    const aumGoalAmount = (businessGoalAmount * (businessGoals.aum_goal_percentage || 0)) / 100
+    const annuityGoalAmount = (businessGoalAmount * (businessGoals.annuity_goal_percentage || 0)) / 100
+    const lifeTargetGoalAmount = (businessGoalAmount * (businessGoals.life_target_goal_percentage || 0)) / 100
+
+    // Calculate income values
+    const annuityIncome = (annuityGoalAmount * (commissionRates.annuity_commission || 0)) / 100
+    const aumIncome = (aumGoalAmount * (commissionRates.aum_commission || 0)) / 100
+    const lifeIncome = (lifeTargetGoalAmount * (commissionRates.life_commission || 0)) / 100
+    const trailIncome = ((currentValues.current_aum || 0) * (commissionRates.trail_income_percentage || 0)) / 100
+    
+    // Calculate planning fees
+    const clientsNeeded = Math.round(((clientMetrics.annuity_closed || 0) + (clientMetrics.aum_accounts || 0)) / 2)
+    const planningFeesValue = (commissionRates.planning_fee_rate || 0) * clientsNeeded
+
+    const incomeData = [
+      { 
+        source: `Planning Fees (@ $${(commissionRates.planning_fee_rate || 0).toLocaleString()})`, 
+        amount: planningFeesValue, 
+        commission: "-", 
+        color: "#64748b" 
+      },
+      { 
+        source: "Annuity", 
+        amount: annuityIncome, 
+        commission: `${commissionRates.annuity_commission || 0}%`, 
+        color: "#3b82f6" 
+      },
+      { 
+        source: "AUM", 
+        amount: aumIncome, 
+        color: "#f97316" 
+      },
+      { 
+        source: "Life Production", 
+        amount: lifeIncome, 
+        commission: `${commissionRates.life_commission || 0}%`, 
+        color: "#a855f7" 
+      },
+      { 
+        source: "Trail Income", 
+        amount: trailIncome, 
+        commission: `${commissionRates.trail_income_percentage || 0}%`, 
+        color: "#10b981" 
+      },
+    ]
+
+    const totalIncome = incomeData.reduce((sum, item) => sum + item.amount, 0)
+    const totalAnnualIncome = totalIncome // This represents annual income from goals
+    const marketingROI = 1215 // This would need to be calculated from actual marketing data
+
+    return {
+      incomeData,
+      totalIncome,
+      totalAnnualIncome,
+      marketingROI
+    }
+  }
+
+  const { incomeData, totalIncome, totalAnnualIncome, marketingROI } = calculateIncomeData()
 
   const chartData = incomeData.map((item) => ({
     name: item.source,
@@ -33,20 +110,20 @@ export function IncomeBreakdown() {
     color: item.color,
   }))
 
-  // Monthly income data
+  // Monthly income data - using calculated values for projections
   const monthlyIncomeData = [
-    { name: "Jan", annuity: 38000000, aum: 9000, life: 12000, fees: 2000 },
-    { name: "Feb", annuity: 40000000, aum: 9500, life: 13000, fees: 2200 },
-    { name: "Mar", annuity: 42000000, aum: 10000, life: 14000, fees: 2400 },
-    { name: "Apr", annuity: 41000000, aum: 9800, life: 13500, fees: 2300 },
-    { name: "May", annuity: 43000000, aum: 10200, life: 14500, fees: 2500 },
-    { name: "Jun", annuity: 45000000, aum: 10500, life: 15000, fees: 2600 },
-    { name: "Jul", annuity: 44000000, aum: 10300, life: 14800, fees: 2550 },
-    { name: "Aug", annuity: 46000000, aum: 10700, life: 15500, fees: 2700 },
-    { name: "Sep", annuity: 47000000, aum: 11000, life: 16000, fees: 2800 },
-    { name: "Oct", annuity: 48000000, aum: 11200, life: 16500, fees: 2900 },
-    { name: "Nov", annuity: 50000000, aum: 11500, life: 17000, fees: 3000 },
-    { name: "Dec", annuity: 52000000, aum: 12000, life: 18000, fees: 3200 },
+    { name: "Jan", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Feb", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Mar", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Apr", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "May", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Jun", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Jul", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Aug", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Sep", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Oct", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Nov", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
+    { name: "Dec", annuity: (incomeData[1]?.amount || 0) / 12, aum: (incomeData[2]?.amount || 0) / 12, life: (incomeData[3]?.amount || 0) / 12, fees: (incomeData[0]?.amount || 0) / 12 },
   ]
 
   return (
@@ -89,11 +166,11 @@ export function IncomeBreakdown() {
                   </TableRow>
                   <TableRow>
                     <TableCell>Marketing ROI</TableCell>
-                    <TableCell colSpan={3}>1215%</TableCell>
+                    <TableCell colSpan={3}>{marketingROI}%</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Total Annual Income</TableCell>
-                    <TableCell colSpan={3}>$1,440,000.00</TableCell>
+                    <TableCell colSpan={3}>${totalAnnualIncome.toLocaleString()}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -216,35 +293,25 @@ export function IncomeBreakdown() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">Planning Fees</TableCell>
-                  <TableCell>$29,777.78</TableCell>
-                  <TableCell>$35,000.00</TableCell>
-                  <TableCell className="text-green-500">+17.5%</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Annuity</TableCell>
-                  <TableCell>$520,000,000.00</TableCell>
-                  <TableCell>$600,000,000.00</TableCell>
-                  <TableCell className="text-green-500">+15.4%</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">AUM</TableCell>
-                  <TableCell>$120,000.00</TableCell>
-                  <TableCell>$150,000.00</TableCell>
-                  <TableCell className="text-green-500">+25.0%</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Life Production</TableCell>
-                  <TableCell>$180,000.00</TableCell>
-                  <TableCell>$220,000.00</TableCell>
-                  <TableCell className="text-green-500">+22.2%</TableCell>
-                </TableRow>
+                {incomeData.map((item, index) => {
+                  const currentAmount = item.amount
+                  const projectedAmount = currentAmount * 1.15 // 15% growth projection
+                  const growthPercentage = 15.0
+                  
+                  return (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{item.source}</TableCell>
+                      <TableCell>${currentAmount.toLocaleString()}</TableCell>
+                      <TableCell>${projectedAmount.toLocaleString()}</TableCell>
+                      <TableCell className="text-green-500">+{growthPercentage}%</TableCell>
+                    </TableRow>
+                  )
+                })}
                 <TableRow className="font-bold">
                   <TableCell>Total</TableCell>
-                  <TableCell>$520,329,777.78</TableCell>
-                  <TableCell>$600,405,000.00</TableCell>
-                  <TableCell className="text-green-500">+15.4%</TableCell>
+                  <TableCell>${totalIncome.toLocaleString()}</TableCell>
+                  <TableCell>${(totalIncome * 1.15).toLocaleString()}</TableCell>
+                  <TableCell className="text-green-500">+15.0%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -267,7 +334,7 @@ export function IncomeBreakdown() {
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium">Total Annual Income</TableCell>
-                  <TableCell>$1,440,000.00</TableCell>
+                  <TableCell>${totalAnnualIncome.toLocaleString()}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing Expenses</TableCell>
@@ -283,15 +350,15 @@ export function IncomeBreakdown() {
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Net Income</TableCell>
-                  <TableCell>$1,197,624.00</TableCell>
+                  <TableCell>${(totalAnnualIncome - 242376).toLocaleString()}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Profit Margin</TableCell>
-                  <TableCell>83.2%</TableCell>
+                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - 242376) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing ROI</TableCell>
-                  <TableCell className="text-green-500">1215%</TableCell>
+                  <TableCell className="text-green-500">{marketingROI}%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

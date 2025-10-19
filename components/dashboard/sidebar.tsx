@@ -100,6 +100,21 @@ export function Sidebar() {
             {!isCollapsed && <span>Homepage</span>}
           </Link>
 
+          {/* Advisor Basecamp Section */}
+          <Link
+            href="/business-dashboard"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+              pathname === "/business-dashboard"
+                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                : "text-white hover:bg-m8bs-card-alt hover:text-white",
+              isCollapsed && "justify-center px-2",
+            )}
+          >
+            <Building2 className="h-5 w-5" />
+            {!isCollapsed && <span>Advisor Basecamp</span>}
+          </Link>
+
           {/* Marketing Section */}
           {!isCollapsed ? (
             <div>
@@ -177,21 +192,6 @@ export function Sidebar() {
               <BarChart3 className="h-5 w-5" />
             </Link>
           )}
-
-          {/* Advisor Basecamp Section */}
-          <Link
-            href="/business-dashboard"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-              pathname === "/business-dashboard"
-                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
-                : "text-white hover:bg-m8bs-card-alt hover:text-white",
-              isCollapsed && "justify-center px-2",
-            )}
-          >
-            <Building2 className="h-5 w-5" />
-            {!isCollapsed && <span>Advisor Basecamp</span>}
-          </Link>
 
           {/* Tools Section */}
           {!isCollapsed ? (

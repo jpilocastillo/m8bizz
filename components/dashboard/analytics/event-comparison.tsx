@@ -35,7 +35,17 @@ export function EventComparison({ events }: EventComparisonProps) {
     if (selectedEvents.length > 0) {
       return events
         .filter((event) => selectedEvents.includes(event.id))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .sort((a, b) => {
+          const getDate = (dateString: string) => {
+            try {
+              const [year, month, day] = dateString.split('-').map(Number)
+              return new Date(year, month - 1, day).getTime()
+            } catch {
+              return 0
+            }
+          }
+          return getDate(b.date) - getDate(a.date)
+        })
     }
 
     // Default to top 5 by the active metric

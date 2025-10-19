@@ -170,7 +170,11 @@ export default function Homepage() {
 
     summary.avgAttendees = summary.totalEvents > 0 ? Math.round(summary.totalAttendees / summary.totalEvents) : 0
     summary.totalProfit = summary.totalRevenue - summary.totalExpenses
-    summary.overallROI = summary.totalExpenses > 0 ? ((summary.totalProfit / summary.totalExpenses) * 100) : 0
+    summary.overallROI = summary.totalExpenses > 0 
+      ? Math.round(((summary.totalProfit / summary.totalExpenses) * 100)) 
+      : summary.totalRevenue > 0 
+        ? 9999 // Show high ROI when there's revenue but no expenses
+        : 0
     summary.overallConversionRate = summary.totalAttendees > 0 ? ((summary.totalClients / summary.totalAttendees) * 100) : 0
 
     return summary
@@ -186,7 +190,11 @@ export default function Homepage() {
                               (event.financial_production?.life_insurance_commission || 0) + 
                               (event.financial_production?.financial_planning || 0)
         const expenses = event.marketing_expenses?.total_cost || 0
-        const roi = expenses > 0 ? ((totalProduction - expenses) / expenses) * 100 : 0
+        const roi = expenses > 0 
+          ? ((totalProduction - expenses) / expenses) * 100 
+          : totalProduction > 0 
+            ? 9999 // Show high ROI when there's revenue but no expenses
+            : 0
         
         return {
           id: event.id,
@@ -388,7 +396,15 @@ export default function Homepage() {
                           <div>
                             <div className="font-semibold text-white">{event.name}</div>
                             <div className="text-sm text-m8bs-muted">
-                              {event.date ? format(new Date(event.date), "MMM d, yyyy") : "No date"} • {event.location}
+                              {event.date ? (() => {
+                                try {
+                                  const [year, month, day] = event.date.split('-').map(Number)
+                                  const date = new Date(year, month - 1, day)
+                                  return format(date, "MMM d, yyyy")
+                                } catch {
+                                  return event.date
+                                }
+                              })() : "No date"} • {event.location}
                             </div>
                           </div>
                         </div>
@@ -431,11 +447,31 @@ export default function Homepage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-m8bs-muted">Business Goal</span>
                         <span className="text-white">
-                          ${((advisorData.currentValues?.current_aum || 0) + (advisorData.currentValues?.current_annuity || 0) + (advisorData.currentValues?.current_life_production || 0)).toLocaleString()} / ${advisorData.businessGoals.business_goal?.toLocaleString()}
+                          {(() => {
+                            // Calculate total sales from monthly entries for current year
+                            const currentYear = new Date().getFullYear().toString()
+                            const currentYearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                              entry.month_year.startsWith(currentYear)
+                            ) || []
+                            const totalSales = currentYearEntries.reduce((sum, entry) => 
+                              sum + entry.annuity_sales + entry.aum_sales + entry.life_sales, 0
+                            )
+                            return `$${totalSales.toLocaleString()} / $${advisorData.businessGoals.business_goal?.toLocaleString()}`
+                          })()}
                         </span>
                       </div>
                       <Progress 
-                        value={calculateGoalProgress((advisorData.currentValues?.current_aum || 0) + (advisorData.currentValues?.current_annuity || 0) + (advisorData.currentValues?.current_life_production || 0), advisorData.businessGoals.business_goal || 0)} 
+                        value={(() => {
+                          // Calculate total sales from monthly entries for current year
+                          const currentYear = new Date().getFullYear().toString()
+                          const currentYearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                            entry.month_year.startsWith(currentYear)
+                          ) || []
+                          const totalSales = currentYearEntries.reduce((sum, entry) => 
+                            sum + entry.annuity_sales + entry.aum_sales + entry.life_sales, 0
+                          )
+                          return calculateGoalProgress(totalSales, advisorData.businessGoals.business_goal || 0)
+                        })()} 
                         className="h-2" 
                       />
                     </div>
@@ -445,11 +481,11 @@ export default function Homepage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-m8bs-muted">AUM Goal</span>
                         <span className="text-white">
-                          ${advisorData.currentValues?.current_aum?.toLocaleString() || 0} / ${advisorData.businessGoals.aum_goal?.toLocaleString()}
+                          ${data.latestMonthlyEntry?.aum_sales?.toLocaleString() || 0} / ${advisorData.businessGoals.aum_goal?.toLocaleString()}
                         </span>
                       </div>
                       <Progress 
-                        value={calculateGoalProgress(advisorData.currentValues?.current_aum || 0, advisorData.businessGoals.aum_goal || 0)} 
+                        value={calculateGoalProgress(data.latestMonthlyEntry?.aum_sales || 0, advisorData.businessGoals.aum_goal || 0)} 
                         className="h-2" 
                       />
                     </div>
@@ -459,11 +495,11 @@ export default function Homepage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-m8bs-muted">Annuity Goal</span>
                         <span className="text-white">
-                          ${advisorData.currentValues?.current_annuity?.toLocaleString() || 0} / ${advisorData.businessGoals.annuity_goal?.toLocaleString()}
+                          ${data.latestMonthlyEntry?.annuity_sales?.toLocaleString() || 0} / ${advisorData.businessGoals.annuity_goal?.toLocaleString()}
                         </span>
                       </div>
                       <Progress 
-                        value={calculateGoalProgress(advisorData.currentValues?.current_annuity || 0, advisorData.businessGoals.annuity_goal || 0)} 
+                        value={calculateGoalProgress(data.latestMonthlyEntry?.annuity_sales || 0, advisorData.businessGoals.annuity_goal || 0)} 
                         className="h-2" 
                       />
                     </div>
@@ -473,11 +509,11 @@ export default function Homepage() {
                       <div className="flex justify-between text-sm">
                         <span className="text-m8bs-muted">Life Goal</span>
                         <span className="text-white">
-                          ${advisorData.currentValues?.current_life_production?.toLocaleString() || 0} / ${advisorData.businessGoals.life_target_goal?.toLocaleString()}
+                          ${data.latestMonthlyEntry?.life_sales?.toLocaleString() || 0} / ${advisorData.businessGoals.life_target_goal?.toLocaleString()}
                         </span>
                       </div>
                       <Progress 
-                        value={calculateGoalProgress(advisorData.currentValues?.current_life_production || 0, advisorData.businessGoals.life_target_goal || 0)} 
+                        value={calculateGoalProgress(data.latestMonthlyEntry?.life_sales || 0, advisorData.businessGoals.life_target_goal || 0)} 
                         className="h-2" 
                       />
                     </div>

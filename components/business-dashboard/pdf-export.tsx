@@ -51,6 +51,31 @@ export function PDFExport({ data, profile }: PDFExportProps) {
     return new Intl.NumberFormat('en-US').format(value)
   }
 
+  // Calculate total income from business data
+  const calculateTotalIncome = () => {
+    if (!data.businessGoals || !data.currentValues || !data.clientMetrics || !data.commissionRates) {
+      return 0
+    }
+
+    // Calculate goal amounts
+    const businessGoalAmount = data.businessGoals.business_goal || 0
+    const aumGoalAmount = (businessGoalAmount * (data.businessGoals.aum_goal_percentage || 0)) / 100
+    const annuityGoalAmount = (businessGoalAmount * (data.businessGoals.annuity_goal_percentage || 0)) / 100
+    const lifeTargetGoalAmount = (businessGoalAmount * (data.businessGoals.life_target_goal_percentage || 0)) / 100
+
+    // Calculate income values
+    const annuityIncome = (annuityGoalAmount * (data.commissionRates.annuity_commission || 0)) / 100
+    const aumIncome = (aumGoalAmount * (data.commissionRates.aum_commission || 0)) / 100
+    const lifeIncome = (lifeTargetGoalAmount * (data.commissionRates.life_commission || 0)) / 100
+    const trailIncome = ((data.currentValues.current_aum || 0) * (data.commissionRates.trail_income_percentage || 0)) / 100
+    
+    // Calculate planning fees
+    const clientsNeeded = Math.round(((data.clientMetrics.annuity_closed || 0) + (data.clientMetrics.aum_accounts || 0)) / 2)
+    const planningFeesValue = (data.commissionRates.planning_fee_rate || 0) * clientsNeeded
+
+    return annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
+  }
+
   // Chart data generation functions
   const generateChartData = () => {
     // Calculate total advisor book value
@@ -892,7 +917,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                     </tr>
                     <tr className="border-b-2 border-gray-200 bg-gray-50">
                       <td className="p-4 font-bold text-gray-800">Total</td>
-                      <td className="p-4 text-right font-bold text-gray-800">{formatCurrency((data.currentValues?.current_annuity || 0) + (data.currentValues?.current_aum || 0) + (data.currentValues?.current_life_production || 0) + 29777.78)}</td>
+                      <td className="p-4 text-right font-bold text-gray-800">{formatCurrency(calculateTotalIncome())}</td>
                       <td className="p-4 text-right text-gray-500">-</td>
                       <td className="p-4 text-right font-bold text-gray-800">100%</td>
                     </tr>
@@ -902,7 +927,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                     </tr>
                     <tr className="bg-gray-50">
                       <td className="p-4 font-bold text-gray-800">Total Annual Income</td>
-                      <td className="p-4 text-right font-bold text-green-600" colSpan={3}>$1,440,000.00</td>
+                      <td className="p-4 text-right font-bold text-green-600" colSpan={3}>{formatCurrency(calculateTotalIncome())}</td>
                     </tr>
                   </tbody>
                 </table>

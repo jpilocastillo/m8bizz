@@ -242,7 +242,11 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const totalProduction = dashboardData.financialProduction?.aum_fees + dashboardData.financialProduction?.annuity_commission + dashboardData.financialProduction?.life_insurance_commission + dashboardData.financialProduction?.financial_planning || 0
   const totalIncome = totalProduction // Set total income equal to total production
   const profit = totalProduction - totalExpenses // Calculate profit as total production minus expenses
-  const roi = totalExpenses > 0 ? (profit / totalExpenses) * 100 : 0
+  const roi = totalExpenses > 0 
+    ? Math.round((profit / totalExpenses) * 100) 
+    : totalIncome > 0 
+      ? 9999 // Show high ROI when there's income but no expenses
+      : 0
 
   // Calculate conversion metrics
   const registrants = dashboardData.attendance?.registrantResponses || 0
@@ -273,9 +277,17 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const aum = dashboardData.financialProduction?.aum || 0;
   const aumFeePercentage = aum > 0 ? ((aumFees / aum) * 100).toFixed(2) : '1.5';
 
-  // Format event date
-  const eventDate = dashboardData.eventDetails?.date ? parseISO(dashboardData.eventDetails.date) : null
-  const formattedDate = eventDate ? format(eventDate, "MMMM d, yyyy") : "Date not available"
+  // Format event date - parse manually to avoid timezone issues
+  const formatEventDate = (dateString: string) => {
+    try {
+      const [year, month, day] = dateString.split('-').map(Number)
+      const date = new Date(year, month - 1, day) // month is 0-indexed
+      return format(date, "MMMM d, yyyy")
+    } catch {
+      return dateString
+    }
+  }
+  const formattedDate = dashboardData.eventDetails?.date ? formatEventDate(dashboardData.eventDetails.date) : "Date not available"
 
   // Section divider component
   const SectionDivider = ({ title }: { title: string }) => (

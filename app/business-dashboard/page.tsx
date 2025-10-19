@@ -234,7 +234,12 @@ export default function BusinessDashboard() {
         </TabsContent>
 
         <TabsContent value="income" className="space-y-6">
-          <IncomeBreakdown />
+          <IncomeBreakdown 
+            businessGoals={data.businessGoals}
+            currentValues={data.currentValues}
+            clientMetrics={data.clientMetrics}
+            commissionRates={data.commissionRates}
+          />
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-6">

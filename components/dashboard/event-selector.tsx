@@ -32,8 +32,18 @@ export function EventSelector({ events, selectedEventId, onSelect, isLoading = f
 
   const selectedEvent = events.find((event) => event.id === selectedEventId)
 
-  // Sort events by date (most recent first)
-  const sortedEvents = [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // Sort events by date (most recent first) - parse manually to avoid timezone issues
+  const sortedEvents = [...events].sort((a, b) => {
+    const getDate = (dateString: string) => {
+      try {
+        const [year, month, day] = dateString.split('-').map(Number)
+        return new Date(year, month - 1, day).getTime()
+      } catch {
+        return 0
+      }
+    }
+    return getDate(b.date) - getDate(a.date)
+  })
 
   // Helper function to format date consistently
   const formatEventDate = (dateString: string) => {

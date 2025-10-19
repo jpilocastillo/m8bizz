@@ -143,18 +143,19 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
     <TooltipProvider>
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 w-full max-w-full">
         {metrics.map((metric, index) => (
-          <Card key={index} className="border-none shadow-lg overflow-hidden min-w-0 h-full flex flex-col">
+          <Card key={index} className="border-none shadow-lg overflow-hidden h-full flex flex-col bg-gradient-to-br from-gray-800 to-gray-900 hover:shadow-xl transition-all duration-300">
             <div className={cn("h-1 w-full", getColorClasses(metric.color).split(" ")[0])}></div>
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2 min-w-0 relative">
-              <CardTitle className="text-sm font-medium min-w-0 flex-1">
-                <div className="text-center">
+            
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-4">
+              <div className="flex-1 pr-2">
+                <CardTitle className="text-sm font-semibold leading-tight text-white">
                   {metric.title}
-                  <CardDescription className="text-muted-foreground text-xs mt-1">{metric.shortDescription}</CardDescription>
-                </div>
-              </CardTitle>
+                </CardTitle>
+              </div>
+              
               <Tooltip>
                 <TooltipTrigger>
-                  <div className={cn("rounded-full p-2 flex-shrink-0 absolute top-2 right-2", getColorClasses(metric.color).split(" ")[2])}>
+                  <div className={cn("rounded-full p-2 flex-shrink-0", getColorClasses(metric.color).split(" ")[2])}>
                     <metric.icon className={cn("h-4 w-4", getTextColor(metric.color))} />
                   </div>
                 </TooltipTrigger>
@@ -163,9 +164,18 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
                 </TooltipContent>
               </Tooltip>
             </CardHeader>
-            <CardContent className="min-w-0 flex-1">
-              <div className={cn("text-3xl font-bold break-words text-center", getTextColor(metric.color))}>
-                {metric.value}
+            
+            <CardContent className="flex-1 flex items-center justify-center px-4 pb-4">
+              <div className={cn(
+                "font-bold text-center leading-none tracking-tight", 
+                getTextColor(metric.color),
+                "min-h-[2.5rem] flex items-center justify-center w-full",
+                // Adjust font size for currency values to maintain alignment
+                metric.title === "Total Advisor Book" ? "text-2xl" : "text-3xl"
+              )}>
+                <span className="block w-full text-center">
+                  {metric.value}
+                </span>
               </div>
             </CardContent>
           </Card>

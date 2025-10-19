@@ -334,7 +334,9 @@ export function MonthlyDataEntryComponent() {
       const commissionIncome = calculateCommissionIncome(entry)
       const roi = entry.marketing_expenses > 0 
         ? ((commissionIncome - entry.marketing_expenses) / entry.marketing_expenses) * 100 
-        : 0
+        : commissionIncome > 0 
+          ? 9999 // Show high ROI when there's income but no expenses
+          : 0
       
       return {
         month: format(parseISO(entry.month_year + "-01"), "MMM"),
@@ -789,7 +791,9 @@ export function MonthlyDataEntryComponent() {
                 <div className="text-xl font-semibold">
                   {selectedMonthData.marketing_expenses > 0 
                     ? (((calculateCommissionIncome(selectedMonthData) - selectedMonthData.marketing_expenses) / selectedMonthData.marketing_expenses) * 100).toFixed(0)
-                    : "0"}%
+                    : calculateCommissionIncome(selectedMonthData) > 0 
+                      ? "9999" // Show high ROI when there's income but no expenses
+                      : "0"}%
                 </div>
               </div>
             </div>
@@ -1299,7 +1303,9 @@ export function MonthlyDataEntryComponent() {
                     const commissionIncome = calculateCommissionIncome(entry)
                     const roi = entry.marketing_expenses > 0 
                       ? ((commissionIncome - entry.marketing_expenses) / entry.marketing_expenses) * 100 
-                      : 0
+                      : commissionIncome > 0 
+                        ? 9999 // Show high ROI when there's income but no expenses
+                        : 0
                     
                     // Calculate progress against goals (if available)
                     const businessGoal = data.businessGoals?.business_goal || 0

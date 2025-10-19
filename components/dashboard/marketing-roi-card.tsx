@@ -41,7 +41,11 @@ export function MarketingROICard({ roi, totalIncome, totalCost, className }: Mar
 
   // Calculate profit
   const profit = totalIncome - totalCost
-  const profitPercentage = totalCost > 0 ? (profit / totalCost) * 100 : 0
+  const profitPercentage = totalCost > 0 
+    ? (profit / totalCost) * 100 
+    : totalIncome > 0 
+      ? 9999 // Show high ROI when there's income but no expenses
+      : 0
 
   return (
     <Card

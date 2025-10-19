@@ -72,7 +72,11 @@ export default async function AnalyticsPage() {
             return sum + totalProduction
           }, 0)
           const totalExpenses = events.reduce((sum, event) => sum + (event.marketing_expenses?.total_cost || 0), 0)
-          return totalExpenses > 0 ? ((totalRevenue - totalExpenses) / totalExpenses) * 100 : 0
+          return totalExpenses > 0 
+            ? Math.round(((totalRevenue - totalExpenses) / totalExpenses) * 100) 
+            : totalRevenue > 0 
+              ? 9999 // Show high ROI when there's revenue but no expenses
+              : 0
         })(),
         totalClients: events.reduce((sum, event) => sum + (event.attendance?.clients_from_event || 0), 0),
         overallConversionRate: (() => {
@@ -87,13 +91,25 @@ export default async function AnalyticsPage() {
                               (event.financial_production?.life_insurance_commission || 0) + 
                               (event.financial_production?.financial_planning || 0)
         const expenses = event.marketing_expenses?.total_cost || 0
+        
+        // Debug logging for dayOfWeek
+        if (event.dayOfWeek) {
+          console.log('Analytics event dayOfWeek:', {
+            eventName: event.name,
+            date: event.date,
+            dayOfWeek: event.dayOfWeek
+          });
+        }
+        
         return {
           id: event.id,
           name: event.name,
           date: event.date,
+          dayOfWeek: event.dayOfWeek, // Use the dayOfWeek already calculated in fetchAllEvents
           location: event.location,
           type: event.marketing_type || 'Other',
           topic: event.topic || 'N/A',
+          time: event.time || 'N/A',
           revenue: totalProduction,
           expenses,
           profit: totalProduction - expenses,
@@ -101,7 +117,7 @@ export default async function AnalyticsPage() {
           clients: event.attendance?.clients_from_event || 0,
           registrants: event.attendance?.registrant_responses || 0,
           confirmations: event.attendance?.confirmations || 0,
-          roi: { value: expenses > 0 ? ((totalProduction - expenses) / expenses) * 100 : 0 },
+          roi: { value: expenses > 0 ? Math.round(((totalProduction - expenses) / expenses) * 100) : 0 },
           conversionRate: (() => {
             const attendees = event.attendance?.attendees || 0;
             const clients = event.attendance?.clients_from_event || 0;
@@ -113,7 +129,9 @@ export default async function AnalyticsPage() {
         const monthlyStats = new Map()
         
         events.forEach(event => {
-          const date = new Date(event.date)
+          // Parse date manually to avoid timezone issues
+          const [year, month, day] = event.date.split('-').map(Number)
+          const date = new Date(year, month - 1, day)
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
           
           if (!monthlyStats.has(monthKey)) {
@@ -147,7 +165,11 @@ export default async function AnalyticsPage() {
         
         // Calculate derived metrics for each month
         monthlyStats.forEach(stats => {
-          stats.roi = stats.expenses > 0 ? ((stats.revenue - stats.expenses) / stats.expenses) * 100 : 0
+          stats.roi = stats.expenses > 0 
+            ? ((stats.revenue - stats.expenses) / stats.expenses) * 100 
+            : stats.revenue > 0 
+              ? 9999 // Show high ROI when there's revenue but no expenses
+              : 0
           stats.conversionRate = stats.attendees > 0 ? (stats.clients / stats.attendees) * 100 : 0
         })
         
@@ -190,7 +212,11 @@ export default async function AnalyticsPage() {
         
         // Calculate derived metrics for each type
         typeStats.forEach(stats => {
-          stats.roi = stats.expenses > 0 ? ((stats.revenue - stats.expenses) / stats.expenses) * 100 : 0
+          stats.roi = stats.expenses > 0 
+            ? ((stats.revenue - stats.expenses) / stats.expenses) * 100 
+            : stats.revenue > 0 
+              ? 9999 // Show high ROI when there's revenue but no expenses
+              : 0
           stats.conversionRate = stats.attendees > 0 ? (stats.clients / stats.attendees) * 100 : 0
         })
         

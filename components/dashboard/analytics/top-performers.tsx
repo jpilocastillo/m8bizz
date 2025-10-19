@@ -94,7 +94,15 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
   // Tooltip content for event details
   const getTooltipContent = (event: any) => (
     <div className="text-xs text-left space-y-1">
-      <div><span className="font-semibold">Date:</span> {event.date ? format(new Date(event.date), "MMM d, yyyy") : "No date"}</div>
+      <div><span className="font-semibold">Date:</span> {event.date ? (() => {
+        try {
+          const [year, month, day] = event.date.split('-').map(Number)
+          const date = new Date(year, month - 1, day)
+          return format(date, "MMM d, yyyy")
+        } catch {
+          return event.date
+        }
+      })() : "No date"}</div>
       <div><span className="font-semibold">Location:</span> {event.location || "Unknown location"}</div>
       <div><span className="font-semibold">Type:</span> {event.type || "Unknown type"}</div>
       <div><span className="font-semibold">Topic:</span> {event.topic || "N/A"}</div>
@@ -195,7 +203,15 @@ export function TopPerformers({ data, activeMetric, onMetricChange }: TopPerform
                               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-m8bs-muted">
                                 <span className="flex items-center gap-1">
                                   <span className="w-2 h-2 bg-m8bs-blue rounded-full"></span>
-                                  {event.date ? format(new Date(event.date), "MMM d, yyyy") : "No date"}
+                                  {event.date ? (() => {
+                                    try {
+                                      const [year, month, day] = event.date.split('-').map(Number)
+                                      const date = new Date(year, month - 1, day)
+                                      return format(date, "MMM d, yyyy")
+                                    } catch {
+                                      return event.date
+                                    }
+                                  })() : "No date"}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <span className="w-2 h-2 bg-purple-400 rounded-full"></span>

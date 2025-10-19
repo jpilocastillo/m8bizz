@@ -377,10 +377,27 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
 
 
       // Calculate day of week from event.date
-      const eventDateObj = event.date ? new Date(event.date) : null;
-      const dayOfWeek = eventDateObj
+      const eventDateObj = event.date ? (() => {
+        try {
+          const [year, month, day] = event.date.split('-').map(Number)
+          return new Date(year, month - 1, day)
+        } catch {
+          return null
+        }
+      })() : null;
+      const dayOfWeek = eventDateObj && !isNaN(eventDateObj.getTime())
         ? eventDateObj.toLocaleDateString("en-US", { weekday: "long" })
         : "N/A";
+      
+      // Debug logging for date parsing
+      if (event.date) {
+        console.log('Date parsing debug:', {
+          originalDate: event.date,
+          parsedDate: eventDateObj,
+          isValid: eventDateObj && !isNaN(eventDateObj.getTime()),
+          dayOfWeek
+        });
+      }
 
       return {
         id: event.id,
@@ -548,10 +565,21 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
                        (financial.aum_fees || 0) + 
                        (financial.financial_planning || 0)
 
-    const roi = totalExpenses > 0 ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) : 0
+    const roi = totalExpenses > 0 
+      ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) 
+      : totalIncome > 0 
+        ? 9999 // Show high ROI when there's income but no expenses
+        : 0
 
     // Calculate day of week from event.date
-    const eventDateObj = event.date ? new Date(event.date) : null
+    const eventDateObj = event.date ? (() => {
+      try {
+        const [year, month, day] = event.date.split('-').map(Number)
+        return new Date(year, month - 1, day)
+      } catch {
+        return null
+      }
+    })() : null
     const dayOfWeek = eventDateObj
       ? eventDateObj.toLocaleDateString("en-US", { weekday: "long" })
       : "N/A"

@@ -32,7 +32,7 @@ export function PredictiveInsights({ data }: PredictiveInsightsProps) {
     const nextMonthAttendees = Math.round(avgAttendees * growthFactor)
     const nextMonthRevenue = avgRevenue * growthFactor
     const nextMonthExpenses = avgExpenses * 1.02 // Expenses grow slower
-    const nextMonthROI = ((nextMonthRevenue - nextMonthExpenses) / nextMonthExpenses) * 100
+    const nextMonthROI = Math.round(((nextMonthRevenue - nextMonthExpenses) / nextMonthExpenses) * 100)
 
     // Estimate conversion based on historical data
     const avgConversion = data.summary.overallConversionRate || 0

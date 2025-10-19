@@ -20,7 +20,15 @@ export function EnhancedExport({ data }: EnhancedExportProps) {
       // Process events data for export
       const events = data.events.map((event) => ({
         Name: event.name,
-        Date: new Date(event.date).toLocaleDateString(),
+        Date: (() => {
+          try {
+            const [year, month, day] = event.date.split('-').map(Number)
+            const date = new Date(year, month - 1, day)
+            return date.toLocaleDateString()
+          } catch {
+            return event.date
+          }
+        })(),
         Location: event.location,
         Type: event.type,
         Attendees: event.attendees,

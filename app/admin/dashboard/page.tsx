@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/auth-provider"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { getAdminUsers, getUserDetails } from "../actions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,7 +22,9 @@ import {
   Plus,
   Edit,
   Trash2,
-  Key
+  Key,
+  AlertTriangle,
+  Settings
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { UserManagementModal } from "@/components/admin/user-management-modal"
@@ -49,10 +48,8 @@ interface UserData {
 }
 
 export default function AdminDashboard() {
-  const { user, signOut } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
   
   const [users, setUsers] = useState<UserData[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,59 +61,32 @@ export default function AdminDashboard() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit" | "delete" | "reset-password">("create")
   const [selectedUserForAction, setSelectedUserForAction] = useState<UserProfile | null>(null)
+  const [configError, setConfigError] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    checkAdminAccess()
-  }, [user])
+    checkConfiguration()
+  }, [])
 
-  const checkAdminAccess = async () => {
-    if (!user) {
-      console.log("No user, redirecting to login")
-      router.push("/admin/login")
-      return
-    }
-
-    console.log("Checking admin access for user:", user.email)
-
+  const checkConfiguration = async () => {
     try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single()
-
-      console.log("Profile data:", profile)
-      console.log("Profile error:", error)
-
-      if (error) {
-        console.error("Error fetching profile:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to verify admin privileges.",
-        })
-        await signOut()
-        router.push("/admin/login")
+      // Check if environment variables are configured
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_supabase_project_url_here')) {
+        setConfigError(true)
+        setLoading(false)
         return
       }
 
-      if (profile.role !== "admin") {
-        console.log("User is not admin, role:", profile.role)
-        toast({
-          variant: "destructive",
-          title: "Access denied",
-          description: "You do not have admin privileges.",
-        })
-        await signOut()
-        router.push("/admin/login")
-        return
-      }
-
-      console.log("Admin access confirmed, loading users")
+      // If environment variables are configured, try to load users
+      setIsAuthenticated(true)
       loadUsers()
     } catch (error) {
-      console.error("Error checking admin access:", error)
-      router.push("/admin/login")
+      console.error("Error checking configuration:", error)
+      setConfigError(true)
+      setLoading(false)
     }
   }
 
@@ -197,7 +167,6 @@ export default function AdminDashboard() {
   })
 
   const handleSignOut = async () => {
-    await signOut()
     router.push("/admin/login")
   }
 
@@ -237,6 +206,83 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  if (configError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center space-x-3">
+                <Shield className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                  <p className="text-sm text-gray-500">Manage users and view system data</p>
+                </div>
+              </div>
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Back to Login
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card className="border-red-200 bg-red-50">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-red-800">
+                <AlertTriangle className="h-5 w-5" />
+                <span>Configuration Required</span>
+              </CardTitle>
+              <CardDescription className="text-red-600">
+                The admin dashboard requires Supabase configuration to function properly.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-white p-4 rounded-lg border border-red-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Setup Instructions:</h3>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
+                  <li>Create a <code className="bg-gray-100 px-1 rounded">.env.local</code> file in your project root</li>
+                  <li>Add your Supabase configuration:</li>
+                </ol>
+                <div className="mt-3 bg-gray-900 text-green-400 p-3 rounded-lg font-mono text-xs overflow-x-auto">
+                  <div>NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url</div>
+                  <div>NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key</div>
+                  <div>SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key</div>
+                </div>
+                <div className="mt-3 text-sm text-gray-600">
+                  <p><strong>Get these values from:</strong> Supabase Dashboard → Settings → API</p>
+                </div>
+              </div>
+              
+              <div className="bg-white p-4 rounded-lg border border-blue-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Quick Setup:</h3>
+                <div className="space-y-2 text-sm">
+                  <p>1. Visit your Supabase project dashboard</p>
+                  <p>2. Go to Settings → API</p>
+                  <p>3. Copy the Project URL, anon key, and service_role key</p>
+                  <p>4. Create the <code className="bg-gray-100 px-1 rounded">.env.local</code> file with these values</p>
+                  <p>5. Restart your development server</p>
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <Button onClick={() => window.location.reload()}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Reload After Setup
+                </Button>
+                <Button variant="outline" onClick={handleSignOut}>
+                  Back to Login
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }

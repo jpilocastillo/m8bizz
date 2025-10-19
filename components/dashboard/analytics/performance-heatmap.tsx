@@ -28,6 +28,21 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
   // Extract unique values for rows and columns
   const rowValues = [...new Set(data.events.map((event: any) => event[rowGroup] || "Unknown"))] as string[];
   const colValues = [...new Set(data.events.map((event: any) => event[colGroup] || "Unknown"))] as string[];
+  
+  // Debug logging for dayOfWeek
+  if (rowGroup === 'dayOfWeek' || colGroup === 'dayOfWeek') {
+    console.log('Heatmap dayOfWeek debug:', {
+      rowGroup,
+      colGroup,
+      rowValues,
+      colValues,
+      sampleEvents: data.events.slice(0, 3).map((e: any) => ({
+        name: e.name,
+        date: e.date,
+        dayOfWeek: e.dayOfWeek
+      }))
+    });
+  }
 
   // Create a matrix of performance data
   const matrix = rowValues.map((row) => {

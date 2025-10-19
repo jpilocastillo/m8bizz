@@ -23,8 +23,15 @@ export function AnalyticsFilters({ analyticsData, onFilterChange }: AnalyticsFil
   const uniqueTopics = [...new Set(allEvents.map((event: any) => event.type || "Unknown"))]
   const uniqueLocations = [...new Set(allEvents.map((event: any) => event.location || "Unknown"))]
 
-  // Get min and max dates
-  const dates = allEvents.map((event: any) => new Date(event.date))
+  // Get min and max dates - parse manually to avoid timezone issues
+  const dates = allEvents.map((event: any) => {
+    try {
+      const [year, month, day] = event.date.split('-').map(Number)
+      return new Date(year, month - 1, day)
+    } catch {
+      return new Date()
+    }
+  })
   const minDate = dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : new Date()
   const maxDate = dates.length ? new Date(Math.max(...dates.map((d) => d.getTime()))) : new Date()
 
@@ -49,7 +56,14 @@ export function AnalyticsFilters({ analyticsData, onFilterChange }: AnalyticsFil
 
     // Filter events based on selected criteria
     const filteredEvents = allEvents.filter((event: any) => {
-      const eventDate = new Date(event.date)
+      // Parse date manually to avoid timezone issues
+      let eventDate: Date
+      try {
+        const [year, month, day] = event.date.split('-').map(Number)
+        eventDate = new Date(year, month - 1, day)
+      } catch {
+        eventDate = new Date()
+      }
       const dateInRange = eventDate >= filters.dateRange.from && eventDate <= filters.dateRange.to
 
       const topicMatches = filters.topics.length === 0 || filters.topics.includes(event.type || "Unknown")

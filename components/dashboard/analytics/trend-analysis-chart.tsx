@@ -23,10 +23,15 @@ export function TrendAnalysisChart({ monthlyData }: TrendAnalysisChartProps) {
     }
   }
 
-  // Format date for display
+  // Format date for display - parse manually to avoid timezone issues
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+    try {
+      const [year, month, day] = dateString.split('-').map(Number)
+      const date = new Date(year, month - 1, day) // month is 0-indexed
+      return date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+    } catch {
+      return dateString
+    }
   }
 
   // Get chart colors

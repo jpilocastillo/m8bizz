@@ -139,8 +139,14 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
   }
 
   const formatDate = (dateString: string) => {
-    const date = parseISO(dateString)
-    return format(date, "MMM d, yyyy")
+    try {
+      // Parse the date string manually to avoid timezone issues
+      const [year, month, day] = dateString.split('-').map(Number)
+      const date = new Date(year, month - 1, day) // month is 0-indexed
+      return format(date, "MMM d, yyyy")
+    } catch {
+      return dateString
+    }
   }
 
   const formatCurrency = (amount: number) => {
