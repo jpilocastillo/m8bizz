@@ -287,20 +287,24 @@ export default function Homepage() {
               initial="hidden"
               animate="show"
             >
-      {/* Welcome Header */}
-      <motion.div variants={item} className="text-center space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-          Welcome to M8 Business Suite
-        </h1>
-        <p className="text-xl text-muted-foreground">
-          Your comprehensive business management dashboard
-        </p>
+      {/* Enhanced Hero Section */}
+      <motion.div variants={item} className="text-center space-y-6 py-8">
+        <div className="space-y-4">
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Welcome to M8 Business Suite
+          </h1>
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Transform your financial advisory practice with comprehensive business management, 
+            client acquisition tracking, and performance analytics.
+          </p>
+        </div>
+        
       </motion.div>
 
       {/* Marketing Events Metrics */}
       <motion.div 
         variants={item}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
       >
         <ThreeDMetricCard
           title="Total Marketing Events"
@@ -337,7 +341,7 @@ export default function Homepage() {
       {/* Additional Metrics Row */}
       <motion.div 
         variants={item}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
       >
         <ThreeDMetricCard
           title="Total Clients"
@@ -368,7 +372,7 @@ export default function Homepage() {
       <motion.div variants={item} className="space-y-6">
         <TooltipProvider>
           {/* Top Events and Advisor Metrics Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Top Events */}
             <Card className="bg-m8bs-card border-m8bs-card-alt">
               <CardHeader>
@@ -530,7 +534,7 @@ export default function Homepage() {
           </div>
 
           {/* Total Advisor Book and Latest Monthly Entry Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Total Advisor Book */}
             <Card className="bg-m8bs-card border-m8bs-card-alt">
               <CardHeader>
@@ -655,8 +659,241 @@ export default function Homepage() {
             </Card>
           </div>
 
-          {/* Book Distribution and Quick Actions Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Activity and Performance Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+            {/* Recent Activity Feed */}
+            <Card className="bg-m8bs-card border-m8bs-card-alt">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-m8bs-blue" />
+                  Recent Activity
+                </CardTitle>
+                <CardDescription className="text-m8bs-muted">
+                  Your latest business activities
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {data.topEvents.length > 0 ? (
+                    data.topEvents.slice(0, 3).map((event, index) => (
+                      <div key={event.id} className="flex items-center space-x-3 p-3 bg-m8bs-card-alt rounded-lg">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                          <Calendar className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{event.name}</p>
+                          <p className="text-xs text-m8bs-muted">
+                            {event.date ? (() => {
+                              try {
+                                const [year, month, day] = event.date.split('-').map(Number)
+                                const date = new Date(year, month - 1, day)
+                                return format(date, "MMM d")
+                              } catch {
+                                return event.date
+                              }
+                            })() : "No date"} • {event.roi?.value?.toFixed(1)}% ROI
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-m8bs-muted">
+                      <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No recent events</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Performance Insights */}
+            <Card className="bg-m8bs-card border-m8bs-card-alt">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-m8bs-blue" />
+                  Performance Insights
+                </CardTitle>
+                <CardDescription className="text-m8bs-muted">
+                  Key performance indicators
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-m8bs-muted">Conversion Rate</span>
+                    </div>
+                    <span className="text-white font-semibold">
+                      {data.analyticsSummary?.overallConversionRate?.toFixed(1) || 0}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <span className="text-sm text-m8bs-muted">Avg Attendees</span>
+                    </div>
+                    <span className="text-white font-semibold">
+                      {data.analyticsSummary?.avgAttendees || 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      <span className="text-sm text-m8bs-muted">Total ROI</span>
+                    </div>
+                    <span className="text-white font-semibold">
+                      {data.analyticsSummary?.overallROI || 0}%
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Enhanced Quick Actions */}
+            <Card className="bg-m8bs-card border-m8bs-card-alt">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-m8bs-blue" />
+                  Quick Actions
+                </CardTitle>
+                <CardDescription className="text-m8bs-muted">
+                  Common tasks and shortcuts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
+                  <Link href="/events/new">
+                    <Button className="w-full h-auto p-3 flex flex-col items-center space-y-2" variant="outline">
+                      <Plus className="h-5 w-5" />
+                      <span className="text-xs">New Event</span>
+                    </Button>
+                  </Link>
+                  <Link href="/business-dashboard">
+                    <Button className="w-full h-auto p-3 flex flex-col items-center space-y-2" variant="outline">
+                      <Building2 className="h-5 w-5" />
+                      <span className="text-xs">Basecamp</span>
+                    </Button>
+                  </Link>
+                  <Link href="/analytics">
+                    <Button className="w-full h-auto p-3 flex flex-col items-center space-y-2" variant="outline">
+                      <BarChart3 className="h-5 w-5" />
+                      <span className="text-xs">Analytics</span>
+                    </Button>
+                  </Link>
+                  <Link href="/events">
+                    <Button className="w-full h-auto p-3 flex flex-col items-center space-y-2" variant="outline">
+                      <Calendar className="h-5 w-5" />
+                      <span className="text-xs">Events</span>
+                    </Button>
+                  </Link>
+                  <Link href="/tools">
+                    <Button className="w-full h-auto p-3 flex flex-col items-center space-y-2" variant="outline">
+                      <Database className="h-5 w-5" />
+                      <span className="text-xs">Tools</span>
+                    </Button>
+                  </Link>
+                  <Link href="/settings">
+                    <Button className="w-full h-auto p-3 flex flex-col items-center space-y-2" variant="outline">
+                      <Settings className="h-5 w-5" />
+                      <span className="text-xs">Settings</span>
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recommendations and Book Distribution */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            {/* Smart Recommendations */}
+            <Card className="bg-m8bs-card border-m8bs-card-alt">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Target className="h-5 w-5 text-m8bs-blue" />
+                  Smart Recommendations
+                </CardTitle>
+                <CardDescription className="text-m8bs-muted">
+                  Personalized insights for your business
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(() => {
+                    const recommendations = []
+                    
+                    // ROI-based recommendation
+                    if (data.analyticsSummary?.overallROI > 0) {
+                      if (data.analyticsSummary.overallROI < 100) {
+                        recommendations.push({
+                          type: "warning",
+                          icon: <TrendingDown className="h-4 w-4" />,
+                          title: "Improve Event ROI",
+                          description: "Consider optimizing your marketing events to increase return on investment."
+                        })
+                      } else {
+                        recommendations.push({
+                          type: "success",
+                          icon: <TrendingUp className="h-4 w-4" />,
+                          title: "Great ROI Performance",
+                          description: "Your events are performing well! Consider scaling successful strategies."
+                        })
+                      }
+                    }
+                    
+                    // Conversion rate recommendation
+                    if (data.analyticsSummary?.overallConversionRate < 10) {
+                      recommendations.push({
+                        type: "info",
+                        icon: <Users className="h-4 w-4" />,
+                        title: "Boost Conversion Rate",
+                        description: "Focus on improving attendee-to-client conversion through better follow-up."
+                      })
+                    }
+                    
+                    // Event frequency recommendation
+                    if (data.analyticsSummary?.totalEvents < 3) {
+                      recommendations.push({
+                        type: "info",
+                        icon: <Calendar className="h-4 w-4" />,
+                        title: "Increase Event Frequency",
+                        description: "Consider hosting more marketing events to accelerate client acquisition."
+                      })
+                    }
+                    
+                    if (recommendations.length === 0) {
+                      recommendations.push({
+                        type: "success",
+                        icon: <Award className="h-4 w-4" />,
+                        title: "All Systems Optimal",
+                        description: "Your business metrics are performing well. Keep up the great work!"
+                      })
+                    }
+                    
+                    return recommendations.map((rec, index) => (
+                      <div key={index} className={`flex items-start space-x-3 p-3 rounded-lg ${
+                        rec.type === 'success' ? 'bg-green-500/10 border border-green-500/20' :
+                        rec.type === 'warning' ? 'bg-yellow-500/10 border border-yellow-500/20' :
+                        'bg-blue-500/10 border border-blue-500/20'
+                      }`}>
+                        <div className={`mt-0.5 ${
+                          rec.type === 'success' ? 'text-green-400' :
+                          rec.type === 'warning' ? 'text-yellow-400' :
+                          'text-blue-400'
+                        }`}>
+                          {rec.icon}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium text-white">{rec.title}</h4>
+                          <p className="text-xs text-m8bs-muted mt-1">{rec.description}</p>
+                        </div>
+                      </div>
+                    ))
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Book Distribution */}
             <Card className="bg-m8bs-card border-m8bs-card-alt">
               <CardHeader>
@@ -720,65 +957,6 @@ export default function Homepage() {
                     <p className="text-sm mt-2">Set up your current values in the Advisor Basecamp</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-m8bs-blue" />
-                  Quick Actions
-                </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Common tasks and shortcuts
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <Link href="/events/new">
-                    <Button className="w-full justify-start" variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Event
-                      <ArrowRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                  <Link href="/business-dashboard">
-                    <Button className="w-full justify-start" variant="outline">
-                      <Building2 className="h-4 w-4 mr-2" />
-                      View Advisor Basecamp
-                      <ArrowRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                  <Link href="/analytics">
-                    <Button className="w-full justify-start" variant="outline">
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      View Analytics
-                      <ArrowRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                  <Link href="/events">
-                    <Button className="w-full justify-start" variant="outline">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Manage Events
-                      <ArrowRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                  <Link href="/settings">
-                    <Button className="w-full justify-start" variant="outline">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Settings
-                      <ArrowRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                  <Link href="/tools">
-                    <Button className="w-full justify-start" variant="outline">
-                      <Database className="h-4 w-4 mr-2" />
-                      Tools & Calculators
-                      <ArrowRight className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </Link>
-                </div>
               </CardContent>
             </Card>
           </div>

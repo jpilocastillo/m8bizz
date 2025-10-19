@@ -21,6 +21,9 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { RefreshCw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Sidebar } from "@/components/dashboard/sidebar"
+import { DashboardHeader } from "@/components/dashboard/header"
+import { AnimatedBackground } from "@/components/dashboard/animated-background"
 
 export default function BusinessDashboard() {
   const { user } = useAuth()
@@ -145,8 +148,13 @@ export default function BusinessDashboard() {
   if (!isComplete || editMode) {
     console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode)
     return (
-      <div className="py-8 space-y-6">
-        <div className="space-y-6">
+      <div className="flex h-screen bg-m8bs-bg text-white overflow-hidden">
+        <AnimatedBackground />
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+          <DashboardHeader events={[]} />
+          <main className="flex-1 overflow-y-auto p-6 bg-m8bs-bg bg-gradient-radial from-m8bs-card-alt/10 to-m8bs-bg">
+            <div className="py-8 space-y-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               M8 Advisor Basecamp
@@ -174,16 +182,23 @@ export default function BusinessDashboard() {
             onComplete={handleDataSubmitted}
             isEditMode={editMode}
           />
-        </div>
+          </div>
+        </main>
       </div>
-    )
-  }
+    </div>
+  )
 
   console.log('Showing dashboard - all data is complete')
 
   // Show dashboard if all sections are filled
   return (
-    <div className="space-y-6 w-full max-w-full">
+    <div className="flex h-screen bg-m8bs-bg text-white overflow-hidden">
+      <AnimatedBackground />
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+        <DashboardHeader events={[]} />
+        <main className="flex-1 overflow-y-auto p-6 bg-m8bs-bg bg-gradient-radial from-m8bs-card-alt/10 to-m8bs-bg">
+          <div className="space-y-6 w-full max-w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -313,6 +328,9 @@ export default function BusinessDashboard() {
           <PDFExport data={data} profile={profile} />
         </TabsContent>
       </Tabs>
+          </div>
+        </main>
+      </div>
     </div>
   )
 } 

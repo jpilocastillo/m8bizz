@@ -23,11 +23,26 @@ import {
   TrendingUp,
   Users,
   FileText,
+  Calendar,
+  Search,
+  Bell,
+  Star,
+  Clock,
+  Activity,
+  Zap,
+  Shield,
+  HelpCircle,
+  BookOpen,
+  TrendingDown,
+  DollarSign,
+  Briefcase,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useAuth } from "@/components/auth-provider"
+import { motion, AnimatePresence } from "framer-motion"
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -36,6 +51,15 @@ export function Sidebar() {
   const [isMarketingExpanded, setIsMarketingExpanded] = useState(true)
   const [isToolsExpanded, setIsToolsExpanded] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [recentItems, setRecentItems] = useState([
+    { name: "Retirement Planning Workshop", href: "/events", icon: Calendar, type: "Event" },
+    { name: "Q4 Analytics Report", href: "/analytics", icon: BarChart3, type: "Report" },
+    { name: "Client Acquisition Goals", href: "/business-dashboard", icon: Target, type: "Goal" },
+  ])
+  const [favorites, setFavorites] = useState([
+    { name: "Analytics Dashboard", href: "/analytics", icon: BarChart3 },
+    { name: "Event Management", href: "/events", icon: Calendar },
+  ])
   const supabase = createClient()
 
   // Load collapsed state from localStorage on mount
@@ -53,6 +77,16 @@ export function Sidebar() {
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed)
+  }
+
+  const addToFavorites = (item: any) => {
+    if (!favorites.find(fav => fav.href === item.href)) {
+      setFavorites([...favorites, item])
+    }
+  }
+
+  const removeFromFavorites = (href: string) => {
+    setFavorites(favorites.filter(fav => fav.href !== href))
   }
 
   return (
