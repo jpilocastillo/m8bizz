@@ -111,14 +111,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         if (!value) {
           errors.date = 'Event date is required'
         } else {
-          const eventDate = new Date(value.toString())
-          const today = new Date()
-          today.setHours(0, 0, 0, 0)
-          if (eventDate < today) {
-            errors.date = 'Event date cannot be in the past'
-          } else {
-            delete errors.date
-          }
+          delete errors.date
         }
         break
       case 'location':
