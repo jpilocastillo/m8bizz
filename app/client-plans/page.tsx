@@ -346,7 +346,7 @@ export default function ClientPlansPage() {
               <p className="text-muted-foreground">View and manage your missing money analysis reports</p>
             </div>
             <Link href="/tools/missing-money">
-              <Button variant="outline" className="text-blue-400 border-blue-700/30 hover:bg-blue-900/20">
+              <Button variant="outline" className="text-blue-300 border-m8bs-border/50 hover:bg-m8bs-card-alt/50">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Manage Reports
               </Button>
@@ -354,39 +354,39 @@ export default function ClientPlansPage() {
           </div>
 
           {missingMoneyLoading ? (
-            <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+            <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
               <CardContent className="p-12 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-m8bs-blue mx-auto mb-4"></div>
                 <p className="text-muted-foreground">Loading missing money report...</p>
               </CardContent>
             </Card>
           ) : missingMoneyData && missingMoneyData.costCenters.length > 0 ? (
-            <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+            <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
               <CardHeader>
                 <CardTitle className="text-xl text-blue-300">Missing Money Report Summary</CardTitle>
-                <CardDescription>Opportunity cost analysis overview</CardDescription>
+                <CardDescription className="text-m8bs-muted">Opportunity cost analysis overview</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Summary Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-m8bs-card-alt/50 p-4 rounded-lg border border-m8bs-card-alt/30">
-                    <div className="text-sm text-muted-foreground mb-1">1 Year Missing Money</div>
+                  <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
+                    <div className="text-sm text-m8bs-muted mb-1">1 Year Missing Money</div>
                     <div className={`text-2xl font-bold ${
                       missingMoneyData.oneYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {formatCurrency(missingMoneyData.oneYearTotal)}
                     </div>
                   </div>
-                  <div className="bg-m8bs-card-alt/50 p-4 rounded-lg border border-m8bs-card-alt/30">
-                    <div className="text-sm text-muted-foreground mb-1">5 Years Missing Money</div>
+                  <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
+                    <div className="text-sm text-m8bs-muted mb-1">5 Years Missing Money</div>
                     <div className={`text-2xl font-bold ${
                       missingMoneyData.fiveYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
                       {formatCurrency(missingMoneyData.fiveYearTotal)}
                     </div>
                   </div>
-                  <div className="bg-m8bs-card-alt/50 p-4 rounded-lg border border-m8bs-card-alt/30">
-                    <div className="text-sm text-muted-foreground mb-1">10 Years Missing Money</div>
+                  <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
+                    <div className="text-sm text-m8bs-muted mb-1">10 Years Missing Money</div>
                     <div className={`text-2xl font-bold ${
                       missingMoneyData.tenYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
@@ -402,16 +402,16 @@ export default function ClientPlansPage() {
                     {missingMoneyData.costCenters.slice(0, 5).map((center) => {
                       const difference = center.proposed - center.current
                       return (
-                        <div key={center.id} className="flex items-center justify-between p-3 bg-m8bs-card-alt/30 rounded-lg">
+                        <div key={center.id} className="flex items-center justify-between p-3 bg-m8bs-card-alt/50 rounded-lg border border-m8bs-border/30">
                           <div className="flex items-center gap-3">
                             <div 
                               className="w-4 h-4 rounded-full" 
                               style={{ backgroundColor: center.color }}
                             />
-                            <span className="text-sm text-muted-foreground">{center.name}</span>
+                            <span className="text-sm text-m8bs-muted">{center.name}</span>
                           </div>
                           <div className="flex items-center gap-4">
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-m8bs-muted">
                               {formatCurrency(center.current)} → {formatCurrency(center.proposed)}
                             </span>
                             <span className={`text-sm font-semibold ${
@@ -425,7 +425,7 @@ export default function ClientPlansPage() {
                     })}
                     {missingMoneyData.costCenters.length > 5 && (
                       <div className="text-center pt-2">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-m8bs-muted">
                           +{missingMoneyData.costCenters.length - 5} more cost centers
                         </span>
                       </div>
@@ -436,7 +436,7 @@ export default function ClientPlansPage() {
                 {/* Action Button */}
                 <div className="pt-4">
                   <Link href="/tools/missing-money">
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button className="w-full bg-m8bs-blue hover:bg-m8bs-blue-dark text-white border-m8bs-border/30">
                       <PieChart className="h-4 w-4 mr-2" />
                       View Full Report
                     </Button>
@@ -445,15 +445,15 @@ export default function ClientPlansPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+            <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
               <CardContent className="p-12 text-center">
-                <PieChart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <PieChart className="h-16 w-16 text-m8bs-muted mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-blue-300 mb-2">No Missing Money Report Yet</h3>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-m8bs-muted mb-6">
                   Create your first missing money report to analyze opportunity costs
                 </p>
                 <Link href="/tools/missing-money">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white border-m8bs-border/30">
                     <PieChart className="h-4 w-4 mr-2" />
                     Create Missing Money Report
                   </Button>

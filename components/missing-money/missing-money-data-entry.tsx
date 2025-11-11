@@ -56,13 +56,13 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gray-900 border-gray-700">
+      <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white">
+          <CardTitle className="flex items-center gap-2 text-blue-300">
             <Calculator className="h-5 w-5" />
             Missing Money Data Entry
           </CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardDescription className="text-m8bs-muted">
             Enter current and proposed values for each cost center to calculate opportunity costs
           </CardDescription>
         </CardHeader>
@@ -72,40 +72,40 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
               const difference = calculateDifference(center)
               
               return (
-                <Card key={center.id} className="p-4 bg-gray-800 border-gray-700">
+                <Card key={center.id} className="p-4 bg-m8bs-card-alt/70 border-m8bs-border/50">
                   <div className="flex items-center gap-3 mb-4">
                     <div 
                       className="w-4 h-4 rounded-full" 
                       style={{ backgroundColor: center.color }}
                     />
-                    <h3 className="font-semibold text-lg text-white">{center.name}</h3>
+                    <h3 className="font-semibold text-lg text-blue-300">{center.name}</h3>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`${center.id}-current`} className="text-gray-300">Current Numbers</Label>
+                      <Label htmlFor={`${center.id}-current`} className="text-m8bs-muted">Current Numbers</Label>
                       <Input
                         id={`${center.id}-current`}
                         type="number"
                         value={center.current}
                         onChange={(e) => handleInputChange(center.id, 'current', e.target.value)}
-                        className="text-right bg-gray-700 border-gray-600 text-white"
+                        className="text-right bg-m8bs-card-alt/50 border-m8bs-border/50 text-white focus:border-m8bs-blue"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor={`${center.id}-proposed`} className="text-gray-300">Proposed Numbers</Label>
+                      <Label htmlFor={`${center.id}-proposed`} className="text-m8bs-muted">Proposed Numbers</Label>
                       <Input
                         id={`${center.id}-proposed`}
                         type="number"
                         value={center.proposed}
                         onChange={(e) => handleInputChange(center.id, 'proposed', e.target.value)}
-                        className="text-right bg-gray-700 border-gray-600 text-white"
+                        className="text-right bg-m8bs-card-alt/50 border-m8bs-border/50 text-white focus:border-m8bs-blue"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-gray-300">1 Year Difference</Label>
+                      <Label className="text-m8bs-muted">1 Year Difference</Label>
                       <div className={`p-2 rounded-md text-right font-semibold ${
                         difference >= 0 
                           ? 'bg-green-900/50 text-green-400 border border-green-700' 
@@ -118,7 +118,7 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                   
                   <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
                     <div className="text-right">
-                      <span className="text-gray-400">5 Year: </span>
+                      <span className="text-m8bs-muted">5 Year: </span>
                       <span className={`font-semibold ${
                         difference * 5 >= 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
@@ -126,7 +126,7 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-gray-400">10 Year: </span>
+                      <span className="text-m8bs-muted">10 Year: </span>
                       <span className={`font-semibold ${
                         difference * 10 >= 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
@@ -140,19 +140,19 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
           </div>
 
           {/* Summary Card */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-m8bs-card-alt/70 border-m8bs-border/50">
             <CardHeader>
-              <CardTitle className="text-white">Summary</CardTitle>
+              <CardTitle className="text-blue-300">Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{formatCurrency(currentTotal)}</div>
-                  <div className="text-sm text-gray-400">Current Total</div>
+                  <div className="text-2xl font-bold text-blue-300">{formatCurrency(currentTotal)}</div>
+                  <div className="text-sm text-m8bs-muted">Current Total</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{formatCurrency(proposedTotal)}</div>
-                  <div className="text-sm text-gray-400">Proposed Total</div>
+                  <div className="text-2xl font-bold text-blue-300">{formatCurrency(proposedTotal)}</div>
+                  <div className="text-sm text-m8bs-muted">Proposed Total</div>
                 </div>
                 <div className="text-center">
                   <div className={`text-2xl font-bold ${
@@ -160,7 +160,7 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                   }`}>
                     {formatCurrency(totalDifference)}
                   </div>
-                  <div className="text-sm text-gray-400">1 Year Difference</div>
+                  <div className="text-sm text-m8bs-muted">1 Year Difference</div>
                 </div>
                 <div className="text-center">
                   <div className={`text-2xl font-bold ${
@@ -168,14 +168,14 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                   }`}>
                     {formatCurrency(totalDifference * 5)}
                   </div>
-                  <div className="text-sm text-gray-400">5 Year Difference</div>
+                  <div className="text-sm text-m8bs-muted">5 Year Difference</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setCostCenters(data.costCenters)} className="border-gray-700 text-gray-300 hover:bg-gray-800">
+            <Button variant="outline" onClick={() => setCostCenters(data.costCenters)} className="border-m8bs-border/50 text-blue-300 hover:bg-m8bs-card-alt/50">
               Reset
             </Button>
             <Button onClick={handleSave} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white">
