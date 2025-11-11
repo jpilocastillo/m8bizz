@@ -11,8 +11,12 @@ import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Sprout, TreePine, Leaf, Flower, Heading as Seedling, Sun, Droplets, Plus, X, TrendingUp, Shield, Target, Zap, Star, Sparkles } from "lucide-react"
+import { Sprout, TreePine, Leaf, Flower, Heading as Seedling, Sun, Droplets, Plus, X, TrendingUp, Shield, Target, Zap, Star, Sparkles, Calculator } from "lucide-react"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, Area, AreaChart } from "recharts"
+import { clientPlanService, type PlanData } from "@/lib/client-plans"
+import { pdfGenerator } from "@/lib/pdf-generator"
+import { useAuth } from "@/components/auth-provider"
+import { createClient } from "@/lib/supabase/client"
 
 interface BucketData {
   id: string
@@ -20,7 +24,7 @@ interface BucketData {
   percentage: number
   amount: number
   color: string
-  icon: React.ReactNode
+  icon: string // Changed from React.ReactNode to string
   description: string
   growthStage: string
   timeframe: string
@@ -34,6 +38,7 @@ interface BucketData {
   riskTolerance: "conservative" | "moderate" | "aggressive"
   lifetimeIncomeType?: "single" | "joint"
   ageBasedPayoutPercent?: number
+  inflationRate?: number
 }
 
 interface IncomeSource {
@@ -104,7 +109,51 @@ const calculateIncomeGapForBucket = (annualPayment: number, taxRate: number): nu
   return afterTaxPayment
 }
 
+// Icon mapping function
+const getIcon = (iconName: string, className: string = "h-6 w-6"): React.ReactNode => {
+  const iconMap: { [key: string]: React.ReactNode } = {
+    'sprout': <Sprout className={className} />,
+    'sun': <Sun className={className} />,
+    'droplets': <Droplets className={className} />,
+    'leaf': <Leaf className={className} />,
+    'tree-pine': <TreePine className={className} />,
+    'flower': <Flower className={className} />,
+    'trending-up': <TrendingUp className={className} />,
+    'shield': <Shield className={className} />,
+    'target': <Target className={className} />,
+    'zap': <Zap className={className} />,
+    'star': <Star className={className} />,
+    'sparkles': <Sparkles className={className} />,
+  }
+  return iconMap[iconName] || <Sprout className={className} />
+}
+
 export function GrowthPlannerTool() {
+  const { user } = useAuth()
+  const [profile, setProfile] = useState<any>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+
+  // Fetch user profile
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!user) {
+        setProfile(null)
+        setProfileLoading(false)
+        return
+      }
+      setProfileLoading(true)
+      const supabase = createClient()
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+      setProfile(profileData)
+      setProfileLoading(false)
+    }
+    fetchProfile()
+  }, [user])
+
   // Add slider styles
   useEffect(() => {
     const style = document.createElement('style')
@@ -136,6 +185,15 @@ export function GrowthPlannerTool() {
   }, [])
   const [currentStage, setCurrentStage] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
+  const pieChartRef = useRef<HTMLDivElement>(null)
+  const barChartRef = useRef<HTMLDivElement>(null)
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const bucketsContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Refs for hidden light mode charts for PDF export
+  const pdfPieChartRef = useRef<HTMLDivElement>(null)
+  const pdfBarChartRef = useRef<HTMLDivElement>(null)
+  const pdfTimelineRef = useRef<HTMLDivElement>(null)
 
   const scrollToTop = () => {
     setTimeout(() => {
@@ -155,6 +213,112 @@ export function GrowthPlannerTool() {
   useEffect(() => {
     scrollToTop()
   }, [currentStage])
+
+
+  // Load editing plan data if present
+  useEffect(() => {
+    const editingPlan = sessionStorage.getItem('editingPlan')
+    if (editingPlan) {
+      try {
+        const planData = JSON.parse(editingPlan)
+        setClientData(planData.clientData)
+        setBuckets(planData.buckets)
+        setCalculationResults(planData.calculationResults)
+        setEditingPlanId(planData.id)
+        setCurrentStage(3) // Go directly to the review stage
+        // Clear the session storage
+        sessionStorage.removeItem('editingPlan')
+      } catch (error) {
+        console.error('Error loading editing plan:', error)
+      }
+    }
+  }, [])
+
+  const handleSavePlan = async () => {
+    if (!clientData.name || buckets.length === 0) {
+      setSaveError('Please complete the plan before saving')
+      return
+    }
+
+    setIsSaving(true)
+    setSaveError(null)
+    setSaveSuccess(false)
+
+    try {
+      const planData: PlanData = {
+        clientData,
+        buckets,
+        calculationResults
+      }
+
+      let result
+      if (editingPlanId) {
+        // Update existing plan
+        result = await clientPlanService.updatePlan(
+          editingPlanId,
+          planData,
+          clientData.name,
+          `${clientData.name}'s Retirement Plan`
+        )
+      } else {
+        // Create new plan
+        result = await clientPlanService.savePlan(
+          planData,
+          clientData.name,
+          `${clientData.name}'s Retirement Plan`
+        )
+      }
+
+      if (result.success) {
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 3000)
+        // Clear editing state after successful save
+        if (editingPlanId) {
+          setEditingPlanId(null)
+        }
+      } else {
+        setSaveError(result.error || 'Failed to save plan')
+      }
+    } catch (error) {
+      console.error('Error saving plan:', error)
+      setSaveError('Failed to save plan')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDownloadPDF = async () => {
+    if (!clientData.name || buckets.length === 0) {
+      setSaveError('Please complete the plan before downloading')
+      return
+    }
+
+    try {
+      const planData: PlanData = {
+        clientData,
+        buckets,
+        calculationResults
+      }
+
+      // Capture chart elements - use hidden light mode versions for PDF
+      const chartElements = {
+        pieChart: pdfPieChartRef.current || pieChartRef.current || undefined,
+        barChart: pdfBarChartRef.current || barChartRef.current || undefined,
+        timeline: pdfTimelineRef.current || timelineRef.current || undefined
+      }
+
+      await pdfGenerator.downloadPDF(
+        planData,
+        clientData.name,
+        `${clientData.name}'s Retirement Plan`,
+        chartElements,
+        profile?.company
+      )
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      setSaveError('Failed to generate PDF')
+    }
+  }
   const [clientData, setClientData] = useState<ClientData>({
     name: "",
     totalAmount: 0,
@@ -186,6 +350,11 @@ export function GrowthPlannerTool() {
       incomeSolve: number
     }
   }>({})
+
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
 
   const totalInvestibleAssets = clientData.taxableFunds + clientData.taxDeferredFunds + clientData.taxFreeFunds
   const totalCurrentIncome = clientData.incomeSources.reduce((sum, source) => sum + source.amount, 0)
@@ -270,19 +439,19 @@ export function GrowthPlannerTool() {
       id: 1,
       title: "Plant Retirement Seeds",
       description: "Gather client's retirement landscape and income needs",
-      icon: <Sprout className="h-6 w-6 text-green-400 drop-shadow-lg" />,
+      icon: "sprout",
     },
     {
       id: 2,
       title: "Cultivate Income Streams",
       description: "Design the 16+ year retirement income garden",
-      icon: <Sun className="h-6 w-6 text-yellow-400 drop-shadow-lg" />,
+      icon: "sun",
     },
     {
       id: 3,
       title: "Harvest Retirement Plan",
       description: "Finalize the lifetime income strategy",
-      icon: <Droplets className="h-6 w-6 text-blue-400 drop-shadow-lg" />,
+      icon: "droplets",
     },
   ]
 
@@ -383,30 +552,95 @@ export function GrowthPlannerTool() {
     const incomeStartDelay = Math.max(1, clientData.incomeStartAge - clientData.retirementAge)
     
     if (climate === "conservative") {
-      // Only annuity options for conservative
+      // Shade Garden: 3 growth annuity buckets + 1 lifetime income annuity
+      const year2Start = incomeStartDelay
+      const year7Start = Math.max(year2Start + 5, incomeStartDelay + 5)
+      const year12Start = Math.max(year7Start + 5, incomeStartDelay + 10)
+      const year16Start = Math.max(year12Start + 4, incomeStartDelay + 14)
+      
       return [
         {
           id: "conservative-annuity-1",
-          name: "Conservative Annuity",
-          percentage: 100,
+          name: "Early Growth Annuity",
+          percentage: 25,
           amount: 0,
           color: "#3B82F6",
-          icon: <Sprout className="h-6 w-6 text-green-400 drop-shadow-lg" />,
-          description: "Conservative fixed annuity providing steady, guaranteed income",
-          growthStage: "Conservative Growth",
-          timeframe: `Years ${incomeStartDelay}+`,
+          icon: "sprout",
+          description: "Conservative fixed annuity providing steady, guaranteed income for early retirement years",
+          growthStage: "Early Growth",
+          timeframe: `Years ${year2Start}-${year7Start - 1}`,
           investmentType: "Fixed Annuity",
           premiumAmount: 0,
           interestRate: 4.5,
-          delayPeriod: incomeStartDelay,
-          incomePeriods: 20,
-          paymentDelayPeriod: incomeStartDelay * 12,
+          delayPeriod: year2Start,
+          incomePeriods: year7Start - year2Start,
+          paymentDelayPeriod: year2Start * 12,
           annuityLabel: "",
           riskTolerance: "conservative" as const,
         },
+        {
+          id: "conservative-annuity-2",
+          name: "Mid Growth Annuity",
+          percentage: 25,
+          amount: 0,
+          color: "#10B981",
+          icon: "leaf",
+          description: "Conservative fixed annuity providing steady, guaranteed income for mid-retirement years",
+          growthStage: "Mid Growth",
+          timeframe: `Years ${year7Start}-${year12Start - 1}`,
+          investmentType: "Fixed Annuity",
+          premiumAmount: 0,
+          interestRate: 5.0,
+          delayPeriod: year7Start,
+          incomePeriods: year12Start - year7Start,
+          paymentDelayPeriod: year7Start * 12,
+          annuityLabel: "",
+          riskTolerance: "conservative" as const,
+        },
+        {
+          id: "conservative-annuity-3",
+          name: "Mature Growth Annuity",
+          percentage: 25,
+          amount: 0,
+          color: "#F59E0B",
+          icon: "tree-pine",
+          description: "Conservative fixed annuity providing steady, guaranteed income for mature retirement years",
+          growthStage: "Mature Growth",
+          timeframe: `Years ${year12Start}+`,
+          investmentType: "Fixed Annuity",
+          premiumAmount: 0,
+          interestRate: 5.5,
+          delayPeriod: year12Start,
+          incomePeriods: year16Start - year12Start,
+          paymentDelayPeriod: year12Start * 12,
+          annuityLabel: "",
+          riskTolerance: "conservative" as const,
+        },
+        {
+          id: "conservative-lifetime-income",
+          name: "Lifetime Income Annuity",
+          percentage: 25,
+          amount: 0,
+          color: "#8B5CF6",
+          icon: "droplets",
+          description: "Lifetime income annuity providing guaranteed income for life",
+          growthStage: "Lifetime Security",
+          timeframe: `Years ${incomeStartDelay}+`,
+          investmentType: "Lifetime Income",
+          premiumAmount: 0,
+          interestRate: 4.0,
+          delayPeriod: incomeStartDelay,
+          incomePeriods: 999, // Lifetime
+          paymentDelayPeriod: incomeStartDelay * 12,
+          annuityLabel: "",
+          riskTolerance: "conservative" as const,
+          lifetimeIncomeType: "single" as const,
+        },
       ]
     } else {
-      // Full diversified approach for aggressive
+      // Full Sun (Growth-Focused Income) - Full diversified approach for aggressive
+      // NOTE: Brokerage Portfolio is ONLY automatically included for Full Sun (aggressive) climate
+      // It is NEVER included for Shade Garden (conservative) climate
       const year2Start = incomeStartDelay
       const year7Start = Math.max(year2Start + 5, incomeStartDelay + 5)
       const year12Start = Math.max(year7Start + 5, incomeStartDelay + 10)
@@ -419,7 +653,7 @@ export function GrowthPlannerTool() {
           percentage: 20,
           amount: 0,
           color: "#3B82F6",
-          icon: <Sprout className="h-6 w-6 text-blue-400 drop-shadow-lg" />,
+          icon: "sprout",
           description: "First flowering of retirement income - steady annuity payments for early retirement years",
           growthStage: "Early Flowering",
           timeframe: `Years ${year2Start}-${year7Start - 1}`,
@@ -438,7 +672,7 @@ export function GrowthPlannerTool() {
           percentage: 24,
           amount: 0,
           color: "#10B981",
-          icon: <Leaf className="h-6 w-6 text-emerald-400 drop-shadow-lg" />,
+          icon: "leaf",
           description: "Prime harvest years - reliable annuity income during mid-retirement years",
           growthStage: "Peak Harvest",
           timeframe: `Years ${year7Start}-${year12Start - 1}`,
@@ -457,7 +691,7 @@ export function GrowthPlannerTool() {
           percentage: 24,
           amount: 0,
           color: "#F59E0B",
-          icon: <TreePine className="h-6 w-6 text-amber-400 drop-shadow-lg" />,
+          icon: "tree-pine",
           description: "Established grove providing steady income - annuity payments for mature retirement years",
           growthStage: "Mature Forest",
           timeframe: `Years ${year12Start}-${year16Start - 1}`,
@@ -476,7 +710,7 @@ export function GrowthPlannerTool() {
           percentage: 32,
           amount: 0,
           color: "#8B5CF6",
-          icon: <Flower className="h-6 w-6 text-green-400 drop-shadow-lg" />,
+          icon: "flower",
           description:
             "Self-sustaining garden - brokerage investments providing flexible income for years 16+ and legacy wealth",
           growthStage: "Evergreen Legacy",
@@ -500,25 +734,49 @@ export function GrowthPlannerTool() {
     let newBucket: BucketData
 
     if (climate === "conservative") {
-      // Conservative can only add annuities
-      newBucket = {
-        id: newBucketId,
-        name: "Additional Conservative Annuity",
-        percentage: 0,
-        amount: 0,
-        color: "var(--chart-2)",
-        icon: <Leaf className="h-5 w-5" />,
-        description: "Additional conservative annuity for enhanced income security",
-        growthStage: "Conservative Growth",
-        timeframe: `Years ${incomeStartDelay}+`,
-        investmentType: "Fixed Annuity",
-        premiumAmount: 0,
-        interestRate: 4.5,
-        delayPeriod: incomeStartDelay,
-        incomePeriods: 20,
-        paymentDelayPeriod: incomeStartDelay * 12,
-        annuityLabel: "",
-        riskTolerance: "conservative" as const,
+      // Conservative can add growth annuities or lifetime income
+      if (investmentType === "annuity") {
+        newBucket = {
+          id: newBucketId,
+          name: "Additional Growth Annuity",
+          percentage: 0,
+          amount: 0,
+          color: "var(--chart-2)",
+          icon: "tree-pine",
+          description: "Additional growth annuity for enhanced income security",
+          growthStage: "Growth Phase",
+          timeframe: `Years ${incomeStartDelay}+`,
+          investmentType: "Fixed Annuity",
+          premiumAmount: 0,
+          interestRate: 5.5,
+          delayPeriod: incomeStartDelay,
+          incomePeriods: 20,
+          paymentDelayPeriod: incomeStartDelay * 12,
+          annuityLabel: "",
+          riskTolerance: "conservative" as const,
+        }
+      } else {
+        // Lifetime income for conservative
+        newBucket = {
+          id: newBucketId,
+          name: "Lifetime Income Annuity",
+          percentage: 0,
+          amount: 0,
+          color: "var(--chart-6)",
+          icon: "droplets",
+          description: "Lifetime income annuity providing guaranteed income for life",
+          growthStage: "Lifetime Security",
+          timeframe: `Years ${incomeStartDelay}+`,
+          investmentType: "Lifetime Income",
+          premiumAmount: 0,
+          interestRate: 4.0,
+          delayPeriod: incomeStartDelay,
+          incomePeriods: 999, // Lifetime
+          paymentDelayPeriod: incomeStartDelay * 12,
+          annuityLabel: "",
+          riskTolerance: "conservative" as const,
+          lifetimeIncomeType: "single" as const,
+        }
       }
     } else {
       // Aggressive can add either annuities or growth portfolios
@@ -529,7 +787,7 @@ export function GrowthPlannerTool() {
           percentage: 0,
           amount: 0,
           color: "var(--chart-5)",
-          icon: <TreePine className="h-5 w-5" />,
+          icon: "tree-pine",
           description: "Additional growth-focused annuity for enhanced returns",
           growthStage: "Growth Phase",
           timeframe: `Years ${incomeStartDelay}+`,
@@ -549,7 +807,7 @@ export function GrowthPlannerTool() {
           percentage: 0,
           amount: 0,
           color: "var(--chart-5)",
-          icon: <Sun className="h-5 w-5" />,
+          icon: "sun",
           description: "Additional growth-focused investment for enhanced returns",
           growthStage: "Growth Phase",
           timeframe: `Years ${incomeStartDelay}+`,
@@ -569,7 +827,7 @@ export function GrowthPlannerTool() {
           percentage: 0,
           amount: 0,
           color: "var(--chart-6)",
-          icon: <Droplets className="h-5 w-5" />,
+          icon: "droplets",
           description: "Lifetime income annuity providing guaranteed income for life",
           growthStage: "Lifetime Security",
           timeframe: `Years ${incomeStartDelay}+`,
@@ -581,7 +839,7 @@ export function GrowthPlannerTool() {
           paymentDelayPeriod: incomeStartDelay * 12,
           annuityLabel: "",
           riskTolerance: "conservative" as const,
-          lifetimeIncomeType: "single",
+          lifetimeIncomeType: "single" as const,
         }
       }
     }
@@ -594,29 +852,32 @@ export function GrowthPlannerTool() {
   }
 
   const calculateBucketValues = (bucket: BucketData) => {
-    const estimatedPremiums = calculateEstimatedPremiums()
-    const bucketIndex = buckets.findIndex((b) => b.id === bucket.id)
-    const estimatedPremium = estimatedPremiums[bucketIndex]
+    // Use actual premiumAmount instead of estimated premiums for accuracy
+    const actualPremium = bucket.premiumAmount || 0
 
     if (bucket.investmentType === "Lifetime Income") {
       // For lifetime income annuities, use age-based payout percentage
       const ageBasedPayout = bucket.ageBasedPayoutPercent || 0
-      const annualIncome = (bucket.premiumAmount * ageBasedPayout) / 100
+      const annualIncome = (actualPremium * ageBasedPayout) / 100
       const taxes = annualIncome * (clientData.taxBracket / 100)
       const netIncome = annualIncome - taxes
+      
+      // Apply inflation to show real purchasing power
+      const inflationRate = bucket.inflationRate !== undefined ? bucket.inflationRate : clientData.inflationRate || 0
+      const inflationAdjustedIncome = inflationRate > 0 ? netIncome / (1 + inflationRate / 100) : netIncome
 
       return {
-        estimatedPremium: bucket.premiumAmount,
-        futureValue: bucket.premiumAmount, // No growth for lifetime income
+        estimatedPremium: actualPremium,
+        futureValue: actualPremium, // No growth for lifetime income
         annuityPayment: annualIncome,
         payments: annualIncome,
         taxes: -taxes, // Negative for display
-        incomeSolve: netIncome,
+        incomeSolve: inflationAdjustedIncome,
       }
     } else {
       // For other investment types, use the original calculation
       // Future Value = Premium Amount * (1 + Rate of Interest)^Period of Delay
-      const futureValue = bucket.premiumAmount * Math.pow(1 + bucket.interestRate / 100, bucket.delayPeriod)
+      const futureValue = actualPremium * Math.pow(1 + bucket.interestRate / 100, bucket.delayPeriod)
 
       const annuityPayment = annualIncomeGap / 12
 
@@ -626,11 +887,11 @@ export function GrowthPlannerTool() {
       // Taxes = Payments * Tax Bracket
       const taxes = payments * (clientData.taxBracket / 100)
 
-      // Income Solve = Payments + Taxes (where Taxes is negative)
+      // Income Solve = Payments - Taxes
       const incomeSolve = payments - taxes
 
       return {
-        estimatedPremium,
+        estimatedPremium: actualPremium,
         futureValue,
         annuityPayment,
         payments,
@@ -639,6 +900,9 @@ export function GrowthPlannerTool() {
       }
     }
   }
+
+  const totalAllocated = buckets.reduce((sum, bucket) => sum + (bucket.premiumAmount || 0), 0)
+  const remaining = totalInvestibleAssets - totalAllocated
 
   return (
     <TooltipProvider>
@@ -649,7 +913,7 @@ export function GrowthPlannerTool() {
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-400/30 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-yellow-400/20 rounded-full blur-3xl"></div>
         </div>
-        
+
         <div className="container mx-auto p-4 sm:p-6 max-w-7xl relative">
       {/* Enhanced Header */}
       <div className="mb-12">
@@ -689,7 +953,7 @@ export function GrowthPlannerTool() {
                     : "bg-blue-900/50 text-blue-300 border-blue-400 hover:bg-blue-800/50 hover:border-blue-300 shadow-lg"
                 }`}
               >
-                {stage.icon}
+                {getIcon(stage.icon, "h-6 w-6 text-green-400 drop-shadow-lg")}
               </div>
               <div className="text-center sm:text-left">
                 <p className="text-sm sm:text-lg font-bold text-blue-100">{stage.title}</p>
@@ -712,15 +976,18 @@ export function GrowthPlannerTool() {
       <Tabs value={currentStage.toString()} className="space-y-6">
         {/* Stage 1: Client Information */}
         <TabsContent value="1" className="space-y-12 mt-20">
-          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2 transform hover:scale-[1.02] transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-b border-green-400/50 p-8 pb-12">
-              <CardTitle className="flex items-center gap-3 text-blue-300 text-2xl mb-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                  <Sprout className="h-6 w-6 text-white drop-shadow-lg" />
+          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+            <CardHeader className="bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 border-b-2 border-green-400/60 p-10 pb-14 shadow-2xl shadow-green-900/20 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5"></div>
+              <CardTitle className="flex items-center gap-4 text-blue-200 text-3xl mb-5 font-bold relative z-10">
+                <div className="p-4 bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 rounded-2xl shadow-2xl shadow-green-500/50 ring-2 ring-green-400/30">
+                  <Sprout className="h-7 w-7 text-white drop-shadow-2xl" />
                 </div>
-                Plant Retirement Seeds
+                <span className="bg-gradient-to-r from-green-300 via-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-lg">
+                  Plant Retirement Seeds
+                </span>
               </CardTitle>
-              <CardDescription className="text-muted-foreground text-lg">
+              <CardDescription className="text-blue-200/80 text-xl font-medium relative z-10 mt-2">
                 Let's understand your client's retirement landscape and income growing conditions
               </CardDescription>
             </CardHeader>
@@ -1138,45 +1405,22 @@ export function GrowthPlannerTool() {
 
         {/* Stage 2: Bucket Allocation */}
         <TabsContent value="2" className="space-y-12 mt-20">
-          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2 transform hover:scale-[1.02] transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-b border-green-400/50 p-8 pb-12">
-              <CardTitle className="flex items-center gap-3 text-blue-300 text-2xl mb-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                  <Sun className="h-6 w-6 text-white drop-shadow-lg" />
+          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+            <CardHeader className="bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 border-b-2 border-green-400/60 p-10 pb-14 shadow-2xl shadow-green-900/20 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5"></div>
+              <CardTitle className="flex items-center gap-4 text-blue-200 text-3xl mb-5 font-bold relative z-10">
+                <div className="p-4 bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 rounded-2xl shadow-2xl shadow-green-500/50 ring-2 ring-green-400/30">
+                  <Sun className="h-7 w-7 text-white drop-shadow-2xl" />
                 </div>
-                Cultivate Income Streams
+                <span className="bg-gradient-to-r from-green-300 via-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-lg">
+                  Cultivate Income Streams
+                </span>
               </CardTitle>
-              <CardDescription className="text-muted-foreground text-lg">
+              <CardDescription className="text-blue-200/80 text-xl font-medium relative z-10 mt-2">
                 Design the 16+ year retirement income garden with strategic bucket allocation
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8 pt-8">
-              {/* Allocation Progress Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-lg border border-green-700/30">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Total Assets</p>
-                  <p className="text-lg font-bold text-green-300">${formatCurrency(totalInvestibleAssets)}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Allocated</p>
-                  <p className="text-lg font-bold text-green-300">
-                    ${formatCurrency(buckets.reduce((sum, bucket) => sum + (bucket.premiumAmount || 0), 0))}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Remaining</p>
-                  <p className={`text-lg font-bold ${(totalInvestibleAssets - buckets.reduce((sum, bucket) => sum + (bucket.premiumAmount || 0), 0)) >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                    ${formatCurrency(totalInvestibleAssets - buckets.reduce((sum, bucket) => sum + (bucket.premiumAmount || 0), 0))}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Income Needed</p>
-                  <p className="text-lg font-bold text-green-300">${formatCurrency(annualIncomeGap)}</p>
-                </div>
-              </div>
-
-              <Separator />
-
               {/* Progress Bar */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -1201,35 +1445,39 @@ export function GrowthPlannerTool() {
 
               <Separator />
 
-
-              {buckets.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="p-4 bg-green-900/20 rounded-lg border border-green-700/30 mb-4">
-                    <TreePine className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                    <p className="text-green-400 font-medium">Please select an Income Growing Climate in Step 1 to generate your investment options</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {buckets.map((bucket, index) => {
+              {/* Buckets Section with Calculator */}
+              <div className="w-full" ref={bucketsContainerRef} style={{ overflow: 'visible' }}>
+                {/* Buckets */}
+                <div className="w-full">
+                  {buckets.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="p-4 bg-green-900/20 rounded-lg border border-green-700/30 mb-4">
+                        <TreePine className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                        <p className="text-green-400 font-medium">Please select an Income Growing Climate in Step 1 to generate your investment options</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {buckets.map((bucket, index) => {
                     const calculatedValues = calculateBucketValues(bucket)
                     const estimatedPremiums = calculateEstimatedPremiums()
 
                     return (
-                      <Card key={bucket.id} className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-                        <CardHeader className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-b border-green-400/50 p-6">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="flex items-center gap-3 text-blue-300 text-xl">
-                              <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                                {bucket.icon}
+                      <Card key={bucket.id} className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2 mb-6">
+                        <CardHeader className="bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 border-b-2 border-green-400/60 p-7 shadow-xl shadow-green-900/20 relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5"></div>
+                          <div className="flex items-center justify-between relative z-10">
+                            <CardTitle className="flex items-center gap-4 text-blue-200 text-xl font-bold">
+                              <div className="p-3 bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 rounded-xl shadow-xl shadow-green-500/40 ring-2 ring-green-400/30">
+                                {getIcon(bucket.icon, "h-6 w-6 text-white drop-shadow-xl")}
                               </div>
                               <div>
-                                <div className="text-lg font-semibold">{bucket.name}</div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge variant="outline" className="text-xs">
+                                <div className="text-xl font-bold bg-gradient-to-r from-green-300 to-emerald-300 bg-clip-text text-transparent">{bucket.name}</div>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge variant="outline" className="text-xs border-green-400/50 text-green-300 bg-green-900/30">
                                     {bucket.timeframe}
                                   </Badge>
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge variant="secondary" className="text-xs bg-emerald-900/40 text-emerald-300 border-emerald-400/30">
                                     {bucket.investmentType}
                                   </Badge>
                                 </div>
@@ -1248,6 +1496,196 @@ export function GrowthPlannerTool() {
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                      {/* Enhanced Allocation Tracker for this Bucket */}
+                      <div className="p-5 bg-gradient-to-br from-m8bs-card/50 to-m8bs-card-alt/30 rounded-lg border border-green-700/30 backdrop-blur-sm">
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-green-400/30">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-lg">
+                              <Calculator className="h-5 w-5 text-green-400" />
+                            </div>
+                            <div>
+                              <h5 className="font-semibold text-base text-blue-300">Allocation Tracker</h5>
+                              <p className="text-xs text-muted-foreground">Real-time allocation status</p>
+                            </div>
+                          </div>
+                          {totalInvestibleAssets > 0 && (
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">Overall Progress</p>
+                              <p className="text-lg font-bold text-green-300">
+                                {((totalAllocated / totalInvestibleAssets) * 100).toFixed(1)}%
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Main Metrics Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                          <div className="space-y-1.5 p-3 bg-m8bs-card/40 rounded-lg border border-green-700/30 hover:bg-m8bs-card/50 transition-colors">
+                            <div className="flex items-center gap-1.5">
+                              <TrendingUp className="h-3.5 w-3.5 text-green-400" />
+                              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Total Assets</p>
+                            </div>
+                            <p className="text-base font-bold text-green-300">
+                              ${formatCurrency(totalInvestibleAssets)}
+                            </p>
+                            <div className="h-1 bg-green-800/30 rounded-full overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" style={{ width: '100%' }} />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 p-3 bg-m8bs-card/40 rounded-lg border border-green-700/30 hover:bg-m8bs-card/50 transition-colors">
+                            <div className="flex items-center gap-1.5">
+                              <Target className="h-3.5 w-3.5 text-blue-400" />
+                              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Total Allocated</p>
+                            </div>
+                            <p className="text-base font-bold text-blue-300">
+                              ${formatCurrency(totalAllocated)}
+                            </p>
+                            {totalInvestibleAssets > 0 && (
+                              <div className="h-1 bg-blue-800/30 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300" 
+                                  style={{ width: `${Math.min((totalAllocated / totalInvestibleAssets) * 100, 100)}%` }} 
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-1.5 p-3 bg-m8bs-card/40 rounded-lg border border-green-700/30 hover:bg-m8bs-card/50 transition-colors">
+                            <div className="flex items-center gap-1.5">
+                              <Droplets className="h-3.5 w-3.5 text-purple-400" />
+                              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">This Bucket</p>
+                            </div>
+                            <p className="text-base font-bold text-purple-300">
+                              ${formatCurrency(bucket.premiumAmount || 0)}
+                            </p>
+                            {totalInvestibleAssets > 0 && (
+                              <div className="h-1 bg-purple-800/30 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-300" 
+                                  style={{ width: `${Math.min(((bucket.premiumAmount || 0) / totalInvestibleAssets) * 100, 100)}%` }} 
+                                />
+                              </div>
+                            )}
+                            {totalAllocated > 0 && (
+                              <p className="text-[9px] text-muted-foreground mt-0.5">
+                                {(((bucket.premiumAmount || 0) / totalAllocated) * 100).toFixed(1)}% of allocated
+                              </p>
+                            )}
+                          </div>
+
+                          <div className={`space-y-1.5 p-3 rounded-lg border transition-colors ${
+                            remaining >= 0 
+                              ? 'bg-m8bs-card/40 border-green-700/30 hover:bg-m8bs-card/50' 
+                              : 'bg-red-900/30 border-red-700/30 hover:bg-red-900/40'
+                          }`}>
+                            <div className="flex items-center gap-1.5">
+                              {remaining >= 0 ? (
+                                <Shield className="h-3.5 w-3.5 text-emerald-400" />
+                              ) : (
+                                <X className="h-3.5 w-3.5 text-red-400" />
+                              )}
+                              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Remaining</p>
+                            </div>
+                            <p className={`text-base font-bold ${remaining >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                              ${formatCurrency(remaining)}
+                            </p>
+                            {totalInvestibleAssets > 0 && (
+                              <div className={`h-1 rounded-full overflow-hidden ${
+                                remaining >= 0 ? 'bg-emerald-800/30' : 'bg-red-800/30'
+                              }`}>
+                                <div 
+                                  className={`h-full rounded-full transition-all duration-300 ${
+                                    remaining >= 0 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-red-500 to-red-600'
+                                  }`}
+                                  style={{ width: `${Math.min((Math.abs(remaining) / totalInvestibleAssets) * 100, 100)}%` }} 
+                                />
+                              </div>
+                            )}
+                            {totalInvestibleAssets > 0 && (
+                              <p className="text-[9px] text-muted-foreground mt-0.5">
+                                {((remaining / totalInvestibleAssets) * 100).toFixed(1)}% of total
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Detailed Breakdown */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                          <div className="p-3 bg-m8bs-card/50 rounded-lg border border-green-700/30">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Bucket Allocation Details</p>
+                            <div className="space-y-1.5 text-xs">
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">This Bucket:</span>
+                                <span className="font-bold text-purple-300">${formatCurrency(bucket.premiumAmount || 0)}</span>
+                              </div>
+                              {totalInvestibleAssets > 0 && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-muted-foreground">% of Total Assets:</span>
+                                  <span className="font-bold text-green-300">
+                                    {(((bucket.premiumAmount || 0) / totalInvestibleAssets) * 100).toFixed(2)}%
+                                  </span>
+                                </div>
+                              )}
+                              {totalAllocated > 0 && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-muted-foreground">% of Allocated:</span>
+                                  <span className="font-bold text-blue-300">
+                                    {(((bucket.premiumAmount || 0) / totalAllocated) * 100).toFixed(2)}%
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-3 bg-m8bs-card/50 rounded-lg border border-green-700/30">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Allocation Status</p>
+                            <div className="space-y-1.5 text-xs">
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Allocated:</span>
+                                <span className="font-bold text-blue-300">${formatCurrency(totalAllocated)}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Remaining:</span>
+                                <span className={`font-bold ${remaining >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                                  ${formatCurrency(remaining)}
+                                </span>
+                              </div>
+                              {annualIncomeGap > 0 && (
+                                <div className="flex justify-between items-center pt-1 border-t border-green-700/30">
+                                  <span className="text-muted-foreground">Income Needed:</span>
+                                  <span className="font-bold text-orange-300">${formatCurrency(annualIncomeGap)}/yr</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Overall Progress Bar */}
+                        {totalInvestibleAssets > 0 && (
+                          <div className="space-y-2 pt-2 border-t border-green-400/30">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground font-medium">Overall Allocation Progress</span>
+                              <span className="font-bold text-green-300">
+                                {((totalAllocated / totalInvestibleAssets) * 100).toFixed(1)}% Complete
+                              </span>
+                            </div>
+                            <div className="w-full bg-m8bs-card-alt/30 rounded-full h-3 overflow-hidden">
+                              <div 
+                                className="bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 h-3 rounded-full transition-all duration-500"
+                                style={{ 
+                                  width: `${Math.min((totalAllocated / totalInvestibleAssets) * 100, 100)}%` 
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-muted-foreground">
+                              <span>0%</span>
+                              <span>50%</span>
+                              <span>100%</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
                       <Separator />
 
@@ -1377,6 +1815,21 @@ export function GrowthPlannerTool() {
                               />
                               <p className="text-xs text-muted-foreground">
                                 Annual payout percentage based on age and life expectancy
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`${bucket.id}-inflation-rate`}>Inflation Rate (%)</Label>
+                              <Input
+                                id={`${bucket.id}-inflation-rate`}
+                                type="number"
+                                step="0.01"
+                                placeholder="e.g., 3.0"
+                                value={bucket.inflationRate !== undefined ? bucket.inflationRate : clientData.inflationRate || ""}
+                                onChange={(e) => updateBucketField(bucket.id, "inflationRate", Number(e.target.value))}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Annual inflation rate for adjusting lifetime income purchasing power
                               </p>
                             </div>
                           </div>
@@ -1521,7 +1974,7 @@ export function GrowthPlannerTool() {
                                 readOnly
                                 className="bg-green-900/30 border-green-700/30 font-bold text-lg text-green-300"
                               />
-                              <p className="text-xs text-muted-foreground">Annual lifetime income after taxes</p>
+                              <p className="text-xs text-muted-foreground">Annual lifetime income after taxes, adjusted for inflation</p>
                             </div>
                           )}
 
@@ -1547,14 +2000,24 @@ export function GrowthPlannerTool() {
                   {/* Add New Section Buttons */}
                   <div className="flex justify-center pt-4 gap-3">
                     {clientData.riskTolerance === "conservative" ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => addNewBucket("conservative", "annuity")}
-                        className="border-blue-700/30 text-blue-400 hover:bg-blue-900/20 flex items-center gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Another Annuity
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={() => addNewBucket("conservative", "annuity")}
+                          className="border-blue-700/30 text-blue-400 hover:bg-blue-900/20 flex items-center gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Growth Annuity
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => addNewBucket("conservative", "lifetime")}
+                          className="border-green-700/30 text-green-400 hover:bg-green-900/20 flex items-center gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Lifetime Income
+                        </Button>
+                      </>
                     ) : (
                       <>
                         <Button
@@ -1584,8 +2047,12 @@ export function GrowthPlannerTool() {
                       </>
                     )}
                   </div>
-                </>
-              )}
+                    </>
+                  )}
+                </div>
+
+              </div>
+
 
               <div className="flex gap-2 pt-4">
                 <Button variant="outline" onClick={() => setCurrentStage(1)} className="border-green-300 text-green-700 hover:bg-transparent">
@@ -1601,44 +2068,22 @@ export function GrowthPlannerTool() {
 
         {/* Stage 3: Review & Finalize */}
         <TabsContent value="3" className="space-y-12 mt-20">
-          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2 transform hover:scale-[1.02] transition-all duration-300">
-            <CardHeader className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-b border-green-400/50 p-8 pb-12">
-              <CardTitle className="flex items-center gap-3 text-blue-300 text-2xl mb-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                  <Droplets className="h-6 w-6 text-white drop-shadow-lg" />
+          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+            <CardHeader className="bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 border-b-2 border-green-400/60 p-10 pb-14 shadow-2xl shadow-green-900/20 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5"></div>
+              <CardTitle className="flex items-center gap-4 text-blue-200 text-3xl mb-5 font-bold relative z-10">
+                <div className="p-4 bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 rounded-2xl shadow-2xl shadow-green-500/50 ring-2 ring-green-400/30">
+                  <Droplets className="h-7 w-7 text-white drop-shadow-2xl" />
                 </div>
-                Harvest Retirement Plan
+                <span className="bg-gradient-to-r from-green-300 via-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-lg">
+                  Harvest Retirement Plan
+                </span>
               </CardTitle>
-              <CardDescription className="text-muted-foreground text-lg">
+              <CardDescription className="text-blue-200/80 text-xl font-medium relative z-10 mt-2">
                 Finalize the lifetime income strategy for {clientData.name || "Your Client"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8 pt-8">
-              {/* Summary Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-lg border border-green-700/30">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Total Investment</p>
-                  <p className="text-lg font-bold text-green-300">${formatCurrency(totalInvestibleAssets)}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Future Value</p>
-                  <p className="text-lg font-bold text-green-300">
-                    ${formatCurrency(buckets.reduce((sum, b) => sum + calculateBucketValues(b).futureValue, 0))}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Income Needed</p>
-                  <p className="text-lg font-bold text-green-300">${formatCurrency(annualIncomeGap)}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Income Generated</p>
-                  <p className="text-lg font-bold text-green-300">
-                    ${formatCurrency(buckets.reduce((sum, b) => sum + calculateBucketValues(b).incomeSolve, 0))}
-                  </p>
-                </div>
-              </div>
-
-              <Separator />
 
               {/* Executive Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1702,7 +2147,7 @@ export function GrowthPlannerTool() {
               <Separator />
 
               {/* Visual Timeline - Large and Prominent */}
-              <div className="space-y-4">
+              <div className="space-y-4" ref={timelineRef} data-chart="timeline">
                 <div className="flex items-center gap-2">
                   <Sun className="h-5 w-5 text-green-500" />
                   <h3 className="text-lg font-semibold text-green-400">Your 16+ Year Income Timeline</h3>
@@ -1734,7 +2179,7 @@ export function GrowthPlannerTool() {
                           <div key={bucket.id} className="flex flex-col items-center">
                             {/* Enhanced Large Plant Icon */}
                             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-4 border-blue-500 shadow-2xl shadow-blue-900/50 flex items-center justify-center mb-4">
-                              <div className="text-blue-400 scale-150 drop-shadow-lg">{bucket.icon}</div>
+                              <div className="text-blue-400 scale-150 drop-shadow-lg">{getIcon(bucket.icon, "h-6 w-6")}</div>
                             </div>
 
                             {/* Year Badge */}
@@ -1787,8 +2232,8 @@ export function GrowthPlannerTool() {
                 <div className="space-y-6">
                   {buckets.map((bucket, index) => {
                     const values = calculateBucketValues(bucket)
-                    const estimatedPremiums = calculateEstimatedPremiums()
-                    const percentage = (estimatedPremiums[index] / totalInvestibleAssets) * 100
+                    const actualPremium = bucket.premiumAmount || values.estimatedPremium || 0
+                    const percentage = totalInvestibleAssets > 0 ? (actualPremium / totalInvestibleAssets) * 100 : 0
 
                     return (
                       <Card key={bucket.id} className="p-6 bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 border-2 border-blue-700/30 shadow-lg">
@@ -1796,7 +2241,7 @@ export function GrowthPlannerTool() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                                {bucket.icon}
+                                {getIcon(bucket.icon, "h-6 w-6 text-white drop-shadow-lg")}
                               </div>
                               <div>
                                 <CardTitle className="text-xl text-blue-300 mb-2">{bucket.name}</CardTitle>
@@ -1813,7 +2258,7 @@ export function GrowthPlannerTool() {
                             <div className="text-right">
                               <p className="text-sm text-muted-foreground">Initial Investment</p>
                               <p className="text-2xl font-bold text-blue-400">
-                                ${formatCurrency(estimatedPremiums[index])}
+                                ${formatCurrency(actualPremium)}
                               </p>
                               <p className="text-sm text-muted-foreground">{percentage.toFixed(1)}% of portfolio</p>
                             </div>
@@ -1823,14 +2268,20 @@ export function GrowthPlannerTool() {
 
                         {/* Large Visual Progress Bar */}
                         <div className="relative">
-                          <div className="h-14 bg-m8bs-card-alt rounded-xl overflow-hidden border-2 border-blue-700/30 shadow-lg">
+                          <div className="h-14 bg-m8bs-card-alt rounded-xl overflow-visible border-2 border-blue-700/30 shadow-lg">
                             <div
-                              className="h-full bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 flex items-center justify-center transition-all duration-700 ease-out shadow-inner"
+                              className="h-full bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 transition-all duration-700 ease-out shadow-inner"
                               style={{ width: `${percentage}%` }}
                             >
-                              <span className="text-xl font-bold text-white drop-shadow-lg">
-                                {percentage.toFixed(1)}%
-                              </span>
+                              {percentage >= 5 ? (
+                                <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white drop-shadow-lg">
+                                  {percentage.toFixed(1)}%
+                                </span>
+                              ) : (
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xl font-bold text-white drop-shadow-lg whitespace-nowrap">
+                                  {percentage.toFixed(1)}%
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -2073,69 +2524,115 @@ export function GrowthPlannerTool() {
                 </h2>
                 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-                  {/* Pie Chart */}
-                  <div className="space-y-4">
+                  {/* Portfolio Distribution Chart */}
+                  <div className="space-y-4" ref={pieChartRef} data-chart="portfolio">
                     <h3 className="text-lg font-semibold text-blue-300">Portfolio Distribution</h3>
-                    <div className="h-80 sm:h-96 bg-gradient-to-br from-m8bs-card/50 to-m8bs-card-alt/50 rounded-2xl p-4 sm:p-6 border border-m8bs-card-alt/30 shadow-lg">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
+                    <div className="bg-gradient-to-br from-m8bs-card/50 to-m8bs-card-alt/50 rounded-2xl p-4 sm:p-6 border border-m8bs-card-alt/30 shadow-lg">
+                      <div className="h-[250px] sm:h-[280px] mb-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
                             data={buckets.map((bucket, index) => {
                               const values = calculateBucketValues(bucket)
                               const actualValue = bucket.premiumAmount || values.estimatedPremium
                               const totalAllocated = buckets.reduce((sum, b) => sum + (b.premiumAmount || 0), 0) || totalInvestibleAssets
                               return {
                                 name: bucket.name,
-                                value: actualValue,
-                                percentage: ((actualValue / totalAllocated) * 100).toFixed(1)
+                                amount: actualValue,
+                                percentage: parseFloat(((actualValue / totalAllocated) * 100).toFixed(1)),
+                                formattedAmount: formatCurrency(actualValue)
                               }
                             })}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percentage }) => `${name}: ${percentage}%`}
-                            outerRadius={140}
-                            innerRadius={50}
-                            dataKey="value"
-                            animationBegin={0}
-                            animationDuration={1000}
+                            layout="vertical"
+                            margin={{ top: 10, right: 10, bottom: 10, left: 50 }}
+                            barCategoryGap="20%"
                           >
-                            {buckets.map((bucket, index) => {
-                              const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
-                              return (
-                                <Cell 
-                                  key={`cell-${index}`} 
-                                  fill={colors[index % colors.length]}
-                                  stroke="#ffffff"
-                                  strokeWidth={3}
-                                  className="drop-shadow-lg"
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(34, 197, 94, 0.1)" />
+                            <XAxis 
+                              type="number"
+                              tickFormatter={(value) => formatCurrency(value)}
+                              style={{ fill: '#9CA3AF', fontSize: '11px' }}
+                            />
+                            <YAxis 
+                              type="category" 
+                              dataKey="name"
+                              width={45}
+                              style={{ fill: '#ffffff', fontSize: '12px', fontWeight: '500' }}
+                              tick={{ fill: '#ffffff' }}
+                            />
+                            <Bar 
+                              dataKey="amount" 
+                              radius={[0, 8, 8, 0]}
+                              barSize={40}
+                              label={({ x, y, width, height, value, payload }: any) => {
+                                const amount = value || payload?.amount || 0
+                                const percentage = payload?.percentage || 0
+                                // Position label inside the bar, aligned to the right
+                                const labelX = x + width - 8
+                                const labelY = y + height / 2
+                                const labelText = `${formatCurrency(amount)} (${percentage}%)`
+                                
+                                // Check if bar is wide enough to fit label, otherwise use shorter format
+                                const useShortFormat = width < 120
+                                const displayText = useShortFormat ? `${formatCurrency(amount)}` : labelText
+                                
+                                return (
+                                  <text
+                                    x={labelX}
+                                    y={labelY}
+                                    fill="#ffffff"
+                                    fontSize="11"
+                                    fontWeight="bold"
+                                    dominantBaseline="middle"
+                                    textAnchor="end"
+                                    style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+                                  >
+                                    {displayText}
+                                  </text>
+                                )
+                              }}
+                            >
+                              {buckets.map((bucket, index) => {
+                                const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
+                                return (
+                                  <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={colors[index % colors.length]}
+                                    className="drop-shadow-lg"
+                                  />
+                                )
+                              })}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      {/* Compact Portfolio Distribution Table */}
+                      <div className="space-y-2 pt-3 border-t border-green-700/30">
+                        {buckets.map((bucket, index) => {
+                          const values = calculateBucketValues(bucket)
+                          const actualValue = bucket.premiumAmount || values.estimatedPremium
+                          const totalAllocated = buckets.reduce((sum, b) => sum + (b.premiumAmount || 0), 0) || totalInvestibleAssets
+                          const percentage = ((actualValue / totalAllocated) * 100).toFixed(1)
+                          const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
+                          return (
+                            <div 
+                              key={bucket.id} 
+                              className="flex items-center justify-between p-2 bg-gradient-to-r from-slate-800/40 to-slate-900/40 rounded-lg border border-green-700/20"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full shadow-sm" 
+                                  style={{ backgroundColor: colors[index % colors.length] }}
                                 />
-                              )
-                            })}
-                          </Pie>
-                          <Tooltip 
-                            formatter={(value) => formatCurrency(Number(value))}
-                            contentStyle={{
-                              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                              border: '2px solid rgba(34, 197, 94, 0.3)',
-                              borderRadius: '12px',
-                              color: '#ffffff',
-                              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
-                              backdropFilter: 'blur(10px)'
-                            }}
-                            labelStyle={{
-                              color: '#10B981',
-                              fontWeight: 'bold'
-                            }}
-                          />
-                          <Legend 
-                            wrapperStyle={{
-                              color: '#ffffff',
-                              fontSize: '14px'
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
+                                <span className="text-xs sm:text-sm font-medium text-white">{bucket.name}</span>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs sm:text-sm font-bold text-green-300">{formatCurrency(actualValue)}</div>
+                                <div className="text-xs text-green-400">{percentage}%</div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -2148,7 +2645,8 @@ export function GrowthPlannerTool() {
                     <div className="space-y-4">
                       {buckets.map((bucket, index) => {
                         const values = calculateBucketValues(bucket)
-                        const percentage = ((values.estimatedPremium / totalInvestibleAssets) * 100).toFixed(1)
+                        const actualPremium = bucket.premiumAmount || values.estimatedPremium || 0
+                        const percentage = totalInvestibleAssets > 0 ? ((actualPremium / totalInvestibleAssets) * 100).toFixed(1) : "0"
                         const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
                         return (
                           <div key={bucket.id} className="group flex items-center justify-between p-6 bg-gradient-to-r from-slate-800/30 to-slate-900/30 rounded-2xl border border-green-700/20 hover:border-green-500/40 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg">
@@ -2163,7 +2661,7 @@ export function GrowthPlannerTool() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="font-bold text-2xl text-green-300">${formatCurrency(values.estimatedPremium)}</div>
+                              <div className="font-bold text-2xl text-green-300">${formatCurrency(actualPremium)}</div>
                               <div className="text-sm text-green-400 font-medium">{percentage}%</div>
                               <div className="text-xs text-slate-400 mt-1">{bucket.riskTolerance} risk</div>
                             </div>
@@ -2189,7 +2687,7 @@ export function GrowthPlannerTool() {
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
                   {/* Enhanced Annual Income by Bucket */}
-                  <div className="space-y-6">
+                  <div className="space-y-6" ref={barChartRef} data-chart="income">
                     <h3 className="text-xl font-bold text-blue-300 flex items-center gap-2">
                       <TrendingUp className="h-5 w-5" />
                       Annual Income by Investment
@@ -2247,15 +2745,90 @@ export function GrowthPlannerTool() {
                             const growth = values.estimatedPremium * Math.pow(1 + bucket.interestRate / 100, year)
                             return sum + growth
                           }, 0)
+                          
+                          // Calculate annual income received in this year (sum of all active buckets)
+                          const annualIncome = buckets.reduce((sum, bucket) => {
+                            const values = calculateBucketValues(bucket)
+                            // Income starts after delay period and continues for incomePeriods
+                            const incomeStartYear = bucket.delayPeriod || 1
+                            const incomeEndYear = incomeStartYear + (bucket.incomePeriods || 999)
+                            
+                            if (year >= incomeStartYear && year < incomeEndYear) {
+                              // Add annual income for this bucket if it's active this year
+                              let bucketIncome = 0
+                              if (bucket.investmentType === "Lifetime Income") {
+                                bucketIncome = values.incomeSolve || values.payments || values.annuityPayment || 0
+                              } else if (bucket.investmentType === "Brokerage Portfolio") {
+                                // For brokerage portfolios, calculate income based on portfolio value
+                                const portfolioValue = values.futureValue || values.estimatedPremium || 0
+                                const withdrawalRate = 0.04 // 4% withdrawal rate
+                                bucketIncome = portfolioValue * withdrawalRate
+                              } else {
+                                // For annuities, use payments (annual gross income) or incomeSolve (net income)
+                                bucketIncome = values.payments || values.incomeSolve || values.annuityPayment || 0
+                                // If payments is very small, try using a percentage of future value
+                                if (bucketIncome === 0 && values.futureValue > 0) {
+                                  bucketIncome = (values.futureValue / (bucket.incomePeriods || 15)) * (1 + (bucket.interestRate || 0) / 100)
+                                }
+                              }
+                              return sum + bucketIncome
+                            }
+                            return sum
+                          }, 0)
+                          
+                          // Calculate cumulative income received up to this year
+                          const cumulativeIncome = buckets.reduce((sum, bucket) => {
+                            const values = calculateBucketValues(bucket)
+                            const incomeStartYear = bucket.delayPeriod || 1
+                            
+                            // Income starts after delay period
+                            if (year >= incomeStartYear) {
+                              // Calculate how many years of income have been received up to this year
+                              const yearsSinceStart = year - incomeStartYear + 1
+                              const maxIncomePeriods = bucket.incomePeriods || 999
+                              const yearsOfIncome = Math.min(yearsSinceStart, maxIncomePeriods)
+                              
+                              // Add annual income for each year received
+                              let bucketAnnualIncome = 0
+                              if (bucket.investmentType === "Lifetime Income") {
+                                bucketAnnualIncome = values.incomeSolve || values.payments || values.annuityPayment || 0
+                              } else if (bucket.investmentType === "Brokerage Portfolio") {
+                                // For brokerage portfolios, calculate income based on portfolio value
+                                const portfolioValue = values.futureValue || values.estimatedPremium || 0
+                                const withdrawalRate = 0.04 // 4% withdrawal rate
+                                bucketAnnualIncome = portfolioValue * withdrawalRate
+                              } else {
+                                // For annuities, use payments (annual gross income) or incomeSolve (net income)
+                                bucketAnnualIncome = values.payments || values.incomeSolve || values.annuityPayment || 0
+                                // If payments is very small, try using a percentage of future value
+                                if (bucketAnnualIncome === 0 && values.futureValue > 0) {
+                                  bucketAnnualIncome = (values.futureValue / (bucket.incomePeriods || 15)) * (1 + (bucket.interestRate || 0) / 100)
+                                }
+                              }
+                              return sum + (bucketAnnualIncome * yearsOfIncome)
+                            }
+                            return sum
+                          }, 0)
+                          
                           return {
                             year: `Year ${year}`,
                             value: totalGrowth,
-                            investment: totalInvestibleAssets
+                            investment: totalInvestibleAssets,
+                            income: cumulativeIncome,
+                            annualIncome: annualIncome
                           }
-                        })}>
+                        })} margin={{ top: 10, right: 30, bottom: 10, left: 80 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                          <XAxis dataKey="year" tick={{ fill: '#9CA3AF' }} />
-                          <YAxis tick={{ fill: '#9CA3AF' }} />
+                          <XAxis dataKey="year" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                          <YAxis 
+                            tick={{ fill: '#9CA3AF', fontSize: 12 }} 
+                            width={75}
+                            tickFormatter={(value) => {
+                              if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`
+                              if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`
+                              return `$${value.toFixed(0)}`
+                            }}
+                          />
                           <Tooltip 
                             formatter={(value) => formatCurrency(Number(value))}
                             contentStyle={{
@@ -2275,6 +2848,8 @@ export function GrowthPlannerTool() {
                           />
                           <Line type="monotone" dataKey="investment" stroke="#6b7280" name="Initial Investment" strokeDasharray="5 5" strokeWidth={2} />
                           <Line type="monotone" dataKey="value" stroke="#10b981" name="Projected Value" strokeWidth={4} dot={{ fill: '#10b981', strokeWidth: 2, r: 6 }} />
+                          <Line type="monotone" dataKey="income" stroke="#3b82f6" name="Cumulative Income" strokeWidth={4} dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6 }} />
+                          <Line type="monotone" dataKey="annualIncome" stroke="#f59e0b" name="Annual Income" strokeWidth={3} strokeDasharray="4 4" dot={{ fill: '#f59e0b', strokeWidth: 2, r: 5 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -2387,6 +2962,19 @@ export function GrowthPlannerTool() {
               </Card>
               </div>
 
+              {/* Save/Error Messages */}
+              {saveError && (
+                <div className="p-4 bg-red-900/20 border border-red-700/30 rounded-lg">
+                  <p className="text-red-300 text-sm">{saveError}</p>
+                </div>
+              )}
+              
+              {saveSuccess && (
+                <div className="p-4 bg-green-900/20 border border-green-700/30 rounded-lg">
+                  <p className="text-green-300 text-sm">Plan saved successfully!</p>
+                </div>
+              )}
+
               {/* Enhanced Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-8">
                 <Button 
@@ -2396,22 +2984,252 @@ export function GrowthPlannerTool() {
                 >
                   ← Edit Plan
                 </Button>
-                <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white flex-1 text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 shadow-2xl hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-105">
+                <Button 
+                  onClick={handleDownloadPDF}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-105"
+                >
                   <TreePine className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3" />
-                  Generate Final Report
+                  Download PDF
                 </Button>
                 <Button 
-                  variant="outline" 
-                  className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 bg-transparent border-green-400 text-green-300 hover:bg-green-500/10 hover:border-green-300 transition-all duration-300 transform hover:scale-105"
+                  onClick={handleSavePlan}
+                  disabled={isSaving}
+                  className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 bg-transparent border-green-400 text-green-300 hover:bg-green-500/10 hover:border-green-300 transition-all duration-300 transform hover:scale-105 disabled:opacity-50"
                 >
                   <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                  Save
+                  {isSaving ? (editingPlanId ? 'Updating...' : 'Saving...') : (editingPlanId ? 'Update Plan' : 'Save Plan')}
                 </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Hidden Light Mode Charts for PDF Export */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '800px', backgroundColor: '#ffffff' }}>
+        {/* Portfolio Distribution Chart - Light Mode */}
+        <div ref={pdfPieChartRef} data-chart="portfolio" style={{ backgroundColor: '#ffffff', padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+            <div style={{ height: '280px', backgroundColor: '#ffffff' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={buckets.map((bucket, index) => {
+                    const values = calculateBucketValues(bucket)
+                    const actualValue = bucket.premiumAmount || values.estimatedPremium
+                    const totalAllocated = buckets.reduce((sum, b) => sum + (b.premiumAmount || 0), 0) || totalInvestibleAssets
+                    return {
+                      name: bucket.name,
+                      amount: actualValue,
+                      percentage: parseFloat(((actualValue / totalAllocated) * 100).toFixed(1)),
+                      formattedAmount: formatCurrency(actualValue)
+                    }
+                  })}
+                  layout="vertical"
+                  margin={{ top: 10, right: 10, bottom: 10, left: 50 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    type="number"
+                    tickFormatter={(value) => formatCurrency(value)}
+                    style={{ fill: '#374151', fontSize: '11px' }}
+                  />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name"
+                    width={45}
+                    style={{ fill: '#000000', fontSize: '12px', fontWeight: '500' }}
+                    tick={{ fill: '#000000' }}
+                  />
+                  <Bar 
+                    dataKey="amount" 
+                    radius={[0, 8, 8, 0]}
+                    barSize={40}
+                    label={({ x, y, width, height, value, payload }: any) => {
+                      const amount = value || payload?.amount || 0
+                      const percentage = payload?.percentage || 0
+                      const labelX = x + width - 8
+                      const labelY = y + height / 2
+                      const labelText = `${formatCurrency(amount)} (${percentage}%)`
+                      const useShortFormat = width < 120
+                      const displayText = useShortFormat ? `${formatCurrency(amount)}` : labelText
+                      
+                      return (
+                        <text
+                          x={labelX}
+                          y={labelY}
+                          fill="#000000"
+                          fontSize="11"
+                          fontWeight="bold"
+                          dominantBaseline="middle"
+                          textAnchor="end"
+                        >
+                          {displayText}
+                        </text>
+                      )
+                    }}
+                  >
+                    {buckets.map((bucket, index) => {
+                      const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
+                      return (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={colors[index % colors.length]}
+                        />
+                      )
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Annual Income Chart - Light Mode */}
+        <div ref={pdfBarChartRef} data-chart="income" style={{ backgroundColor: '#ffffff', padding: '20px' }}>
+          <div style={{ height: '400px', backgroundColor: '#ffffff', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={buckets.map((bucket) => {
+                const values = calculateBucketValues(bucket)
+                return {
+                  name: bucket.name.length > 15 ? bucket.name.substring(0, 15) + "..." : bucket.name,
+                  income: values.incomeSolve,
+                  gross: values.payments,
+                  net: values.incomeSolve
+                }
+              })}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="name" tick={{ fill: '#374151' }} />
+                <YAxis tick={{ fill: '#374151' }} />
+                <Tooltip 
+                  formatter={(value) => formatCurrency(Number(value))}
+                  contentStyle={{
+                    backgroundColor: '#ffffff',
+                    border: '2px solid #3b82f6',
+                    borderRadius: '12px',
+                    color: '#000000',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{
+                    color: '#000000',
+                    fontSize: '14px'
+                  }}
+                />
+                <Bar dataKey="gross" fill="#3b82f6" name="Gross Income" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="net" fill="#10b981" name="Net Income" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Growth Projection Timeline - Light Mode */}
+        <div ref={pdfTimelineRef} data-chart="timeline" style={{ backgroundColor: '#ffffff', padding: '20px' }}>
+          <div style={{ height: '400px', backgroundColor: '#ffffff', padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={Array.from({ length: 20 }, (_, i) => {
+                const year = i + 1
+                const totalGrowth = buckets.reduce((sum, bucket) => {
+                  const values = calculateBucketValues(bucket)
+                  const growth = values.estimatedPremium * Math.pow(1 + bucket.interestRate / 100, year)
+                  return sum + growth
+                }, 0)
+                
+                const annualIncome = buckets.reduce((sum, bucket) => {
+                  const values = calculateBucketValues(bucket)
+                  const incomeStartYear = bucket.delayPeriod || 1
+                  const incomeEndYear = incomeStartYear + (bucket.incomePeriods || 999)
+                  
+                  if (year >= incomeStartYear && year < incomeEndYear) {
+                    let bucketIncome = 0
+                    if (bucket.investmentType === "Lifetime Income") {
+                      bucketIncome = values.incomeSolve || values.payments || values.annuityPayment || 0
+                    } else if (bucket.investmentType === "Brokerage Portfolio") {
+                      const portfolioValue = values.futureValue || values.estimatedPremium || 0
+                      const withdrawalRate = 0.04
+                      bucketIncome = portfolioValue * withdrawalRate
+                    } else {
+                      bucketIncome = values.payments || values.incomeSolve || values.annuityPayment || 0
+                      if (bucketIncome === 0 && values.futureValue > 0) {
+                        bucketIncome = (values.futureValue / (bucket.incomePeriods || 15)) * (1 + (bucket.interestRate || 0) / 100)
+                      }
+                    }
+                    return sum + bucketIncome
+                  }
+                  return sum
+                }, 0)
+                
+                const cumulativeIncome = buckets.reduce((sum, bucket) => {
+                  const values = calculateBucketValues(bucket)
+                  const incomeStartYear = bucket.delayPeriod || 1
+                  
+                  if (year >= incomeStartYear) {
+                    const yearsSinceStart = year - incomeStartYear + 1
+                    const maxIncomePeriods = bucket.incomePeriods || 999
+                    const yearsOfIncome = Math.min(yearsSinceStart, maxIncomePeriods)
+                    let bucketAnnualIncome = 0
+                    if (bucket.investmentType === "Lifetime Income") {
+                      bucketAnnualIncome = values.incomeSolve || values.payments || values.annuityPayment || 0
+                    } else if (bucket.investmentType === "Brokerage Portfolio") {
+                      const portfolioValue = values.futureValue || values.estimatedPremium || 0
+                      const withdrawalRate = 0.04
+                      bucketAnnualIncome = portfolioValue * withdrawalRate
+                    } else {
+                      bucketAnnualIncome = values.payments || values.incomeSolve || values.annuityPayment || 0
+                      if (bucketAnnualIncome === 0 && values.futureValue > 0) {
+                        bucketAnnualIncome = (values.futureValue / (bucket.incomePeriods || 15)) * (1 + (bucket.interestRate || 0) / 100)
+                      }
+                    }
+                    return sum + (bucketAnnualIncome * yearsOfIncome)
+                  }
+                  return sum
+                }, 0)
+                
+                return {
+                  year: `Year ${year}`,
+                  value: totalGrowth,
+                  investment: totalInvestibleAssets,
+                  income: cumulativeIncome,
+                  annualIncome: annualIncome
+                }
+              })} margin={{ top: 10, right: 30, bottom: 10, left: 80 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="year" tick={{ fill: '#374151', fontSize: 12 }} />
+                <YAxis 
+                  tick={{ fill: '#374151', fontSize: 12 }} 
+                  width={75}
+                  tickFormatter={(value) => {
+                    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`
+                    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`
+                    return `$${value.toFixed(0)}`
+                  }}
+                />
+                <Tooltip 
+                  formatter={(value) => formatCurrency(Number(value))}
+                  contentStyle={{
+                    backgroundColor: '#ffffff',
+                    border: '2px solid #10b981',
+                    borderRadius: '12px',
+                    color: '#000000',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{
+                    color: '#000000',
+                    fontSize: '14px'
+                  }}
+                />
+                <Line type="monotone" dataKey="investment" stroke="#9ca3af" name="Initial Investment" strokeDasharray="5 5" strokeWidth={2} />
+                <Line type="monotone" dataKey="value" stroke="#10b981" name="Projected Value" strokeWidth={4} dot={{ fill: '#10b981', strokeWidth: 2, r: 6 }} />
+                <Line type="monotone" dataKey="income" stroke="#3b82f6" name="Cumulative Income" strokeWidth={4} dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6 }} />
+                <Line type="monotone" dataKey="annualIncome" stroke="#f59e0b" name="Annual Income" strokeWidth={3} strokeDasharray="4 4" dot={{ fill: '#f59e0b', strokeWidth: 2, r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
     </TooltipProvider>

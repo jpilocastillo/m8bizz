@@ -406,6 +406,83 @@ export interface Database {
           updated_at?: string
         }
       }
+      client_plans: {
+        Row: {
+          id: string
+          user_id: string
+          client_name: string
+          plan_name: string
+          plan_data: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          client_name: string
+          plan_name: string
+          plan_data: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          client_name?: string
+          plan_name?: string
+          plan_data?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plans_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      missing_money_reports: {
+        Row: {
+          id: string
+          user_id: string
+          cost_centers: Json
+          one_year_total: number | null
+          five_year_total: number | null
+          ten_year_total: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          cost_centers?: Json
+          one_year_total?: number | null
+          five_year_total?: number | null
+          ten_year_total?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          cost_centers?: Json
+          one_year_total?: number | null
+          five_year_total?: number | null
+          ten_year_total?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "missing_money_reports_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "auth.users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
