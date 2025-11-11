@@ -9,6 +9,8 @@ import { clientPlanService, type PlanData } from "@/lib/client-plans"
 import { pdfGenerator } from "@/lib/pdf-generator"
 import { useAuth } from "@/components/auth-provider"
 import { createClient } from "@/lib/supabase/client"
+import { missingMoneyService } from "@/lib/missing-money"
+import type { MissingMoneyData, CostCenter } from "@/app/tools/missing-money/page"
 import { 
   FileText, 
   Download, 
@@ -19,7 +21,9 @@ import {
   TrendingUp,
   User,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  ExternalLink,
+  PieChart
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -41,10 +45,13 @@ export default function ClientPlansPage() {
   const [error, setError] = useState<string | null>(null)
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [missingMoneyData, setMissingMoneyData] = useState<MissingMoneyData | null>(null)
+  const [missingMoneyLoading, setMissingMoneyLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
     loadPlans()
+    loadMissingMoneyReport()
   }, [])
 
   // Fetch user profile
@@ -80,6 +87,21 @@ export default function ClientPlansPage() {
       setError('Failed to load plans')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadMissingMoneyReport = async () => {
+    try {
+      setMissingMoneyLoading(true)
+      const result = await missingMoneyService.getMissingMoneyReport()
+      
+      if (result.success && result.data) {
+        setMissingMoneyData(result.data)
+      }
+    } catch (err) {
+      console.error('Error loading missing money report:', err)
+    } finally {
+      setMissingMoneyLoading(false)
     }
   }
 
@@ -135,12 +157,6 @@ export default function ClientPlansPage() {
     router.push('/tools/bucket-plan?edit=true')
   }
 
-  const formatCurrency = (value: number): string => {
-    return value.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })
-  }
 
   const getTotalAssets = (planData: PlanData): number => {
     return planData.clientData.taxableFunds + 
@@ -155,25 +171,23 @@ export default function ClientPlansPage() {
     }, 0)
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your client plans...</p>
-        </div>
-      </div>
-    )
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value)
   }
 
   return (
-    <div>
+    <div className="space-y-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-blue-300 mb-2">Client Plans</h1>
-              <p className="text-muted-foreground">Manage and access your saved retirement plans</p>
+              <p className="text-muted-foreground">Manage and access your saved retirement plans and missing money reports</p>
             </div>
             <Link href="/tools/bucket-plan">
               <Button className="bg-green-600 hover:bg-green-700 text-white">
@@ -194,121 +208,260 @@ export default function ClientPlansPage() {
           </div>
         )}
 
-        {/* Plans Grid */}
-        {plans.length === 0 ? (
-          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-            <CardContent className="p-12 text-center">
-              <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-blue-300 mb-2">No Plans Yet</h3>
-              <p className="text-muted-foreground mb-6">
-                Create your first retirement plan to get started
-              </p>
-              <Link href="/tools/bucket-plan">
-                <Button className="bg-green-600 hover:bg-green-700 text-white">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Create New Plan
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <Card 
-                key={plan.id} 
-                className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2 transform hover:scale-[1.02] transition-all duration-300"
-              >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg text-blue-300 mb-1">
-                        {plan.client_name}
-                      </CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground">
-                        {plan.plan_name}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {plan.plan_data.buckets.length} Bucket{plan.plan_data.buckets.length !== 1 ? 's' : ''}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Plan Summary */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Total Investment</span>
-                      <span className="font-semibold text-green-300">
-                        ${formatCurrency(getTotalAssets(plan.plan_data))}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Annual Income</span>
-                      <span className="font-semibold text-blue-300">
-                        ${formatCurrency(getTotalIncome(plan.plan_data))}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Risk Level</span>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${
-                          plan.plan_data.clientData.riskTolerance === 'conservative' 
-                            ? 'border-green-500 text-green-400' 
-                            : plan.plan_data.clientData.riskTolerance === 'moderate'
-                            ? 'border-yellow-500 text-yellow-400'
-                            : 'border-red-500 text-red-400'
-                        }`}
-                      >
-                        {plan.plan_data.clientData.riskTolerance}
+        {/* Evergreen Income Retirement Plan Section */}
+        <div>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-blue-300 mb-2">Evergreen Income Retirement Plans</h2>
+            <p className="text-muted-foreground">Manage your client retirement income plans</p>
+          </div>
+
+          {loading ? (
+            <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+              <CardContent className="p-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading plans...</p>
+              </CardContent>
+            </Card>
+          ) : plans.length === 0 ? (
+            <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+              <CardContent className="p-12 text-center">
+                <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-blue-300 mb-2">No Plans Yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Create your first retirement plan to get started
+                </p>
+                <Link href="/tools/bucket-plan">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Create New Plan
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {plans.map((plan) => (
+                <Card 
+                  key={plan.id} 
+                  className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2 transform hover:scale-[1.02] transition-all duration-300"
+                >
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg text-blue-300 mb-1">
+                          {plan.client_name}
+                        </CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground">
+                          {plan.plan_name}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {plan.plan_data.buckets.length} Bucket{plan.plan_data.buckets.length !== 1 ? 's' : ''}
                       </Badge>
                     </div>
-                  </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Plan Summary */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Total Investment</span>
+                        <span className="font-semibold text-green-300">
+                          {formatCurrency(getTotalAssets(plan.plan_data))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Annual Income</span>
+                        <span className="font-semibold text-blue-300">
+                          {formatCurrency(getTotalIncome(plan.plan_data))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Risk Level</span>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            plan.plan_data.clientData.riskTolerance === 'conservative' 
+                              ? 'border-green-500 text-green-400' 
+                              : plan.plan_data.clientData.riskTolerance === 'moderate'
+                              ? 'border-yellow-500 text-yellow-400'
+                              : 'border-red-500 text-red-400'
+                          }`}
+                        >
+                          {plan.plan_data.clientData.riskTolerance}
+                        </Badge>
+                      </div>
+                    </div>
 
-                  <Separator />
+                    <Separator />
 
-                  {/* Created Date */}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>Created {new Date(plan.created_at).toLocaleDateString()}</span>
-                  </div>
+                    {/* Created Date */}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>Created {new Date(plan.created_at).toLocaleDateString()}</span>
+                    </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditPlan(plan)}
-                      className="flex-1 text-xs text-blue-400 border-blue-700/30 hover:bg-blue-900/20"
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownloadPDF(plan)}
-                      className="flex-1 text-xs"
-                    >
-                      <Download className="h-3 w-3 mr-1" />
-                      PDF
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeletePlan(plan.id)}
-                      disabled={deletingPlanId === plan.id}
-                      className="text-red-400 border-red-700/30 hover:bg-red-900/20"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditPlan(plan)}
+                        className="flex-1 text-xs text-blue-400 border-blue-700/30 hover:bg-blue-900/20"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadPDF(plan)}
+                        className="flex-1 text-xs"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeletePlan(plan.id)}
+                        disabled={deletingPlanId === plan.id}
+                        className="text-red-400 border-red-700/30 hover:bg-red-900/20"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Missing Money Reports Section */}
+        <div>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-blue-300 mb-2">Missing Money Reports</h2>
+              <p className="text-muted-foreground">View and manage your missing money analysis reports</p>
+            </div>
+            <Link href="/tools/missing-money">
+              <Button variant="outline" className="text-blue-400 border-blue-700/30 hover:bg-blue-900/20">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Manage Reports
+              </Button>
+            </Link>
           </div>
-        )}
+
+          {missingMoneyLoading ? (
+            <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+              <CardContent className="p-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading missing money report...</p>
+              </CardContent>
+            </Card>
+          ) : missingMoneyData && missingMoneyData.costCenters.length > 0 ? (
+            <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+              <CardHeader>
+                <CardTitle className="text-xl text-blue-300">Missing Money Report Summary</CardTitle>
+                <CardDescription>Opportunity cost analysis overview</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Summary Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-m8bs-card-alt/50 p-4 rounded-lg border border-m8bs-card-alt/30">
+                    <div className="text-sm text-muted-foreground mb-1">1 Year Missing Money</div>
+                    <div className={`text-2xl font-bold ${
+                      missingMoneyData.oneYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {formatCurrency(missingMoneyData.oneYearTotal)}
+                    </div>
+                  </div>
+                  <div className="bg-m8bs-card-alt/50 p-4 rounded-lg border border-m8bs-card-alt/30">
+                    <div className="text-sm text-muted-foreground mb-1">5 Years Missing Money</div>
+                    <div className={`text-2xl font-bold ${
+                      missingMoneyData.fiveYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {formatCurrency(missingMoneyData.fiveYearTotal)}
+                    </div>
+                  </div>
+                  <div className="bg-m8bs-card-alt/50 p-4 rounded-lg border border-m8bs-card-alt/30">
+                    <div className="text-sm text-muted-foreground mb-1">10 Years Missing Money</div>
+                    <div className={`text-2xl font-bold ${
+                      missingMoneyData.tenYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {formatCurrency(missingMoneyData.tenYearTotal)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cost Centers Summary */}
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-300 mb-3">Cost Centers</h3>
+                  <div className="space-y-2">
+                    {missingMoneyData.costCenters.slice(0, 5).map((center) => {
+                      const difference = center.proposed - center.current
+                      return (
+                        <div key={center.id} className="flex items-center justify-between p-3 bg-m8bs-card-alt/30 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-4 h-4 rounded-full" 
+                              style={{ backgroundColor: center.color }}
+                            />
+                            <span className="text-sm text-muted-foreground">{center.name}</span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-muted-foreground">
+                              {formatCurrency(center.current)} → {formatCurrency(center.proposed)}
+                            </span>
+                            <span className={`text-sm font-semibold ${
+                              difference >= 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {difference >= 0 ? '+' : ''}{formatCurrency(difference)}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {missingMoneyData.costCenters.length > 5 && (
+                      <div className="text-center pt-2">
+                        <span className="text-sm text-muted-foreground">
+                          +{missingMoneyData.costCenters.length - 5} more cost centers
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="pt-4">
+                  <Link href="/tools/missing-money">
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                      <PieChart className="h-4 w-4 mr-2" />
+                      View Full Report
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+              <CardContent className="p-12 text-center">
+                <PieChart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-blue-300 mb-2">No Missing Money Report Yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Create your first missing money report to analyze opportunity costs
+                </p>
+                <Link href="/tools/missing-money">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <PieChart className="h-4 w-4 mr-2" />
+                    Create Missing Money Report
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+        </div>
     </div>
   )
 }
