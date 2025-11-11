@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { MissingMoneyData, CostCenter } from '@/app/tools/missing-money/page'
-import { Calculator, Save } from 'lucide-react'
+import { Calculator, Save, Plus, Trash2, Edit2 } from 'lucide-react'
 
 interface MissingMoneyDataEntryProps {
   data: MissingMoneyData
@@ -14,8 +14,17 @@ interface MissingMoneyDataEntryProps {
   onSubmit: () => void
 }
 
+// Color palette for cost centers
+const costCenterColors = [
+  "#16a34a", "#ea580c", "#dc2626", "#9333ea", "#a3a3a3", 
+  "#f97316", "#6b7280", "#3b82f6", "#8b5cf6", "#ec4899",
+  "#14b8a6", "#f59e0b", "#ef4444", "#6366f1", "#10b981"
+]
+
 export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoneyDataEntryProps) {
   const [costCenters, setCostCenters] = useState<CostCenter[]>(data.costCenters)
+  const [editingNameId, setEditingNameId] = useState<string | null>(null)
+  const [editingNameValue, setEditingNameValue] = useState<string>("")
 
   const handleInputChange = (id: string, field: 'current' | 'proposed', value: string) => {
     const numericValue = parseFloat(value) || 0
@@ -26,6 +35,51 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
           : center
       )
     )
+  }
+
+  const handleNameChange = (id: string, value: string) => {
+    setCostCenters(prev => 
+      prev.map(center => 
+        center.id === id 
+          ? { ...center, name: value }
+          : center
+      )
+    )
+  }
+
+  const handleStartEditName = (id: string, currentName: string) => {
+    setEditingNameId(id)
+    setEditingNameValue(currentName)
+  }
+
+  const handleSaveName = (id: string) => {
+    handleNameChange(id, editingNameValue)
+    setEditingNameId(null)
+    setEditingNameValue("")
+  }
+
+  const handleCancelEditName = () => {
+    setEditingNameId(null)
+    setEditingNameValue("")
+  }
+
+  const handleAddCostCenter = () => {
+    const newId = `cost-center-${Date.now()}`
+    const colorIndex = costCenters.length % costCenterColors.length
+    const newCostCenter: CostCenter = {
+      id: newId,
+      name: "New Cost Center",
+      current: 0,
+      proposed: 0,
+      color: costCenterColors[colorIndex]
+    }
+    setCostCenters(prev => [...prev, newCostCenter])
+    setEditingNameId(newId)
+    setEditingNameValue("New Cost Center")
+  }
+
+  const handleRemoveCostCenter = (id: string) => {
+    setCostCenters(prev => prev.filter(center => center.id !== id))
   }
 
   const handleSave = () => {
@@ -67,19 +121,101 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-m8bs-muted">
+              {costCenters.length} cost center{costCenters.length !== 1 ? 's' : ''}
+            </div>
+            <Button 
+              onClick={handleAddCostCenter}
+              className="flex items-center gap-2 bg-m8bs-blue hover:bg-m8bs-blue-dark text-white"
+            >
+              <Plus className="h-4 w-4" />
+              Add Cost Center
+            </Button>
+          </div>
+
           <div className="grid gap-4">
-            {costCenters.map((center) => {
-              const difference = calculateDifference(center)
-              
-              return (
-                <Card key={center.id} className="p-4 bg-m8bs-card-alt/70 border-m8bs-border/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div 
-                      className="w-4 h-4 rounded-full" 
-                      style={{ backgroundColor: center.color }}
-                    />
-                    <h3 className="font-semibold text-lg text-blue-300">{center.name}</h3>
-                  </div>
+            {costCenters.length === 0 ? (
+              <Card className="p-8 bg-m8bs-card-alt/70 border-m8bs-border/50 border-dashed">
+                <div className="text-center text-m8bs-muted">
+                  <p className="mb-4">No cost centers added yet.</p>
+                  <Button 
+                    onClick={handleAddCostCenter}
+                    variant="outline"
+                    className="border-m8bs-border/50 text-blue-300 hover:bg-m8bs-card-alt/50"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Your First Cost Center
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              costCenters.map((center) => {
+                const difference = calculateDifference(center)
+                const isEditingName = editingNameId === center.id
+                
+                return (
+                  <Card key={center.id} className="p-4 bg-m8bs-card-alt/70 border-m8bs-border/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div 
+                          className="w-4 h-4 rounded-full" 
+                          style={{ backgroundColor: center.color }}
+                        />
+                        {isEditingName ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <Input
+                              value={editingNameValue}
+                              onChange={(e) => setEditingNameValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleSaveName(center.id)
+                                } else if (e.key === 'Escape') {
+                                  handleCancelEditName()
+                                }
+                              }}
+                              className="bg-m8bs-card-alt/50 border-m8bs-border/50 text-white focus:border-m8bs-blue"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveName(center.id)}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEditName}
+                              className="border-m8bs-border/50 text-blue-300 hover:bg-m8bs-card-alt/50"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 flex-1">
+                            <h3 className="font-semibold text-lg text-blue-300">{center.name}</h3>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleStartEditName(center.id, center.name)}
+                              className="text-m8bs-muted hover:text-blue-300 p-1 h-6 w-6"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoveCostCenter(center.id)}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1 h-6 w-6"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -136,7 +272,8 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                   </div>
                 </Card>
               )
-            })}
+            })
+            )}
           </div>
 
           {/* Summary Card */}

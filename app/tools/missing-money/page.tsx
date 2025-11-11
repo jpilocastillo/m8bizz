@@ -30,20 +30,17 @@ export interface MissingMoneyData {
   tenYearTotal: number
 }
 
-const defaultCostCenters: CostCenter[] = [
-  { id: "taxes", name: "Taxes", current: 10000, proposed: 3000, color: "#16a34a" },
-  { id: "management-fees", name: "Investment Management Fees", current: 22534, proposed: 3000, color: "#ea580c" },
-  { id: "performance", name: "Investment Performance", current: -35000, proposed: 35000, color: "#dc2626" },
-  { id: "life-insurance", name: "Life Insurance", current: 5000, proposed: 2000, color: "#9333ea" },
-  { id: "long-term-care", name: "Long Term Care", current: 7000, proposed: 3000, color: "#a3a3a3" },
-  { id: "cash-cd", name: "Cash/CD Money 0%", current: 150000, proposed: 5475, color: "#f97316" },
-  { id: "financial-planning", name: "Financial Planning Fee", current: 0, proposed: -2500, color: "#6b7280" }
+// Color palette for cost centers
+const costCenterColors = [
+  "#16a34a", "#ea580c", "#dc2626", "#9333ea", "#a3a3a3", 
+  "#f97316", "#6b7280", "#3b82f6", "#8b5cf6", "#ec4899",
+  "#14b8a6", "#f59e0b", "#ef4444", "#6366f1", "#10b981"
 ]
 
 export default function MissingMoneyPage() {
   const { user } = useAuth()
   const [data, setData] = useState<MissingMoneyData>({
-    costCenters: defaultCostCenters,
+    costCenters: [],
     oneYearTotal: 0,
     fiveYearTotal: 0,
     tenYearTotal: 0
@@ -85,17 +82,16 @@ export default function MissingMoneyPage() {
       setDataLoading(true)
       const result = await missingMoneyService.getMissingMoneyReport()
       if (result.success && result.data) {
-        // If no cost centers exist, use defaults
-        if (result.data.costCenters.length === 0) {
-          setData({
-            costCenters: defaultCostCenters,
-            oneYearTotal: 0,
-            fiveYearTotal: 0,
-            tenYearTotal: 0
-          })
-        } else {
-          setData(result.data)
-        }
+        // Use data from database, or empty array if no data exists
+        setData(result.data)
+      } else {
+        // Start with empty cost centers if no data exists
+        setData({
+          costCenters: [],
+          oneYearTotal: 0,
+          fiveYearTotal: 0,
+          tenYearTotal: 0
+        })
       }
       setDataLoading(false)
     }
@@ -194,6 +190,23 @@ export default function MissingMoneyPage() {
           onUpdate={handleDataUpdate}
           onSubmit={handleDataSubmit}
         />
+      ) : data.costCenters.length === 0 ? (
+        <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+          <CardContent className="p-12 text-center">
+            <Calculator className="h-16 w-16 text-m8bs-muted mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-blue-300 mb-2">No Cost Centers Added Yet</h3>
+            <p className="text-m8bs-muted mb-6">
+              Start by adding cost centers to analyze missing money opportunities
+            </p>
+            <Button 
+              onClick={() => setEditMode(true)}
+              className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white"
+            >
+              <Calculator className="h-4 w-4 mr-2" />
+              Add Cost Centers
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-6">
           {/* Summary Metrics Card */}
