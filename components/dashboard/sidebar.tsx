@@ -279,6 +279,18 @@ export function Sidebar() {
                     <span>Missing Money Report</span>
                   </Link>
                   <Link
+                    href="/tools/client-missing-money-report"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
+                      pathname === "/tools/client-missing-money-report"
+                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
+                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
+                    )}
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    <span>Client Missing Money Report</span>
+                  </Link>
+                  <Link
                     href="/tools/annual-planner"
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",

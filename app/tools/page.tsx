@@ -9,7 +9,8 @@ import {
   FileText, 
   Briefcase,
   ArrowRight,
-  Wrench
+  Wrench,
+  DollarSign
 } from "lucide-react"
 import Link from "next/link"
 
@@ -34,6 +35,13 @@ const tools = [
     href: "/tools/missing-money",
     icon: Users,
     color: "from-orange-500 to-orange-600"
+  },
+  {
+    title: "Client Missing Money Report",
+    description: "Professional cost analysis report showing opportunity costs over 1, 5, and 10 years.",
+    href: "/tools/client-missing-money-report",
+    icon: DollarSign,
+    color: "from-emerald-500 to-emerald-600"
   },
   {
     title: "Annual Business Planner",
