@@ -1,3 +1,4 @@
+
 "use client"
 
 import type React from "react"
@@ -444,7 +445,7 @@ export function GrowthPlannerTool() {
     {
       id: 2,
       title: "Cultivate Income Streams",
-      description: "Design the 16+ year retirement income garden",
+      description: `Design the ${clientData.timeHorizon || 16}+ year retirement income garden`,
       icon: "sun",
     },
     {
@@ -548,15 +549,16 @@ export function GrowthPlannerTool() {
     setBuckets((prev) => prev.map((bucket) => (bucket.id === bucketId ? { ...bucket, [field]: value } : bucket)))
   }
 
-  const generateInitialBuckets = (climate: "conservative" | "aggressive") => {
+  const generateInitialBuckets = (climate: "conservative" | "aggressive", customTimeHorizon?: number) => {
     const incomeStartDelay = Math.max(1, clientData.incomeStartAge - clientData.retirementAge)
+    const planningYears = customTimeHorizon || clientData.timeHorizon || 16
     
     if (climate === "conservative") {
       // Shade Garden: 3 growth annuity buckets + 1 lifetime income annuity
       const year2Start = incomeStartDelay
       const year7Start = Math.max(year2Start + 5, incomeStartDelay + 5)
       const year12Start = Math.max(year7Start + 5, incomeStartDelay + 10)
-      const year16Start = Math.max(year12Start + 4, incomeStartDelay + 14)
+      const finalYearStart = Math.max(year12Start + 4, incomeStartDelay + planningYears - 2)
       
       return [
         {
@@ -606,12 +608,12 @@ export function GrowthPlannerTool() {
           icon: "tree-pine",
           description: "Conservative fixed annuity providing steady, guaranteed income for mature retirement years",
           growthStage: "Mature Growth",
-          timeframe: `Years ${year12Start}+`,
+          timeframe: `Years ${year12Start}-${finalYearStart - 1}`,
           investmentType: "Fixed Annuity",
           premiumAmount: 0,
           interestRate: 5.5,
           delayPeriod: year12Start,
-          incomePeriods: year16Start - year12Start,
+          incomePeriods: finalYearStart - year12Start,
           paymentDelayPeriod: year12Start * 12,
           annuityLabel: "",
           riskTolerance: "conservative" as const,
@@ -644,7 +646,7 @@ export function GrowthPlannerTool() {
       const year2Start = incomeStartDelay
       const year7Start = Math.max(year2Start + 5, incomeStartDelay + 5)
       const year12Start = Math.max(year7Start + 5, incomeStartDelay + 10)
-      const year16Start = Math.max(year12Start + 4, incomeStartDelay + 14)
+      const finalYearStart = Math.max(year12Start + 4, incomeStartDelay + planningYears - 2)
       
       return [
         {
@@ -694,12 +696,12 @@ export function GrowthPlannerTool() {
           icon: "tree-pine",
           description: "Established grove providing steady income - annuity payments for mature retirement years",
           growthStage: "Mature Forest",
-          timeframe: `Years ${year12Start}-${year16Start - 1}`,
+          timeframe: `Years ${year12Start}-${finalYearStart - 1}`,
           investmentType: "Fixed Annuity",
           premiumAmount: 0,
           interestRate: 6.5,
           delayPeriod: year12Start,
-          incomePeriods: year16Start - year12Start,
+          incomePeriods: finalYearStart - year12Start,
           paymentDelayPeriod: year12Start * 12,
           annuityLabel: "",
           riskTolerance: "conservative" as const,
@@ -712,15 +714,15 @@ export function GrowthPlannerTool() {
           color: "#8B5CF6",
           icon: "flower",
           description:
-            "Self-sustaining garden - brokerage investments providing flexible income for years 16+ and legacy wealth",
+            `Self-sustaining garden - brokerage investments providing flexible income for years ${finalYearStart}+ and legacy wealth`,
           growthStage: "Evergreen Legacy",
-          timeframe: `Years ${year16Start}+`,
+          timeframe: `Years ${finalYearStart}+`,
           investmentType: "Brokerage Portfolio",
           premiumAmount: 0,
           interestRate: 7.0,
-          delayPeriod: year16Start,
+          delayPeriod: finalYearStart,
           incomePeriods: 5,
-          paymentDelayPeriod: year16Start * 12,
+          paymentDelayPeriod: finalYearStart * 12,
           annuityLabel: "",
           riskTolerance: "moderate" as const,
         },
@@ -856,23 +858,25 @@ export function GrowthPlannerTool() {
     const actualPremium = bucket.premiumAmount || 0
 
     if (bucket.investmentType === "Lifetime Income") {
-      // For lifetime income annuities, use age-based payout percentage
+      // Future Value = Premium Amount * (1 + r/100)^t where r is the interest rate percentage and t is years deferred
+      const interestRate = bucket.interestRate || 0
+      const yearsDeferred = bucket.delayPeriod || 0
+      const futureValue = actualPremium * Math.pow(1 + interestRate / 100, yearsDeferred)
+      
+      // Net Lifetime Income (Annual) = Future Value * Age-based Payout %
       const ageBasedPayout = bucket.ageBasedPayoutPercent || 0
-      const annualIncome = (actualPremium * ageBasedPayout) / 100
+      const annualIncome = futureValue * (ageBasedPayout / 100)
+      
       const taxes = annualIncome * (clientData.taxBracket / 100)
       const netIncome = annualIncome - taxes
-      
-      // Apply inflation to show real purchasing power
-      const inflationRate = bucket.inflationRate !== undefined ? bucket.inflationRate : clientData.inflationRate || 0
-      const inflationAdjustedIncome = inflationRate > 0 ? netIncome / (1 + inflationRate / 100) : netIncome
 
       return {
         estimatedPremium: actualPremium,
-        futureValue: actualPremium, // No growth for lifetime income
+        futureValue: futureValue,
         annuityPayment: annualIncome,
         payments: annualIncome,
         taxes: -taxes, // Negative for display
-        incomeSolve: inflationAdjustedIncome,
+        incomeSolve: netIncome,
       }
     } else {
       // For other investment types, use the original calculation
@@ -907,13 +911,6 @@ export function GrowthPlannerTool() {
   return (
     <TooltipProvider>
       <div ref={containerRef} className="w-full min-h-screen bg-m8bs-bg relative overflow-hidden">
-        {/* Static background elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400/30 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-green-400/30 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-yellow-400/20 rounded-full blur-3xl"></div>
-        </div>
-
         <div className="container mx-auto p-4 sm:p-6 max-w-7xl relative">
       {/* Enhanced Header */}
       <div className="mb-12">
@@ -932,7 +929,7 @@ export function GrowthPlannerTool() {
               Evergreen Income Planner
             </h1>
             <p className="text-muted-foreground mt-1">
-              Cultivate a 16+ year retirement income strategy - plant annuity seeds, nurture growth, harvest lifetime prosperity
+              Cultivate a {clientData.timeHorizon || 16}+ year retirement income strategy - plant annuity seeds, nurture growth, harvest lifetime prosperity
             </p>
             <div className="flex items-center justify-center gap-2 mt-4">
               <Star className="h-4 w-4 text-yellow-400 animate-pulse" />
@@ -976,18 +973,17 @@ export function GrowthPlannerTool() {
       <Tabs value={currentStage.toString()} className="space-y-6">
         {/* Stage 1: Client Information */}
         <TabsContent value="1" className="space-y-12 mt-20">
-          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-            <CardHeader className="bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 border-b-2 border-green-400/60 p-10 pb-14 shadow-2xl shadow-green-900/20 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5"></div>
-              <CardTitle className="flex items-center gap-4 text-blue-200 text-3xl mb-5 font-bold relative z-10">
-                <div className="p-4 bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 rounded-2xl shadow-2xl shadow-green-500/50 ring-2 ring-green-400/30">
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="p-10 pb-14">
+              <CardTitle className="flex items-center gap-4 text-white text-3xl mb-5 font-bold">
+                <div className="p-4 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-2xl shadow-xl shadow-m8bs-blue/50 ring-2 ring-m8bs-blue/30">
                   <Sprout className="h-7 w-7 text-white drop-shadow-2xl" />
                 </div>
-                <span className="bg-gradient-to-r from-green-300 via-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-lg">
+                <span className="bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark bg-clip-text text-transparent drop-shadow-lg">
                   Plant Retirement Seeds
                 </span>
               </CardTitle>
-              <CardDescription className="text-blue-200/80 text-xl font-medium relative z-10 mt-2">
+              <CardDescription className="text-m8bs-muted text-xl font-medium mt-2">
                 Let's understand your client's retirement landscape and income growing conditions
               </CardDescription>
             </CardHeader>
@@ -1095,6 +1091,29 @@ export function GrowthPlannerTool() {
                     <span className="text-lg font-bold text-blue-300">${formatCurrency(totalInvestibleAssets)}</span>
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="planningYears">Planning Years</Label>
+                  <Input
+                    id="planningYears"
+                    type="number"
+                    min="1"
+                    max="50"
+                    step="1"
+                    placeholder="16"
+                    value={clientData.timeHorizon || ""}
+                    onChange={(e) => {
+                      const years = parseInt(e.target.value) || 16
+                      handleClientDataChange("timeHorizon", years)
+                      // Regenerate buckets with new time horizon
+                      const climate = clientData.riskTolerance === "moderate" ? "aggressive" : clientData.riskTolerance
+                      const newBuckets = generateInitialBuckets(climate, years)
+                      setBuckets(newBuckets)
+                      updateBucketAmounts(clientData.totalAmount)
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">Number of years for retirement income planning</p>
+                </div>
               </div>
 
               <Separator />
@@ -1147,7 +1166,7 @@ export function GrowthPlannerTool() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      Add all current income sources (Social Security, pensions, part-time work, etc.)
+                      Monthly income sources
                     </p>
                     <Button
                       type="button"
@@ -1157,14 +1176,14 @@ export function GrowthPlannerTool() {
                       className="flex items-center gap-2 bg-transparent"
                     >
                       <Plus className="h-4 w-4" />
-                      Add Income Source
+                      Monthly Income Sources
                     </Button>
                   </div>
 
                   {clientData.incomeSources.length === 0 && (
                     <div className="p-4 border-2 border-dashed border-muted-foreground/20 rounded-lg text-center">
                       <p className="text-sm text-muted-foreground">No income sources added yet</p>
-                      <p className="text-xs text-muted-foreground mt-1">Click "Add Income Source" to get started</p>
+                      <p className="text-xs text-muted-foreground mt-1">Click "Monthly Income Sources" to get started</p>
                     </div>
                   )}
 
@@ -1250,28 +1269,32 @@ export function GrowthPlannerTool() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="annualPaymentNeeded">Annual Payment Needed ($)</Label>
+                    <Label htmlFor="annualPaymentNeededGross">Gross Annual Payment Needed ($)</Label>
                     <Input
-                      id="annualPaymentNeeded"
+                      id="annualPaymentNeededGross"
+                      type="text"
+                      placeholder="48,000"
+                      value={formatCurrency(
+                        clientData.taxBracket > 0 && annualIncomeGap > 0
+                          ? annualIncomeGap / (1 - clientData.taxBracket / 100)
+                          : annualIncomeGap
+                      )}
+                      readOnly
+                      className="bg-muted/50"
+                    />
+                    <p className="text-xs text-muted-foreground">Gross payment before taxes</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="annualPaymentNeededNet">Net Annual Payment Needed ($)</Label>
+                    <Input
+                      id="annualPaymentNeededNet"
                       type="text"
                       placeholder="48,000"
                       value={formatCurrency(Math.max(0, annualIncomeGap))}
                       readOnly
                       className="bg-muted/50"
                     />
-                    <p className="text-xs text-muted-foreground">Auto-calculated: Income gap × 12 months</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="inflationRate">Inflation Growth Rate (%)</Label>
-                    <Input
-                      id="inflationRate"
-                      type="number"
-                      step="0.1"
-                      placeholder="3.0"
-                      value={clientData.inflationRate || ""}
-                      onChange={(e) => handleClientDataChange("inflationRate", Number(e.target.value))}
-                    />
-                    <p className="text-xs text-muted-foreground">Expected annual inflation rate</p>
+                    <p className="text-xs text-muted-foreground">Net payment after taxes (Income gap × 12 months)</p>
                   </div>
                 </div>
               </div>
@@ -1405,19 +1428,18 @@ export function GrowthPlannerTool() {
 
         {/* Stage 2: Bucket Allocation */}
         <TabsContent value="2" className="space-y-12 mt-20">
-          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-            <CardHeader className="bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 border-b-2 border-green-400/60 p-10 pb-14 shadow-2xl shadow-green-900/20 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5"></div>
-              <CardTitle className="flex items-center gap-4 text-blue-200 text-3xl mb-5 font-bold relative z-10">
-                <div className="p-4 bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 rounded-2xl shadow-2xl shadow-green-500/50 ring-2 ring-green-400/30">
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="p-10 pb-14">
+              <CardTitle className="flex items-center gap-4 text-white text-3xl mb-5 font-bold">
+                <div className="p-4 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-2xl shadow-xl shadow-m8bs-blue/50 ring-2 ring-m8bs-blue/30">
                   <Sun className="h-7 w-7 text-white drop-shadow-2xl" />
                 </div>
-                <span className="bg-gradient-to-r from-green-300 via-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-lg">
+                <span className="bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark bg-clip-text text-transparent drop-shadow-lg">
                   Cultivate Income Streams
                 </span>
               </CardTitle>
-              <CardDescription className="text-blue-200/80 text-xl font-medium relative z-10 mt-2">
-                Design the 16+ year retirement income garden with strategic bucket allocation
+              <CardDescription className="text-m8bs-muted text-xl font-medium mt-2">
+                Design the {clientData.timeHorizon || 16}+ year retirement income garden with strategic bucket allocation
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8 pt-8">
@@ -1463,21 +1485,20 @@ export function GrowthPlannerTool() {
                     const estimatedPremiums = calculateEstimatedPremiums()
 
                     return (
-                      <Card key={bucket.id} className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2 mb-6">
-                        <CardHeader className="bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 border-b-2 border-green-400/60 p-7 shadow-xl shadow-green-900/20 relative overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5"></div>
-                          <div className="flex items-center justify-between relative z-10">
-                            <CardTitle className="flex items-center gap-4 text-blue-200 text-xl font-bold">
-                              <div className="p-3 bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 rounded-xl shadow-xl shadow-green-500/40 ring-2 ring-green-400/30">
+                      <Card key={bucket.id} className="bg-m8bs-card border-m8bs-card-alt shadow-lg mb-6">
+                        <CardHeader className="p-7">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="flex items-center gap-4 text-white text-xl font-bold">
+                              <div className="p-3 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-xl shadow-xl shadow-m8bs-blue/40 ring-2 ring-m8bs-blue/30">
                                 {getIcon(bucket.icon, "h-6 w-6 text-white drop-shadow-xl")}
                               </div>
                               <div>
-                                <div className="text-xl font-bold bg-gradient-to-r from-green-300 to-emerald-300 bg-clip-text text-transparent">{bucket.name}</div>
+                                <div className="text-xl font-bold bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark bg-clip-text text-transparent">{bucket.name}</div>
                                 <div className="flex items-center gap-2 mt-2">
-                                  <Badge variant="outline" className="text-xs border-green-400/50 text-green-300 bg-green-900/30">
+                                  <Badge variant="outline" className="text-xs border-m8bs-blue/50 text-m8bs-blue bg-m8bs-blue/20">
                                     {bucket.timeframe}
                                   </Badge>
-                                  <Badge variant="secondary" className="text-xs bg-emerald-900/40 text-emerald-300 border-emerald-400/30">
+                                  <Badge variant="secondary" className="text-xs bg-m8bs-blue/20 text-m8bs-blue border-m8bs-blue/30">
                                     {bucket.investmentType}
                                   </Badge>
                                 </div>
@@ -1497,7 +1518,7 @@ export function GrowthPlannerTool() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                       {/* Enhanced Allocation Tracker for this Bucket */}
-                      <div className="p-5 bg-gradient-to-br from-m8bs-card/50 to-m8bs-card-alt/30 rounded-lg border border-green-700/30 backdrop-blur-sm">
+                      <div className="p-5 bg-m8bs-card-alt rounded-lg border border-m8bs-border">
                         <div className="flex items-center justify-between mb-4 pb-3 border-b border-green-400/30">
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-lg">
@@ -1651,12 +1672,28 @@ export function GrowthPlannerTool() {
                                   ${formatCurrency(remaining)}
                                 </span>
                               </div>
-                              {annualIncomeGap > 0 && (
-                                <div className="flex justify-between items-center pt-1 border-t border-green-700/30">
-                                  <span className="text-muted-foreground">Income Needed:</span>
-                                  <span className="font-bold text-orange-300">${formatCurrency(annualIncomeGap)}/yr</span>
-                                </div>
-                              )}
+                              {annualIncomeGap > 0 && (() => {
+                                const inflationRate = bucket.inflationRate !== undefined ? bucket.inflationRate : clientData.inflationRate || 0
+                                const yearsDeferred = bucket.delayPeriod || 0
+                                const incomeWithInflation = inflationRate > 0 && yearsDeferred > 0
+                                  ? annualIncomeGap * Math.pow(1 + inflationRate / 100, yearsDeferred)
+                                  : annualIncomeGap
+                                
+                                return (
+                                  <>
+                                    <div className="flex justify-between items-center pt-1 border-t border-green-700/30">
+                                      <span className="text-muted-foreground">Income Needed (Original):</span>
+                                      <span className="font-bold text-orange-300">${formatCurrency(annualIncomeGap)}/yr</span>
+                                    </div>
+                                    {inflationRate > 0 && yearsDeferred > 0 && (
+                                      <div className="flex justify-between items-center pt-1">
+                                        <span className="text-muted-foreground">Income Needed (with {inflationRate}% inflation):</span>
+                                        <span className="font-bold text-yellow-300">${formatCurrency(incomeWithInflation)}/yr</span>
+                                      </div>
+                                    )}
+                                  </>
+                                )
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -1732,35 +1769,49 @@ export function GrowthPlannerTool() {
                             </div>
 
                             <div className="space-y-2">
-                              <Label htmlFor={`${bucket.id}-delay`}>Period of Delay (t) Years</Label>
+                              <Label htmlFor={`${bucket.id}-delay`}>Years Deferred (t)</Label>
                               <Input
                                 id={`${bucket.id}-delay`}
                                 type="number"
                                 value={bucket.delayPeriod || ""}
-                                onChange={(e) => updateBucketField(bucket.id, "delayPeriod", Number(e.target.value))}
+                                onChange={(e) => {
+                                  const years = Number(e.target.value)
+                                  updateBucketField(bucket.id, "delayPeriod", years)
+                                  // Automatically calculate payment delay period in months
+                                  updateBucketField(bucket.id, "paymentDelayPeriod", years * 12)
+                                }}
                               />
                             </div>
 
                             <div className="space-y-2">
-                              <Label htmlFor={`${bucket.id}-payment-delay`}>Payment Delay Period (t)</Label>
-                              <Input
-                                id={`${bucket.id}-payment-delay`}
-                                type="number"
-                                value={bucket.paymentDelayPeriod || ""}
-                                onChange={(e) =>
-                                  updateBucketField(bucket.id, "paymentDelayPeriod", Number(e.target.value))
-                                }
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor={`${bucket.id}-periods`}>Number of Income Periods</Label>
+                              <Label htmlFor={`${bucket.id}-periods`}>Years of Income</Label>
                               <Input
                                 id={`${bucket.id}-periods`}
                                 type="number"
+                                step="1"
+                                min="1"
+                                placeholder="e.g., 15"
                                 value={bucket.incomePeriods || ""}
                                 onChange={(e) => updateBucketField(bucket.id, "incomePeriods", Number(e.target.value))}
                               />
+                              <p className="text-xs text-muted-foreground">
+                                Number of years this bucket will provide income
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`${bucket.id}-inflation-rate`}>Inflation Rate (%)</Label>
+                              <Input
+                                id={`${bucket.id}-inflation-rate`}
+                                type="number"
+                                step="0.01"
+                                placeholder="e.g., 3.0"
+                                value={bucket.inflationRate !== undefined ? bucket.inflationRate : clientData.inflationRate || ""}
+                                onChange={(e) => updateBucketField(bucket.id, "inflationRate", Number(e.target.value))}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Annual inflation rate for adjusting income purchasing power
+                              </p>
                             </div>
                           </div>
                         ) : bucket.investmentType === "Lifetime Income" ? (
@@ -1788,6 +1839,21 @@ export function GrowthPlannerTool() {
                                   updateBucketField(bucket.id, "premiumAmount", parseCurrency(e.target.value))
                                 }
                               />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`${bucket.id}-interest-rate`}>Rate of Interest (r) %</Label>
+                              <Input
+                                id={`${bucket.id}-interest-rate`}
+                                type="number"
+                                step="0.01"
+                                placeholder="e.g., 5.0"
+                                value={bucket.interestRate || ""}
+                                onChange={(e) => updateBucketField(bucket.id, "interestRate", Number(e.target.value))}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Interest rate used to calculate future value
+                              </p>
                             </div>
 
                             <div className="space-y-2">
@@ -1819,17 +1885,46 @@ export function GrowthPlannerTool() {
                             </div>
 
                             <div className="space-y-2">
-                              <Label htmlFor={`${bucket.id}-inflation-rate`}>Inflation Rate (%)</Label>
+                              <Label htmlFor={`${bucket.id}-years-deferred`}>Years Deferred</Label>
                               <Input
-                                id={`${bucket.id}-inflation-rate`}
+                                id={`${bucket.id}-years-deferred`}
                                 type="number"
-                                step="0.01"
-                                placeholder="e.g., 3.0"
-                                value={bucket.inflationRate !== undefined ? bucket.inflationRate : clientData.inflationRate || ""}
-                                onChange={(e) => updateBucketField(bucket.id, "inflationRate", Number(e.target.value))}
+                                step="1"
+                                min="0"
+                                placeholder="e.g., 5"
+                                value={bucket.delayPeriod || ""}
+                                onChange={(e) => {
+                                  const years = Number(e.target.value) || 0
+                                  updateBucketField(bucket.id, "delayPeriod", years)
+                                  updateBucketField(bucket.id, "paymentDelayPeriod", years * 12)
+                                }}
                               />
                               <p className="text-xs text-muted-foreground">
-                                Annual inflation rate for adjusting lifetime income purchasing power
+                                Number of years before lifetime income payments begin
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`${bucket.id}-income-years`}>Years of Income</Label>
+                              <Input
+                                id={`${bucket.id}-income-years`}
+                                type="number"
+                                step="1"
+                                min="1"
+                                placeholder="e.g., 999 for lifetime"
+                                value={bucket.incomePeriods === 999 ? "" : (bucket.incomePeriods || "")}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  // Allow empty for lifetime, or set to 999 if user wants lifetime
+                                  if (value === "" || value.toLowerCase() === "lifetime") {
+                                    updateBucketField(bucket.id, "incomePeriods", 999)
+                                  } else {
+                                    updateBucketField(bucket.id, "incomePeriods", Number(value))
+                                  }
+                                }}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Number of years this bucket will provide income (999 for lifetime)
                               </p>
                             </div>
                           </div>
@@ -1859,12 +1954,17 @@ export function GrowthPlannerTool() {
                             </div>
 
                             <div className="space-y-2">
-                              <Label htmlFor={`${bucket.id}-delay`}>Period of Delay (t) Years</Label>
+                              <Label htmlFor={`${bucket.id}-delay`}>Years Deferred (t)</Label>
                               <Input
                                 id={`${bucket.id}-delay`}
                                 type="number"
                                 value={bucket.delayPeriod || ""}
-                                onChange={(e) => updateBucketField(bucket.id, "delayPeriod", Number(e.target.value))}
+                                onChange={(e) => {
+                                  const years = Number(e.target.value)
+                                  updateBucketField(bucket.id, "delayPeriod", years)
+                                  // Automatically calculate payment delay period in months
+                                  updateBucketField(bucket.id, "paymentDelayPeriod", years * 12)
+                                }}
                               />
                             </div>
 
@@ -1880,6 +1980,37 @@ export function GrowthPlannerTool() {
                                 <option value="moderate">Moderate</option>
                                 <option value="aggressive">Aggressive</option>
                               </select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`${bucket.id}-income-years-portfolio`}>Years of Income</Label>
+                              <Input
+                                id={`${bucket.id}-income-years-portfolio`}
+                                type="number"
+                                step="1"
+                                min="1"
+                                placeholder="e.g., 15"
+                                value={bucket.incomePeriods || ""}
+                                onChange={(e) => updateBucketField(bucket.id, "incomePeriods", Number(e.target.value))}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Number of years this bucket will provide income
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`${bucket.id}-inflation-rate`}>Inflation Rate (%)</Label>
+                              <Input
+                                id={`${bucket.id}-inflation-rate`}
+                                type="number"
+                                step="0.01"
+                                placeholder="e.g., 3.0"
+                                value={bucket.inflationRate !== undefined ? bucket.inflationRate : clientData.inflationRate || ""}
+                                onChange={(e) => updateBucketField(bucket.id, "inflationRate", Number(e.target.value))}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Annual inflation rate for adjusting income purchasing power
+                              </p>
                             </div>
                           </div>
                         )}
@@ -1937,10 +2068,11 @@ export function GrowthPlannerTool() {
                             <p className="text-xs text-muted-foreground">Premium × (1 + Rate)^Delay Period</p>
                           </div>
 
-                          {bucket.investmentType === "Fixed Annuity" && (
+                          {/* Show Gross and Net Payments for all investment types with payments */}
+                          {(calculatedValues.payments > 0 || calculatedValues.incomeSolve > 0) && (
                             <>
                               <div className="space-y-2">
-                                <Label>Payments (Calculated)</Label>
+                                <Label>Gross Payment (Calculated)</Label>
                                 <Input
                                   type="text"
                                   value={`$${formatCurrency(calculatedValues.payments)}`}
@@ -1948,34 +2080,29 @@ export function GrowthPlannerTool() {
                                   className="bg-muted/50 font-medium"
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                  (Future Value ÷ Income Periods) × (1 + Rate)
+                                  {bucket.investmentType === "Fixed Annuity" 
+                                    ? "(Future Value ÷ Income Periods) × (1 + Rate)"
+                                    : bucket.investmentType === "Lifetime Income"
+                                    ? "Annual gross income before taxes"
+                                    : "Annual gross payment before taxes"}
                                 </p>
                               </div>
 
                               <div className="space-y-2">
-                                <Label>Income Solve (Calculated)</Label>
+                                <Label>Net Payment (Calculated)</Label>
                                 <Input
                                   type="text"
                                   value={`$${formatCurrency(calculatedValues.incomeSolve)}`}
                                   readOnly
                                   className="bg-green-900/30 border-green-700/30 font-bold text-lg text-green-300"
                                 />
-                                <p className="text-xs text-muted-foreground">Payments - Taxes</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {bucket.investmentType === "Lifetime Income"
+                                    ? "Annual lifetime income after taxes, adjusted for inflation"
+                                    : "Gross Payment - Taxes"}
+                                </p>
                               </div>
                             </>
-                          )}
-
-                          {bucket.investmentType === "Lifetime Income" && (
-                            <div className="space-y-2">
-                              <Label>Net Lifetime Income (Calculated)</Label>
-                              <Input
-                                type="text"
-                                value={`$${formatCurrency(calculatedValues.incomeSolve)}`}
-                                readOnly
-                                className="bg-green-900/30 border-green-700/30 font-bold text-lg text-green-300"
-                              />
-                              <p className="text-xs text-muted-foreground">Annual lifetime income after taxes, adjusted for inflation</p>
-                            </div>
                           )}
 
                           {bucket.investmentType === "Brokerage Portfolio" && (
@@ -2068,39 +2195,38 @@ export function GrowthPlannerTool() {
 
         {/* Stage 3: Review & Finalize */}
         <TabsContent value="3" className="space-y-12 mt-20">
-          <Card className="border-m8bs-card-alt/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-            <CardHeader className="bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 border-b-2 border-green-400/60 p-10 pb-14 shadow-2xl shadow-green-900/20 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-transparent to-emerald-500/5"></div>
-              <CardTitle className="flex items-center gap-4 text-blue-200 text-3xl mb-5 font-bold relative z-10">
-                <div className="p-4 bg-gradient-to-br from-green-500 via-emerald-500 to-green-600 rounded-2xl shadow-2xl shadow-green-500/50 ring-2 ring-green-400/30">
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="p-10 pb-14">
+              <CardTitle className="flex items-center gap-4 text-white text-3xl mb-5 font-bold">
+                <div className="p-4 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-2xl shadow-xl shadow-m8bs-blue/50 ring-2 ring-m8bs-blue/30">
                   <Droplets className="h-7 w-7 text-white drop-shadow-2xl" />
                 </div>
-                <span className="bg-gradient-to-r from-green-300 via-emerald-300 to-green-300 bg-clip-text text-transparent drop-shadow-lg">
+                <span className="bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark bg-clip-text text-transparent drop-shadow-lg">
                   Harvest Retirement Plan
                 </span>
               </CardTitle>
-              <CardDescription className="text-blue-200/80 text-xl font-medium relative z-10 mt-2">
+              <CardDescription className="text-m8bs-muted text-xl font-medium mt-2">
                 Finalize the lifetime income strategy for {clientData.name || "Your Client"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8 pt-8">
 
               {/* Executive Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="p-6 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-green-500/40 shadow-xl backdrop-blur-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                <Card className="p-6 bg-m8bs-card-alt border border-m8bs-border shadow-lg">
                   <div className="flex flex-col items-center text-center space-y-3">
-                    <div className="p-4 bg-green-900/30 rounded-2xl border border-green-700/30">
-                      <Sprout className="h-8 w-8 text-green-500" />
+                    <div className="p-4 bg-m8bs-blue/20 rounded-2xl border border-m8bs-blue/30">
+                      <Sprout className="h-8 w-8 text-m8bs-blue" />
                     </div>
                     <div className="w-full">
-                      <p className="text-sm text-muted-foreground mb-1">Total Investment</p>
-                      <p className="text-2xl font-bold text-green-300 break-words">${formatCurrency(totalInvestibleAssets)}</p>
-                      <p className="text-xs text-muted-foreground mt-2">Seeds planted for growth</p>
+                      <p className="text-sm text-m8bs-muted mb-1">Total Investment</p>
+                      <p className="text-2xl font-bold text-m8bs-blue break-words">${formatCurrency(totalInvestibleAssets)}</p>
+                      <p className="text-xs text-m8bs-muted mt-2">Seeds planted for growth</p>
                     </div>
                   </div>
                 </Card>
 
-                <Card className="p-6 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-emerald-500/40 shadow-xl backdrop-blur-sm">
+                <Card className="p-6 bg-m8bs-card-alt border border-m8bs-border shadow-lg">
                   <div className="flex flex-col items-center text-center space-y-3">
                     <div className="p-4 bg-emerald-900/30 rounded-2xl border border-emerald-700/30">
                       <TreePine className="h-8 w-8 text-emerald-500" />
@@ -2136,9 +2262,47 @@ export function GrowthPlannerTool() {
                     <div className="w-full">
                       <p className="text-sm text-muted-foreground mb-1">Total Income Generated</p>
                       <p className="text-2xl font-bold text-blue-300 break-words">
-                        ${formatCurrency(buckets.reduce((sum, b) => sum + calculateBucketValues(b).incomeSolve, 0))}
+                        ${formatCurrency(
+                          buckets.reduce((sum, bucket) => {
+                            const values = calculateBucketValues(bucket)
+                            const annualIncome = values.incomeSolve || 0
+                            // For lifetime income, use planning years or a large number
+                            let incomePeriods = bucket.incomePeriods || 0
+                            if (bucket.investmentType === "Lifetime Income" || incomePeriods >= 999) {
+                              incomePeriods = clientData.timeHorizon || 16
+                            }
+                            // Total income = annual income × number of years income is generated
+                            return sum + (annualIncome * incomePeriods)
+                          }, 0)
+                        )}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-2">Annual income from all sources</p>
+                      <p className="text-xs text-muted-foreground mt-2">Total income from all buckets across all years</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-6 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-purple-500/40 shadow-xl backdrop-blur-sm">
+                  <div className="flex flex-col items-center text-center space-y-3">
+                    <div className="p-4 bg-purple-900/30 rounded-2xl border border-purple-700/30">
+                      <Star className="h-8 w-8 text-purple-500" />
+                    </div>
+                    <div className="w-full">
+                      <p className="text-sm text-muted-foreground mb-1">Total Value</p>
+                      <p className="text-2xl font-bold text-purple-300 break-words">
+                        ${formatCurrency(
+                          // Annual Income Generated (sum of annual income from all buckets)
+                          buckets.reduce((sum, bucket) => {
+                            const values = calculateBucketValues(bucket)
+                            return sum + (values.incomeSolve || 0)
+                          }, 0) +
+                          // Growth Phase (sum of future values from all buckets)
+                          buckets.reduce((sum, bucket) => {
+                            const values = calculateBucketValues(bucket)
+                            return sum + (values.futureValue || 0)
+                          }, 0)
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">Annual income generated + growth phase</p>
                     </div>
                   </div>
                 </Card>
@@ -2150,9 +2314,9 @@ export function GrowthPlannerTool() {
               <div className="space-y-4" ref={timelineRef} data-chart="timeline">
                 <div className="flex items-center gap-2">
                   <Sun className="h-5 w-5 text-green-500" />
-                  <h3 className="text-lg font-semibold text-green-400">Your 16+ Year Income Timeline</h3>
+                  <h3 className="text-lg font-semibold text-green-400">Your {clientData.timeHorizon || 16}+ Year Income Timeline</h3>
                 </div>
-                <Card className="p-8 bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 border-2 border-green-700/30 shadow-lg">
+                <Card className="p-8 bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-green-700/30 shadow-lg">
 
                 <div className="space-y-8">
                   {/* Timeline Visual */}
@@ -2221,9 +2385,9 @@ export function GrowthPlannerTool() {
               </Card>
 
               {/* Income Distribution Visualization */}
-              <Card className="p-8 bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 border-2 border-blue-700/30 shadow-lg">
-                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-400">
-                  <div className="p-2 bg-m8bs-card-alt rounded-lg shadow-sm border border-blue-700/30">
+              <Card className="p-8 bg-m8bs-card-alt border border-m8bs-border shadow-lg">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-m8bs-blue">
+                  <div className="p-2 bg-m8bs-card rounded-lg shadow-sm border border-m8bs-border">
                     <Leaf className="h-6 w-6 text-blue-500" />
                   </div>
                   Investment Allocation Breakdown
@@ -2236,28 +2400,28 @@ export function GrowthPlannerTool() {
                     const percentage = totalInvestibleAssets > 0 ? (actualPremium / totalInvestibleAssets) * 100 : 0
 
                     return (
-                      <Card key={bucket.id} className="p-6 bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 border-2 border-blue-700/30 shadow-lg">
+                      <Card key={bucket.id} className="p-6 bg-m8bs-card-alt border border-m8bs-border shadow-lg">
                         <CardHeader className="pb-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                              <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
+                              <div className="p-4 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-xl shadow-lg">
                                 {getIcon(bucket.icon, "h-6 w-6 text-white drop-shadow-lg")}
                               </div>
                               <div>
-                                <CardTitle className="text-xl text-blue-300 mb-2">{bucket.name}</CardTitle>
+                                <CardTitle className="text-xl text-white mb-2">{bucket.name}</CardTitle>
                                 <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs border-blue-500/50 text-blue-300">
+                                  <Badge variant="outline" className="text-xs border-m8bs-blue/50 text-m8bs-blue">
                                     {bucket.timeframe}
                                   </Badge>
-                                  <Badge variant="secondary" className="text-xs bg-blue-900/30 text-blue-300">
+                                  <Badge variant="secondary" className="text-xs bg-m8bs-blue/20 text-m8bs-blue">
                                     {bucket.investmentType}
                                   </Badge>
                                 </div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm text-muted-foreground">Initial Investment</p>
-                              <p className="text-2xl font-bold text-blue-400">
+                              <p className="text-sm text-m8bs-muted">Initial Investment</p>
+                              <p className="text-2xl font-bold text-m8bs-blue">
                                 ${formatCurrency(actualPremium)}
                               </p>
                               <p className="text-sm text-muted-foreground">{percentage.toFixed(1)}% of portfolio</p>
@@ -2268,7 +2432,7 @@ export function GrowthPlannerTool() {
 
                         {/* Large Visual Progress Bar */}
                         <div className="relative">
-                          <div className="h-14 bg-m8bs-card-alt rounded-xl overflow-visible border-2 border-blue-700/30 shadow-lg">
+                          <div className="h-14 bg-m8bs-card rounded-xl overflow-visible border border-m8bs-border shadow-lg">
                             <div
                               className="h-full bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 transition-all duration-700 ease-out shadow-inner"
                               style={{ width: `${percentage}%` }}
@@ -2301,23 +2465,17 @@ export function GrowthPlannerTool() {
                           </div>
                         </Card>
 
-                        {/* Additional Metrics Grid - Only for Fixed Annuities */}
-                        {bucket.investmentType === "Fixed Annuity" && (
-                          <div className="grid grid-cols-3 gap-3">
-                            <Card className="p-4 bg-m8bs-card-alt shadow-sm border-l-4 border-l-blue-500">
-                              <p className="text-xs text-muted-foreground mb-1">Annual Payment</p>
-                              <p className="text-lg font-bold text-blue-400">
-                                ${formatCurrency(values.annuityPayment)}
-                              </p>
-                            </Card>
-                            <Card className="p-4 bg-m8bs-card-alt shadow-sm border-l-4 border-l-blue-500">
-                              <p className="text-xs text-muted-foreground mb-1">Gross Income</p>
+                        {/* Payment Breakdown - Gross and Net for all investment types */}
+                        {(values.payments > 0 || values.incomeSolve > 0) && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <Card className="p-4 bg-m8bs-card-alt shadow-sm border-l-4 border-l-m8bs-blue">
+                              <p className="text-xs text-muted-foreground mb-1">Gross Payment</p>
                               <p className="text-lg font-bold text-blue-400">
                                 ${formatCurrency(values.payments)}
                               </p>
                             </Card>
                             <Card className="p-4 bg-m8bs-card-alt shadow-md border-l-4 border-l-yellow-500">
-                              <p className="text-xs text-muted-foreground mb-1">Net Income</p>
+                              <p className="text-xs text-muted-foreground mb-1">Net Payment</p>
                               <p className="text-lg font-bold text-yellow-400">
                                 ${formatCurrency(values.incomeSolve)}
                               </p>
@@ -2362,7 +2520,7 @@ export function GrowthPlannerTool() {
               {/* Income Flow Chart */}
               <Card className="p-8 bg-m8bs-card border-2 border-blue-700/30 shadow-lg">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-400">
-                  <div className="p-2 bg-m8bs-card-alt rounded-lg shadow-sm border border-blue-700/30">
+                  <div className="p-2 bg-gray-700/50 rounded-lg shadow-sm border border-green-700/30">
                     <Droplets className="h-6 w-6 text-blue-500" />
                   </div>
                   Annual Income Flow Analysis
@@ -2370,7 +2528,7 @@ export function GrowthPlannerTool() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Income Sources */}
-                  <Card className="p-6 bg-m8bs-card-alt shadow-md">
+                  <Card className="p-6 bg-m8bs-card-alt shadow-md border border-m8bs-border">
                     <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                       <Sprout className="h-5 w-5 text-green-500" />
                       Current Income Sources
@@ -2391,7 +2549,7 @@ export function GrowthPlannerTool() {
                   </Card>
 
                   {/* Income Gap Analysis */}
-                  <Card className="p-6 bg-m8bs-card-alt shadow-md">
+                  <Card className="p-6 bg-m8bs-card-alt shadow-md border border-m8bs-border">
                     <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                       <Flower className="h-5 w-5 text-yellow-500" />
                       Income Gap Analysis
@@ -2416,11 +2574,311 @@ export function GrowthPlannerTool() {
                 </div>
               </Card>
 
+              {/* Data Visualizations Section */}
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-400">
+                  <div className="p-2 bg-gray-700/50 rounded-lg shadow-sm border border-blue-700/30">
+                    <TrendingUp className="h-6 w-6 text-blue-500" />
+                  </div>
+                  Retirement Plan Visualizations
+                </h2>
+
+                {/* 1. Income Throughout Years and Growth */}
+                <Card className="p-6 bg-m8bs-card border-2 border-blue-700/30 shadow-lg">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-green-400">
+                    <Droplets className="h-5 w-5 text-green-500" />
+                    Income Growth Over Time
+                  </h3>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <AreaChart
+                      data={Array.from({ length: clientData.timeHorizon || 16 }, (_, i) => {
+                        const year = i + 1
+                        let cumulativeIncome = 0
+                        const totalIncome = buckets.reduce((sum, bucket) => {
+                          const values = calculateBucketValues(bucket)
+                          const incomeStartYear = bucket.delayPeriod || 1
+                          
+                          if (year >= incomeStartYear) {
+                            const yearsSinceStart = year - incomeStartYear + 1
+                            const maxIncomePeriods = bucket.incomePeriods || 999
+                            const yearsOfIncome = Math.min(yearsSinceStart, maxIncomePeriods)
+                            
+                            if (yearsOfIncome > 0) {
+                              let bucketAnnualIncome = 0
+                              if (bucket.investmentType === "Lifetime Income") {
+                                bucketAnnualIncome = values.incomeSolve || values.payments || values.annuityPayment || 0
+                              } else if (bucket.investmentType === "Brokerage Portfolio") {
+                                const portfolioValue = values.futureValue || values.estimatedPremium || 0
+                                const withdrawalRate = 0.04
+                                bucketAnnualIncome = portfolioValue * withdrawalRate
+                              } else {
+                                bucketAnnualIncome = values.payments || values.incomeSolve || values.annuityPayment || 0
+                              }
+                              cumulativeIncome += bucketAnnualIncome * yearsOfIncome
+                              return sum + bucketAnnualIncome
+                            }
+                          }
+                          return sum
+                        }, 0)
+                        
+                        return {
+                          year: `Year ${year}`,
+                          income: totalIncome,
+                          cumulativeIncome: cumulativeIncome
+                        }
+                      })}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="year" stroke="#9CA3AF" />
+                      <YAxis stroke="#9CA3AF" />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
+                        formatter={(value: any) => `$${formatCurrency(value)}`}
+                      />
+                      <Legend />
+                      <Area 
+                        type="monotone" 
+                        dataKey="income" 
+                        stroke="#10B981" 
+                        fill="#10B981" 
+                        fillOpacity={0.6}
+                        name="Annual Income"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="cumulativeIncome" 
+                        stroke="#3B82F6" 
+                        strokeWidth={2}
+                        name="Cumulative Income"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                {/* 2. Timeline of Income Generated */}
+                <Card className="p-6 bg-m8bs-card border-2 border-green-700/30 shadow-lg">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-green-400">
+                    <Sun className="h-5 w-5 text-green-500" />
+                    Income Timeline by Bucket
+                  </h3>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart
+                      data={Array.from({ length: clientData.timeHorizon || 16 }, (_, i) => {
+                        const year = i + 1
+                        const bucketData: any = { year: `Year ${year}` }
+                        
+                        buckets.forEach((bucket) => {
+                          const values = calculateBucketValues(bucket)
+                          const incomeStartYear = bucket.delayPeriod || 1
+                          const incomeEndYear = incomeStartYear + (bucket.incomePeriods || 999)
+                          
+                          if (year >= incomeStartYear && year < incomeEndYear) {
+                            let bucketAnnualIncome = 0
+                            if (bucket.investmentType === "Lifetime Income") {
+                              bucketAnnualIncome = values.incomeSolve || values.payments || values.annuityPayment || 0
+                            } else if (bucket.investmentType === "Brokerage Portfolio") {
+                              const portfolioValue = values.futureValue || values.estimatedPremium || 0
+                              const withdrawalRate = 0.04
+                              bucketAnnualIncome = portfolioValue * withdrawalRate
+                            } else {
+                              bucketAnnualIncome = values.payments || values.incomeSolve || values.annuityPayment || 0
+                            }
+                            bucketData[bucket.name] = bucketAnnualIncome
+                          } else {
+                            bucketData[bucket.name] = 0
+                          }
+                        })
+                        
+                        return bucketData
+                      })}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="year" stroke="#9CA3AF" />
+                      <YAxis stroke="#9CA3AF" />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
+                        formatter={(value: any) => `$${formatCurrency(value)}`}
+                      />
+                      <Legend />
+                      {buckets.map((bucket, index) => {
+                        const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
+                        return (
+                          <Bar 
+                            key={bucket.id} 
+                            dataKey={bucket.name} 
+                            stackId="income"
+                            fill={colors[index % colors.length]}
+                          />
+                        )
+                      })}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                {/* 3. Bucket Depletion Visualization */}
+                <Card className="p-6 bg-m8bs-card border-2 border-purple-700/30 shadow-lg">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-purple-400">
+                    <Shield className="h-5 w-5 text-purple-500" />
+                    Bucket Depletion Timeline
+                  </h3>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <AreaChart
+                      data={Array.from({ length: clientData.timeHorizon || 16 }, (_, i) => {
+                        const year = i + 1
+                        const bucketData: any = { year: `Year ${year}` }
+                        
+                        buckets.forEach((bucket) => {
+                          // Only show depletion for non-lifetime and non-brokerage buckets
+                          if (bucket.investmentType !== "Lifetime Income" && bucket.investmentType !== "Brokerage Portfolio") {
+                            const incomeStartYear = bucket.delayPeriod || 1
+                            const incomeEndYear = incomeStartYear + (bucket.incomePeriods || 999)
+                            const values = calculateBucketValues(bucket)
+                            const initialValue = values.futureValue || bucket.premiumAmount || 0
+                            
+                            if (year >= incomeStartYear && year < incomeEndYear) {
+                              const yearsSinceStart = year - incomeStartYear
+                              const totalPeriods = bucket.incomePeriods || 999
+                              const remainingValue = initialValue * (1 - yearsSinceStart / totalPeriods)
+                              bucketData[bucket.name] = Math.max(0, remainingValue)
+                            } else if (year < incomeStartYear) {
+                              bucketData[bucket.name] = initialValue
+                            } else {
+                              bucketData[bucket.name] = 0
+                            }
+                          } else {
+                            // Lifetime income and brokerage maintain their value
+                            const values = calculateBucketValues(bucket)
+                            bucketData[bucket.name] = values.futureValue || bucket.premiumAmount || 0
+                          }
+                        })
+                        
+                        return bucketData
+                      })}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="year" stroke="#9CA3AF" />
+                      <YAxis stroke="#9CA3AF" />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
+                        formatter={(value: any) => `$${formatCurrency(value)}`}
+                      />
+                      <Legend />
+                      {buckets.map((bucket, index) => {
+                        const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
+                        return (
+                          <Area
+                            key={bucket.id}
+                            type="monotone"
+                            dataKey={bucket.name}
+                            stackId="depletion"
+                            stroke={colors[index % colors.length]}
+                            fill={colors[index % colors.length]}
+                            fillOpacity={0.6}
+                          />
+                        )
+                      })}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                {/* 4. Investment Growth Breakdown */}
+                <Card className="p-6 bg-m8bs-card border-2 border-yellow-700/30 shadow-lg">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-400">
+                    <Target className="h-5 w-5 text-yellow-500" />
+                    Investment Growth Breakdown
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-semibold mb-4 text-white">Initial Investment</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={buckets.map((bucket) => ({
+                              name: bucket.name,
+                              value: bucket.premiumAmount || 0
+                            }))}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {buckets.map((bucket, index) => {
+                              const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
+                              return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                            })}
+                          </Pie>
+                          <Tooltip formatter={(value: any) => `$${formatCurrency(value)}`} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold mb-4 text-white">Future Value</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={buckets.map((bucket) => {
+                              const values = calculateBucketValues(bucket)
+                              return {
+                                name: bucket.name,
+                                value: values.futureValue || 0
+                              }
+                            })}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {buckets.map((bucket, index) => {
+                              const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#06B6D4"]
+                              return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                            })}
+                          </Pie>
+                          <Tooltip formatter={(value: any) => `$${formatCurrency(value)}`} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart
+                        data={buckets.map((bucket) => {
+                          const values = calculateBucketValues(bucket)
+                          return {
+                            name: bucket.name,
+                            "Initial Investment": bucket.premiumAmount || 0,
+                            "Future Value": values.futureValue || 0,
+                            "Growth": (values.futureValue || 0) - (bucket.premiumAmount || 0)
+                          }
+                        })}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis dataKey="name" stroke="#9CA3AF" />
+                        <YAxis stroke="#9CA3AF" />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
+                          formatter={(value: any) => `$${formatCurrency(value)}`}
+                        />
+                        <Legend />
+                        <Bar dataKey="Initial Investment" fill="#3B82F6" />
+                        <Bar dataKey="Future Value" fill="#10B981" />
+                        <Bar dataKey="Growth" fill="#F59E0B" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+              </div>
+
               {/* Client Goals Section */}
               {clientData.clientGoals.length > 0 && (
-                <Card className="p-8 bg-m8bs-card border-2 border-green-700/30 shadow-lg">
+                <Card className="p-8 bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-green-700/30 shadow-lg">
                   <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-green-400">
-                    <div className="p-2 bg-m8bs-card-alt rounded-lg shadow-sm border border-green-700/30">
+                    <div className="p-2 bg-gray-700/50 rounded-lg shadow-sm border border-green-700/30">
                       <Sun className="h-6 w-6 text-green-500" />
                     </div>
                     Client Goals & Aspirations
@@ -2428,7 +2886,7 @@ export function GrowthPlannerTool() {
 
                   <div className="space-y-4">
                     {clientData.clientGoals.map((goal, index) => (
-                      <Card key={goal.id} className="p-6 bg-m8bs-card-alt shadow-md border border-green-700/20">
+                      <Card key={goal.id} className="p-6 bg-gray-700/50 shadow-md border border-green-700/20">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-green-900/30 border border-green-700/30 flex items-center justify-center">
@@ -2483,7 +2941,7 @@ export function GrowthPlannerTool() {
                     ))}
 
                     {/* Goals Summary */}
-                    <Card className="p-6 bg-m8bs-card-alt shadow-lg border-2 border-green-700/30">
+                    <Card className="p-6 bg-m8bs-card-alt shadow-lg border border-m8bs-border">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="p-4 bg-green-900/30 rounded-2xl border border-green-700/30">
@@ -2512,7 +2970,7 @@ export function GrowthPlannerTool() {
               )}
 
               {/* Enhanced Investment Allocation Pie Chart */}
-              <Card className="p-8 bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 border-2 border-m8bs-card-alt/50 shadow-2xl backdrop-blur-sm transform hover:scale-[1.01] transition-all duration-300">
+              <Card className="p-8 bg-m8bs-card-alt border border-m8bs-border shadow-lg hover:shadow-xl transition-all duration-300">
                 <h2 className="text-3xl font-bold mb-8 flex items-center gap-4 text-green-300">
                   <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
                     <TreePine className="h-8 w-8 text-white drop-shadow-lg" />
@@ -2527,7 +2985,7 @@ export function GrowthPlannerTool() {
                   {/* Portfolio Distribution Chart */}
                   <div className="space-y-4" ref={pieChartRef} data-chart="portfolio">
                     <h3 className="text-lg font-semibold text-blue-300">Portfolio Distribution</h3>
-                    <div className="bg-gradient-to-br from-m8bs-card/50 to-m8bs-card-alt/50 rounded-2xl p-4 sm:p-6 border border-m8bs-card-alt/30 shadow-lg">
+                    <div className="bg-m8bs-card-alt rounded-2xl p-4 sm:p-6 border border-m8bs-border shadow-lg">
                       <div className="h-[250px] sm:h-[280px] mb-4">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
@@ -2674,7 +3132,7 @@ export function GrowthPlannerTool() {
               </Card>
 
               {/* Enhanced Income Projection Charts */}
-              <Card className="p-8 bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 border-2 border-m8bs-card-alt/50 shadow-2xl backdrop-blur-sm transform hover:scale-[1.01] transition-all duration-300">
+              <Card className="p-8 bg-m8bs-card-alt border border-m8bs-border shadow-lg hover:shadow-xl transition-all duration-300">
                 <h2 className="text-3xl font-bold mb-8 flex items-center gap-4 text-blue-300">
                   <div className="p-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg">
                     <Droplets className="h-8 w-8 text-white drop-shadow-lg" />
@@ -2692,7 +3150,7 @@ export function GrowthPlannerTool() {
                       <TrendingUp className="h-5 w-5" />
                       Annual Income by Investment
                     </h3>
-                    <div className="h-80 sm:h-96 bg-gradient-to-br from-m8bs-card/30 to-m8bs-card-alt/30 rounded-2xl p-4 sm:p-6 border border-m8bs-card-alt/20">
+                    <div className="h-80 sm:h-96 bg-m8bs-card-alt rounded-2xl p-4 sm:p-6 border border-m8bs-border">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={buckets.map((bucket) => {
                           const values = calculateBucketValues(bucket)
@@ -2736,7 +3194,7 @@ export function GrowthPlannerTool() {
                       <Shield className="h-5 w-5" />
                       Growth Projection Timeline
                     </h3>
-                    <div className="h-80 sm:h-96 bg-gradient-to-br from-m8bs-card/30 to-m8bs-card-alt/30 rounded-2xl p-4 sm:p-6 border border-m8bs-card-alt/20">
+                    <div className="h-80 sm:h-96 bg-m8bs-card-alt rounded-2xl p-4 sm:p-6 border border-m8bs-border">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={Array.from({ length: 20 }, (_, i) => {
                           const year = i + 1
@@ -2858,7 +3316,7 @@ export function GrowthPlannerTool() {
               </Card>
 
               {/* Enhanced Risk Analysis and Performance Metrics */}
-              <Card className="p-8 bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 border-2 border-m8bs-card-alt/50 shadow-2xl backdrop-blur-sm transform hover:scale-[1.01] transition-all duration-300">
+              <Card className="p-8 bg-m8bs-card-alt border border-m8bs-border shadow-lg hover:shadow-xl transition-all duration-300">
                 <h2 className="text-3xl font-bold mb-8 flex items-center gap-4 text-blue-300">
                   <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
                     <Sun className="h-8 w-8 text-white drop-shadow-lg" />

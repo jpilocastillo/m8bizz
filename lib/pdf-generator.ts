@@ -200,11 +200,28 @@ export class PDFGenerator {
       const bucketData = planData.calculationResults[bucket.id]
       return sum + (bucketData?.futureValue || 0)
     }, 0)
+    // Calculate total income as sum of all income from all buckets across all years
     const totalIncome = planData.buckets.reduce((sum, bucket) => {
+      const bucketData = planData.calculationResults[bucket.id]
+      const annualIncome = bucketData?.incomeSolve || 0
+      // For lifetime income, use planning years or a large number
+      let incomePeriods = bucket.incomePeriods || 0
+      if (bucket.investmentType === "Lifetime Income" || incomePeriods >= 999) {
+        incomePeriods = planData.clientData.timeHorizon || 16
+      }
+      // Total income = annual income × number of years income is generated
+      return sum + (annualIncome * incomePeriods)
+    }, 0)
+    
+    // Calculate average annual income for monthly income calculation (sum of annual income from all buckets)
+    const averageAnnualIncome = planData.buckets.reduce((sum, bucket) => {
       const bucketData = planData.calculationResults[bucket.id]
       return sum + (bucketData?.incomeSolve || 0)
     }, 0)
-    const totalMonthlyIncome = totalIncome / 12
+    const totalMonthlyIncome = averageAnnualIncome / 12
+    
+    // Calculate Total Value = Annual Income Generated + Growth Phase
+    const totalValue = averageAnnualIncome + futureValue
 
     // Summary cards in 2x2 grid
     const summaryCards = [
@@ -443,6 +460,8 @@ export class PDFGenerator {
       ['Projected Future Value', formatCurrency(futureValue)],
       ['Annual Income Need', formatCurrency(planData.clientData.annualPaymentNeeded)],
       ['Total Income Generated', formatCurrency(totalIncome)],
+      ['Annual Income Generated', formatCurrency(averageAnnualIncome)],
+      ['Total Value', formatCurrency(totalValue)],
       ['Income Coverage', `${planData.clientData.annualPaymentNeeded > 0 ? ((totalIncome / planData.clientData.annualPaymentNeeded) * 100).toFixed(1) : 0}%`],
       ['Monthly Income Generated', formatCurrency(totalMonthlyIncome)],
       ['Monthly Income Need', formatCurrency(planData.clientData.desiredMonthlyIncome)],

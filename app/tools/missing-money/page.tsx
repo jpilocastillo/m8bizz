@@ -161,11 +161,13 @@ export default function MissingMoneyPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <DollarSign className="h-8 w-8 text-blue-400" />
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
+            <DollarSign className="h-8 w-8 text-white" />
+          </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-blue-300">Missing Money Report</h1>
-            <p className="text-m8bs-muted">
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">Missing Money Report</h1>
+            <p className="text-m8bs-muted mt-1">
               Presented by {profile?.company || "Your Firm"} - Financial Opportunity Analysis
             </p>
           </div>
@@ -191,10 +193,10 @@ export default function MissingMoneyPage() {
           onSubmit={handleDataSubmit}
         />
       ) : data.costCenters.length === 0 ? (
-        <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+        <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
           <CardContent className="p-12 text-center">
             <Calculator className="h-16 w-16 text-m8bs-muted mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-blue-300 mb-2">No Cost Centers Added Yet</h3>
+            <h3 className="text-xl font-semibold text-white mb-2">No Cost Centers Added Yet</h3>
             <p className="text-m8bs-muted mb-6">
               Start by adding cost centers to analyze missing money opportunities
             </p>
@@ -210,74 +212,74 @@ export default function MissingMoneyPage() {
       ) : (
         <div className="space-y-6">
           {/* Summary Metrics Card */}
-          <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-            <CardHeader>
-              <CardTitle className="text-2xl text-blue-300">Summary Metrics</CardTitle>
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white">Summary Metrics</CardTitle>
               <CardDescription className="text-m8bs-muted">
                 Key insights and opportunity cost overview
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
+                <div className="bg-m8bs-card-alt p-4 rounded-lg border border-m8bs-border">
                   <div className="text-sm text-m8bs-muted mb-1">1 Year Missing Money</div>
                   <div className={`text-2xl font-bold ${
-                    data.oneYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                    data.oneYearTotal < 0 ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {new Intl.NumberFormat('en-US', {
+                    {data.oneYearTotal < 0 ? '+' : ''}{new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: 'USD',
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0,
-                    }).format(data.oneYearTotal)}
+                    }).format(Math.abs(data.oneYearTotal))}
                   </div>
                   <div className="text-xs text-m8bs-muted mt-1">
                     {data.costCenters.length} cost centers analyzed
                   </div>
                 </div>
-                <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
+                <div className="bg-m8bs-card-alt p-4 rounded-lg border border-m8bs-border">
                   <div className="text-sm text-m8bs-muted mb-1">5 Year Missing Money</div>
                   <div className={`text-2xl font-bold ${
-                    data.fiveYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                    data.fiveYearTotal < 0 ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {new Intl.NumberFormat('en-US', {
+                    {data.fiveYearTotal < 0 ? '+' : ''}{new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: 'USD',
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0,
-                    }).format(data.fiveYearTotal)}
+                    }).format(Math.abs(data.fiveYearTotal))}
                   </div>
                   <div className="text-xs text-m8bs-muted mt-1">
                     Cumulative over 5 years
                   </div>
                 </div>
-                <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
+                <div className="bg-m8bs-card-alt p-4 rounded-lg border border-m8bs-border">
                   <div className="text-sm text-m8bs-muted mb-1">10 Year Missing Money</div>
                   <div className={`text-2xl font-bold ${
-                    data.tenYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                    data.tenYearTotal < 0 ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {new Intl.NumberFormat('en-US', {
+                    {data.tenYearTotal < 0 ? '+' : ''}{new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: 'USD',
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0,
-                    }).format(data.tenYearTotal)}
+                    }).format(Math.abs(data.tenYearTotal))}
                   </div>
                   <div className="text-xs text-m8bs-muted mt-1">
                     Cumulative over 10 years
                   </div>
                 </div>
-                <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
+                <div className="bg-m8bs-card-alt p-4 rounded-lg border border-m8bs-border">
                   <div className="text-sm text-m8bs-muted mb-1">Average Annual Impact</div>
                   <div className={`text-2xl font-bold ${
-                    data.oneYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                    data.oneYearTotal < 0 ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {new Intl.NumberFormat('en-US', {
+                    {data.oneYearTotal < 0 ? '+' : ''}{new Intl.NumberFormat('en-US', {
                       style: 'currency',
                       currency: 'USD',
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0,
-                    }).format(data.costCenters.length > 0 ? data.oneYearTotal / data.costCenters.length : 0)}
+                    }).format(Math.abs(data.costCenters.length > 0 ? data.oneYearTotal / data.costCenters.length : 0))}
                   </div>
                   <div className="text-xs text-m8bs-muted mt-1">
                     Per cost center
@@ -289,9 +291,9 @@ export default function MissingMoneyPage() {
 
           {/* Charts Section */}
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-              <CardHeader>
-                <CardTitle className="text-blue-300">Missing Money Breakdown</CardTitle>
+            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-bold text-white">Missing Money Breakdown</CardTitle>
                 <CardDescription className="text-m8bs-muted">
                   Visual breakdown of opportunity costs by category
                 </CardDescription>
@@ -301,9 +303,9 @@ export default function MissingMoneyPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-              <CardHeader>
-                <CardTitle className="text-blue-300">1, 5 and 10 Year Opportunity Costs</CardTitle>
+            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-bold text-white">1, 5 and 10 Year Opportunity Costs</CardTitle>
                 <CardDescription className="text-m8bs-muted">
                   Cumulative missing money over different time horizons
                 </CardDescription>
@@ -315,10 +317,10 @@ export default function MissingMoneyPage() {
           </div>
 
           {/* Cumulative Growth Chart */}
-          <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-300">
-                <TrendingUp className="h-5 w-5 text-green-400" />
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-m8bs-blue" />
                 Cumulative Growth Over Time
               </CardTitle>
               <CardDescription className="text-m8bs-muted">
@@ -331,9 +333,9 @@ export default function MissingMoneyPage() {
           </Card>
 
           {/* Cost Analysis Table */}
-          <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-            <CardHeader>
-              <CardTitle className="text-blue-300">Cost Analysis</CardTitle>
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white">Cost Analysis</CardTitle>
               <CardDescription className="text-m8bs-muted">
                 Current vs proposed numbers with difference calculations and percentage changes
               </CardDescription>
@@ -344,10 +346,10 @@ export default function MissingMoneyPage() {
           </Card>
 
           {/* Insights and Recommendations Section */}
-          <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-300">
-                <Lightbulb className="h-5 w-5 text-blue-400" />
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-m8bs-blue" />
                 Key Insights & Recommendations
               </CardTitle>
               <CardDescription className="text-m8bs-muted">
@@ -376,9 +378,9 @@ export default function MissingMoneyPage() {
 
                 return (
                   <>
-                    <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
-                      <h4 className="font-semibold text-blue-300 mb-2 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-green-400" />
+                    <div className="bg-m8bs-card-alt p-4 rounded-lg border border-m8bs-border">
+                      <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-m8bs-blue" />
                         Overall Impact
                       </h4>
                       <p className="text-sm text-m8bs-muted">
@@ -405,19 +407,19 @@ export default function MissingMoneyPage() {
                     </div>
 
                     {topOpportunities.length > 0 && (
-                      <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
-                        <h4 className="font-semibold text-blue-300 mb-3 flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4 text-blue-400" />
+                      <div className="bg-m8bs-card-alt p-4 rounded-lg border border-m8bs-border">
+                        <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-m8bs-blue" />
                           Top Opportunities
                         </h4>
                         <ul className="space-y-2">
                           {topOpportunities.map((center, index) => (
                             <li key={center.id} className="flex items-start gap-2 text-sm">
-                              <span className="font-semibold text-blue-400">{index + 1}.</span>
+                              <span className="font-semibold text-m8bs-blue">{index + 1}.</span>
                               <div className="flex-1">
                                 <span className="font-medium text-m8bs-muted">{center.name}:</span>{' '}
-                                <span className={center.difference >= 0 ? 'text-green-400' : 'text-red-400'}>
-                                  {center.difference >= 0 ? 'Potential savings of' : 'Potential recovery of'}{' '}
+                                <span className={center.difference < 0 ? 'text-green-400' : 'text-red-400'}>
+                                  {center.difference < 0 ? 'Potential savings of' : 'Potential recovery of'}{' '}
                                   {new Intl.NumberFormat('en-US', {
                                     style: 'currency',
                                     currency: 'USD',
@@ -433,8 +435,8 @@ export default function MissingMoneyPage() {
                       </div>
                     )}
 
-                    <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
-                      <h4 className="font-semibold text-blue-300 mb-2">Recommendations</h4>
+                    <div className="bg-m8bs-card-alt p-4 rounded-lg border border-m8bs-border">
+                      <h4 className="font-semibold text-white mb-2">Recommendations</h4>
                       <ul className="space-y-2 text-sm text-m8bs-muted">
                         <li className="flex items-start gap-2">
                           <span className="text-blue-400 mt-1">•</span>

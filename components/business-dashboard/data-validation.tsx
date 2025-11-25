@@ -70,7 +70,7 @@ export function DataValidation({ data, onEditData }: DataValidationProps) {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-none">
+    <Card className="border-none shadow-lg">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -83,7 +83,7 @@ export function DataValidation({ data, onEditData }: DataValidationProps) {
             onClick={onEditData}
             variant="outline"
             size="sm"
-            className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            className="border-m8bs-border text-white hover:bg-m8bs-card-alt"
           >
             <Edit className="h-4 w-4 mr-2" />
             Edit Data
@@ -93,7 +93,7 @@ export function DataValidation({ data, onEditData }: DataValidationProps) {
       <CardContent>
         <div className="space-y-3">
           {validationChecks.map((check, index) => (
-            <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-700/50">
+            <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-card/50 border border-border/50">
               <div className="flex items-center space-x-3">
                 {getStatusIcon(check.isValid)}
                 <div>

@@ -138,20 +138,20 @@ export function PDFExport({ data, profile }: PDFExportProps) {
           <div class="summary">
             <div class="summary-card">
               <h3>1 Year Missing Money</h3>
-              <div class="value ${totalDifference >= 0 ? 'positive' : 'negative'}">
-                ${formatCurrency(totalDifference)}
+              <div class="value ${totalDifference < 0 ? 'positive' : 'negative'}">
+                ${totalDifference < 0 ? '+' : ''}${formatCurrency(Math.abs(totalDifference))}
               </div>
             </div>
             <div class="summary-card">
               <h3>5 Years Missing Money</h3>
-              <div class="value ${totalDifference * 5 >= 0 ? 'positive' : 'negative'}">
-                ${formatCurrency(totalDifference * 5)}
+              <div class="value ${totalDifference * 5 < 0 ? 'positive' : 'negative'}">
+                ${totalDifference * 5 < 0 ? '+' : ''}${formatCurrency(Math.abs(totalDifference * 5))}
               </div>
             </div>
             <div class="summary-card">
               <h3>10 Years Missing Money</h3>
-              <div class="value ${totalDifference * 10 >= 0 ? 'positive' : 'negative'}">
-                ${formatCurrency(totalDifference * 10)}
+              <div class="value ${totalDifference * 10 < 0 ? 'positive' : 'negative'}">
+                ${totalDifference * 10 < 0 ? '+' : ''}${formatCurrency(Math.abs(totalDifference * 10))}
               </div>
             </div>
           </div>
@@ -179,14 +179,14 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                     </td>
                     <td class="number">${formatCurrency(center.current)}</td>
                     <td class="number">${formatCurrency(center.proposed)}</td>
-                    <td class="number ${difference >= 0 ? 'positive' : 'negative'}">
-                      ${formatCurrency(difference)}
+                    <td class="number ${difference < 0 ? 'positive' : 'negative'}">
+                      ${difference < 0 ? '+' : ''}${formatCurrency(Math.abs(difference))}
                     </td>
-                    <td class="number ${difference * 5 >= 0 ? 'positive' : 'negative'}">
-                      ${formatCurrency(difference * 5)}
+                    <td class="number ${difference * 5 < 0 ? 'positive' : 'negative'}">
+                      ${difference * 5 < 0 ? '+' : ''}${formatCurrency(Math.abs(difference * 5))}
                     </td>
-                    <td class="number ${difference * 10 >= 0 ? 'positive' : 'negative'}">
-                      ${formatCurrency(difference * 10)}
+                    <td class="number ${difference * 10 < 0 ? 'positive' : 'negative'}">
+                      ${difference * 10 < 0 ? '+' : ''}${formatCurrency(Math.abs(difference * 10))}
                     </td>
                   </tr>
                 `
@@ -195,14 +195,14 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                 <td><strong>Total</strong></td>
                 <td class="number"><strong>${formatCurrency(currentTotal)}</strong></td>
                 <td class="number"><strong>${formatCurrency(proposedTotal)}</strong></td>
-                <td class="number ${totalDifference >= 0 ? 'positive' : 'negative'}">
-                  <strong>${formatCurrency(totalDifference)}</strong>
+                <td class="number ${totalDifference < 0 ? 'positive' : 'negative'}">
+                  <strong>${totalDifference < 0 ? '+' : ''}${formatCurrency(Math.abs(totalDifference))}</strong>
                 </td>
-                <td class="number ${totalDifference * 5 >= 0 ? 'positive' : 'negative'}">
-                  <strong>${formatCurrency(totalDifference * 5)}</strong>
+                <td class="number ${totalDifference * 5 < 0 ? 'positive' : 'negative'}">
+                  <strong>${totalDifference * 5 < 0 ? '+' : ''}${formatCurrency(Math.abs(totalDifference * 5))}</strong>
                 </td>
-                <td class="number ${totalDifference * 10 >= 0 ? 'positive' : 'negative'}">
-                  <strong>${formatCurrency(totalDifference * 10)}</strong>
+                <td class="number ${totalDifference * 10 < 0 ? 'positive' : 'negative'}">
+                  <strong>${totalDifference * 10 < 0 ? '+' : ''}${formatCurrency(Math.abs(totalDifference * 10))}</strong>
                 </td>
               </tr>
             </tbody>

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { 
   Calculator, 
   Target, 
-  TrendingUp, 
   Users, 
   FileText, 
   Briefcase,
@@ -28,13 +27,6 @@ const tools = [
     href: "/tools/annuity-analysis",
     icon: Target,
     color: "from-green-500 to-green-600"
-  },
-  {
-    title: "Eight Elements Reporting Tool",
-    description: "Generate comprehensive reports using the eight elements framework.",
-    href: "/tools/eight-elements",
-    icon: TrendingUp,
-    color: "from-purple-500 to-purple-600"
   },
   {
     title: "Missing Money Report",
@@ -76,17 +68,17 @@ export default function ToolsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {tools.map((tool) => (
-          <Card key={tool.href} className="group hover:shadow-lg transition-all duration-300 border-m8bs-border bg-m8bs-card hover:bg-m8bs-card-alt">
+          <Card key={tool.href} className="group hover:shadow-xl transition-all duration-300 bg-m8bs-card border-m8bs-card-alt shadow-lg">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2 rounded-lg bg-gradient-to-r ${tool.color} text-white`}>
+                <div className="p-2 rounded-lg bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark text-white">
                   <tool.icon className="h-5 w-5" />
                 </div>
                 <CardTitle className="text-lg text-white group-hover:text-m8bs-blue transition-colors">
                   {tool.title}
                 </CardTitle>
               </div>
-              <CardDescription className="text-muted-foreground">
+              <CardDescription className="text-m8bs-muted">
                 {tool.description}
               </CardDescription>
             </CardHeader>
@@ -94,7 +86,7 @@ export default function ToolsPage() {
               <Link href={tool.href}>
                 <Button 
                   variant="outline" 
-                  className="w-full group-hover:bg-m8bs-blue group-hover:text-white group-hover:border-m8bs-blue transition-all duration-200"
+                  className="w-full bg-m8bs-card-alt border-m8bs-border text-white hover:bg-m8bs-blue hover:text-white hover:border-m8bs-blue transition-all duration-200"
                 >
                   Open Tool
                   <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -105,10 +97,11 @@ export default function ToolsPage() {
         ))}
       </div>
 
-      <div className="mt-12 p-6 rounded-lg bg-gradient-to-r from-m8bs-card to-m8bs-card-alt border border-m8bs-border">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-white">Need Help Getting Started?</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+      <Card className="mt-12 bg-m8bs-card border-m8bs-card-alt shadow-lg">
+        <CardContent className="p-6">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold text-white">Need Help Getting Started?</h2>
+            <p className="text-m8bs-muted max-w-2xl mx-auto">
             Each tool is designed to be intuitive and user-friendly. If you need assistance with any specific tool, 
             refer to the help documentation or contact support.
           </p>
@@ -125,7 +118,8 @@ export default function ToolsPage() {
             </Link>
           </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

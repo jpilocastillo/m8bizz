@@ -18,7 +18,7 @@ import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function BusinessDashboard() {
@@ -145,13 +145,18 @@ export default function BusinessDashboard() {
     console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode)
     return (
       <div className="py-8 space-y-6">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  M8 Advisor Basecamp
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Complete your profile to unlock all dashboard features
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
+                  <BarChart3 className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-extrabold text-white tracking-tight">
+                    M8 Advisor Basecamp
+                  </h1>
+                  <p className="text-m8bs-muted mt-1">
+                    Complete your profile to unlock all dashboard features
+                  </p>
+                </div>
               </div>
               
               <DataValidation 
@@ -172,22 +177,27 @@ export default function BusinessDashboard() {
 
   // Show dashboard if all sections are filled
   return (
-    <div className="space-y-6 w-full max-w-full">
+      <div className="space-y-6 w-full max-w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            M8 Advisor Basecamp
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Track your financial metrics, client acquisition, and business goals
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
+            <BarChart3 className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              M8 Advisor Basecamp
+            </h1>
+            <p className="text-m8bs-muted mt-1">
+              Track your financial metrics, client acquisition, and business goals
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh

@@ -243,11 +243,11 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                     <div className="space-y-2">
                       <Label className="text-m8bs-muted">1 Year Difference</Label>
                       <div className={`p-2 rounded-md text-right font-semibold ${
-                        difference >= 0 
+                        difference < 0 
                           ? 'bg-green-900/50 text-green-400 border border-green-700' 
                           : 'bg-red-900/50 text-red-400 border border-red-700'
                       }`}>
-                        {formatCurrency(difference)}
+                        {difference < 0 ? '+' : ''}{formatCurrency(Math.abs(difference))}
                       </div>
                     </div>
                   </div>
@@ -256,17 +256,17 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                     <div className="text-right">
                       <span className="text-m8bs-muted">5 Year: </span>
                       <span className={`font-semibold ${
-                        difference * 5 >= 0 ? 'text-green-400' : 'text-red-400'
+                        difference * 5 < 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {formatCurrency(difference * 5)}
+                        {difference * 5 < 0 ? '+' : ''}{formatCurrency(Math.abs(difference * 5))}
                       </span>
                     </div>
                     <div className="text-right">
                       <span className="text-m8bs-muted">10 Year: </span>
                       <span className={`font-semibold ${
-                        difference * 10 >= 0 ? 'text-green-400' : 'text-red-400'
+                        difference * 10 < 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        {formatCurrency(difference * 10)}
+                        {difference * 10 < 0 ? '+' : ''}{formatCurrency(Math.abs(difference * 10))}
                       </span>
                     </div>
                   </div>

@@ -37,3 +37,8 @@ CREATE TRIGGER update_missing_money_reports_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+
+
+
+
+

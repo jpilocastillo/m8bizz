@@ -25,7 +25,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
     return (
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 w-full max-w-full">
         {Array.from({ length: 5 }).map((_, index) => (
-          <Card key={index} className="border-none shadow-lg overflow-hidden h-full flex flex-col bg-gradient-to-br from-gray-800 to-gray-900 animate-pulse">
+          <Card key={index} className="border-none shadow-lg overflow-hidden h-full flex flex-col animate-pulse">
             <div className="h-1 w-full bg-gray-600"></div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-4">
               <div className="flex-1 pr-2">
@@ -167,7 +167,7 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
         {metrics.map((metric, index) => (
           <Card 
             key={index} 
-            className="border-none shadow-lg overflow-hidden h-full flex flex-col bg-gradient-to-br from-gray-800 to-gray-900 hover:shadow-xl transition-all duration-300"
+            className="border-none shadow-lg overflow-hidden h-full flex flex-col hover:shadow-xl transition-all duration-300"
             role="article"
             aria-label={`${metric.title}: ${metric.value}`}
           >

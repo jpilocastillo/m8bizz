@@ -93,19 +93,19 @@ export function CostAnalysisTable({ data }: CostAnalysisTableProps) {
                   </div>
                 </TableCell>
                 <TableCell className={`text-right font-semibold ${
-                  difference >= 0 ? 'text-green-400' : 'text-red-400'
+                  difference < 0 ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  {formatCurrency(difference)}
+                  {difference < 0 ? '+' : ''}{formatCurrency(Math.abs(difference))}
                 </TableCell>
                 <TableCell className={`text-right font-semibold ${
-                  fiveYearDiff >= 0 ? 'text-green-400' : 'text-red-400'
+                  fiveYearDiff < 0 ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  {formatCurrency(fiveYearDiff)}
+                  {fiveYearDiff < 0 ? '+' : ''}{formatCurrency(Math.abs(fiveYearDiff))}
                 </TableCell>
                 <TableCell className={`text-right font-semibold ${
-                  tenYearDiff >= 0 ? 'text-green-400' : 'text-red-400'
+                  tenYearDiff < 0 ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  {formatCurrency(tenYearDiff)}
+                  {tenYearDiff < 0 ? '+' : ''}{formatCurrency(Math.abs(tenYearDiff))}
                 </TableCell>
               </TableRow>
             )
@@ -127,19 +127,19 @@ export function CostAnalysisTable({ data }: CostAnalysisTableProps) {
               </div>
             </TableCell>
             <TableCell className={`text-right font-bold text-lg ${
-              totalDifference >= 0 ? 'text-green-400' : 'text-red-400'
+              totalDifference < 0 ? 'text-green-400' : 'text-red-400'
             }`}>
-              {formatCurrency(totalDifference)}
+              {totalDifference < 0 ? '+' : ''}{formatCurrency(Math.abs(totalDifference))}
             </TableCell>
             <TableCell className={`text-right font-bold text-lg ${
-              totalDifference * 5 >= 0 ? 'text-green-400' : 'text-red-400'
+              totalDifference * 5 < 0 ? 'text-green-400' : 'text-red-400'
             }`}>
-              {formatCurrency(totalDifference * 5)}
+              {totalDifference * 5 < 0 ? '+' : ''}{formatCurrency(Math.abs(totalDifference * 5))}
             </TableCell>
             <TableCell className={`text-right font-bold text-lg ${
-              totalDifference * 10 >= 0 ? 'text-green-400' : 'text-red-400'
+              totalDifference * 10 < 0 ? 'text-green-400' : 'text-red-400'
             }`}>
-              {formatCurrency(totalDifference * 10)}
+              {totalDifference * 10 < 0 ? '+' : ''}{formatCurrency(Math.abs(totalDifference * 10))}
             </TableCell>
           </TableRow>
         </TableBody>

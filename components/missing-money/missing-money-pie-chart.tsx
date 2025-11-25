@@ -35,7 +35,7 @@ export function MissingMoneyPieChart({ data }: MissingMoneyPieChartProps) {
         <div className="bg-gray-800 p-3 border border-gray-700 rounded-lg shadow-lg">
           <p className="font-semibold text-white">{data.name}</p>
           <p className="text-sm text-gray-300">
-            {data.difference >= 0 ? 'Opportunity Cost:' : 'Savings:'} {formatCurrency(data.difference)}
+            {data.difference >= 0 ? 'Opportunity Cost:' : 'Savings:'} {data.difference < 0 ? '+' : ''}{formatCurrency(Math.abs(data.difference))}
           </p>
         </div>
       )
@@ -66,7 +66,7 @@ export function MissingMoneyPieChart({ data }: MissingMoneyPieChartProps) {
             height={36}
             formatter={(value, entry) => (
               <span style={{ color: entry.color }}>
-                {value}: {formatCurrency(entry.payload.difference)}
+                {value}: {entry.payload.difference < 0 ? '+' : ''}{formatCurrency(Math.abs(entry.payload.difference))}
               </span>
             )}
           />

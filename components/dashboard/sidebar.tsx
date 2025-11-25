@@ -20,7 +20,6 @@ import {
   Wrench,
   Calculator,
   Target,
-  TrendingUp,
   Users,
   FileText,
   Calendar,
@@ -266,18 +265,6 @@ export function Sidebar() {
                   >
                     <Target className="h-4 w-4" />
                     <span>Annuity Analysis Program</span>
-                  </Link>
-                  <Link
-                    href="/tools/eight-elements"
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-bold transition-all duration-200",
-                      pathname === "/tools/eight-elements"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-md"
-                        : "text-white hover:bg-m8bs-card-alt hover:text-white",
-                    )}
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                    <span>Eight Elements Reporting Tool</span>
                   </Link>
                   <Link
                     href="/tools/missing-money"

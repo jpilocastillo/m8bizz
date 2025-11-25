@@ -372,25 +372,25 @@ export default function ClientPlansPage() {
                   <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
                     <div className="text-sm text-m8bs-muted mb-1">1 Year Missing Money</div>
                     <div className={`text-2xl font-bold ${
-                      missingMoneyData.oneYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                      missingMoneyData.oneYearTotal < 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {formatCurrency(missingMoneyData.oneYearTotal)}
+                      {missingMoneyData.oneYearTotal < 0 ? '+' : ''}{formatCurrency(Math.abs(missingMoneyData.oneYearTotal))}
                     </div>
                   </div>
                   <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
                     <div className="text-sm text-m8bs-muted mb-1">5 Years Missing Money</div>
                     <div className={`text-2xl font-bold ${
-                      missingMoneyData.fiveYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                      missingMoneyData.fiveYearTotal < 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {formatCurrency(missingMoneyData.fiveYearTotal)}
+                      {missingMoneyData.fiveYearTotal < 0 ? '+' : ''}{formatCurrency(Math.abs(missingMoneyData.fiveYearTotal))}
                     </div>
                   </div>
                   <div className="bg-m8bs-card-alt/70 p-4 rounded-lg border border-m8bs-border/50">
                     <div className="text-sm text-m8bs-muted mb-1">10 Years Missing Money</div>
                     <div className={`text-2xl font-bold ${
-                      missingMoneyData.tenYearTotal >= 0 ? 'text-green-400' : 'text-red-400'
+                      missingMoneyData.tenYearTotal < 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      {formatCurrency(missingMoneyData.tenYearTotal)}
+                      {missingMoneyData.tenYearTotal < 0 ? '+' : ''}{formatCurrency(Math.abs(missingMoneyData.tenYearTotal))}
                     </div>
                   </div>
                 </div>
@@ -415,9 +415,9 @@ export default function ClientPlansPage() {
                               {formatCurrency(center.current)} → {formatCurrency(center.proposed)}
                             </span>
                             <span className={`text-sm font-semibold ${
-                              difference >= 0 ? 'text-green-400' : 'text-red-400'
+                              difference < 0 ? 'text-green-400' : 'text-red-400'
                             }`}>
-                              {difference >= 0 ? '+' : ''}{formatCurrency(difference)}
+                              {difference < 0 ? '+' : ''}{formatCurrency(Math.abs(difference))}
                             </span>
                           </div>
                         </div>

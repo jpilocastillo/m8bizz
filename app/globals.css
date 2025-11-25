@@ -228,3 +228,11 @@ body {
 .focus-glow {
   @apply focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300;
 }
+
+/* Remove gradient from bucket-plan page */
+html[data-path*="bucket-plan"] main,
+body[data-path*="bucket-plan"] main {
+  background: #05071F !important;
+  background-image: none !important;
+  background-color: #05071F !important;
+}
