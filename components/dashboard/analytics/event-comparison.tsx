@@ -7,7 +7,7 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList, C
 import { Check, ChevronsUpDown, BarChart3, TrendingUp, TrendingDown, Target, DollarSign, Users, Award, Activity } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { cn } from "@/lib/utils"
+import { cn, formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import { motion } from "framer-motion"
 
@@ -84,7 +84,7 @@ export function EventComparison({ events }: EventComparisonProps) {
       case "Revenue":
       case "Expenses":
       case "Profit":
-        return `$${numValue.toLocaleString()}`
+        return formatCurrency(numValue)
       case "Attendees":
       case "Clients":
         return numValue.toLocaleString()
@@ -386,7 +386,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                 axisLine={false}
                 tickFormatter={(value) => {
                   if (activeMetric === "Revenue" || activeMetric === "Expenses" || activeMetric === "Profit") {
-                    return `$${value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toLocaleString()}`
+                    return value >= 1000 ? formatCurrency(value / 1000) + 'k' : formatCurrency(value)
                   }
                   if (activeMetric === "ROI" || activeMetric === "Conversion") {
                     return `${value.toFixed(1)}%`

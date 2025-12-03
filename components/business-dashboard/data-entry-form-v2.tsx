@@ -303,7 +303,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
 
   // Update the form fields with calculated values
   useEffect(() => {
-    form.setValue("avgNetWorthNeeded", avgNetWorthNeeded.toFixed(2))
+    form.setValue("avgNetWorthNeeded", avgNetWorthNeeded.toString())
     form.setValue("annuityClosed", calculatedAnnuityClosed.toString())
     form.setValue("aumAccounts", calculatedAUMAccounts.toString())
     form.setValue("monthlyIdealProspects", monthlyIdealProspects.toFixed(2))
@@ -516,7 +516,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
               <Card>
                 <CardHeader>
                   <CardTitle>Business Goals</CardTitle>
-                  <CardDescription>Set your business goals for the year</CardDescription>
+                  <CardDescription>Set Your Business Goals For The Year</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -537,7 +537,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                             }}
                           />
                         </FormControl>
-                        <FormDescription>Your overall business goal in dollars</FormDescription>
+                        <FormDescription>Your Overall Business Goal In Dollars</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -553,7 +553,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
-                          <FormDescription>Percentage of business goal for AUM</FormDescription>
+                          <FormDescription>Percentage Of Business Goal For AUM</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -568,7 +568,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
-                          <FormDescription>Percentage of business goal for annuity</FormDescription>
+                          <FormDescription>Percentage Of Business Goal For Annuity</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -585,7 +585,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
-                          <FormDescription>Percentage of business goal for life insurance</FormDescription>
+                          <FormDescription>Percentage Of Business Goal For Life Insurance</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -594,9 +594,9 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                     <div className="flex items-end">
                       <div className="w-full p-4 bg-muted rounded-lg">
                         <p className="text-sm text-muted-foreground">Calculated Goals</p>
-                        <p className="text-lg font-semibold">AUM: ${aumGoalAmount.toLocaleString()}</p>
-                        <p className="text-lg font-semibold">Annuity: ${annuityGoalAmount.toLocaleString()}</p>
-                        <p className="text-lg font-semibold">Life: ${lifeTargetGoalAmount.toLocaleString()}</p>
+                        <p className="text-lg font-semibold">AUM: {formatCurrency(aumGoalAmount)}</p>
+                        <p className="text-lg font-semibold">Annuity: {formatCurrency(annuityGoalAmount)}</p>
+                        <p className="text-lg font-semibold">Life: {formatCurrency(lifeTargetGoalAmount)}</p>
                       </div>
                     </div>
                   </div>
@@ -609,7 +609,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
               <Card>
                 <CardHeader>
                   <CardTitle>Advisor Book</CardTitle>
-                  <CardDescription>Your current advisor book metrics</CardDescription>
+                  <CardDescription>Your Current Advisor Book Metrics</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -691,7 +691,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
               <Card>
                 <CardHeader>
                   <CardTitle>Client Metrics</CardTitle>
-                  <CardDescription>Key performance indicators for your client base</CardDescription>
+                  <CardDescription>Key Performance Indicators For Your Client Base</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -759,7 +759,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               className="bg-muted"
                             />
                           </FormControl>
-                          <FormDescription>Auto-calculated: Average Annuity Size + Average AUM Size</FormDescription>
+                          <FormDescription>Auto-Calculated: Average Annuity Size + Average AUM Size</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -805,7 +805,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           className="bg-muted"
                         />
                       </FormControl>
-                      <FormDescription>Auto-calculated: Annuity Goal / Average Annuity Size</FormDescription>
+                      <FormDescription>Auto-Calculated: Annuity Goal / Average Annuity Size</FormDescription>
                     </FormItem>
 
                     <FormItem>
@@ -818,7 +818,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           className="bg-muted"
                         />
                       </FormControl>
-                      <FormDescription>Auto-calculated: AUM Goal / Average AUM Size</FormDescription>
+                      <FormDescription>Auto-Calculated: AUM Goal / Average AUM Size</FormDescription>
                     </FormItem>
                   </div>
                 </CardContent>
@@ -830,7 +830,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
               <Card>
                 <CardHeader>
                   <CardTitle>Marketing Campaigns</CardTitle>
-                  <CardDescription>Track your marketing campaigns and their performance</CardDescription>
+                  <CardDescription>Track Your Marketing Campaigns And Their Performance</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {fields.map((field, index) => (
@@ -957,15 +957,15 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                                 <FormLabel>Cost per Lead ($)</FormLabel>
                                 <FormControl>
                                   <Input 
-                                    type="number" 
-                                    value={costPerLead.toFixed(2)}
+                                    type="text" 
+                                    value={formatCurrency(costPerLead)}
                                     readOnly
                                     className="bg-muted"
                                     onChange={() => {}} // Prevent changes
                                     onBlur={() => {}} // Prevent blur events
                                   />
                                 </FormControl>
-                                <FormDescription>Auto-calculated: (Marketing Costs + Food Costs) ÷ Leads Generated</FormDescription>
+                                <FormDescription>Auto-Calculated: (Marketing Costs + Food Costs) ÷ Leads Generated</FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )
@@ -990,15 +990,15 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                                 <FormLabel>Cost per Client ($)</FormLabel>
                                 <FormControl>
                                   <Input 
-                                    type="number" 
-                                    value={costPerClient.toFixed(2)}
+                                    type="text" 
+                                    value={formatCurrency(costPerClient)}
                                     readOnly
                                     className="bg-muted"
                                     onChange={() => {}} // Prevent changes
                                     onBlur={() => {}} // Prevent blur events
                                   />
                                 </FormControl>
-                                <FormDescription>Auto-calculated: Cost per Lead ÷ Close Ratio</FormDescription>
+                                <FormDescription>Auto-Calculated: Cost Per Lead ÷ Close Ratio</FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )
@@ -1012,7 +1012,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                             <FormItem>
                               <FormLabel>Food Costs ($)</FormLabel>
                               <FormControl>
-                                <Input type="number" {...field} />
+                                <Input
+                                  type="text"
+                                  placeholder="$0"
+                                  {...field}
+                                  value={formatCurrency(field.value || "")}
+                                  onChange={(e) => {
+                                    const rawValue = parseCurrency(e.target.value)
+                                    field.onChange(rawValue)
+                                  }}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1036,7 +1045,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                 <Card>
                   <CardHeader>
                     <CardTitle>Commission Rates</CardTitle>
-                    <CardDescription>Set your commission percentages and rates</CardDescription>
+                    <CardDescription>Set Your Commission Percentages And Rates</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1047,7 +1056,16 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                           <FormItem>
                             <FormLabel>Planning Fee Rate ($)</FormLabel>
                             <FormControl>
-                              <Input type="number" {...field} />
+                              <Input
+                                type="text"
+                                placeholder="$0"
+                                {...field}
+                                value={formatCurrency(field.value)}
+                                onChange={(e) => {
+                                  const rawValue = parseCurrency(e.target.value)
+                                  field.onChange(rawValue)
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1117,14 +1135,14 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                     <div className="p-4 bg-muted rounded-lg">
                       <h4 className="font-medium mb-2">Calculated Income</h4>
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
-                        <div>Annuity: ${annuityIncome.toLocaleString()}</div>
-                        <div>AUM: ${aumIncome.toLocaleString()}</div>
-                        <div>Life: ${lifeIncome.toLocaleString()}</div>
-                        <div>Trail: ${trailIncome.toLocaleString()}</div>
-                        <div>Planning: ${planningFeesValue.toLocaleString()}</div>
+                        <div>Annuity: {formatCurrency(annuityIncome)}</div>
+                        <div>AUM: {formatCurrency(aumIncome)}</div>
+                        <div>Life: {formatCurrency(lifeIncome)}</div>
+                        <div>Trail: {formatCurrency(trailIncome)}</div>
+                        <div>Planning: {formatCurrency(planningFeesValue)}</div>
                       </div>
                       <div className="mt-2 pt-2 border-t">
-                        <strong>Total: ${totalIncome.toLocaleString()}</strong>
+                        <strong>Total: {formatCurrency(totalIncome)}</strong>
                       </div>
                     </div>
                   </CardContent>
@@ -1133,7 +1151,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                 <Card>
                   <CardHeader>
                     <CardTitle>Financial Book Values</CardTitle>
-                    <CardDescription>Your current book values for financial planning</CardDescription>
+                    <CardDescription>Your Current Book Values For Financial Planning</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1212,13 +1230,13 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                 <Card>
                   <CardHeader>
                     <CardTitle>Financial Options Percentages</CardTitle>
-                    <CardDescription>Configure percentages for different financial options</CardDescription>
+                    <CardDescription>Configure Percentages For Different Financial Options</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Option 1 - Annuity Book Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium border-b pb-2">Option 1 - Annuity Book Percentages</h3>
-                      <p className="text-sm text-muted-foreground">Configure percentages for annuity book opportunities</p>
+                      <p className="text-sm text-muted-foreground">Configure Percentages For Annuity Book Opportunities</p>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
@@ -1230,7 +1248,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
                               </FormControl>
-                              <FormDescription>% of current annuity book for surrender opportunities</FormDescription>
+                              <FormDescription>% Of Current Annuity Book For Surrender Opportunities</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1245,7 +1263,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="6" {...field} />
                               </FormControl>
-                              <FormDescription>Commission rate for surrender transactions</FormDescription>
+                              <FormDescription>Commission Rate For Surrender Transactions</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1260,7 +1278,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" min="0" max="100" step="0.1" placeholder="6" {...field} />
                               </FormControl>
-                              <FormDescription>% of current annuity book for income rider opportunities</FormDescription>
+                              <FormDescription>% Of Current Annuity Book For Income Rider Opportunities</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1275,7 +1293,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="10" {...field} />
                               </FormControl>
-                              <FormDescription>Commission rate for income rider transactions</FormDescription>
+                              <FormDescription>Commission Rate For Income Rider Transactions</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1290,7 +1308,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
                               </FormControl>
-                              <FormDescription>% of current annuity book for free withdrawal opportunities</FormDescription>
+                              <FormDescription>% Of Current Annuity Book For Free Withdrawal Opportunities</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1305,7 +1323,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="6" {...field} />
                               </FormControl>
-                              <FormDescription>Commission rate for free withdrawal transactions</FormDescription>
+                              <FormDescription>Commission Rate For Free Withdrawal Transactions</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1320,7 +1338,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
                               </FormControl>
-                              <FormDescription>% of current annuity book for life insurance opportunities</FormDescription>
+                              <FormDescription>% Of Current Annuity Book For Life Insurance Opportunities</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1335,7 +1353,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="10" {...field} />
                               </FormControl>
-                              <FormDescription>Commission rate for life insurance transactions</FormDescription>
+                              <FormDescription>Commission Rate For Life Insurance Transactions</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1346,7 +1364,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                     {/* Option 2 - AUM Book Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium border-b pb-2">Option 2 - AUM Book Percentages</h3>
-                      <p className="text-sm text-muted-foreground">Configure percentages for AUM book opportunities</p>
+                      <p className="text-sm text-muted-foreground">Configure Percentages For AUM Book Opportunities</p>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
@@ -1358,7 +1376,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" min="0" max="100" step="0.1" placeholder="1" {...field} />
                               </FormControl>
-                              <FormDescription>% of current AUM for life strategy 1 opportunities</FormDescription>
+                              <FormDescription>% Of Current AUM For Life Strategy 1 Opportunities</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1373,7 +1391,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="10" {...field} />
                               </FormControl>
-                              <FormDescription>Commission rate for life strategy 1 transactions</FormDescription>
+                              <FormDescription>Commission Rate For Life Strategy 1 Transactions</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1388,7 +1406,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" min="0" max="100" step="0.1" placeholder="2" {...field} />
                               </FormControl>
-                              <FormDescription>% of current AUM for life strategy 2 opportunities</FormDescription>
+                              <FormDescription>% Of Current AUM For Life Strategy 2 Opportunities</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1403,7 +1421,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="10" {...field} />
                               </FormControl>
-                              <FormDescription>Commission rate for life strategy 2 transactions</FormDescription>
+                              <FormDescription>Commission Rate For Life Strategy 2 Transactions</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1414,7 +1432,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                     {/* Option 3 - Qualified Money Section */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium border-b pb-2">Option 3 - Qualified Money Percentages</h3>
-                      <p className="text-sm text-muted-foreground">Configure percentages for qualified money opportunities</p>
+                      <p className="text-sm text-muted-foreground">Configure Percentages For Qualified Money Opportunities</p>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
@@ -1426,7 +1444,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" min="0" max="100" step="0.1" placeholder="33" {...field} />
                               </FormControl>
-                              <FormDescription>% of qualified money for IRA to 7702 opportunities</FormDescription>
+                              <FormDescription>% Of Qualified Money For IRA To 7702 Opportunities</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1441,7 +1459,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" step="0.01" placeholder="10" {...field} />
                               </FormControl>
-                              <FormDescription>Commission rate for IRA to 7702 transactions</FormDescription>
+                              <FormDescription>Commission Rate For IRA To 7702 Transactions</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1456,7 +1474,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                               <FormControl>
                                 <Input type="number" min="0" max="100" step="0.1" placeholder="50" {...field} />
                               </FormControl>
-                              <FormDescription>% approval rate for qualified money opportunities</FormDescription>
+                              <FormDescription>% Approval Rate For Qualified Money Opportunities</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}

@@ -6,6 +6,7 @@ import { useState, memo, useMemo } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
 import { TrendingUp, Target, DollarSign, Users, Award } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 type MetricType = "ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients"
 
@@ -67,7 +68,7 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
       case "Conversion":
         return `${((event.clients / event.attendees || 0) * 100).toFixed(1)}%`
       case "Revenue":
-        return `$${(event.revenue || 0).toLocaleString()}`
+        return formatCurrency(event.revenue || 0)
       case "Attendees":
         return event.attendees || 0
       case "Clients":
@@ -112,7 +113,7 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
       <div><span className="font-semibold">Topic:</span> {event.topic || "N/A"}</div>
       <div><span className="font-semibold">Attendees:</span> {event.attendees || 0}</div>
       <div><span className="font-semibold">Clients:</span> {event.clients || 0}</div>
-      <div><span className="font-semibold">Revenue:</span> {event.revenue ? `$${event.revenue.toLocaleString()}` : 0}</div>
+      <div><span className="font-semibold">Revenue:</span> {formatCurrency(event.revenue || 0)}</div>
       <div><span className="font-semibold">ROI:</span> {event.roi?.value !== undefined ? `${event.roi.value.toFixed(1)}%` : "N/A"}</div>
     </div>
   )
@@ -252,7 +253,7 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
                               </div>
                               <div className="text-m8bs-muted">
                                 Revenue: <span className="text-white font-semibold">
-                                  {event.revenue ? `$${event.revenue.toLocaleString()}` : 0}
+                                  {formatCurrency(event.revenue || 0)}
                                 </span>
                               </div>
                             </div>

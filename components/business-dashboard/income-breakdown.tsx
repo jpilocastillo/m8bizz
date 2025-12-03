@@ -17,6 +17,7 @@ import {
 } from "recharts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BusinessGoals, CurrentValues, ClientMetrics, CommissionRates } from "@/lib/advisor-basecamp"
+import { formatCurrency } from "@/lib/utils"
 
 interface IncomeBreakdownProps {
   businessGoals?: BusinessGoals | null
@@ -81,7 +82,7 @@ export function IncomeBreakdown({
 
     const incomeData = [
       { 
-        source: `Planning Fees (@ $${(commissionRates.planning_fee_rate || 0).toLocaleString()})`, 
+        source: `Planning Fees (@ ${formatCurrency(commissionRates.planning_fee_rate || 0)})`, 
         amount: planningFeesValue, 
         commission: "-", 
         color: "#64748b" 
@@ -158,7 +159,7 @@ export function IncomeBreakdown({
           <Card className="border-none shadow-lg">
             <CardHeader>
               <CardTitle>Income Details</CardTitle>
-              <CardDescription>Breakdown of income sources</CardDescription>
+              <CardDescription>Breakdown Of Income Sources</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -174,14 +175,14 @@ export function IncomeBreakdown({
                   {incomeData.map((item, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{item.source}</TableCell>
-                      <TableCell>${item.amount.toLocaleString()}</TableCell>
+                      <TableCell>{formatCurrency(item.amount)}</TableCell>
                       <TableCell>{item.commission}</TableCell>
                       <TableCell>{((item.amount / totalIncome) * 100).toFixed(2)}%</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="font-bold">
                     <TableCell>Total</TableCell>
-                    <TableCell>${totalIncome.toLocaleString()}</TableCell>
+                    <TableCell>{formatCurrency(totalIncome)}</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>100%</TableCell>
                   </TableRow>
@@ -191,7 +192,7 @@ export function IncomeBreakdown({
                   </TableRow>
                   <TableRow>
                     <TableCell>Total Annual Income</TableCell>
-                    <TableCell colSpan={3}>${totalAnnualIncome.toLocaleString()}</TableCell>
+                    <TableCell colSpan={3}>{formatCurrency(totalAnnualIncome)}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -203,7 +204,7 @@ export function IncomeBreakdown({
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle>Income Distribution</CardTitle>
-                <CardDescription>Percentage breakdown by source</CardDescription>
+                <CardDescription>Percentage Breakdown By Source</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[350px]">
@@ -227,7 +228,7 @@ export function IncomeBreakdown({
                       <Tooltip
                         formatter={(value, name, props) => {
                           const color = props.payload?.color || '#fff';
-                          return [<span style={{ color, fontWeight: 600 }}>{`$${value.toLocaleString()}`}</span>];
+                          return [<span style={{ color, fontWeight: 600 }}>{formatCurrency(value as number)}</span>];
                         }}
                         contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
                         labelStyle={{ color: '#fff' }}
@@ -242,7 +243,7 @@ export function IncomeBreakdown({
             <Card className="border-none shadow-lg">
               <CardHeader>
                 <CardTitle>Annual Income</CardTitle>
-                <CardDescription>Visual comparison by source</CardDescription>
+                <CardDescription>Visual Comparison By Source</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[350px]">
@@ -256,9 +257,9 @@ export function IncomeBreakdown({
                         tickLine={false}
                         axisLine={false}
                         tickFormatter={(value) => {
-                          if (value >= 1000000) return `$${value / 1000000}M`
-                          if (value >= 1000) return `$${value / 1000}K`
-                          return `$${value}`
+                          if (value >= 1000000) return formatCurrency(value / 1000000) + 'M'
+                          if (value >= 1000) return formatCurrency(value / 1000) + 'K'
+                          return formatCurrency(value)
                         }}
                       />
                       <YAxis
@@ -270,7 +271,7 @@ export function IncomeBreakdown({
                         axisLine={false}
                       />
                       <Tooltip
-                        formatter={(value) => [`$${(value as number).toLocaleString()}`, undefined]}
+                        formatter={(value) => [formatCurrency(value as number), undefined]}
                         contentStyle={{
                           backgroundColor: "hsl(var(--popover))",
                           borderRadius: "6px",
@@ -301,7 +302,7 @@ export function IncomeBreakdown({
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle>Income Projections</CardTitle>
-            <CardDescription>Projected income for next year</CardDescription>
+            <CardDescription>Projected Income For Next Year</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -322,16 +323,16 @@ export function IncomeBreakdown({
                   return (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{item.source}</TableCell>
-                      <TableCell>${currentAmount.toLocaleString()}</TableCell>
-                      <TableCell>${projectedAmount.toLocaleString()}</TableCell>
+                      <TableCell>{formatCurrency(currentAmount)}</TableCell>
+                      <TableCell>{formatCurrency(projectedAmount)}</TableCell>
                       <TableCell className="text-green-500">+{growthPercentage}%</TableCell>
                     </TableRow>
                   )
                 })}
                 <TableRow className="font-bold">
                   <TableCell>Total</TableCell>
-                  <TableCell>${totalIncome.toLocaleString()}</TableCell>
-                  <TableCell>${(totalIncome * 1.15).toLocaleString()}</TableCell>
+                  <TableCell>{formatCurrency(totalIncome)}</TableCell>
+                  <TableCell>{formatCurrency(totalIncome * 1.15)}</TableCell>
                   <TableCell className="text-green-500">+15.0%</TableCell>
                 </TableRow>
               </TableBody>
@@ -342,7 +343,7 @@ export function IncomeBreakdown({
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle>Income vs Expenses</CardTitle>
-            <CardDescription>ROI and profitability metrics</CardDescription>
+            <CardDescription>ROI And Profitability Metrics</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -355,7 +356,7 @@ export function IncomeBreakdown({
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium">Total Annual Income</TableCell>
-                  <TableCell>${totalAnnualIncome.toLocaleString()}</TableCell>
+                  <TableCell>{formatCurrency(totalAnnualIncome)}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing Expenses</TableCell>
@@ -371,7 +372,7 @@ export function IncomeBreakdown({
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Net Income</TableCell>
-                  <TableCell>${(totalAnnualIncome - 242376).toLocaleString()}</TableCell>
+                  <TableCell>{formatCurrency(totalAnnualIncome - 242376)}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Profit Margin</TableCell>

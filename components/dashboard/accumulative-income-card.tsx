@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 interface AccumulativeIncomeCardProps {
   lifeInsuranceCommission: number
@@ -37,7 +38,7 @@ export function AccumulativeIncomeCard({
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-sm text-m8bs-muted">Total Income</span>
-              <span className="text-2xl font-bold text-white">${totalIncome.toLocaleString()}</span>
+              <span className="text-2xl font-bold text-white">{formatCurrency(totalIncome)}</span>
             </div>
             <div className="bg-green-500/10 p-2.5 rounded-full">
               <TrendingUp className="h-5 w-5 text-green-500" />
@@ -52,7 +53,7 @@ export function AccumulativeIncomeCard({
                   <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
                   <span className="text-m8bs-muted">Life Insurance Commission</span>
                 </div>
-                <span className="font-medium text-white">${lifeInsuranceCommission.toLocaleString()}</span>
+                <span className="font-medium text-white">{formatCurrency(lifeInsuranceCommission)}</span>
               </div>
               <div className="h-2 bg-m8bs-border rounded-full overflow-hidden">
                 <div
@@ -69,7 +70,7 @@ export function AccumulativeIncomeCard({
                   <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
                   <span className="text-m8bs-muted">Annuity Commission</span>
                 </div>
-                <span className="font-medium text-white">${annuityCommission.toLocaleString()}</span>
+                <span className="font-medium text-white">{formatCurrency(annuityCommission)}</span>
               </div>
               <div className="h-2 bg-m8bs-border rounded-full overflow-hidden">
                 <div
@@ -86,7 +87,7 @@ export function AccumulativeIncomeCard({
                   <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
                   <span className="text-m8bs-muted">Financial Planning</span>
                 </div>
-                <span className="font-medium text-white">${financialPlanning.toLocaleString()}</span>
+                <span className="font-medium text-white">{formatCurrency(financialPlanning)}</span>
               </div>
               <div className="h-2 bg-m8bs-border rounded-full overflow-hidden">
                 <div
@@ -103,7 +104,7 @@ export function AccumulativeIncomeCard({
                   <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
                   <span className="text-m8bs-muted">AUM Fees</span>
                 </div>
-                <span className="font-medium text-white">${aumFees.toLocaleString()}</span>
+                <span className="font-medium text-white">{formatCurrency(aumFees)}</span>
               </div>
               <div className="h-2 bg-m8bs-border rounded-full overflow-hidden">
                 <div

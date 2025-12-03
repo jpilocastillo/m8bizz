@@ -31,6 +31,15 @@ CREATE POLICY "Users can update their own missing money reports" ON public.missi
 CREATE POLICY "Users can delete their own missing money reports" ON public.missing_money_reports
   FOR DELETE USING (auth.uid() = user_id);
 
+-- Create trigger function to update updated_at (if it doesn't exist)
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create trigger to automatically update updated_at
 CREATE TRIGGER update_missing_money_reports_updated_at
   BEFORE UPDATE ON public.missing_money_reports

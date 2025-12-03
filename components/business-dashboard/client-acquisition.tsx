@@ -68,7 +68,7 @@ export function ClientAcquisition() {
         <Card className="border-none shadow-lg md:col-span-2">
           <CardHeader>
             <CardTitle>Monthly Client Acquisition</CardTitle>
-            <CardDescription>Tracking leads to clients conversion</CardDescription>
+            <CardDescription>Tracking Leads To Clients Conversion</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -150,7 +150,7 @@ export function ClientAcquisition() {
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle>Lead Sources</CardTitle>
-            <CardDescription>Distribution of lead generation</CardDescription>
+            <CardDescription>Distribution Of Lead Generation</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -191,7 +191,7 @@ export function ClientAcquisition() {
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle>Client Acquisition Funnel</CardTitle>
-            <CardDescription>From leads to clients conversion</CardDescription>
+            <CardDescription>From Leads To Clients Conversion</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -228,7 +228,7 @@ export function ClientAcquisition() {
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle>Acquisition Metrics</CardTitle>
-            <CardDescription>Key performance indicators</CardDescription>
+            <CardDescription>Key Performance Indicators</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

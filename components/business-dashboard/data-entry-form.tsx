@@ -389,7 +389,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
             <Card>
               <CardHeader>
                 <CardTitle>Business Goals</CardTitle>
-                <CardDescription>Set your business goals for the year</CardDescription>
+                <CardDescription>Set Your Business Goals For The Year</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -410,7 +410,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           }}
                         />
                       </FormControl>
-                      <FormDescription>Your total business goal for the year</FormDescription>
+                      <FormDescription>Your Total Business Goal For The Year</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -433,7 +433,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                             className="bg-muted"
                           />
                         </FormControl>
-                        <FormDescription>Auto-calculated based on business goal and percentage</FormDescription>
+                        <FormDescription>Auto-Calculated Based On Business Goal And Percentage</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -448,7 +448,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         <FormControl>
                           <Input type="number" min="0" max="100" step="0.1" placeholder="60" {...field} />
                         </FormControl>
-                        <FormDescription>Percentage of business goal for AUM</FormDescription>
+                        <FormDescription>Percentage Of Business Goal For AUM</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -472,7 +472,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                             className="bg-muted"
                           />
                         </FormControl>
-                        <FormDescription>Auto-calculated based on business goal and percentage</FormDescription>
+                        <FormDescription>Auto-Calculated Based On Business Goal And Percentage</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -487,7 +487,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         <FormControl>
                           <Input type="number" min="0" max="100" step="0.1" placeholder="40" {...field} />
                         </FormControl>
-                        <FormDescription>Percentage of business goal for annuity</FormDescription>
+                        <FormDescription>Percentage Of Business Goal For Annuity</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -511,7 +511,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                             className="bg-muted"
                           />
                         </FormControl>
-                        <FormDescription>Auto-calculated based on business goal and percentage</FormDescription>
+                        <FormDescription>Auto-Calculated Based On Business Goal And Percentage</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -526,7 +526,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         <FormControl>
                           <Input type="number" min="0" max="100" step="0.1" placeholder="1" {...field} />
                         </FormControl>
-                        <FormDescription>Percentage of business goal for life target</FormDescription>
+                        <FormDescription>Percentage Of Business Goal For Life Target</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -541,7 +541,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
             <Card>
               <CardHeader>
                 <CardTitle>Advisor Book</CardTitle>
-                <CardDescription>Enter your current advisor book values and financial options</CardDescription>
+                <CardDescription>Enter Your Current Advisor Book Values And Financial Options</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Current Values Section */}
@@ -566,7 +566,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                               }}
                             />
                           </FormControl>
-                          <FormDescription>Your current assets under management</FormDescription>
+                          <FormDescription>Your Current Assets Under Management</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -590,7 +590,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                               }}
                             />
                           </FormControl>
-                          <FormDescription>Your current annuity value</FormDescription>
+                          <FormDescription>Your Current Annuity Value</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -614,7 +614,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                               }}
                             />
                           </FormControl>
-                          <FormDescription>Your life insurance cash value</FormDescription>
+                          <FormDescription>Your Life Insurance Cash Value</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -638,7 +638,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                               }}
                             />
                           </FormControl>
-                          <FormDescription>Your qualified money value</FormDescription>
+                          <FormDescription>Your Qualified Money Value</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -649,7 +649,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                 {/* Option 1 - Annuity Book Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium border-b pb-2">Option 1 - Annuity Book Percentages</h3>
-                  <p className="text-sm text-muted-foreground">Configure percentages for annuity book opportunities</p>
+                  <p className="text-sm text-muted-foreground">Configure Percentages For Annuity Book Opportunities</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -661,7 +661,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
                           </FormControl>
-                          <FormDescription>% of current annuity for surrender opportunities</FormDescription>
+                          <FormDescription>% Of Current Annuity For Surrender Opportunities</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -676,7 +676,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormControl>
                             <Input type="number" step="0.01" placeholder="6" {...field} />
                           </FormControl>
-                          <FormDescription>Commission rate for surrender transactions</FormDescription>
+                          <FormDescription>Commission Rate For Surrender Transactions</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -691,7 +691,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="6" {...field} />
                           </FormControl>
-                          <FormDescription>% of current annuity for income rider opportunities</FormDescription>
+                          <FormDescription>% Of Current Annuity For Income Rider Opportunities</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -706,7 +706,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormControl>
                             <Input type="number" step="0.01" placeholder="10" {...field} />
                           </FormControl>
-                          <FormDescription>Commission rate for income rider transactions</FormDescription>
+                          <FormDescription>Commission Rate For Income Rider Transactions</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -721,7 +721,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
                           </FormControl>
-                          <FormDescription>% of current annuity for free withdrawal opportunities</FormDescription>
+                          <FormDescription>% Of Current Annuity For Free Withdrawal Opportunities</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -736,7 +736,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           <FormControl>
                             <Input type="number" step="0.01" placeholder="6" {...field} />
                           </FormControl>
-                          <FormDescription>Commission rate for free withdrawal transactions</FormDescription>
+                          <FormDescription>Commission Rate For Free Withdrawal Transactions</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

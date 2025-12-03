@@ -418,7 +418,7 @@ export function MonthlyDataEntryComponent() {
         <div>
           <h2 className="text-2xl font-bold">Monthly Data Entry</h2>
           <p className="text-muted-foreground">
-            Track your monthly performance and compare against your annual goals from the advisor basecamp
+            Track Your Monthly Performance And Compare Against Your Annual Goals From The Advisor Basecamp
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -434,7 +434,7 @@ export function MonthlyDataEntryComponent() {
                 {editingEntry ? "Edit Monthly Entry" : "Add Monthly Entry"}
               </DialogTitle>
               <DialogDescription>
-                Enter your monthly performance data for tracking and goal comparison.
+                Enter Your Monthly Performance Data For Tracking And Goal Comparison.
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -677,7 +677,7 @@ export function MonthlyDataEntryComponent() {
           <CardHeader>
             <CardTitle>Month Comparison Tool</CardTitle>
             <CardDescription>
-              Select a month to compare your performance against your goals and review your notes
+              Select A Month To Compare Your Performance Against Your Goals And Review Your Notes
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -723,7 +723,7 @@ export function MonthlyDataEntryComponent() {
               {format(parseISO(selectedMonthData.month_year + "-01"), "MMMM yyyy")} - Goal Comparison
             </CardTitle>
             <CardDescription>
-              Performance analysis and notes for the selected month
+              Performance Analysis And Notes For The Selected Month
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -732,17 +732,17 @@ export function MonthlyDataEntryComponent() {
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">New Clients</div>
                 <div className="text-2xl font-bold">{selectedMonthData.new_clients}</div>
-                <div className="text-xs text-muted-foreground">vs Goal: {goals.newClientsGoal}</div>
+                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newClientsGoal}</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">Appointments Booked</div>
                 <div className="text-2xl font-bold">{selectedMonthData.new_appointments}</div>
-                <div className="text-xs text-muted-foreground">vs Goal: {goals.newAppointmentsGoal}</div>
+                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newAppointmentsGoal}</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">New Leads</div>
                 <div className="text-2xl font-bold">{selectedMonthData.new_leads}</div>
-                <div className="text-xs text-muted-foreground">vs Goal: {goals.newLeadsGoal}</div>
+                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newLeadsGoal}</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">Total Sales</div>
@@ -750,7 +750,7 @@ export function MonthlyDataEntryComponent() {
                   {formatCurrency(selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales)}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  vs Monthly Goal: {formatCurrency(goals.businessGoal / 12)}
+                  Vs Monthly Goal: {formatCurrency(goals.businessGoal / 12)}
                 </div>
               </div>
             </div>
@@ -761,21 +761,21 @@ export function MonthlyDataEntryComponent() {
                 <div className="text-sm font-medium text-muted-foreground">Annuity Sales</div>
                 <div className="text-xl font-semibold">{formatCurrency(selectedMonthData.annuity_sales)}</div>
                 <div className="text-xs text-muted-foreground">
-                  vs Goal: {formatCurrency(goals.annuityGoal / 12)}
+                  Vs Goal: {formatCurrency(goals.annuityGoal / 12)}
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">AUM Sales</div>
                 <div className="text-xl font-semibold">{formatCurrency(selectedMonthData.aum_sales)}</div>
                 <div className="text-xs text-muted-foreground">
-                  vs Goal: {formatCurrency(goals.aumGoal / 12)}
+                  Vs Goal: {formatCurrency(goals.aumGoal / 12)}
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">Life Sales</div>
                 <div className="text-xl font-semibold">{formatCurrency(selectedMonthData.life_sales)}</div>
                 <div className="text-xs text-muted-foreground">
-                  vs Goal: {formatCurrency(goals.lifeTargetGoal / 12)}
+                  Vs Goal: {formatCurrency(goals.lifeTargetGoal / 12)}
                 </div>
               </div>
             </div>
@@ -818,7 +818,7 @@ export function MonthlyDataEntryComponent() {
                     {((selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales) / (goals.businessGoal / 12) * 100).toFixed(0)}%
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {formatCurrency(selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales)} of {formatCurrency(goals.businessGoal / 12)}
+                    {formatCurrency(selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales)} Of {formatCurrency(goals.businessGoal / 12)}
                   </div>
                 </div>
                 <div className="p-4 border rounded-lg">
@@ -827,7 +827,7 @@ export function MonthlyDataEntryComponent() {
                     {((selectedMonthData.new_clients / goals.newClientsGoal) * 100).toFixed(0)}%
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {selectedMonthData.new_clients} of {goals.newClientsGoal} clients
+                    {selectedMonthData.new_clients} Of {goals.newClientsGoal} Clients
                   </div>
                 </div>
               </div>
@@ -1281,7 +1281,7 @@ export function MonthlyDataEntryComponent() {
             <CardHeader>
               <CardTitle>Monthly Entries</CardTitle>
               <CardDescription>
-                Your monthly performance data and goal progress
+                Your Monthly Performance Data And Goal Progress
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, Minus, BarChart3, Users, DollarSign, Target, Calendar, ArrowUp, ArrowDown, Info } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { format } from "date-fns"
+import { formatCurrency } from "@/lib/utils"
 
 interface TrendAnalysisProps {
   events: any[]
@@ -83,7 +84,7 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
   const formatValue = (value: number, metric: string) => {
     switch (metric) {
       case "revenue":
-        return `$${value.toLocaleString()}`
+        return formatCurrency(value)
       case "attendees":
       case "clients":
         return value.toString()
@@ -127,13 +128,13 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
   const getMetricDescription = (metric: string) => {
     switch (metric) {
       case "revenue":
-        return "Total income generated from your events"
+        return "Total Income Generated From Your Events"
       case "attendees":
-        return "Number of people who attended your events"
+        return "Number Of People Who Attended Your Events"
       case "clients":
-        return "New clients you acquired from events"
+        return "New Clients You Acquired From Events"
       case "roi":
-        return "Return on investment - how much profit per dollar spent"
+        return "Return On Investment - How Much Profit Per Dollar Spent"
       default:
         return ""
     }
@@ -150,7 +151,7 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
         </div>
         <h3 className="text-xl font-semibold text-white mb-2">No Trend Data Available</h3>
         <p className="text-m8bs-muted max-w-md mx-auto">
-          Create more events across different months to see how your performance is trending over time.
+          Create More Events Across Different Months To See How Your Performance Is Trending Over Time.
         </p>
       </div>
     )
@@ -162,14 +163,14 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
       <div className="text-center">
         <h3 className="text-lg font-semibold text-white mb-2">📈 Performance Trends</h3>
         <p className="text-m8bs-muted text-sm max-w-2xl mx-auto">
-          See how your marketing events are performing over time. Track your progress and identify what's working best.
+          See How Your Marketing Events Are Performing Over Time. Track Your Progress And Identify What's Working Best.
         </p>
       </div>
 
       {/* Metric Selection */}
       <div className="space-y-4">
         <div className="text-center">
-          <h4 className="text-sm font-medium text-white mb-3">What would you like to track?</h4>
+          <h4 className="text-sm font-medium text-white mb-3">What Would You Like To Track?</h4>
           <div className="flex flex-wrap justify-center gap-2">
             {(["revenue", "attendees", "clients", "roi"] as const).map((metric) => (
               <Button
@@ -323,7 +324,7 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
             {getMetricLabel(activeMetric)} Over Time
           </CardTitle>
           <p className="text-sm text-m8bs-muted">
-            Monthly performance showing your {getMetricLabel(activeMetric).toLowerCase()} trends
+            Monthly Performance Showing Your {getMetricLabel(activeMetric)} Trends
           </p>
         </CardHeader>
         <CardContent>

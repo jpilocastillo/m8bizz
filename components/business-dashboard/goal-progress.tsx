@@ -127,7 +127,7 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
           <Card className="border-none shadow-lg">
             <CardHeader>
               <CardTitle>Goal Progress</CardTitle>
-              <CardDescription>Progress towards business goals using your actual data</CardDescription>
+              <CardDescription>Progress Towards Business Goals Using Your Actual Data</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -162,7 +162,7 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle>Client Metrics</CardTitle>
-            <CardDescription>Key client performance indicators</CardDescription>
+            <CardDescription>Key Client Performance Indicators</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -187,7 +187,7 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle>Appointment & Prospect Metrics</CardTitle>
-            <CardDescription>Appointment and prospect tracking</CardDescription>
+            <CardDescription>Appointment And Prospect Tracking</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

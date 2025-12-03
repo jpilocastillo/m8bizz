@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend, Area, AreaChart } from "recharts"
 import { TrendingUp } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 type MetricType = "revenue" | "expenses" | "profit" | "roi" | "attendees" | "clients" | "conversion"
 
@@ -153,7 +154,7 @@ export function TrendAnalysisChart({ monthlyData }: TrendAnalysisChartProps) {
                     return [`${value.toFixed(1)}%`, name]
                   }
                   if (name === "Revenue" || name === "Expenses" || name === "Profit") {
-                    return [`$${value.toLocaleString()}`, name]
+                    return [formatCurrency(value), name]
                   }
                   return [value.toLocaleString(), name]
                 }}

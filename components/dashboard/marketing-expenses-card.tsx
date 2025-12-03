@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign } from "lucide-react"
 import { ProgressBar } from "./progress-bar"
+import { formatCurrency } from "@/lib/utils"
 
 interface MarketingExpensesCardProps {
   advertising: number
@@ -15,8 +16,8 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
   const [isCardHovered, setIsCardHovered] = useState(false)
 
   const total = advertising + foodVenue
-  const advertisingPercentage = (advertising / total) * 100
-  const foodVenuePercentage = (foodVenue / total) * 100
+  const advertisingPercentage = total > 0 ? (advertising / total) * 100 : 0
+  const foodVenuePercentage = total > 0 ? (foodVenue / total) * 100 : 0
   const unusedPercentage = 100 - advertisingPercentage - foodVenuePercentage
 
   return (
@@ -55,7 +56,7 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
                 fill="none"
                 stroke="#3b82f6"
                 strokeWidth="12"
-                strokeDasharray={`${(advertising / total) * 251.2} 251.2`}
+                strokeDasharray={total > 0 ? `${(advertising / total) * 251.2} 251.2` : "0 251.2"}
                 strokeDashoffset="0"
                 transform="rotate(-90 50 50)"
                 className={`transition-all duration-500 ${hoveredSection === "advertising" || hoveredSection === "donut" ? "filter-none" : "opacity-80"}`}
@@ -66,28 +67,30 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
                       : "none",
                 }}
               />
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="12"
-                strokeDasharray={`${(foodVenue / total) * 251.2} 251.2`}
-                strokeDashoffset={`${-(advertising / total) * 251.2}`}
-                transform="rotate(-90 50 50)"
-                className={`transition-all duration-500 ${hoveredSection === "foodVenue" || hoveredSection === "donut" ? "filter-none" : "opacity-80"}`}
-                style={{
-                  filter:
-                    hoveredSection === "foodVenue" || hoveredSection === "donut"
-                      ? "drop-shadow(0 0 3px rgba(16, 185, 129, 0.5))"
-                      : "none",
-                }}
-              />
+              {foodVenue > 0 && (
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="12"
+                  strokeDasharray={`${(foodVenue / total) * 251.2} 251.2`}
+                  strokeDashoffset={`${-(advertising / total) * 251.2}`}
+                  transform="rotate(-90 50 50)"
+                  className={`transition-all duration-500 ${hoveredSection === "foodVenue" || hoveredSection === "donut" ? "filter-none" : "opacity-80"}`}
+                  style={{
+                    filter:
+                      hoveredSection === "foodVenue" || hoveredSection === "donut"
+                        ? "drop-shadow(0 0 3px rgba(16, 185, 129, 0.5))"
+                        : "none",
+                  }}
+                />
+              )}
             </svg>
             <div className="absolute inset-0 flex items-center justify-center flex-col transition-all duration-500 group-hover:scale-105">
               <span className="text-2xl font-bold text-white transition-all duration-300 group-hover:text-emerald-300">
-                ${total.toLocaleString()}
+                {formatCurrency(total)}
               </span>
               <span className="text-sm text-gray-400 transition-all duration-300 group-hover:text-gray-300">
                 Total Expenses
@@ -105,7 +108,7 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
             >
               {advertising > 0 && (
                 <span className="absolute left-2 text-xs font-bold text-white drop-shadow-sm">
-                  ${advertising.toLocaleString()}
+                  {formatCurrency(advertising)}
                 </span>
               )}
             </div>
@@ -116,7 +119,7 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
             >
               {foodVenue > 0 && (
                 <span className="absolute right-2 text-xs font-bold text-white drop-shadow-sm">
-                  ${foodVenue.toLocaleString()}
+                  {formatCurrency(foodVenue)}
                 </span>
               )}
             </div>

@@ -14,6 +14,7 @@ import { useAuth } from "@/components/auth-provider"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { formatCurrency as formatCurrencyUtil } from "@/lib/utils"
 import { 
   Calendar, 
   MapPin, 
@@ -27,6 +28,23 @@ import {
   Save,
   Calculator
 } from "lucide-react"
+
+// Currency formatting utilities for forms
+const formatCurrencyInput = (value: string | number | undefined): string => {
+  if (!value) return ""
+  const numValue = typeof value === 'string' ? parseFloat(value.replace(/[$,]/g, '')) : value
+  if (isNaN(numValue)) return ""
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numValue)
+}
+
+const parseCurrencyInput = (value: string): string => {
+  return value.replace(/[$,]/g, '')
+}
 
 interface EventFormProps {
   initialData?: any
@@ -737,7 +755,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 Event Information
               </CardTitle>
               <CardDescription className="text-m8bs-muted">
-                Enter the basic details about your marketing event. Fields marked with * are required.
+                Enter The Basic Details About Your Marketing Event. Fields Marked With * Are Required.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -756,7 +774,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     className={`bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
                       formErrors.name ? 'border-red-500 focus:border-red-500' : ''
                     }`}
-                    placeholder="Enter event name (e.g., Retirement Planning Seminar)"
+                    placeholder="Enter Event Name (E.g., Retirement Planning Seminar)"
                     required
                   />
                   {formErrors.name && (
@@ -804,7 +822,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     className={`bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
                       formErrors.location ? 'border-red-500 focus:border-red-500' : ''
                     }`}
-                    placeholder="Enter venue location"
+                    placeholder="Enter Venue Location"
                     required
                   />
                   {formErrors.location && (
@@ -857,7 +875,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     value={marketingType}
                     onChange={(e) => setMarketingType(e.target.value)}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="e.g. MBI Mailer, Facebook Ads"
+                    placeholder="E.g. MBI Mailer, Facebook Ads"
                     required
                   />
                 </div>
@@ -870,7 +888,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="e.g. Retirement Outlook"
+                    placeholder="E.g. Retirement Outlook"
                     required
                   />
                 </div>
@@ -883,7 +901,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     value={ageRange}
                     onChange={(e) => setAgeRange(e.target.value)}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="e.g. 58-71"
+                    placeholder="E.g. 58-71"
                   />
                 </div>
                 <div className="space-y-2">
@@ -895,7 +913,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     value={mileRadius}
                     onChange={(e) => setMileRadius(e.target.value)}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="e.g. 10-15 Mi"
+                    placeholder="E.g. 10-15 Mi"
                   />
                 </div>
                 <div className="space-y-2">
@@ -907,7 +925,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     value={incomeAssets}
                     onChange={(e) => setIncomeAssets(e.target.value)}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="e.g. 500k-2m"
+                    placeholder="E.g. 500k-2m"
                   />
                 </div>
                 <div className="space-y-2">
@@ -921,7 +939,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     value={marketingAudience ?? ""}
                     onChange={e => setMarketingAudience(e.target.value === "" ? null : e.target.value)}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Enter total number of people"
+                    placeholder="Enter Total Number Of People"
                   />
                 </div>
               </div>
@@ -956,7 +974,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 Marketing Expenses
               </CardTitle>
               <CardDescription className="text-m8bs-muted">
-                Enter the expenses associated with this marketing event
+                Enter The Expenses Associated With This Marketing Event
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -967,12 +985,14 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   </Label>
                   <Input
                     id="advertisingCost"
-                    type="number"
-                    step="0.01"
-                    value={advertisingCost}
-                    onChange={(e) => setAdvertisingCost(e.target.value)}
+                    type="text"
+                    value={formatCurrencyInput(advertisingCost)}
+                    onChange={(e) => {
+                      const rawValue = parseCurrencyInput(e.target.value)
+                      setAdvertisingCost(rawValue)
+                    }}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Enter advertising costs"
+                    placeholder="$0"
                   />
                 </div>
                 <div className="space-y-2">
@@ -981,12 +1001,14 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   </Label>
                   <Input
                     id="foodVenueCost"
-                    type="number"
-                    step="0.01"
-                    value={foodVenueCost}
-                    onChange={(e) => setFoodVenueCost(e.target.value)}
+                    type="text"
+                    value={formatCurrencyInput(foodVenueCost)}
+                    onChange={(e) => {
+                      const rawValue = parseCurrencyInput(e.target.value)
+                      setFoodVenueCost(rawValue)
+                    }}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Enter food and venue costs"
+                    placeholder="$0"
                   />
                 </div>
                 <div className="space-y-2">
@@ -995,18 +1017,20 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   </Label>
                   <Input
                     id="otherCosts"
-                    type="number"
-                    step="0.01"
-                    value={otherCosts}
-                    onChange={(e) => setOtherCosts(e.target.value)}
+                    type="text"
+                    value={formatCurrencyInput(otherCosts)}
+                    onChange={(e) => {
+                      const rawValue = parseCurrencyInput(e.target.value)
+                      setOtherCosts(rawValue)
+                    }}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Enter other miscellaneous costs"
+                    placeholder="$0"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-white font-medium">Total Cost ($)</Label>
                   <div className="bg-m8bs-card-alt border border-m8bs-border rounded-md p-3 text-white font-medium">
-                    ${calculateTotalCost().toFixed(2)}
+                    {formatCurrencyUtil(calculateTotalCost())}
                   </div>
                 </div>
               </div>
@@ -1063,7 +1087,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 </svg>
                 Attendance Information
               </CardTitle>
-              <CardDescription>Enter attendance details for this marketing event</CardDescription>
+              <CardDescription>Enter Attendance Details For This Marketing Event</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1129,7 +1153,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     value={plateLickers}
                     onChange={(e) => setPlateLickers(e.target.value)}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="No interest in appointments or services"
+                    placeholder="No Interest In Appointments Or Services"
                   />
                 </div>
               </div>
@@ -1265,7 +1289,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     value={notQualified}
                     onChange={(e) => setNotQualified(e.target.value)}
                     className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Number of prospects not qualified"
+                    placeholder="Number Of Prospects Not Qualified"
                   />
                 </div>
               </div>
@@ -1310,210 +1334,251 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 Financial Production
               </CardTitle>
               <CardDescription className="text-m8bs-muted">
-                Enter financial results from this marketing event. Auto-calculations will help you determine commissions and fees.
+                Enter Financial Results From This Marketing Event. Auto-Calculations Will Help You Determine Commissions And Fees.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="annuityPremium" className="text-white font-medium flex items-center gap-1">
-                    Annuity Premium ($) <Calculator className="h-3 w-3 text-m8bs-blue" />
-                  </Label>
-                  <Input
-                    id="annuityPremium"
-                    type="number"
-                    step="0.01"
-                    value={annuityPremium}
-                    onChange={(e) => setAnnuityPremium(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Enter annuity premium amount"
-                  />
-                  {annuityPremium && annuityCommissionPercentage && (
+            <CardContent className="space-y-6">
+              {/* Annuity Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-m8bs-border pb-2">Annuity</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="annuitiesSold" className="text-white font-medium">
+                      Annuities Sold
+                    </Label>
+                    <Input
+                      id="annuitiesSold"
+                      type="number"
+                      value={annuitiesSold}
+                      onChange={(e) => setAnnuitiesSold(e.target.value)}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="annuityPremium" className="text-white font-medium flex items-center gap-1">
+                      Annuity Premium ($) <Calculator className="h-3 w-3 text-m8bs-blue" />
+                    </Label>
+                    <Input
+                      id="annuityPremium"
+                      type="text"
+                      value={formatCurrencyInput(annuityPremium)}
+                      onChange={(e) => {
+                        const rawValue = parseCurrencyInput(e.target.value)
+                        setAnnuityPremium(rawValue)
+                      }}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      placeholder="$0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="annuityCommissionPercentage" className="text-white font-medium">
+                      Annuity Commission Percentage (%)
+                    </Label>
+                    <Input
+                      id="annuityCommissionPercentage"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={annuityCommissionPercentage}
+                      onChange={(e) => setAnnuityCommissionPercentage(e.target.value)}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="annuityCommission" className="text-white font-medium">
+                      Annuity Commission ($)
+                    </Label>
+                    <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                      {formatCurrencyUtil(parseFloat(annuityCommission) || 0)}
+                    </div>
+                    {annuityPremium && annuityCommissionPercentage && (
+                      <div className="text-xs text-m8bs-muted flex items-center gap-1">
+                        <Calculator className="h-3 w-3" />
+                        Auto-calculated
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* AUM Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-m8bs-border pb-2">AUM</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="aumAccountsOpened" className="text-white font-medium">
+                      AUM Accounts Opened
+                    </Label>
+                    <Input
+                      id="aumAccountsOpened"
+                      type="number"
+                      min="0"
+                      value={aumAccountsOpened}
+                      onChange={e => setAumAccountsOpened(e.target.value)}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      placeholder="Number Of AUM Accounts Opened"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="aum" className="text-white font-medium">
+                      AUM ($)
+                    </Label>
+                    <Input
+                      id="aum"
+                      type="text"
+                      value={formatCurrencyInput(aum)}
+                      onChange={(e) => {
+                        const rawValue = parseCurrencyInput(e.target.value)
+                        setAum(rawValue)
+                      }}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      placeholder="$0"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="aumFeePercentage" className="text-white font-medium">
+                      AUM Fee Percentage (%)
+                    </Label>
+                    <Input
+                      id="aumFeePercentage"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={aumFeePercentage}
+                      onChange={(e) => setAumFeePercentage(e.target.value)}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="aumFees" className="text-white font-medium">
+                      Annual AUM Fees ($)
+                    </Label>
+                    <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                      {formatCurrencyUtil(parseFloat(aumFees) || 0)}
+                    </div>
                     <div className="text-xs text-m8bs-muted flex items-center gap-1">
                       <Calculator className="h-3 w-3" />
-                      Auto-calculated commission: ${annuityCommission}
+                      Auto-calculated
                     </div>
-                  )}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lifeInsurancePremium" className="text-white font-medium flex items-center gap-1">
-                    Life Insurance Premium ($) <Calculator className="h-3 w-3 text-m8bs-blue" />
-                  </Label>
-                  <Input
-                    id="lifeInsurancePremium"
-                    type="number"
-                    step="0.01"
-                    value={lifeInsurancePremium}
-                    onChange={(e) => setLifeInsurancePremium(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Enter life insurance premium amount"
-                  />
-                  {lifeInsurancePremium && lifeInsuranceCommissionPercentage && (
-                    <div className="text-xs text-m8bs-muted flex items-center gap-1">
-                      <Calculator className="h-3 w-3" />
-                      Auto-calculated commission: ${lifeInsuranceCommission}
+              </div>
+
+              {/* Life Insurance Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-m8bs-border pb-2">Life Insurance</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="lifePoliciesSold" className="text-white font-medium">
+                      Life Policies Sold
+                    </Label>
+                    <Input
+                      id="lifePoliciesSold"
+                      type="number"
+                      value={lifePoliciesSold}
+                      onChange={(e) => setLifePoliciesSold(e.target.value)}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lifeInsurancePremium" className="text-white font-medium flex items-center gap-1">
+                      Life Insurance Premium ($) <Calculator className="h-3 w-3 text-m8bs-blue" />
+                    </Label>
+                    <Input
+                      id="lifeInsurancePremium"
+                      type="text"
+                      value={formatCurrencyInput(lifeInsurancePremium)}
+                      onChange={(e) => {
+                        const rawValue = parseCurrencyInput(e.target.value)
+                        setLifeInsurancePremium(rawValue)
+                      }}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      placeholder="$0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lifeInsuranceCommissionPercentage" className="text-white font-medium">
+                      Life Insurance Commission Percentage (%)
+                    </Label>
+                    <Input
+                      id="lifeInsuranceCommissionPercentage"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={lifeInsuranceCommissionPercentage}
+                      onChange={(e) => setLifeInsuranceCommissionPercentage(e.target.value)}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lifeInsuranceCommission" className="text-white font-medium">
+                      Life Insurance Commission ($)
+                    </Label>
+                    <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                      {formatCurrencyUtil(parseFloat(lifeInsuranceCommission) || 0)}
                     </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="aumAccountsOpened" className="text-white font-medium">
-                    AUM Accounts Opened
-                  </Label>
-                  <Input
-                    id="aumAccountsOpened"
-                    type="number"
-                    min="0"
-                    value={aumAccountsOpened}
-                    onChange={e => setAumAccountsOpened(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Number of AUM accounts opened"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="aum" className="text-white font-medium">
-                    AUM ($)
-                  </Label>
-                  <Input
-                    id="aum"
-                    type="number"
-                    step="0.01"
-                    value={aum}
-                    onChange={(e) => setAum(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="aumFeePercentage" className="text-white font-medium">
-                    AUM Fee Percentage (%)
-                  </Label>
-                  <Input
-                    id="aumFeePercentage"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={aumFeePercentage}
-                    onChange={(e) => setAumFeePercentage(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="aumFees" className="text-white font-medium">
-                    Annual AUM Fees ($)
-                  </Label>
-                  <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
-                    ${aumFees}
+                    {lifeInsurancePremium && lifeInsuranceCommissionPercentage && (
+                      <div className="text-xs text-m8bs-muted flex items-center gap-1">
+                        <Calculator className="h-3 w-3" />
+                        Auto-calculated
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="financialPlansSold" className="text-white font-medium">
-                    Financial Plans Sold
-                  </Label>
-                  <Input
-                    id="financialPlansSold"
-                    type="number"
-                    min="0"
-                    value={financialPlansSold}
-                    onChange={e => setFinancialPlansSold(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    placeholder="Number of financial plans sold"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="financialPlanning" className="text-white font-medium">
-                    Financial Planning ($)
-                  </Label>
-                  <Input
-                    id="financialPlanning"
-                    type="number"
-                    step="0.01"
-                    value={financialPlanning}
-                    onChange={(e) => setFinancialPlanning(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Total Production ($)</Label>
-                  <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
-                    ${calculateTotalProduction().toFixed(2)}
+              </div>
+
+              {/* Financial Planning Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white border-b border-m8bs-border pb-2">Financial Planning</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="financialPlansSold" className="text-white font-medium">
+                      Financial Plans Sold
+                    </Label>
+                    <Input
+                      id="financialPlansSold"
+                      type="number"
+                      min="0"
+                      value={financialPlansSold}
+                      onChange={e => setFinancialPlansSold(e.target.value)}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      placeholder="Number Of Financial Plans Sold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="financialPlanning" className="text-white font-medium">
+                      Financial Planning ($)
+                    </Label>
+                    <Input
+                      id="financialPlanning"
+                      type="text"
+                      value={formatCurrencyInput(financialPlanning)}
+                      onChange={(e) => {
+                        const rawValue = parseCurrencyInput(e.target.value)
+                        setFinancialPlanning(rawValue)
+                      }}
+                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      placeholder="$0"
+                      required
+                    />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="annuitiesSold" className="text-white font-medium">
-                    Annuities Sold
-                  </Label>
-                  <Input
-                    id="annuitiesSold"
-                    type="number"
-                    value={annuitiesSold}
-                    onChange={(e) => setAnnuitiesSold(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lifePoliciesSold" className="text-white font-medium">
-                    Life Policies Sold
-                  </Label>
-                  <Input
-                    id="lifePoliciesSold"
-                    type="number"
-                    value={lifePoliciesSold}
-                    onChange={(e) => setLifePoliciesSold(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="annuityCommissionPercentage" className="text-white font-medium">
-                    Annuity Commission Percentage (%)
-                  </Label>
-                  <Input
-                    id="annuityCommissionPercentage"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={annuityCommissionPercentage}
-                    onChange={(e) => setAnnuityCommissionPercentage(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="annuityCommission" className="text-white font-medium">
-                    Annuity Commission ($)
-                  </Label>
-                  <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
-                    ${annuityCommission}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lifeInsuranceCommissionPercentage" className="text-white font-medium">
-                    Life Insurance Commission Percentage (%)
-                  </Label>
-                  <Input
-                    id="lifeInsuranceCommissionPercentage"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={lifeInsuranceCommissionPercentage}
-                    onChange={(e) => setLifeInsuranceCommissionPercentage(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lifeInsuranceCommission" className="text-white font-medium">
-                    Life Insurance Commission ($)
-                  </Label>
-                  <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
-                    ${lifeInsuranceCommission}
-                  </div>
+              </div>
+
+              {/* Total Production */}
+              <div className="space-y-2 pt-4 border-t border-m8bs-border">
+                <Label className="text-white font-medium text-lg">Total Production ($)</Label>
+                <div className="bg-[#131525] border border-[#1f2037] rounded-md p-4 text-white font-bold text-xl">
+                  {formatCurrencyUtil(calculateTotalProduction())}
                 </div>
               </div>
             </CardContent>

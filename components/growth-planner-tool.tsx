@@ -2212,7 +2212,7 @@ export function GrowthPlannerTool() {
             <CardContent className="space-y-8 pt-8">
 
               {/* Executive Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="p-6 bg-m8bs-card-alt border border-m8bs-border shadow-lg">
                   <div className="flex flex-col items-center text-center space-y-3">
                     <div className="p-4 bg-m8bs-blue/20 rounded-2xl border border-m8bs-blue/30">
@@ -2237,19 +2237,6 @@ export function GrowthPlannerTool() {
                         ${formatCurrency(buckets.reduce((sum, b) => sum + calculateBucketValues(b).futureValue, 0))}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">Projected portfolio value</p>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-6 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-green-500/40 shadow-xl backdrop-blur-sm">
-                  <div className="flex flex-col items-center text-center space-y-3">
-                    <div className="p-4 bg-green-900/30 rounded-2xl border border-green-700/30">
-                      <Flower className="h-8 w-8 text-green-500" />
-                    </div>
-                    <div className="w-full">
-                      <p className="text-sm text-muted-foreground mb-1">Annual Income Need</p>
-                      <p className="text-2xl font-bold text-green-300 break-words">${formatCurrency(annualIncomeGap)}</p>
-                      <p className="text-xs text-muted-foreground mt-2">Gap to fill each year</p>
                     </div>
                   </div>
                 </Card>
@@ -3023,15 +3010,10 @@ export function GrowthPlannerTool() {
                               barSize={40}
                               label={({ x, y, width, height, value, payload }: any) => {
                                 const amount = value || payload?.amount || 0
-                                const percentage = payload?.percentage || 0
                                 // Position label inside the bar, aligned to the right
                                 const labelX = x + width - 8
                                 const labelY = y + height / 2
-                                const labelText = `${formatCurrency(amount)} (${percentage}%)`
-                                
-                                // Check if bar is wide enough to fit label, otherwise use shorter format
-                                const useShortFormat = width < 120
-                                const displayText = useShortFormat ? `${formatCurrency(amount)}` : labelText
+                                const displayText = formatCurrency(amount)
                                 
                                 return (
                                   <text
@@ -3505,12 +3487,9 @@ export function GrowthPlannerTool() {
                     barSize={40}
                     label={({ x, y, width, height, value, payload }: any) => {
                       const amount = value || payload?.amount || 0
-                      const percentage = payload?.percentage || 0
                       const labelX = x + width - 8
                       const labelY = y + height / 2
-                      const labelText = `${formatCurrency(amount)} (${percentage}%)`
-                      const useShortFormat = width < 120
-                      const displayText = useShortFormat ? `${formatCurrency(amount)}` : labelText
+                      const displayText = formatCurrency(amount)
                       
                       return (
                         <text

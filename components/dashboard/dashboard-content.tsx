@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { EventDetailsCard } from "@/components/dashboard/event-details-card"
 import { EventSelector } from "@/components/dashboard/event-selector"
 import { fetchDashboardData } from "@/lib/data"
 import { MarketingROICard } from "@/components/dashboard/marketing-roi-card"
 import { ConversionEfficiencyCard } from "@/components/dashboard/conversion-efficiency-card"
 import { ClientAcquisitionCard } from "@/components/dashboard/client-acquisition-card"
-import { TrendingUp, DollarSign, Percent, FileText, Award, ChevronRight, Shield, Calendar } from "lucide-react"
+import { TrendingUp, DollarSign, Percent, FileText, Award, ChevronRight, Shield, Calendar, Edit } from "lucide-react"
 import { motion } from "framer-motion"
 import { RegistrantResponseAnalysis } from "@/components/dashboard/registrant-response-analysis"
 import { ConversionRateIndicator } from "@/components/dashboard/conversion-rate-indicator"
@@ -22,6 +23,9 @@ import { DashboardError } from "./dashboard-error"
 import { createClient } from "@/lib/supabase/client"
 import { PlateLickerCard } from "@/components/dashboard/plate-licker-card"
 import { SingleEventExport } from "@/components/dashboard/single-event-export"
+import { MonthlyEntriesTable } from "@/components/dashboard/monthly-entries-table"
+import { Button } from "@/components/ui/button"
+import { formatCurrency } from "@/lib/utils"
 
 interface DashboardContentProps {
   initialData: any
@@ -102,6 +106,7 @@ interface DashboardData {
 }
 
 export function DashboardContent({ initialData, events, userId }: DashboardContentProps) {
+  const router = useRouter()
   const [selectedEventId, setSelectedEventId] = useState<string>(initialData?.eventId || '')
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(initialData || null)
   const [isLoading, setIsLoading] = useState(false)
@@ -330,6 +335,16 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             selectedEventId={selectedEventId}
             onSelect={setSelectedEventId}
           />
+          {selectedEventId && (
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/events/edit/${selectedEventId}`)}
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Event
+            </Button>
+          )}
           <SingleEventExport 
             data={dashboardData} 
             eventName={dashboardData.eventDetails?.name || 'Event'} 
@@ -350,7 +365,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             value={roi}
             format="percent"
             icon={<TrendingUp className="h-5 w-5 text-blue-400" />}
-            description="Return on investment from marketing expenses"
+            description="Return On Investment From Marketing Expenses"
             color="blue"
           />
         </motion.div>
@@ -360,7 +375,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             title="Written Business"
             value={clients}
             icon={<FileText className="h-5 w-5 text-green-400" />}
-            description="Total number of policies written"
+            description="Total Number Of Policies Written"
             color="green"
           />
         </motion.div>
@@ -371,7 +386,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             value={totalIncome}
             format="currency"
             icon={<DollarSign className="h-5 w-5 text-purple-400" />}
-            description="Total income generated from all sources"
+            description="Total Income Generated From All Sources"
             color="purple"
           />
         </motion.div>
@@ -500,10 +515,10 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             details={[
               {
                 label: "Average Premium",
-                value: `${dashboardData.financialProduction?.annuity_premium && dashboardData.financialProduction?.annuities_sold ? (dashboardData.financialProduction.annuity_premium / Math.max(1, dashboardData.financialProduction.annuities_sold)).toLocaleString() : "0"}`,
+                value: dashboardData.financialProduction?.annuity_premium && dashboardData.financialProduction?.annuities_sold ? formatCurrency(dashboardData.financialProduction.annuity_premium / Math.max(1, dashboardData.financialProduction.annuities_sold)) : "$0",
               },
               { label: "Commission Rate", value: "4.5%" },
-              { label: "Total Commission", value: `$${annuityCommission.toLocaleString()}` },
+              { label: "Total Commission", value: formatCurrency(annuityCommission) },
             ]}
             benefits={["Tax-deferred growth", "Guaranteed income", "Principal protection"]}
             chartData={[65, 40, 85, 30, 55, 65, 75]}
@@ -522,10 +537,10 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             details={[
               {
                 label: "Average Coverage",
-                value: `$${dashboardData.financialProduction?.life_insurance_premium && dashboardData.financialProduction?.life_policies_sold ? (dashboardData.financialProduction.life_insurance_premium / Math.max(1, dashboardData.financialProduction.life_policies_sold)).toLocaleString() : "0"}`,
+                value: dashboardData.financialProduction?.life_insurance_premium && dashboardData.financialProduction?.life_policies_sold ? formatCurrency(dashboardData.financialProduction.life_insurance_premium / Math.max(1, dashboardData.financialProduction.life_policies_sold)) : "$0",
               },
               { label: "Commission Rate", value: "85%" },
-              { label: "Total Commission", value: `$${lifeInsuranceCommission.toLocaleString()}` },
+              { label: "Total Commission", value: formatCurrency(lifeInsuranceCommission) },
             ]}
             benefits={["Death benefit", "Cash value growth", "Living benefits"]}
             chartData={[45, 60, 35, 70, 45, 60, 35]}
@@ -543,7 +558,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             color="green"
             details={[
               { label: "AUM Fee %", value: `${aumFeePercentage}%` },
-              { label: "Annual AUM Fees", value: `$${aumFees.toLocaleString()}` },
+              { label: "Annual AUM Fees", value: formatCurrency(aumFees) },
             ]}
             benefits={["Scalable Revenue", "Recurring Revenue Stream", "Client Retention"]}
             chartData={[30, 50, 40, 60, 80, 70, 90]}
@@ -556,7 +571,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
         >
           <MarketingExpensesCard
             advertising={dashboardData.marketingExpenses?.advertising || 500}
-            foodVenue={dashboardData.marketingExpenses?.foodVenue || 1200}
+            foodVenue={dashboardData.marketingExpenses?.foodVenue || 0}
           />
         </motion.div>
       </div>
@@ -614,6 +629,17 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           />
         </motion.div>
       </div>
+
+      {/* Monthly Entries Section */}
+      <SectionDivider title="Monthly Performance" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+      >
+        <MonthlyEntriesTable />
+      </motion.div>
     </div>
   )
 }

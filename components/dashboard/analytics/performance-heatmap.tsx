@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Activity, TrendingUp, Users, DollarSign, Target } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 type MetricType = "ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients"
 
@@ -140,7 +141,7 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
       case "Conversion":
         return `${value.toFixed(1)}%`
       case "Revenue":
-        return `$${value.toLocaleString()}`
+        return formatCurrency(value)
       case "Attendees":
       case "Clients":
         return value.toFixed(1)
