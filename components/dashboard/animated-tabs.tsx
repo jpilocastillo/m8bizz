@@ -75,7 +75,7 @@ export function AnimatedTabs({ tabs, activeTab, onChange, className }: AnimatedT
             />
           )}
           <div className="relative z-10 flex items-center gap-2">
-            {tab.icon && <span className={tab.id === activeTab ? "text-blue-400" : ""}>{tab.icon}</span>}
+            {tab.icon && <span className={tab.id === activeTab ? "text-gray-400" : ""}>{tab.icon}</span>}
             {tab.label}
           </div>
         </button>

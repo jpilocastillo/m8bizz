@@ -17,18 +17,18 @@ export function TopicMarketingCard({ topic }: TopicMarketingCardProps) {
       whileHover={{ scale: 1.02 }}
       className="h-full"
     >
-      <Card className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] border-[#334155] rounded-lg overflow-hidden shadow-lg h-full">
-        <CardHeader className="bg-[#1e293b]/80 border-b border-[#334155] px-4 py-3">
+      <Card className="bg-m8bs-card rounded-lg overflow-hidden shadow-sm h-full">
+        <CardHeader className="bg-m8bs-card px-4 py-3">
           <h3 className="text-lg font-extrabold text-white flex items-center tracking-tight">
-            <Megaphone className="mr-2 h-5 w-5 text-blue-400" />
+            <Megaphone className="mr-2 h-5 w-5 text-m8bs-cyan" />
             Topic of Marketing
           </h3>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center p-8 text-center h-[calc(100%-60px)]">
           <div className="relative mb-6">
-            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl animate-pulse-slow"></div>
-            <div className="relative bg-gradient-to-br from-blue-500/30 to-blue-600/30 p-5 rounded-full backdrop-blur-sm border border-blue-400/20">
-              <Megaphone className="h-12 w-12 text-blue-300" />
+            <div className="absolute inset-0 bg-gray-500/20 rounded-full blur-xl animate-pulse-slow"></div>
+            <div className="relative bg-gradient-to-br from-gray-500/30 to-gray-600/30 p-5 rounded-full backdrop-blur-sm border border-gray-400/20">
+              <Megaphone className="h-12 w-12 text-m8bs-cyan" />
             </div>
           </div>
           <motion.div
@@ -38,7 +38,7 @@ export function TopicMarketingCard({ topic }: TopicMarketingCardProps) {
             className="relative"
           >
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg blur-lg opacity-30"></div>
-            <div className="relative bg-[#1e293b]/80 backdrop-blur-sm border border-blue-500/20 rounded-lg px-6 py-4">
+            <div className="relative bg-m8bs-card backdrop-blur-sm rounded-lg px-6 py-4">
               <h2 className="text-3xl font-extrabold text-white tracking-tight">{topic}</h2>
             </div>
           </motion.div>

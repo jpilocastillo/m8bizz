@@ -8,7 +8,6 @@ import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { createClient } from "@/lib/supabase/client"
 import { fetchAllEvents } from "@/lib/data"
 import { Sidebar } from "@/components/dashboard/sidebar"
-import { DashboardHeader } from "@/components/dashboard/header"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
 import { DatabaseStatus } from "@/components/database-status"
 import { Suspense } from "react"
@@ -72,9 +71,9 @@ export default function Homepage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
-          <p className="text-muted-foreground">Please log in to access your dashboard.</p>
+          <p className="text-muted-foreground">Please Log In To Access Your Dashboard.</p>
           <Link href="/login">
-            <Button className="mt-4">Go to Login</Button>
+            <Button className="mt-4">Go To Login</Button>
           </Link>
         </div>
       </div>
@@ -235,13 +234,13 @@ export default function Homepage() {
   }
 
   const getProgressColor = (progress: number) => {
-    if (progress >= 100) return "text-green-500"
+    if (progress >= 100) return "text-m8bs-green"
     if (progress >= 80) return "text-yellow-500"
     return "text-red-500"
   }
 
   const getProgressIcon = (progress: number) => {
-    if (progress >= 100) return <TrendingUp className="h-4 w-4 text-green-500" />
+    if (progress >= 100) return <TrendingUp className="h-4 w-4 text-m8bs-green" />
     if (progress >= 80) return <TrendingUp className="h-4 w-4 text-yellow-500" />
     return <TrendingDown className="h-4 w-4 text-red-500" />
   }
@@ -250,8 +249,8 @@ export default function Homepage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading your dashboard...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-m8bs-blue mx-auto"></div>
+          <p className="mt-2 text-m8bs-muted">Loading Your Dashboard...</p>
         </div>
       </div>
     )
@@ -273,29 +272,29 @@ export default function Homepage() {
   }
 
   return (
-    <div className="flex h-screen bg-m8bs-bg text-white overflow-hidden">
+    <div className="flex h-screen bg-black text-white overflow-hidden">
       <AnimatedBackground />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <DashboardHeader events={[]} />
-        <main className="flex-1 overflow-y-auto p-6 bg-m8bs-bg bg-gradient-radial from-m8bs-card-alt/10 to-m8bs-bg">
+        <main className="flex-1 overflow-y-auto px-6 sm:px-8 lg:px-10 xl:px-12 pt-12 sm:pt-16 pb-8 sm:pb-10 bg-black">
           <DatabaseStatus />
-          <Suspense fallback={<div>Loading...</div>}>
-            <motion.div 
-              className="space-y-6"
-              variants={container}
-              initial="hidden"
-              animate="show"
-            >
+          <div className="max-w-7xl mx-auto">
+            <Suspense fallback={<div>Loading...</div>}>
+              <motion.div 
+                className="space-y-6"
+                variants={container}
+                initial="hidden"
+                animate="show"
+              >
       {/* Enhanced Hero Section */}
       <motion.div variants={item} className="text-center space-y-6 py-8">
         <div className="space-y-4">
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Welcome to M8 Business Suite
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-m8bs-blue via-m8bs-purple to-m8bs-pink bg-clip-text text-transparent">
+            Welcome To M8 Business Suite
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Transform your financial advisory practice with comprehensive business management, 
-            client acquisition tracking, and performance analytics.
+          <p className="text-xl md:text-2xl text-m8bs-muted max-w-3xl mx-auto leading-relaxed">
+            Transform Your Financial Advisory Practice With Comprehensive Business Management, 
+            Client Acquisition Tracking, And Performance Analytics.
           </p>
         </div>
         
@@ -309,31 +308,31 @@ export default function Homepage() {
         <ThreeDMetricCard
           title="Total Marketing Events"
           value={data.analyticsSummary?.totalEvents || 0}
-          icon={<Calendar className="h-5 w-5 text-blue-400" />}
-          description="Marketing events conducted"
+          icon={<Calendar className="h-5 w-5 text-m8bs-muted" />}
+          description="Marketing Events Conducted"
           color="blue"
         />
         <ThreeDMetricCard
           title="Total Revenue"
           value={data.analyticsSummary?.totalRevenue || 0}
           format="currency"
-          icon={<DollarSign className="h-5 w-5 text-green-400" />}
-          description="Total revenue generated"
+          icon={<DollarSign className="h-5 w-5 text-m8bs-green" />}
+          description="Total Revenue Generated"
           color="green"
         />
         <ThreeDMetricCard
           title="Total Profit"
           value={data.analyticsSummary?.totalProfit || 0}
           format="currency"
-          icon={<TrendingUp className="h-5 w-5 text-purple-400" />}
-          description="Net profit from events"
+          icon={<TrendingUp className="h-5 w-5 text-m8bs-purple" />}
+          description="Net Profit From Events"
           color="purple"
         />
         <ThreeDMetricCard
           title="Total Attendees"
           value={data.analyticsSummary?.totalAttendees || 0}
-          icon={<Users className="h-5 w-5 text-orange-400" />}
-          description="Total event attendees"
+          icon={<Users className="h-5 w-5 text-m8bs-orange" />}
+          description="Total Event Attendees"
           color="amber"
         />
       </motion.div>
@@ -346,24 +345,24 @@ export default function Homepage() {
         <ThreeDMetricCard
           title="Total Clients"
           value={data.analyticsSummary?.totalClients || 0}
-          icon={<UserCheck className="h-5 w-5 text-green-400" />}
-          description="Clients acquired from events"
+          icon={<UserCheck className="h-5 w-5 text-m8bs-green" />}
+          description="Clients Acquired From Events"
           color="green"
         />
         <ThreeDMetricCard
           title="Total Expenses"
           value={data.analyticsSummary?.totalExpenses || 0}
           format="currency"
-          icon={<DollarSignIcon className="h-5 w-5 text-red-400" />}
-          description="Total marketing expenses"
+          icon={<DollarSignIcon className="h-5 w-5 text-red-500" />}
+          description="Total Marketing Expenses"
           color="red"
         />
         <ThreeDMetricCard
           title="Overall ROI"
           value={data.analyticsSummary?.overallROI || 0}
           format="percent"
-          icon={<BarChart3 className="h-5 w-5 text-purple-400" />}
-          description="Return on investment"
+          icon={<BarChart3 className="h-5 w-5 text-m8bs-purple" />}
+          description="Return On Investment"
           color="purple"
         />
       </motion.div>
@@ -374,14 +373,14 @@ export default function Homepage() {
           {/* Top Events and Advisor Metrics Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Top Events */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Award className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <Award className="h-5 w-5 text-m8bs-muted" />
                   Top Performing Events
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Your best performing events by ROI
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Your Best Performing Events By ROI
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -391,9 +390,9 @@ export default function Homepage() {
                       <div key={event.id} className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                            index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
-                            index === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-600' :
-                            'bg-gradient-to-br from-orange-400 to-orange-600'
+                            index === 0 ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
+                            index === 1 ? 'bg-gradient-to-br from-m8bs-muted to-m8bs-border' :
+                            'bg-gradient-to-br from-m8bs-orange to-orange-600'
                           }`}>
                             {index + 1}
                           </div>
@@ -422,27 +421,27 @@ export default function Homepage() {
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No events data available</p>
+                    <p>No Events Data Available</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* Goals and Progress Summary */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Target className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <Target className="h-5 w-5 text-m8bs-muted" />
                   Goals & Progress Summary
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Progress towards your business goals
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Progress Towards Your Business Goals
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {advisorLoading ? (
                   <div className="flex items-center justify-center h-32">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-m8bs-muted"></div>
                   </div>
                 ) : advisorData?.businessGoals ? (
                   <div className="space-y-4">
@@ -525,8 +524,8 @@ export default function Homepage() {
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No goals data available</p>
-                    <p className="text-sm mt-2">Set up your business goals in the Advisor Basecamp</p>
+                    <p>No Goals Data Available</p>
+                    <p className="text-sm mt-2">Set Up Your Business Goals In The Advisor Basecamp</p>
                   </div>
                 )}
               </CardContent>
@@ -536,14 +535,14 @@ export default function Homepage() {
           {/* Total Advisor Book and Latest Monthly Entry Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Total Advisor Book */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-m8bs-muted" />
                   Total Advisor Book
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Your current book of business
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Your Current Book Of Business
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -552,7 +551,7 @@ export default function Homepage() {
                     <div className="grid grid-cols-1 gap-3">
                       <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-m8bs-muted rounded-full"></div>
                           <span className="text-m8bs-muted">Annuity Book</span>
                         </div>
                         <span className="text-white font-semibold">
@@ -561,7 +560,7 @@ export default function Homepage() {
                       </div>
                       <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-m8bs-green rounded-full"></div>
                           <span className="text-m8bs-muted">AUM Book</span>
                         </div>
                         <span className="text-white font-semibold">
@@ -570,7 +569,7 @@ export default function Homepage() {
                       </div>
                       <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-m8bs-purple rounded-full"></div>
                           <span className="text-m8bs-muted">Life Production</span>
                         </div>
                         <span className="text-white font-semibold">
@@ -592,22 +591,22 @@ export default function Homepage() {
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No book data available</p>
-                    <p className="text-sm mt-2">Set up your current values in the Advisor Basecamp</p>
+                    <p>No Book Data Available</p>
+                    <p className="text-sm mt-2">Set Up Your Current Values In The Advisor Basecamp</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* Latest Monthly Entry */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-m8bs-muted" />
                   Latest Monthly Entry
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Your most recent monthly performance data
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Your Most Recent Monthly Performance Data
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -651,8 +650,8 @@ export default function Homepage() {
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No monthly entries yet</p>
-                    <p className="text-sm mt-2">Start tracking your monthly performance</p>
+                    <p>No Monthly Entries Yet</p>
+                    <p className="text-sm mt-2">Start Tracking Your Monthly Performance</p>
                   </div>
                 )}
               </CardContent>
@@ -662,14 +661,14 @@ export default function Homepage() {
           {/* Recent Activity and Performance Insights */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             {/* Recent Activity Feed */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-m8bs-muted" />
                   Recent Activity
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Your latest business activities
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Your Latest Business Activities
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -677,7 +676,7 @@ export default function Homepage() {
                   {data.topEvents.length > 0 ? (
                     data.topEvents.slice(0, 3).map((event, index) => (
                       <div key={event.id} className="flex items-center space-x-3 p-3 bg-m8bs-card-alt rounded-lg">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-m8bs-card-alt rounded-full flex items-center justify-center border border-m8bs-border">
                           <Calendar className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -699,7 +698,7 @@ export default function Homepage() {
                   ) : (
                     <div className="text-center py-6 text-m8bs-muted">
                       <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No recent events</p>
+                      <p className="text-sm">No Recent Events</p>
                     </div>
                   )}
                 </div>
@@ -707,21 +706,21 @@ export default function Homepage() {
             </Card>
 
             {/* Performance Insights */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-m8bs-muted" />
                   Performance Insights
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Key performance indicators
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Key Performance Indicators
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-m8bs-green rounded-full"></div>
                       <span className="text-sm text-m8bs-muted">Conversion Rate</span>
                     </div>
                     <span className="text-white font-semibold">
@@ -730,7 +729,7 @@ export default function Homepage() {
                   </div>
                   <div className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-m8bs-muted rounded-full"></div>
                       <span className="text-sm text-m8bs-muted">Avg Attendees</span>
                     </div>
                     <span className="text-white font-semibold">
@@ -739,7 +738,7 @@ export default function Homepage() {
                   </div>
                   <div className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-m8bs-purple rounded-full"></div>
                       <span className="text-sm text-m8bs-muted">Total ROI</span>
                     </div>
                     <span className="text-white font-semibold">
@@ -751,14 +750,14 @@ export default function Homepage() {
             </Card>
 
             {/* Enhanced Quick Actions */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-m8bs-muted" />
                   Quick Actions
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Common tasks and shortcuts
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Common Tasks And Shortcuts
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -807,14 +806,14 @@ export default function Homepage() {
           {/* Recommendations and Book Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Smart Recommendations */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Target className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <Target className="h-5 w-5 text-m8bs-muted" />
                   Smart Recommendations
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Personalized insights for your business
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Personalized Insights For Your Business
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -829,14 +828,14 @@ export default function Homepage() {
                           type: "warning",
                           icon: <TrendingDown className="h-4 w-4" />,
                           title: "Improve Event ROI",
-                          description: "Consider optimizing your marketing events to increase return on investment."
+                          description: "Consider Optimizing Your Marketing Events To Increase Return On Investment."
                         })
                       } else {
                         recommendations.push({
                           type: "success",
                           icon: <TrendingUp className="h-4 w-4" />,
                           title: "Great ROI Performance",
-                          description: "Your events are performing well! Consider scaling successful strategies."
+                          description: "Your Events Are Performing Well! Consider Scaling Successful Strategies."
                         })
                       }
                     }
@@ -846,8 +845,8 @@ export default function Homepage() {
                       recommendations.push({
                         type: "info",
                         icon: <Users className="h-4 w-4" />,
-                        title: "Boost Conversion Rate",
-                        description: "Focus on improving attendee-to-client conversion through better follow-up."
+                          title: "Boost Conversion Rate",
+                          description: "Focus On Improving Attendee-To-Client Conversion Through Better Follow-Up."
                       })
                     }
                     
@@ -856,8 +855,8 @@ export default function Homepage() {
                       recommendations.push({
                         type: "info",
                         icon: <Calendar className="h-4 w-4" />,
-                        title: "Increase Event Frequency",
-                        description: "Consider hosting more marketing events to accelerate client acquisition."
+                          title: "Increase Event Frequency",
+                          description: "Consider Hosting More Marketing Events To Accelerate Client Acquisition."
                       })
                     }
                     
@@ -865,21 +864,21 @@ export default function Homepage() {
                       recommendations.push({
                         type: "success",
                         icon: <Award className="h-4 w-4" />,
-                        title: "All Systems Optimal",
-                        description: "Your business metrics are performing well. Keep up the great work!"
+                          title: "All Systems Optimal",
+                          description: "Your Business Metrics Are Performing Well. Keep Up The Great Work!"
                       })
                     }
                     
                     return recommendations.map((rec, index) => (
                       <div key={index} className={`flex items-start space-x-3 p-3 rounded-lg ${
-                        rec.type === 'success' ? 'bg-green-500/10 border border-green-500/20' :
+                        rec.type === 'success' ? 'bg-m8bs-green/10 border border-m8bs-green/20' :
                         rec.type === 'warning' ? 'bg-yellow-500/10 border border-yellow-500/20' :
-                        'bg-blue-500/10 border border-blue-500/20'
+                        'bg-m8bs-card-alt border border-m8bs-border'
                       }`}>
                         <div className={`mt-0.5 ${
-                          rec.type === 'success' ? 'text-green-400' :
-                          rec.type === 'warning' ? 'text-yellow-400' :
-                          'text-blue-400'
+                          rec.type === 'success' ? 'text-m8bs-green' :
+                          rec.type === 'warning' ? 'text-yellow-500' :
+                          'text-m8bs-muted'
                         }`}>
                           {rec.icon}
                         </div>
@@ -895,14 +894,14 @@ export default function Homepage() {
             </Card>
 
             {/* Book Distribution */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <PieChart className="h-5 w-5 text-m8bs-blue" />
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <PieChart className="h-5 w-5 text-m8bs-muted" />
                   Book Distribution
                 </CardTitle>
-                <CardDescription className="text-m8bs-muted">
-                  Distribution of your financial book
+                <CardDescription className="text-m8bs-muted mt-2">
+                  Distribution Of Your Financial Book
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -918,7 +917,7 @@ export default function Homepage() {
                         return (
                           <div className="text-center py-8 text-m8bs-muted">
                             <PieChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No book data to display</p>
+                            <p>No Book Data To Display</p>
                           </div>
                         )
                       }
@@ -953,8 +952,8 @@ export default function Homepage() {
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <PieChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No book data available</p>
-                    <p className="text-sm mt-2">Set up your current values in the Advisor Basecamp</p>
+                    <p>No Book Data Available</p>
+                    <p className="text-sm mt-2">Set Up Your Current Values In The Advisor Basecamp</p>
                   </div>
                 )}
               </CardContent>
@@ -963,7 +962,8 @@ export default function Homepage() {
         </TooltipProvider>
       </motion.div>
             </motion.div>
-          </Suspense>
+            </Suspense>
+          </div>
         </main>
       </div>
     </div>

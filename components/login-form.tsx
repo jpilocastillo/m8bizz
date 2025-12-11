@@ -37,13 +37,13 @@ export function LoginForm() {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Login failed",
-          description: error.message || "Invalid email or password. Please try again.",
+          title: "Login Failed",
+          description: error.message || "Invalid Email Or Password. Please Try Again.",
         })
       } else {
         toast({
-          title: "Login successful",
-          description: "Welcome to your dashboard",
+          title: "Login Successful",
+          description: "Welcome To Your Dashboard",
         })
         router.push("/")
         router.refresh()
@@ -51,8 +51,8 @@ export function LoginForm() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Login error",
-        description: "An unexpected error occurred. Please try again.",
+          title: "Login Error",
+          description: "An Unexpected Error Occurred. Please Try Again.",
       })
     } finally {
       setIsLoading(false)
@@ -64,9 +64,9 @@ export function LoginForm() {
       <div className="flex-1 bg-gradient-to-b from-[#0a0b14] to-[#131525] p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full">
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 mb-2">
-            Welcome back
+            Welcome Back
           </h1>
-          <p className="text-gray-400 mb-8">Enter your credentials to access your account</p>
+          <p className="text-gray-400 mb-8">Enter Your Credentials To Access Your Account</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -74,13 +74,13 @@ export function LoginForm() {
                 Email Address
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-blue-500" />
+                <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-500" />
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                  className="pl-10 bg-[#1f2037] border-[#1f2037] text-white focus:border-gray-500 focus:ring-gray-500/20 transition-colors"
                   placeholder="email@example.com"
                   required
                 />
@@ -92,13 +92,13 @@ export function LoginForm() {
                 Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-blue-500" />
+                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-500" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 bg-[#1f2037] border-[#1f2037] text-white focus:border-blue-500 focus:ring-blue-500/20 transition-colors"
+                  className="pl-10 bg-[#1f2037] border-[#1f2037] text-white focus:border-gray-500 focus:ring-gray-500/20 transition-colors"
                   required
                 />
                 <Button
@@ -109,7 +109,7 @@ export function LoginForm() {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                  <span className="sr-only">{showPassword ? "Hide Password" : "Show Password"}</span>
                 </Button>
               </div>
             </div>
@@ -123,7 +123,7 @@ export function LoginForm() {
                   className="border-blue-500 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                 />
                 <label htmlFor="remember" className="text-sm text-gray-300 cursor-pointer">
-                  Remember me
+                  Remember Me
                 </label>
               </div>
             </div>
@@ -133,13 +133,13 @@ export function LoginForm() {
               className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
               disabled={isLoading}
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-gray-400 text-sm">
-              Contact your administrator to get access
+              Contact Your Administrator To Get Access
             </p>
           </div>
         </div>
@@ -153,12 +153,12 @@ export function LoginForm() {
           <div className="flex flex-col items-center space-y-3 text-center">
             <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"></div>
             <p className="text-white/60 text-lg max-w-sm">
-              A Platform for Performance Tracking & Marketing Analytics
+              A Platform For Performance Tracking & Marketing Analytics
             </p>
             <div className="flex space-x-4">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
             </div>
           </div>
         </div>

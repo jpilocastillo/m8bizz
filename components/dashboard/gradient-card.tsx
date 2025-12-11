@@ -27,7 +27,7 @@ const gradientVariants = cva("relative overflow-hidden", {
       default: "",
     },
     border: {
-      true: "border border-[#1f2037]",
+      true: "border-none",
       false: "border-none",
     },
   },
@@ -68,9 +68,9 @@ export function GradientCard({
   return (
     <Card
       className={cn(
-        "bg-gradient-to-b from-[#131525] to-[#0f1029]",
+        "bg-m8bs-card",
         gradientVariants({ variant, glow, glowColor, border }),
-        "transition-all duration-300 hover:shadow-lg shadow-md",
+        "shadow-sm",
         className,
       )}
       {...props}
@@ -78,14 +78,14 @@ export function GradientCard({
       {(title || description || icon) && (
         <CardHeader
           className={cn(
-            "relative z-10 flex flex-row items-center justify-between bg-[#0f1029]/50 border-b border-[#1f2037]",
+            "relative z-10 flex flex-row items-center justify-between bg-m8bs-card border-b border-m8bs-border",
             headerClassName,
           )}
         >
           <div>
             {title && (typeof title === "string" ? <CardTitle className="text-white">{title}</CardTitle> : title)}
             {description && (
-              <CardDescription className="mt-1.5 text-gray-400">
+              <CardDescription className="mt-1.5 text-m8bs-muted">
                 {typeof description === "string" ? description : description}
               </CardDescription>
             )}
@@ -93,16 +93,16 @@ export function GradientCard({
           {icon && (
             <div
               className={cn(
-                "text-gray-400 p-2 rounded-full",
+                "text-m8bs-cyan p-2 rounded-full",
                 variant === "blue"
-                  ? "bg-blue-500/10"
+                  ? "bg-gray-500/10"
                   : variant === "green"
                     ? "bg-green-500/10"
                     : variant === "purple"
                       ? "bg-purple-500/10"
                       : variant === "orange"
                         ? "bg-orange-500/10"
-                        : "bg-blue-500/10",
+                        : "bg-gray-500/10",
               )}
             >
               {icon}

@@ -1,10 +1,8 @@
 import type React from "react"
 import { Suspense } from "react"
-import { DashboardHeader } from "@/components/dashboard/header"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { fetchUserEvents } from "@/lib/data"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
 import { DatabaseStatus } from "@/components/database-status"
 
@@ -15,7 +13,6 @@ export default async function EventsLayout({
 }) {
   // Attempt to create the Supabase client
   let user = null
-  let events = []
 
   try {
     const supabase = await createClient()
@@ -30,16 +27,6 @@ export default async function EventsLayout({
     } else {
       user = userData
     }
-
-    if (user) {
-      // Attempt to fetch events, but don't fail if this errors
-      try {
-        events = await fetchUserEvents(user.id)
-      } catch (eventError) {
-        console.error("Error fetching events:", eventError)
-        events = []
-      }
-    }
   } catch (error) {
     console.error("Error in events layout:", error)
   }
@@ -50,15 +37,16 @@ export default async function EventsLayout({
   }
 
   return (
-    <div className="flex h-screen bg-m8bs-bg text-white overflow-hidden">
+    <div className="flex h-screen bg-black text-white overflow-hidden">
       <AnimatedBackground />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <DashboardHeader events={events} />
-        <main className="flex-1 overflow-y-auto p-6 bg-m8bs-bg bg-gradient-radial from-m8bs-card-alt/10 to-m8bs-bg">
+        <main className="flex-1 overflow-y-auto px-6 sm:px-8 lg:px-10 xl:px-12 pt-12 sm:pt-16 pb-8 sm:pb-10 bg-black">
           {/* Show database status banner at the top */}
           <DatabaseStatus />
-          <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+          <div className="max-w-7xl mx-auto">
+            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+          </div>
         </main>
       </div>
     </div>

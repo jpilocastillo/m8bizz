@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { 
   advisorBasecampService, 
@@ -9,6 +9,7 @@ import {
   MarketingCampaign,
   CommissionRates,
   FinancialBook,
+  FinancialOptions,
   MonthlyDataEntry
 } from '@/lib/advisor-basecamp'
 
@@ -18,35 +19,56 @@ export function useAdvisorBasecamp(user: User | null) {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const hasLoadedRef = useRef(false)
+  const userIdRef = useRef<string | null>(null)
 
-  const loadData = useCallback(async () => {
-    if (!user) return
+  // Internal load function
+  const loadDataInternal = useCallback(async (targetUser: User) => {
+    if (!targetUser) return
 
     try {
       setLoading(true)
       setError(null)
-      console.log('Loading advisor basecamp data for user:', user.id)
-      const advisorData = await advisorBasecampService.getAllAdvisorBasecampData(user)
+      console.log('Loading advisor basecamp data for user:', targetUser.id)
+      const advisorData = await advisorBasecampService.getAllAdvisorBasecampData(targetUser)
       console.log('Loaded advisor basecamp data:', advisorData)
       setData(advisorData)
+      hasLoadedRef.current = true
+      userIdRef.current = targetUser.id
     } catch (err) {
       console.error('Error loading advisor basecamp data:', err)
       setError('Failed to load data')
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [])
 
-  // Load data when user changes
+  // Public loadData function that uses current user (forces reload)
+  const loadData = useCallback(async () => {
+    if (!user) return
+    // Reset the ref so it will reload even if data was previously loaded
+    hasLoadedRef.current = false
+    await loadDataInternal(user)
+  }, [user, loadDataInternal])
+
+  // Load data only on initial mount or when user changes
   useEffect(() => {
     if (!user) {
       setData({ campaigns: [] })
       setLoading(false)
+      hasLoadedRef.current = false
+      userIdRef.current = null
       return
     }
 
-    loadData()
-  }, [user, loadData])
+    // Only load if we haven't loaded yet, or if the user has changed
+    if (!hasLoadedRef.current || userIdRef.current !== user.id) {
+      loadDataInternal(user)
+    } else {
+      // Data already loaded for this user, just set loading to false
+      setLoading(false)
+    }
+  }, [user?.id, loadDataInternal]) // Only depend on user.id and the stable loadDataInternal
 
   const updateBusinessGoals = async (goals: BusinessGoals) => {
     if (!user) return false
@@ -193,6 +215,23 @@ export function useAdvisorBasecamp(user: User | null) {
     }
   }
 
+  const updateFinancialOptions = async (options: FinancialOptions) => {
+    if (!user) return false
+
+    try {
+      const updated = await advisorBasecampService.upsertFinancialOptions(user, options)
+      if (updated) {
+        setData(prev => ({ ...prev, financialOptions: updated }))
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Error updating financial options:', err)
+      setError('Failed to update financial options')
+      return false
+    }
+  }
+
   const addMonthlyDataEntry = async (entry: Omit<MonthlyDataEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return false
 
@@ -293,6 +332,7 @@ export function useAdvisorBasecamp(user: User | null) {
     deleteCampaign,
     updateCommissionRates,
     updateFinancialBook,
+    updateFinancialOptions,
     addMonthlyDataEntry,
     updateMonthlyDataEntry,
     deleteMonthlyDataEntry,

@@ -1,7 +1,7 @@
 "use client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
-import { useEffect } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/components/ui/use-toast"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, CheckCircle, ChevronRight, ChevronLeft } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { User } from "@supabase/supabase-js"
 
@@ -38,8 +40,10 @@ const campaignSchema = z.object({
   events: z.string().min(1, "Number of events is required"),
   leads: z.string().min(1, "Leads generated is required"),
   status: z.enum(["Active", "Planned", "Completed", "Paused"]),
+  frequency: z.enum(["Monthly", "Quarterly", "Semi-Annual", "Annual"]).optional(),
   costPerLead: z.string().optional(), // Auto-calculated field
   costPerClient: z.string().optional(), // Auto-calculated field
+  totalCostOfEvent: z.string().optional(), // Auto-calculated field
   foodCosts: z.string().optional(),
 })
 
@@ -71,45 +75,83 @@ const formSchema = z.object({
   campaigns: z.array(campaignSchema).min(1, "At least one campaign is required"),
 
   // Commission Percentages
-  planningFeeRate: z.string().min(1, "Planning fee rate is required"),
+  planningFeeRate: z.string().min(1, "Average planning fee rate is required"),
   annuityCommission: z.string().min(1, "Annuity commission percentage is required"),
   aumCommission: z.string().min(1, "AUM commission percentage is required"),
   lifeCommission: z.string().min(1, "Life commission percentage is required"),
   trailIncomePercentage: z.string().min(1, "Trail income percentage is required"),
-
-  // Financial Book
-  annuityBookValue: z.string().min(1, "Annuity book value is required"),
-  aumBookValue: z.string().min(1, "AUM book value is required"),
-  qualifiedMoneyValue: z.string().min(1, "Qualified money value is required"),
-
-  // Financial Options Percentages
-  surrenderPercent: z.string().min(1, "Surrender percentage is required"),
-  incomeRiderPercent: z.string().min(1, "Income rider percentage is required"),
-  freeWithdrawalPercent: z.string().min(1, "Free withdrawal percentage is required"),
-  lifeInsurancePercent: z.string().min(1, "Life insurance percentage is required"),
-  lifeStrategy1Percent: z.string().min(1, "Life strategy 1 percentage is required"),
-  lifeStrategy2Percent: z.string().min(1, "Life strategy 2 percentage is required"),
-  iraTo7702Percent: z.string().min(1, "IRA to 7702 percentage is required"),
-  approvalRatePercent: z.string().min(1, "Approval rate percentage is required"),
-
-  // Financial Options Rates
-  surrenderRate: z.string().min(1, "Surrender rate is required"),
-  incomeRiderRate: z.string().min(1, "Income rider rate is required"),
-  freeWithdrawalRate: z.string().min(1, "Free withdrawal rate is required"),
-  lifeInsuranceRate: z.string().min(1, "Life insurance rate is required"),
-  lifeStrategy1Rate: z.string().min(1, "Life strategy 1 rate is required"),
-  lifeStrategy2Rate: z.string().min(1, "Life strategy 2 rate is required"),
-  iraTo7702Rate: z.string().min(1, "IRA to 7702 rate is required"),
 })
 
 interface DataEntryFormV2Props {
   user: User
   onComplete?: () => void
+  onCancel?: () => void
   isEditMode?: boolean
 }
 
-export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEntryFormV2Props) {
+export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false }: DataEntryFormV2Props) {
   const { data, loading, saveAllData, error } = useAdvisorBasecamp(user)
+  const [activeTab, setActiveTab] = useState("goals")
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false)
+  const hasInitializedRef = useRef(false)
+  const dataInitializedRef = useRef(false)
+  
+  const tabs = ["goals", "current", "clients", "campaigns", "income"]
+  const currentTabIndex = tabs.indexOf(activeTab)
+  const isFirstTab = currentTabIndex === 0
+  const isLastTab = currentTabIndex === tabs.length - 1
+
+  // Storage key based on user ID
+  const storageKey = user ? `advisor-basecamp-form-${user.id}` : null
+
+  const handleNext = () => {
+    if (!isLastTab) {
+      setActiveTab(tabs[currentTabIndex + 1])
+    }
+  }
+
+  const handlePrevious = () => {
+    if (!isFirstTab) {
+      setActiveTab(tabs[currentTabIndex - 1])
+    }
+  }
+
+  // Load form data from localStorage
+  const loadFormDataFromStorage = (): Partial<z.infer<typeof formSchema>> | null => {
+    if (!storageKey || typeof window === 'undefined') return null
+    
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        return JSON.parse(stored)
+      }
+    } catch (error) {
+      console.error('Error loading form data from localStorage:', error)
+    }
+    return null
+  }
+
+  // Save form data to localStorage
+  const saveFormDataToStorage = (formData: z.infer<typeof formSchema>) => {
+    if (!storageKey || typeof window === 'undefined') return
+    
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(formData))
+    } catch (error) {
+      console.error('Error saving form data to localStorage:', error)
+    }
+  }
+
+  // Clear form data from localStorage
+  const clearFormDataFromStorage = () => {
+    if (!storageKey || typeof window === 'undefined') return
+    
+    try {
+      localStorage.removeItem(storageKey)
+    } catch (error) {
+      console.error('Error clearing form data from localStorage:', error)
+    }
+  }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -137,8 +179,10 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           events: "",
           leads: "",
           status: "Active" as const,
+          frequency: "Monthly" as const,
           costPerLead: "",
           costPerClient: "",
+          totalCostOfEvent: "",
           foodCosts: "",
         },
       ],
@@ -147,35 +191,63 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
       aumCommission: "",
       lifeCommission: "",
       trailIncomePercentage: "",
-      annuityBookValue: "",
-      aumBookValue: "",
-      qualifiedMoneyValue: "",
-
-      // Financial Options Percentages
-      surrenderPercent: "10",
-      incomeRiderPercent: "6",
-      freeWithdrawalPercent: "10",
-      lifeInsurancePercent: "10",
-      lifeStrategy1Percent: "1",
-      lifeStrategy2Percent: "2",
-      iraTo7702Percent: "33",
-      approvalRatePercent: "50",
-
-      // Financial Options Rates
-      surrenderRate: "6",
-      incomeRiderRate: "10",
-      freeWithdrawalRate: "6",
-      lifeInsuranceRate: "10",
-      lifeStrategy1Rate: "10",
-      lifeStrategy2Rate: "10",
-      iraTo7702Rate: "10",
     },
   })
 
-  // Reset form when data changes
+  // Load from localStorage on mount (prioritize localStorage over database)
   useEffect(() => {
-    if (data && !loading) {
-      form.reset({
+    if (!loading && !hasLoadedFromStorage) {
+      const storedData = loadFormDataFromStorage()
+      
+      // Check if stored data has any meaningful values (not all empty)
+      const hasStoredData = storedData && Object.values(storedData).some(value => {
+        if (Array.isArray(value)) {
+          return value.some((item: any) => 
+            item && typeof item === 'object' && Object.values(item).some(v => v && v.toString().trim() !== '')
+          )
+        }
+        return value && value.toString().trim() !== ''
+      })
+      
+      // Always prioritize localStorage if it has data (user has unsaved changes)
+      if (hasStoredData) {
+        form.reset(storedData as z.infer<typeof formSchema>)
+        setHasLoadedFromStorage(true)
+        hasInitializedRef.current = true
+        return
+      }
+      
+      // If no localStorage data, load from database (only on initial load)
+      if (data && isEditMode && !hasInitializedRef.current) {
+        // Will be handled by the next useEffect
+        hasInitializedRef.current = true
+      }
+      
+      setHasLoadedFromStorage(true)
+    }
+  }, [loading, hasLoadedFromStorage, data, isEditMode, form])
+
+  // Reset form when data changes (from database) - only on initial load, not on subsequent data changes
+  useEffect(() => {
+    // Only reset from database if:
+    // 1. We have data and it's loaded
+    // 2. We haven't initialized yet
+    // 3. We're in edit mode
+    // 4. There's no unsaved localStorage data
+    if (data && !loading && hasLoadedFromStorage && isEditMode && !dataInitializedRef.current) {
+      const storedData = loadFormDataFromStorage()
+      const hasStoredData = storedData && Object.values(storedData).some(value => {
+        if (Array.isArray(value)) {
+          return value.some((item: any) => 
+            item && typeof item === 'object' && Object.values(item).some(v => v && v.toString().trim() !== '')
+          )
+        }
+        return value && value.toString().trim() !== ''
+      })
+      
+      // Only load from database if there's no unsaved localStorage data
+      if (!hasStoredData) {
+        form.reset({
         businessGoal: data.businessGoals?.business_goal?.toString() || "",
         aumGoalPercentage: data.businessGoals?.aum_goal_percentage?.toString() || "",
         annuityGoalPercentage: data.businessGoals?.annuity_goal_percentage?.toString() || "",
@@ -198,8 +270,10 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           events: c.events.toString(),
           leads: c.leads.toString(),
           status: c.status,
+          frequency: (c as any).frequency || "Monthly",
           costPerLead: c.cost_per_lead?.toString() || "",
           costPerClient: c.cost_per_client?.toString() || "",
+          totalCostOfEvent: (c as any).total_cost_of_event?.toString() || "",
           foodCosts: c.food_costs?.toString() || "",
         })) : [
           {
@@ -208,8 +282,10 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
             events: "",
             leads: "",
             status: "Active" as const,
+            frequency: "Monthly" as const,
             costPerLead: "",
             costPerClient: "",
+            totalCostOfEvent: "",
             foodCosts: "",
           },
         ],
@@ -218,31 +294,13 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         aumCommission: data.commissionRates?.aum_commission?.toString() || "",
         lifeCommission: data.commissionRates?.life_commission?.toString() || "",
         trailIncomePercentage: data.commissionRates?.trail_income_percentage?.toString() || "",
-        annuityBookValue: data.financialBook?.annuity_book_value?.toString() || "",
-        aumBookValue: data.financialBook?.aum_book_value?.toString() || "",
-        qualifiedMoneyValue: data.financialBook?.qualified_money_value?.toString() || "",
-
-        // Financial Options Percentages
-        surrenderPercent: data.financialOptions?.surrender_percent?.toString() || "10",
-        incomeRiderPercent: data.financialOptions?.income_rider_percent?.toString() || "6",
-        freeWithdrawalPercent: data.financialOptions?.free_withdrawal_percent?.toString() || "10",
-        lifeInsurancePercent: data.financialOptions?.life_insurance_percent?.toString() || "10",
-        lifeStrategy1Percent: data.financialOptions?.life_strategy1_percent?.toString() || "1",
-        lifeStrategy2Percent: data.financialOptions?.life_strategy2_percent?.toString() || "2",
-        iraTo7702Percent: data.financialOptions?.ira_to_7702_percent?.toString() || "33",
-        approvalRatePercent: data.financialOptions?.approval_rate_percent?.toString() || "50",
-
-        // Financial Options Rates
-        surrenderRate: data.financialOptions?.surrender_rate?.toString() || "6",
-        incomeRiderRate: data.financialOptions?.income_rider_rate?.toString() || "10",
-        freeWithdrawalRate: data.financialOptions?.free_withdrawal_rate?.toString() || "6",
-        lifeInsuranceRate: data.financialOptions?.life_insurance_rate?.toString() || "10",
-        lifeStrategy1Rate: data.financialOptions?.life_strategy1_rate?.toString() || "10",
-        lifeStrategy2Rate: data.financialOptions?.life_strategy2_rate?.toString() || "10",
-        iraTo7702Rate: data.financialOptions?.ira_to_7702_rate?.toString() || "10",
-      })
+        })
+        // Clear storage when loading from database (only on initial load)
+        clearFormDataFromStorage()
+        dataInitializedRef.current = true
+      }
     }
-  }, [data, loading, form])
+  }, [data, loading, form, hasLoadedFromStorage, isEditMode])
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -309,6 +367,215 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
     form.setValue("monthlyIdealProspects", monthlyIdealProspects.toFixed(2))
   }, [avgNetWorthNeeded, calculatedAnnuityClosed, calculatedAUMAccounts, monthlyIdealProspects, form])
 
+  // Calculate form completion progress
+  const watchedProgressFields = form.watch([
+    'businessGoal',
+    'aumGoalPercentage',
+    'annuityGoalPercentage',
+    'lifeTargetGoalPercentage',
+    'currentAUM',
+    'currentAnnuity',
+    'currentLifeProduction',
+    'avgAnnuitySize',
+    'avgAUMSize',
+    'appointmentAttrition',
+    'avgCloseRatio',
+    'campaigns',
+    'planningFeeRate',
+    'annuityCommission',
+    'aumCommission',
+    'lifeCommission',
+    'trailIncomePercentage',
+    'annuityBookValue',
+    'aumBookValue',
+    'qualifiedMoneyValue',
+    'surrenderPercent',
+    'incomeRiderPercent',
+    'freeWithdrawalPercent',
+    'lifeInsurancePercent',
+    'lifeStrategy1Percent',
+    'lifeStrategy2Percent',
+    'iraTo7702Percent',
+    'approvalRatePercent',
+    'surrenderRate',
+    'incomeRiderRate',
+    'freeWithdrawalRate',
+    'lifeInsuranceRate',
+    'lifeStrategy1Rate',
+    'lifeStrategy2Rate',
+    'iraTo7702Rate',
+  ])
+  
+  const formProgress = useMemo(() => {
+    const [
+      businessGoal,
+      aumGoalPercentage,
+      annuityGoalPercentage,
+      lifeTargetGoalPercentage,
+      currentAUM,
+      currentAnnuity,
+      currentLifeProduction,
+      avgAnnuitySize,
+      avgAUMSize,
+      appointmentAttrition,
+      avgCloseRatio,
+      campaigns,
+      planningFeeRate,
+      annuityCommission,
+      aumCommission,
+      lifeCommission,
+      trailIncomePercentage,
+      annuityBookValue,
+      aumBookValue,
+      qualifiedMoneyValue,
+      surrenderPercent,
+      incomeRiderPercent,
+      freeWithdrawalPercent,
+      lifeInsurancePercent,
+      lifeStrategy1Percent,
+      lifeStrategy2Percent,
+      iraTo7702Percent,
+      approvalRatePercent,
+      surrenderRate,
+      incomeRiderRate,
+      freeWithdrawalRate,
+      lifeInsuranceRate,
+      lifeStrategy1Rate,
+      lifeStrategy2Rate,
+      iraTo7702Rate,
+    ] = watchedProgressFields
+
+    const requiredFields = [
+      // Business Goals
+      { key: 'businessGoal', value: businessGoal },
+      { key: 'aumGoalPercentage', value: aumGoalPercentage },
+      { key: 'annuityGoalPercentage', value: annuityGoalPercentage },
+      { key: 'lifeTargetGoalPercentage', value: lifeTargetGoalPercentage },
+      
+      // Current Values
+      { key: 'currentAUM', value: currentAUM },
+      { key: 'currentAnnuity', value: currentAnnuity },
+      { key: 'currentLifeProduction', value: currentLifeProduction },
+      
+      // Client Metrics
+      { key: 'avgAnnuitySize', value: avgAnnuitySize },
+      { key: 'avgAUMSize', value: avgAUMSize },
+      { key: 'appointmentAttrition', value: appointmentAttrition },
+      { key: 'avgCloseRatio', value: avgCloseRatio },
+      
+      // Campaigns (at least one campaign with all required fields and non-zero values)
+      { key: 'campaigns', value: campaigns && campaigns.length > 0 && campaigns.some((c: any) => {
+        if (!c.name || !c.budget || !c.events || !c.leads) return false
+        // Check that budget, events, and leads are not zero
+        const budget = Number.parseFloat(c.budget.toString().replace(/[$,]/g, ''))
+        const events = Number.parseInt(c.events.toString())
+        const leads = Number.parseInt(c.leads.toString())
+        return !isNaN(budget) && budget !== 0 && !isNaN(events) && events !== 0 && !isNaN(leads) && leads !== 0
+      }) },
+      
+      // Commission Rates
+      { key: 'planningFeeRate', value: planningFeeRate },
+      { key: 'annuityCommission', value: annuityCommission },
+      { key: 'aumCommission', value: aumCommission },
+      { key: 'lifeCommission', value: lifeCommission },
+      { key: 'trailIncomePercentage', value: trailIncomePercentage },
+      
+      // Financial Book
+      { key: 'annuityBookValue', value: annuityBookValue },
+      { key: 'aumBookValue', value: aumBookValue },
+      { key: 'qualifiedMoneyValue', value: qualifiedMoneyValue },
+      
+      // Financial Options Percentages
+      { key: 'surrenderPercent', value: surrenderPercent },
+      { key: 'incomeRiderPercent', value: incomeRiderPercent },
+      { key: 'freeWithdrawalPercent', value: freeWithdrawalPercent },
+      { key: 'lifeInsurancePercent', value: lifeInsurancePercent },
+      { key: 'lifeStrategy1Percent', value: lifeStrategy1Percent },
+      { key: 'lifeStrategy2Percent', value: lifeStrategy2Percent },
+      { key: 'iraTo7702Percent', value: iraTo7702Percent },
+      { key: 'approvalRatePercent', value: approvalRatePercent },
+      
+      // Financial Options Rates
+      { key: 'surrenderRate', value: surrenderRate },
+      { key: 'incomeRiderRate', value: incomeRiderRate },
+      { key: 'freeWithdrawalRate', value: freeWithdrawalRate },
+      { key: 'lifeInsuranceRate', value: lifeInsuranceRate },
+      { key: 'lifeStrategy1Rate', value: lifeStrategy1Rate },
+      { key: 'lifeStrategy2Rate', value: lifeStrategy2Rate },
+      { key: 'iraTo7702Rate', value: iraTo7702Rate },
+    ]
+    
+    const completedFields = requiredFields.filter(field => {
+      if (field.key === 'campaigns') {
+        return field.value === true
+      }
+      // Check if field has a value and it's not empty
+      if (!field.value || field.value.toString().trim().length === 0) {
+        return false
+      }
+      // Parse the value and check if it's zero (treat zero as incomplete)
+      const numValue = Number.parseFloat(field.value.toString().replace(/[$,]/g, ''))
+      return !isNaN(numValue) && numValue !== 0
+    }).length
+    
+    return Math.round((completedFields / requiredFields.length) * 100)
+  }, [watchedProgressFields])
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !storageKey) return
+    
+    let timeoutId: NodeJS.Timeout | null = null
+    
+    const subscription = form.watch((formData) => {
+      // Clear previous timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      
+      // Debounce the save to avoid too many writes
+      timeoutId = setTimeout(() => {
+        saveFormDataToStorage(formData as z.infer<typeof formSchema>)
+      }, 500) // Save 500ms after user stops typing
+    })
+    
+    return () => {
+      subscription.unsubscribe()
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [form, hasLoadedFromStorage, storageKey])
+
+  // Handle page visibility - restore form from localStorage when user comes back
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleVisibilityChange = () => {
+      // When page becomes visible again, check if we should restore from localStorage
+      if (!document.hidden && hasLoadedFromStorage && storageKey) {
+        const storedData = loadFormDataFromStorage()
+        const hasStoredData = storedData && Object.values(storedData).some(value => {
+          if (Array.isArray(value)) {
+            return value.some((item: any) => 
+              item && typeof item === 'object' && Object.values(item).some(v => v && v.toString().trim() !== '')
+            )
+          }
+          return value && value.toString().trim() !== ''
+        })
+        
+        // If there's unsaved data, restore it (don't let database overwrite it)
+        if (hasStoredData && dataInitializedRef.current) {
+          form.reset(storedData as z.infer<typeof formSchema>)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [hasLoadedFromStorage, storageKey, form])
 
   // Calculate life target goal amount
   const lifeTargetGoalAmount = (businessGoalAmount * Number.parseFloat(watchedValues[3] || "0")) / 100
@@ -361,6 +628,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         },
         campaigns: values.campaigns.map(c => {
           const marketingCosts = Number.parseFloat(c.budget)
+          const events = Number.parseInt(c.events)
           const leads = Number.parseInt(c.leads)
           const foodCosts = Number.parseFloat(c.foodCosts || "0")
           const avgCloseRatio = Number.parseFloat(values.avgCloseRatio)
@@ -370,14 +638,19 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           const closeRatioDecimal = avgCloseRatio / 100
           const costPerClient = closeRatioDecimal > 0 ? costPerLead / closeRatioDecimal : 0
           
+          // Calculate total cost of event: (Marketing Costs + Food Costs) / Number of Events
+          const totalCostOfEvent = events > 0 ? (marketingCosts + foodCosts) / events : 0
+          
           return {
             name: c.name,
             budget: marketingCosts,
-            events: Number.parseInt(c.events),
+            events: events,
             leads: leads,
             status: c.status,
+            frequency: c.frequency || "Monthly",
             cost_per_lead: costPerLead,
             cost_per_client: costPerClient,
+            total_cost_of_event: totalCostOfEvent,
             food_costs: foodCosts,
           }
         }),
@@ -389,28 +662,6 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
           life_commission: Number.parseFloat(values.lifeCommission),
           trail_income_percentage: Number.parseFloat(values.trailIncomePercentage),
         },
-        financialBook: {
-          annuity_book_value: Number.parseFloat(values.annuityBookValue),
-          aum_book_value: Number.parseFloat(values.aumBookValue),
-          qualified_money_value: Number.parseFloat(values.qualifiedMoneyValue),
-        },
-        financialOptions: {
-          surrender_percent: Number.parseFloat(values.surrenderPercent),
-          income_rider_percent: Number.parseFloat(values.incomeRiderPercent),
-          free_withdrawal_percent: Number.parseFloat(values.freeWithdrawalPercent),
-          life_insurance_percent: Number.parseFloat(values.lifeInsurancePercent),
-          life_strategy1_percent: Number.parseFloat(values.lifeStrategy1Percent),
-          life_strategy2_percent: Number.parseFloat(values.lifeStrategy2Percent),
-          ira_to_7702_percent: Number.parseFloat(values.iraTo7702Percent),
-          approval_rate_percent: Number.parseFloat(values.approvalRatePercent),
-          surrender_rate: Number.parseFloat(values.surrenderRate),
-          income_rider_rate: Number.parseFloat(values.incomeRiderRate),
-          free_withdrawal_rate: Number.parseFloat(values.freeWithdrawalRate),
-          life_insurance_rate: Number.parseFloat(values.lifeInsuranceRate),
-          life_strategy1_rate: Number.parseFloat(values.lifeStrategy1Rate),
-          life_strategy2_rate: Number.parseFloat(values.lifeStrategy2Rate),
-          ira_to_7702_rate: Number.parseFloat(values.iraTo7702Rate),
-        },
       }
 
       console.log('Submitting advisor data:', advisorData)
@@ -419,6 +670,14 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
       
       if (success) {
         console.log('Form submission successful, calling onComplete...')
+        
+        // Clear localStorage after successful submission
+        clearFormDataFromStorage()
+        
+        // Reset refs so form can properly initialize on next load
+        hasInitializedRef.current = false
+        dataInitializedRef.current = false
+        
         toast({
           title: isEditMode ? "Data updated successfully" : "Business data setup complete!",
           description: isEditMode 
@@ -457,8 +716,10 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
       events: "",
       leads: "",
       status: "Planned",
+      frequency: "Monthly",
       costPerLead: "",
       costPerClient: "",
+      totalCostOfEvent: "",
       foodCosts: "",
     })
   }
@@ -479,19 +740,40 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
         </h1>
         <p className="text-muted-foreground mt-2">
           {isEditMode 
-            ? "Update your business goals, metrics, and campaign data."
-            : "Complete your business profile to access your personalized advisor dashboard."
+            ? "Update Your Business Goals, Metrics, And Campaign Data."
+            : "Complete Your Business Profile To Access Your Personalized Advisor Dashboard."
           }
         </p>
         {!isEditMode && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
             <p className="text-sm text-blue-800">
-              <strong>New User Setup:</strong> Fill out all 5 tabs completely, then click "Submit Data" at the bottom. 
-              Once submitted, you'll automatically see your personalized advisor basecamp dashboard with charts, metrics, and insights.
-              All currency fields will be automatically formatted with commas and decimals.
+              <strong>New User Setup:</strong> Fill Out All 5 Tabs Completely, Then Click "Submit Data" At The Bottom. 
+              Once Submitted, You'll Automatically See Your Personalized Advisor Basecamp Dashboard With Charts, Metrics, And Insights.
+              All Currency Fields Will Be Automatically Formatted With Commas And Decimals.
             </p>
           </div>
         )}
+        
+        {/* Data Completeness Progress Bar */}
+        <Card className="mt-4 bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-white">Data Completeness</span>
+                <Badge variant="secondary" className="bg-m8bs-blue/20 text-m8bs-blue border-m8bs-blue/50">
+                  {formProgress}%
+                </Badge>
+              </div>
+              <Progress value={formProgress} className="h-2 bg-m8bs-border" />
+              {formProgress === 100 && (
+                <div className="flex items-center gap-2 mt-2 text-green-400">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Ready To Submit!</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {error && (
@@ -502,13 +784,13 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <Tabs defaultValue="goals" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-3 md:grid-cols-5 w-full">
               <TabsTrigger value="goals">Goals</TabsTrigger>
-              <TabsTrigger value="current">Advisor Book</TabsTrigger>
+              <TabsTrigger value="current">Current Advisor Book</TabsTrigger>
               <TabsTrigger value="clients">Client Metrics</TabsTrigger>
               <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-              <TabsTrigger value="income">Income & Book</TabsTrigger>
+              <TabsTrigger value="income">Revenue</TabsTrigger>
             </TabsList>
 
             {/* Goals Tab */}
@@ -604,11 +886,11 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
               </Card>
             </TabsContent>
 
-            {/* Advisor Book Tab */}
+            {/* Current Advisor Book Tab */}
             <TabsContent value="current">
               <Card>
                 <CardHeader>
-                  <CardTitle>Advisor Book</CardTitle>
+                  <CardTitle>Current Advisor Book</CardTitle>
                   <CardDescription>Your Current Advisor Book Metrics</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -849,7 +1131,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField
                           control={form.control}
                           name={`campaigns.${index}.name`}
@@ -881,6 +1163,30 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                                   <SelectItem value="Planned">Planned</SelectItem>
                                   <SelectItem value="Completed">Completed</SelectItem>
                                   <SelectItem value="Paused">Paused</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`campaigns.${index}.frequency`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Frequency</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value || "Monthly"}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select frequency" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Monthly">Monthly</SelectItem>
+                                  <SelectItem value="Quarterly">Quarterly</SelectItem>
+                                  <SelectItem value="Semi-Annual">Semi-Annual</SelectItem>
+                                  <SelectItem value="Annual">Annual</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -942,7 +1248,36 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <FormField
+                          control={form.control}
+                          name={`campaigns.${index}.totalCostOfEvent`}
+                          render={({ field }) => {
+                            const marketingCosts = Number.parseFloat(form.watch(`campaigns.${index}.budget`) || "0")
+                            const events = Number.parseFloat(form.watch(`campaigns.${index}.events`) || "0")
+                            const foodCosts = Number.parseFloat(form.watch(`campaigns.${index}.foodCosts`) || "0")
+                            const totalCostOfEvent = events > 0 ? (marketingCosts + foodCosts) / events : 0
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel>Total Cost of Event ($)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="text" 
+                                    value={formatCurrency(totalCostOfEvent)}
+                                    readOnly
+                                    className="bg-muted"
+                                    onChange={() => {}} // Prevent changes
+                                    onBlur={() => {}} // Prevent blur events
+                                  />
+                                </FormControl>
+                                <FormDescription>Auto-Calculated: (Marketing Costs + Food Costs) ÷ Events</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }}
+                        />
+
                         <FormField
                           control={form.control}
                           name={`campaigns.${index}.costPerLead`}
@@ -1039,7 +1374,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
               </Card>
             </TabsContent>
 
-            {/* Income & Book Tab */}
+            {/* Revenue Tab */}
             <TabsContent value="income">
               <div className="space-y-6">
                 <Card>
@@ -1054,7 +1389,7 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                         name="planningFeeRate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Planning Fee Rate ($)</FormLabel>
+                            <FormLabel>Average Planning Fee Rate ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="text"
@@ -1148,378 +1483,77 @@ export function DataEntryFormV2({ user, onComplete, isEditMode = false }: DataEn
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Financial Book Values</CardTitle>
-                    <CardDescription>Your Current Book Values For Financial Planning</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="annuityBookValue"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Annuity Book Value ($)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="text"
-                                placeholder="$0"
-                                {...field}
-                                value={formatCurrency(field.value)}
-                                onChange={(e) => {
-                                  const rawValue = parseCurrency(e.target.value)
-                                  field.onChange(rawValue)
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="aumBookValue"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>AUM Book Value ($)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="text"
-                                placeholder="$0"
-                                {...field}
-                                value={formatCurrency(field.value)}
-                                onChange={(e) => {
-                                  const rawValue = parseCurrency(e.target.value)
-                                  field.onChange(rawValue)
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="qualifiedMoneyValue"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Qualified Money Value ($)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="text"
-                                placeholder="$0"
-                                {...field}
-                                value={formatCurrency(field.value)}
-                                onChange={(e) => {
-                                  const rawValue = parseCurrency(e.target.value)
-                                  field.onChange(rawValue)
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Financial Options Percentages</CardTitle>
-                    <CardDescription>Configure Percentages For Different Financial Options</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Option 1 - Annuity Book Section */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium border-b pb-2">Option 1 - Annuity Book Percentages</h3>
-                      <p className="text-sm text-muted-foreground">Configure Percentages For Annuity Book Opportunities</p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="surrenderPercent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Surrender Percentage (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
-                              </FormControl>
-                              <FormDescription>% Of Current Annuity Book For Surrender Opportunities</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="surrenderRate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Surrender Rate (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="6" {...field} />
-                              </FormControl>
-                              <FormDescription>Commission Rate For Surrender Transactions</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="incomeRiderPercent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Income Rider Percentage (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" step="0.1" placeholder="6" {...field} />
-                              </FormControl>
-                              <FormDescription>% Of Current Annuity Book For Income Rider Opportunities</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="incomeRiderRate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Income Rider Rate (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="10" {...field} />
-                              </FormControl>
-                              <FormDescription>Commission Rate For Income Rider Transactions</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="freeWithdrawalPercent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Free Withdrawal Percentage (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
-                              </FormControl>
-                              <FormDescription>% Of Current Annuity Book For Free Withdrawal Opportunities</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="freeWithdrawalRate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Free Withdrawal Rate (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="6" {...field} />
-                              </FormControl>
-                              <FormDescription>Commission Rate For Free Withdrawal Transactions</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="lifeInsurancePercent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Life Insurance Percentage (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
-                              </FormControl>
-                              <FormDescription>% Of Current Annuity Book For Life Insurance Opportunities</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="lifeInsuranceRate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Life Insurance Rate (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="10" {...field} />
-                              </FormControl>
-                              <FormDescription>Commission Rate For Life Insurance Transactions</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Option 2 - AUM Book Section */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium border-b pb-2">Option 2 - AUM Book Percentages</h3>
-                      <p className="text-sm text-muted-foreground">Configure Percentages For AUM Book Opportunities</p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="lifeStrategy1Percent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Life Strategy 1 Percentage (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" step="0.1" placeholder="1" {...field} />
-                              </FormControl>
-                              <FormDescription>% Of Current AUM For Life Strategy 1 Opportunities</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="lifeStrategy1Rate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Life Strategy 1 Rate (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="10" {...field} />
-                              </FormControl>
-                              <FormDescription>Commission Rate For Life Strategy 1 Transactions</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="lifeStrategy2Percent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Life Strategy 2 Percentage (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" step="0.1" placeholder="2" {...field} />
-                              </FormControl>
-                              <FormDescription>% Of Current AUM For Life Strategy 2 Opportunities</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="lifeStrategy2Rate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Life Strategy 2 Rate (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="10" {...field} />
-                              </FormControl>
-                              <FormDescription>Commission Rate For Life Strategy 2 Transactions</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Option 3 - Qualified Money Section */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium border-b pb-2">Option 3 - Qualified Money Percentages</h3>
-                      <p className="text-sm text-muted-foreground">Configure Percentages For Qualified Money Opportunities</p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="iraTo7702Percent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>IRA to 7702 Percentage (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" step="0.1" placeholder="33" {...field} />
-                              </FormControl>
-                              <FormDescription>% Of Qualified Money For IRA To 7702 Opportunities</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="iraTo7702Rate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>IRA to 7702 Rate (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="10" {...field} />
-                              </FormControl>
-                              <FormDescription>Commission Rate For IRA To 7702 Transactions</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="approvalRatePercent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Approval Rate Percentage (%)</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="0" max="100" step="0.1" placeholder="50" {...field} />
-                              </FormControl>
-                              <FormDescription>% Approval Rate For Qualified Money Opportunities</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end space-x-4">
-            <Button 
-              type="submit" 
-              size="lg"
-              onClick={async () => {
-                console.log('🔘 Submit button clicked!')
-                console.log('Form is valid:', form.formState.isValid)
-                console.log('Form errors:', form.formState.errors)
-                console.log('Form values:', form.getValues())
-                
-                // Force validation check
-                console.log('🔍 Triggering validation...')
-                const isValid = await form.trigger()
-                console.log('🔍 Validation result:', isValid)
-                console.log('🔍 Form errors after trigger:', form.formState.errors)
-                
-                // Check if form is valid before submission
-                if (!isValid) {
-                  console.log('❌ Form is not valid, preventing submission')
-                  console.log('❌ Validation errors:', JSON.stringify(form.formState.errors, null, 2))
+          <div className="flex justify-between items-center space-x-4 pt-4 border-t">
+            <div className="flex space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={isFirstTab}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleNext}
+                disabled={isLastTab}
+                className="flex items-center gap-2"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              {onCancel && (
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  size="lg"
+                  onClick={onCancel}
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button 
+                type="submit" 
+                size="lg"
+                onClick={async () => {
+                  console.log('🔘 Submit button clicked!')
+                  console.log('Form is valid:', form.formState.isValid)
+                  console.log('Form errors:', form.formState.errors)
+                  console.log('Form values:', form.getValues())
                   
-                  // Show specific field errors
-                  Object.keys(form.formState.errors).forEach(field => {
-                    console.log(`❌ Field "${field}":`, form.formState.errors[field])
-                  })
+                  // Force validation check
+                  console.log('🔍 Triggering validation...')
+                  const isValid = await form.trigger()
+                  console.log('🔍 Validation result:', isValid)
+                  console.log('🔍 Form errors after trigger:', form.formState.errors)
                   
-                  return
-                }
-                console.log('✅ Form is valid, proceeding with submission')
-              }}
-            >
-              {isEditMode ? "Update Data" : "Complete Setup"}
-            </Button>
+                  // Check if form is valid before submission
+                  if (!isValid) {
+                    console.log('❌ Form is not valid, preventing submission')
+                    console.log('❌ Validation errors:', JSON.stringify(form.formState.errors, null, 2))
+                    
+                    // Show specific field errors
+                    Object.keys(form.formState.errors).forEach(field => {
+                      console.log(`❌ Field "${field}":`, form.formState.errors[field])
+                    })
+                    
+                    return
+                  }
+                  console.log('✅ Form is valid, proceeding with submission')
+                }}
+              >
+                {isEditMode ? "Update Data" : "Complete Setup"}
+              </Button>
+            </div>
           </div>
         </form>
       </Form>

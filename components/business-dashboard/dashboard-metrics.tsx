@@ -1,9 +1,8 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { DollarSign, Users, Target, Calendar } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 import { BusinessGoals, CurrentValues, ClientMetrics } from "@/lib/advisor-basecamp"
 
 interface DashboardMetricsProps {
@@ -139,78 +138,91 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
     },
   ]
 
-  const getColorClasses = (color: string) => {
+  const getColorConfig = (color: string) => {
     const colorMap = {
-      red: "bg-red-500 text-red-500 bg-red-500/10",
-      purple: "bg-purple-500 text-purple-500 bg-purple-500/10",
-      blue: "bg-blue-500 text-blue-500 bg-blue-500/10",
-      yellow: "bg-yellow-500 text-yellow-500 bg-yellow-500/10",
-      green: "bg-green-500 text-green-500 bg-green-500/10",
+      red: {
+        bgColor: "bg-red-500/20",
+        iconColor: "text-red-500",
+      },
+      purple: {
+        bgColor: "bg-purple-500/20",
+        iconColor: "text-purple-500",
+      },
+      blue: {
+        bgColor: "bg-m8bs-card-alt",
+        iconColor: "text-m8bs-blue",
+      },
+      yellow: {
+        bgColor: "bg-yellow-500/20",
+        iconColor: "text-yellow-500",
+      },
+      green: {
+        bgColor: "bg-green-500/20",
+        iconColor: "text-green-500",
+      },
     }
-    return colorMap[color as keyof typeof colorMap] || "bg-gray-500 text-gray-500 bg-gray-500/10"
+    return colorMap[color as keyof typeof colorMap] || {
+      bgColor: "bg-gray-500/20",
+      iconColor: "text-gray-500",
+    }
   }
 
-  const getTextColor = (color: string) => {
-    const colorMap = {
-      red: "text-red-500",
-      purple: "text-purple-500",
-      blue: "text-blue-500",
-      yellow: "text-yellow-500",
-      green: "text-green-500",
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
     }
-    return colorMap[color as keyof typeof colorMap] || "text-gray-500"
+  }
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
   }
 
   return (
-    <TooltipProvider>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 w-full max-w-full">
-        {metrics.map((metric, index) => (
-          <Card 
-            key={index} 
-            className="border-none shadow-lg overflow-hidden h-full flex flex-col hover:shadow-xl transition-all duration-300"
-            role="article"
-            aria-label={`${metric.title}: ${metric.value}`}
-          >
-            <div className={cn("h-1 w-full", getColorClasses(metric.color).split(" ")[0])}></div>
-            
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-3 sm:pb-3 sm:pt-4 sm:px-4">
-              <div className="flex-1 pr-2 min-w-0">
-                <CardTitle className="text-xs sm:text-sm font-semibold leading-tight text-white truncate">
-                  {metric.title}
-                </CardTitle>
-              </div>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    className={cn("rounded-full p-1.5 sm:p-2 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500", getColorClasses(metric.color).split(" ")[2])}
-                    aria-label={`More information about ${metric.title}`}
-                  >
-                    <metric.icon className={cn("h-3 w-3 sm:h-4 sm:w-4", getTextColor(metric.color))} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{metric.tooltip}</p>
-                </TooltipContent>
-              </Tooltip>
-            </CardHeader>
-            
-            <CardContent className="flex-1 flex items-center justify-center px-3 pb-3 sm:px-4 sm:pb-4">
-              <div className={cn(
-                "font-bold text-center leading-none tracking-tight", 
-                getTextColor(metric.color),
-                "min-h-[2rem] sm:min-h-[2.5rem] flex items-center justify-center w-full",
-                // Adjust font size for currency values to maintain alignment
-                metric.title === "Total Advisor Book" ? "text-lg sm:text-2xl" : "text-xl sm:text-3xl"
-              )}>
-                <span className="block w-full text-center">
-                  {metric.value}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+    <motion.div 
+      className="w-full"
+      variants={container}
+      initial="hidden"
+      animate="show"
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {metrics.map((metric, index) => {
+          const colorConfig = getColorConfig(metric.color)
+          return (
+            <motion.div
+              key={index}
+              variants={item}
+              whileHover={{ scale: 1.05, y: -5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Card 
+                className="bg-m8bs-card text-white shadow-sm h-full"
+                role="article"
+                aria-label={`${metric.title}: ${metric.value}`}
+              >
+                <CardContent className="p-3 flex flex-col h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-white/80 font-medium tracking-wide">{metric.title}</span>
+                    <div className={`${colorConfig.bgColor} p-2 rounded-lg`} aria-hidden="true">
+                      <metric.icon className={`h-4 w-4 ${colorConfig.iconColor}`} />
+                    </div>
+                  </div>
+                  <div className="text-xl font-extrabold tracking-tight text-white mb-1" aria-label={`Value: ${metric.value}`}>
+                    {metric.value}
+                  </div>
+                  <div className="text-xs text-white/60 mt-auto font-medium" aria-label={`Additional info: ${metric.description}`}>
+                    {metric.description}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )
+        })}
       </div>
-    </TooltipProvider>
+    </motion.div>
   )
 }

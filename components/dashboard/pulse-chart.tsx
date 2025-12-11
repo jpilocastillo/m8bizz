@@ -177,11 +177,11 @@ export function PulseChart({ title, data, maxValue, color = "#3b82f6", icon }: P
   }, [data, color, maxValue])
 
   return (
-    <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-md h-full">
-      <CardHeader className="bg-m8bs-card-alt border-b border-m8bs-border px-6 py-4">
+    <Card className="bg-black border-m8bs-border rounded-lg overflow-hidden shadow-md h-full">
+      <CardHeader className="bg-black border-b border-m8bs-border px-6 py-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-extrabold text-white flex items-center tracking-tight">{title}</CardTitle>
-          {icon && <div className="bg-blue-500/20 p-2 rounded-lg">{icon}</div>}
+          {icon && <div className="bg-gray-500/20 p-2 rounded-lg">{icon}</div>}
         </div>
       </CardHeader>
       <CardContent className="p-0 h-48">

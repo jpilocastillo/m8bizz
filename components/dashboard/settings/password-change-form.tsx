@@ -13,11 +13,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createClient } from "@/lib/supabase/client"
 
 const formSchema = z.object({
-  currentPassword: z.string().min(1, { message: "Current password is required" }),
-  newPassword: z.string().min(6, { message: "New password must be at least 6 characters" }),
+  currentPassword: z.string().min(1, { message: "Current Password Is Required" }),
+  newPassword: z.string().min(6, { message: "New Password Must Be At Least 6 Characters" }),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Passwords Don't Match",
   path: ["confirmPassword"],
 })
 
@@ -48,7 +48,7 @@ export function PasswordChangeForm() {
       })
 
       if (signInError) {
-        throw new Error("Current password is incorrect")
+        throw new Error("Current Password Is Incorrect")
       }
 
       // If current password is correct, update to new password
@@ -61,8 +61,8 @@ export function PasswordChangeForm() {
       }
 
       toast({
-        title: "Password updated",
-        description: "Your password has been successfully updated.",
+        title: "Password Updated",
+        description: "Your Password Has Been Successfully Updated.",
       })
 
       // Clear form after successful update
@@ -72,7 +72,7 @@ export function PasswordChangeForm() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update password. Please try again.",
+        description: error instanceof Error ? error.message : "Failed To Update Password. Please Try Again.",
       })
     } finally {
       setIsLoading(false)

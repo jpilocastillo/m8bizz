@@ -36,10 +36,10 @@ export function IncomeBreakdown({
   if (!businessGoals || !currentValues || !clientMetrics || !commissionRates) {
     return (
       <div className="space-y-6">
-        <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-none">
-          <CardHeader>
-            <CardTitle className="text-white">Income Breakdown</CardTitle>
-            <CardDescription className="text-gray-300">Loading income data...</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Breakdown</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Loading income data...</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="animate-pulse space-y-4">
@@ -82,7 +82,7 @@ export function IncomeBreakdown({
 
     const incomeData = [
       { 
-        source: `Planning Fees (@ ${formatCurrency(commissionRates.planning_fee_rate || 0)})`, 
+        source: `Average Planning Fees (@ ${formatCurrency(commissionRates.planning_fee_rate || 0)})`, 
         amount: planningFeesValue, 
         commission: "-", 
         color: "#64748b" 
@@ -156,10 +156,10 @@ export function IncomeBreakdown({
           <TabsTrigger value="chart">Chart View</TabsTrigger>
         </TabsList>
         <TabsContent value="table">
-          <Card className="border-none shadow-lg">
-            <CardHeader>
-              <CardTitle>Income Details</CardTitle>
-              <CardDescription>Breakdown Of Income Sources</CardDescription>
+          <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+            <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+              <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Details</CardTitle>
+              <CardDescription className="text-m8bs-muted mt-2">Breakdown Of Income Sources</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -201,10 +201,10 @@ export function IncomeBreakdown({
         </TabsContent>
         <TabsContent value="chart">
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="border-none shadow-lg">
-              <CardHeader>
-                <CardTitle>Income Distribution</CardTitle>
-                <CardDescription>Percentage Breakdown By Source</CardDescription>
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Distribution</CardTitle>
+                <CardDescription className="text-m8bs-muted mt-2">Percentage Breakdown By Source</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[350px]">
@@ -240,10 +240,10 @@ export function IncomeBreakdown({
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-lg">
-              <CardHeader>
-                <CardTitle>Annual Income</CardTitle>
-                <CardDescription>Visual Comparison By Source</CardDescription>
+            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+                <CardTitle className="text-xl font-extrabold text-white tracking-tight">Annual Income</CardTitle>
+                <CardDescription className="text-m8bs-muted mt-2">Visual Comparison By Source</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[350px]">
@@ -299,10 +299,10 @@ export function IncomeBreakdown({
       </Tabs>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Income Projections</CardTitle>
-            <CardDescription>Projected Income For Next Year</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Projections</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Projected Income For Next Year</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -340,10 +340,10 @@ export function IncomeBreakdown({
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Income vs Expenses</CardTitle>
-            <CardDescription>ROI And Profitability Metrics</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income vs Expenses</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">ROI And Profitability Metrics</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

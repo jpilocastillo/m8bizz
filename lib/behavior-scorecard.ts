@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 
-export type ScorecardRole = 'Marketing Position' | 'Client Coordinator' | 'Office Manager' | 'Business Owner'
+export type ScorecardRole = string
 
 export type MetricType = 'count' | 'currency' | 'percentage' | 'time' | 'rating_1_5' | 'rating_scale'
 
@@ -14,6 +14,7 @@ export interface ScorecardMetric {
   goalValue: number
   isInverted: boolean
   displayOrder: number
+  isVisible: boolean
 }
 
 export interface WeeklyData {
@@ -32,6 +33,7 @@ export interface MetricScore {
   actualValue: number
   percentageOfGoal: number
   grade: Grade
+  isVisible?: boolean
 }
 
 export interface RoleScorecard {
@@ -59,55 +61,6 @@ export interface MonthlyScorecardData {
   companySummary: CompanySummary
 }
 
-// Default metrics configuration based on Excel structure
-const DEFAULT_METRICS: Record<ScorecardRole, Array<{
-  metricName: string
-  metricType: MetricType
-  goalValue: number
-  isInverted: boolean
-  displayOrder: number
-}>> = {
-  'Marketing Position': [
-    { metricName: 'Seminar Calls', metricType: 'count', goalValue: 300, isInverted: false, displayOrder: 1 },
-    { metricName: 'Sales Calls', metricType: 'count', goalValue: 400, isInverted: false, displayOrder: 2 },
-    { metricName: 'Care Bear Calls', metricType: 'count', goalValue: 80, isInverted: false, displayOrder: 3 },
-    { metricName: 'Social Media Posts', metricType: 'count', goalValue: 12, isInverted: false, displayOrder: 4 },
-    { metricName: 'Emails Sent to Prospects', metricType: 'count', goalValue: 15, isInverted: false, displayOrder: 5 },
-    { metricName: 'Emails Sent Existing', metricType: 'count', goalValue: 15, isInverted: false, displayOrder: 6 },
-    { metricName: 'Appointments Booked', metricType: 'count', goalValue: 24, isInverted: false, displayOrder: 7 },
-    { metricName: 'Appointments Attended', metricType: 'count', goalValue: 20, isInverted: false, displayOrder: 8 },
-  ],
-  'Client Coordinator': [
-    { metricName: 'Annuity Processing Time', metricType: 'time', goalValue: 30, isInverted: true, displayOrder: 1 },
-    { metricName: 'Life Processing Time', metricType: 'time', goalValue: 60, isInverted: true, displayOrder: 2 },
-    { metricName: 'AUM Processing Time', metricType: 'time', goalValue: 30, isInverted: true, displayOrder: 3 },
-    { metricName: 'Error Rate', metricType: 'percentage', goalValue: 10, isInverted: true, displayOrder: 4 },
-    { metricName: 'Feedback Rate', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 5 },
-    { metricName: 'Client Response Time', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 6 },
-    { metricName: 'Note Accuracy', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 7 },
-    { metricName: 'Client Satisfaction', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 8 },
-  ],
-  'Office Manager': [
-    { metricName: 'Project Management', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 1 },
-    { metricName: 'Budget Management', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 2 },
-    { metricName: 'Compliance', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 3 },
-    { metricName: 'Employee Satisfaction', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 4 },
-    { metricName: 'Office Communication', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 5 },
-    { metricName: 'Innovation and Improvement', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 6 },
-    { metricName: 'Employee Tracking', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 7 },
-    { metricName: 'Conflict Resolution', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 8 },
-  ],
-  'Business Owner': [
-    { metricName: 'Cash On Hand', metricType: 'currency', goalValue: 150000, isInverted: false, displayOrder: 1 },
-    { metricName: 'Pending Cash Flow', metricType: 'currency', goalValue: 100000, isInverted: false, displayOrder: 2 },
-    { metricName: 'Marketing Events', metricType: 'count', goalValue: 4, isInverted: false, displayOrder: 3 },
-    { metricName: 'Revenue Gen Appointments', metricType: 'count', goalValue: 24, isInverted: false, displayOrder: 4 },
-    { metricName: 'Rev Gen Appts Converted', metricType: 'count', goalValue: 18, isInverted: false, displayOrder: 5 },
-    { metricName: 'Pending Annuity', metricType: 'currency', goalValue: 1000000, isInverted: false, displayOrder: 6 },
-    { metricName: 'Pending Life', metricType: 'currency', goalValue: 100000, isInverted: false, displayOrder: 7 },
-    { metricName: 'Pending AUM', metricType: 'currency', goalValue: 1250000, isInverted: false, displayOrder: 8 },
-  ],
-}
 
 // Calculate grade based on percentage of goal
 export function calculateGrade(percentageOfGoal: number): Grade {
@@ -132,7 +85,7 @@ export function calculatePercentageOfGoal(actual: number, goal: number, isInvert
 export class BehaviorScorecardService {
   private supabase = createClient()
 
-  // Initialize default roles and metrics for a user
+  // Initialize default roles for a user (without default metrics)
   async initializeScorecard(): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser()
@@ -140,6 +93,14 @@ export class BehaviorScorecardService {
       if (!user) {
         return { success: false, error: 'User not authenticated' }
       }
+
+      // Define the four default roles
+      const defaultRoles: ScorecardRole[] = [
+        'Marketing Position',
+        'Client Coordinator',
+        'Office Manager',
+        'Business Owner'
+      ]
 
       // Check if roles already exist
       const { data: existingRoles } = await this.supabase
@@ -149,58 +110,18 @@ export class BehaviorScorecardService {
 
       const existingRoleNames = new Set(existingRoles?.map(r => r.role_name) || [])
 
-      // Create roles and metrics for each role
-      for (const [roleName, metrics] of Object.entries(DEFAULT_METRICS)) {
-        let roleId: string
-
-        if (existingRoleNames.has(roleName)) {
-          // Get existing role ID
-          const existingRole = existingRoles?.find(r => r.role_name === roleName)
-          roleId = existingRole!.id
-        } else {
-          // Create new role
-          const { data: newRole, error: roleError } = await this.supabase
+      // Create roles if they don't exist
+      for (const roleName of defaultRoles) {
+        if (!existingRoleNames.has(roleName)) {
+          const { error: roleError } = await this.supabase
             .from('scorecard_roles')
             .insert({
               user_id: user.id,
-              role_name: roleName as ScorecardRole,
+              role_name: roleName,
             })
-            .select('id')
-            .single()
 
           if (roleError) {
             console.error(`Error creating role ${roleName}:`, roleError)
-            continue
-          }
-
-          roleId = newRole.id
-        }
-
-        // Check existing metrics for this role
-        const { data: existingMetrics } = await this.supabase
-          .from('scorecard_metrics')
-          .select('id, metric_name')
-          .eq('role_id', roleId)
-
-        const existingMetricNames = new Set(existingMetrics?.map(m => m.metric_name) || [])
-
-        // Create metrics
-        for (const metric of metrics) {
-          if (!existingMetricNames.has(metric.metricName)) {
-            const { error: metricError } = await this.supabase
-              .from('scorecard_metrics')
-              .insert({
-                role_id: roleId,
-                metric_name: metric.metricName,
-                metric_type: metric.metricType,
-                goal_value: metric.goalValue,
-                is_inverted: metric.isInverted,
-                display_order: metric.displayOrder,
-              })
-
-            if (metricError) {
-              console.error(`Error creating metric ${metric.metricName}:`, metricError)
-            }
           }
         }
       }
@@ -562,51 +483,85 @@ export class BehaviorScorecardService {
             .eq('role_id', role.id)
             .order('display_order', { ascending: true })
 
-          const metricScores: MetricScore[] = (metrics || []).map(metric => ({
-            metricId: metric.id,
-            metricName: metric.metric_name,
-            metricType: metric.metric_type as MetricType,
-            goalValue: Number(metric.goal_value),
-            actualValue: 0,
-            percentageOfGoal: 0,
-            grade: 'F',
-          }))
+          const metricScores: MetricScore[] = (metrics || [])
+            .filter(metric => metric.is_visible !== false) // Filter out hidden metrics
+            .map(metric => ({
+              metricId: metric.id,
+              metricName: metric.metric_name,
+              metricType: metric.metric_type as MetricType,
+              goalValue: Number(metric.goal_value),
+              actualValue: 0,
+              percentageOfGoal: 0,
+              grade: 'F',
+              isVisible: metric.is_visible ?? true,
+            }))
+
+          // Calculate average based on visible metrics (all will be 0% since no data)
+          const avgPercentage = metricScores.length > 0
+            ? metricScores.reduce((sum, m) => sum + m.percentageOfGoal, 0) / metricScores.length
+            : 0
 
           roleScorecards.push({
             roleId: role.id,
             roleName: role.role_name as ScorecardRole,
             metrics: metricScores,
-            averageGradePercentage: 0,
-            averageGrade: 'F',
+            averageGradePercentage: avgPercentage,
+            averageGrade: calculateGrade(avgPercentage),
           })
           continue
         }
 
-        // Get metric scores
-        const { data: metricScores } = await this.supabase
+        // Get metric scores - try with is_visible, fallback if column doesn't exist
+        let { data: metricScores, error: scoresError } = await this.supabase
           .from('scorecard_metric_scores')
           .select(`
             *,
             scorecard_metrics (
               metric_name,
               metric_type,
-              display_order
+              display_order,
+              is_visible
             )
           `)
           .eq('monthly_summary_id', summary.id)
           .order('scorecard_metrics(display_order)', { ascending: true })
 
-        const scores: MetricScore[] = (metricScores || []).map(ms => ({
-          metricId: ms.metric_id,
-          metricName: (ms.scorecard_metrics as any)?.metric_name || '',
-          metricType: (ms.scorecard_metrics as any)?.metric_type as MetricType || 'count',
-          goalValue: Number(ms.goal_value),
-          actualValue: Number(ms.actual_value),
-          percentageOfGoal: Number(ms.percentage_of_goal),
-          grade: ms.grade_letter as Grade,
-        }))
+        // If query fails due to missing is_visible column, retry without it
+        if (scoresError && scoresError.message?.includes('is_visible')) {
+          const { data: retryData } = await this.supabase
+            .from('scorecard_metric_scores')
+            .select(`
+              *,
+              scorecard_metrics (
+                metric_name,
+                metric_type,
+                display_order
+              )
+            `)
+            .eq('monthly_summary_id', summary.id)
+            .order('scorecard_metrics(display_order)', { ascending: true })
+          
+          metricScores = retryData
+        }
 
-        const avgPercentage = Number(summary.average_grade_percentage) || 0
+        const scores: MetricScore[] = (metricScores || [])
+          .map(ms => ({
+            metricId: ms.metric_id,
+            metricName: (ms.scorecard_metrics as any)?.metric_name || '',
+            metricType: (ms.scorecard_metrics as any)?.metric_type as MetricType || 'count',
+            goalValue: Number(ms.goal_value),
+            actualValue: Number(ms.actual_value),
+            percentageOfGoal: Number(ms.percentage_of_goal),
+            grade: ms.grade_letter as Grade,
+            isVisible: (ms.scorecard_metrics as any)?.is_visible ?? true, // Default to true if column doesn't exist
+          }))
+          .filter(score => score.isVisible !== false) // Filter out hidden metrics
+
+        // Recalculate average based on visible metrics only
+        const visiblePercentages = scores.map(s => s.percentageOfGoal)
+        const avgPercentage = visiblePercentages.length > 0
+          ? visiblePercentages.reduce((sum, p) => sum + p, 0) / visiblePercentages.length
+          : 0
         roleAverages.push(avgPercentage)
 
         roleScorecards.push({
@@ -614,7 +569,7 @@ export class BehaviorScorecardService {
           roleName: role.role_name as ScorecardRole,
           metrics: scores,
           averageGradePercentage: avgPercentage,
-          averageGrade: (summary.average_grade_letter as Grade) || 'F',
+          averageGrade: calculateGrade(avgPercentage), // Recalculate grade based on visible metrics
         })
       }
 
@@ -677,6 +632,7 @@ export class BehaviorScorecardService {
           goalValue: Number(m.goal_value),
           isInverted: m.is_inverted,
           displayOrder: m.display_order,
+          isVisible: (m as any).is_visible ?? true, // Default to true if null or column doesn't exist
         })) || [],
       }
     } catch (error) {
@@ -726,7 +682,9 @@ export class BehaviorScorecardService {
         const percentages: number[] = []
 
         // Aggregate data for each metric across all months in the quarter
-        for (const metric of metrics) {
+        // Filter out hidden metrics
+        const visibleMetrics = metrics.filter(metric => metric.is_visible !== false)
+        for (const metric of visibleMetrics) {
           let totalActual = 0
           let monthCount = 0
           const goalValue = Number(metric.goal_value)
@@ -777,6 +735,7 @@ export class BehaviorScorecardService {
             actualValue,
             percentageOfGoal,
             grade,
+            isVisible: metric.is_visible ?? true,
           })
 
           percentages.push(percentageOfGoal)
@@ -863,7 +822,9 @@ export class BehaviorScorecardService {
         const percentages: number[] = []
 
         // Aggregate data for each metric across all months in the year
-        for (const metric of metrics) {
+        // Filter out hidden metrics
+        const visibleMetrics = metrics.filter(metric => metric.is_visible !== false)
+        for (const metric of visibleMetrics) {
           let totalActual = 0
           let monthCount = 0
           const goalValue = Number(metric.goal_value)
@@ -914,6 +875,7 @@ export class BehaviorScorecardService {
             actualValue,
             percentageOfGoal,
             grade,
+            isVisible: metric.is_visible ?? true,
           })
 
           percentages.push(percentageOfGoal)
@@ -982,6 +944,240 @@ export class BehaviorScorecardService {
     } catch (error) {
       console.error('Error updating metric goal:', error)
       return { success: false, error: 'Failed to update metric goal' }
+    }
+  }
+
+  // Update metric visibility
+  async updateMetricVisibility(metricId: string, isVisible: boolean): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      const { error } = await this.supabase
+        .from('scorecard_metrics')
+        .update({ is_visible: isVisible })
+        .eq('id', metricId)
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating metric visibility:', error)
+      return { success: false, error: 'Failed to update metric visibility' }
+    }
+  }
+
+  // Update multiple metric visibilities
+  async updateMetricVisibilities(updates: Array<{ metricId: string; isVisible: boolean }>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Update each metric visibility
+      for (const update of updates) {
+        const result = await this.updateMetricVisibility(update.metricId, update.isVisible)
+        if (!result.success) {
+          return result
+        }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating metric visibilities:', error)
+      return { success: false, error: 'Failed to update metric visibilities' }
+    }
+  }
+
+  // Create a new custom metric
+  async createMetric(data: {
+    roleId: string
+    metricName: string
+    metricType: MetricType
+    goalValue: number
+    isInverted?: boolean
+    displayOrder?: number
+    isVisible?: boolean
+  }): Promise<{ success: boolean; data?: ScorecardMetric; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Get the max display order for this role to add the new metric at the end
+      const { data: existingMetrics } = await this.supabase
+        .from('scorecard_metrics')
+        .select('display_order')
+        .eq('role_id', data.roleId)
+        .order('display_order', { ascending: false })
+        .limit(1)
+
+      const maxDisplayOrder = existingMetrics && existingMetrics.length > 0
+        ? existingMetrics[0].display_order
+        : 0
+
+      const { data: newMetric, error } = await this.supabase
+        .from('scorecard_metrics')
+        .insert({
+          role_id: data.roleId,
+          metric_name: data.metricName,
+          metric_type: data.metricType,
+          goal_value: data.goalValue,
+          is_inverted: data.isInverted ?? false,
+          display_order: data.displayOrder ?? (maxDisplayOrder + 1),
+          is_visible: data.isVisible ?? true,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return {
+        success: true,
+        data: {
+          id: newMetric.id,
+          roleId: newMetric.role_id,
+          metricName: newMetric.metric_name,
+          metricType: newMetric.metric_type as MetricType,
+          goalValue: Number(newMetric.goal_value),
+          isInverted: newMetric.is_inverted,
+          displayOrder: newMetric.display_order,
+          isVisible: newMetric.is_visible ?? true,
+        },
+      }
+    } catch (error) {
+      console.error('Error creating metric:', error)
+      return { success: false, error: 'Failed to create metric' }
+    }
+  }
+
+  // Delete a metric
+  async deleteMetric(metricId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Check if this is a default metric (we might want to prevent deletion of default metrics)
+      // For now, we'll allow deletion of any metric
+      const { error } = await this.supabase
+        .from('scorecard_metrics')
+        .delete()
+        .eq('id', metricId)
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting metric:', error)
+      return { success: false, error: 'Failed to delete metric' }
+    }
+  }
+
+  // Create a new role
+  async createRole(roleName: string): Promise<{ success: boolean; data?: { id: string; name: string }; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      if (!roleName || roleName.trim().length === 0) {
+        return { success: false, error: 'Role name is required' }
+      }
+
+      // Check if role already exists for this user
+      const { data: existing } = await this.supabase
+        .from('scorecard_roles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role_name', roleName.trim())
+        .maybeSingle()
+
+      if (existing) {
+        return { success: false, error: 'A role with this name already exists' }
+      }
+
+      const { data: newRole, error } = await this.supabase
+        .from('scorecard_roles')
+        .insert({
+          user_id: user.id,
+          role_name: roleName.trim(),
+        })
+        .select('id, role_name')
+        .single()
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return {
+        success: true,
+        data: {
+          id: newRole.id,
+          name: newRole.role_name,
+        },
+      }
+    } catch (error) {
+      console.error('Error creating role:', error)
+      return { success: false, error: 'Failed to create role' }
+    }
+  }
+
+  // Delete a role (will cascade delete all metrics and related data)
+  async deleteRole(roleId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Verify the role belongs to the user
+      const { data: role } = await this.supabase
+        .from('scorecard_roles')
+        .select('id, user_id')
+        .eq('id', roleId)
+        .single()
+
+      if (!role) {
+        return { success: false, error: 'Role not found' }
+      }
+
+      if (role.user_id !== user.id) {
+        return { success: false, error: 'Unauthorized to delete this role' }
+      }
+
+      // Delete the role (cascade will handle metrics, weekly data, etc.)
+      const { error } = await this.supabase
+        .from('scorecard_roles')
+        .delete()
+        .eq('id', roleId)
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting role:', error)
+      return { success: false, error: 'Failed to delete role' }
     }
   }
 }

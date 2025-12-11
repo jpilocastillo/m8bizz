@@ -117,7 +117,7 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
             Missing Money Data Entry
           </CardTitle>
           <CardDescription className="text-m8bs-muted">
-            Enter current and proposed values for each cost center to calculate opportunity costs
+            Enter Current And Proposed Values For Each Cost Center To Calculate Opportunity Costs
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -138,7 +138,7 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
             {costCenters.length === 0 ? (
               <Card className="p-8 bg-m8bs-card-alt/70 border-m8bs-border/50 border-dashed">
                 <div className="text-center text-m8bs-muted">
-                  <p className="mb-4">No cost centers added yet.</p>
+                  <p className="mb-4">No Cost Centers Added Yet.</p>
                   <Button 
                     onClick={handleAddCostCenter}
                     variant="outline"

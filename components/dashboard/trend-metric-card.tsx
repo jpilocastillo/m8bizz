@@ -47,12 +47,7 @@ export function TrendMetricCard({
   return (
     <Card
       className={cn(
-        "bg-gradient-to-b from-[#131525] to-[#0f1029] border-[#1f2037] overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300",
-        trend === "up"
-          ? "hover:border-green-500/30"
-          : trend === "down"
-            ? "hover:border-red-500/30"
-            : "hover:border-blue-500/30",
+        "bg-m8bs-card overflow-hidden shadow-sm",
         className,
       )}
     >
@@ -61,18 +56,18 @@ export function TrendMetricCard({
         <div
           className={cn(
             "absolute top-0 left-0 h-1 w-full",
-            trend === "up" ? "bg-green-500" : trend === "down" ? "bg-red-500" : "bg-blue-500",
+            trend === "up" ? "bg-gradient-to-r from-m8bs-green to-emerald-400" : trend === "down" ? "bg-gradient-to-r from-red-500 to-red-400" : "bg-gradient-to-r from-m8bs-blue to-m8bs-cyan",
           )}
         />
 
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-400">{title}</p>
+            <p className="text-sm font-medium text-m8bs-muted">{title}</p>
             {icon && (
               <div
                 className={cn(
-                  "text-gray-400 p-2 rounded-full",
-                  trend === "up" ? "bg-green-500/10" : trend === "down" ? "bg-red-500/10" : "bg-blue-500/10",
+                  "text-m8bs-cyan p-2 rounded-full",
+                  trend === "up" ? "bg-m8bs-green/20" : trend === "down" ? "bg-red-500/20" : "bg-m8bs-card-alt",
                 )}
               >
                 {icon}
@@ -84,7 +79,7 @@ export function TrendMetricCard({
             <div
               className={cn(
                 "flex items-center text-sm",
-                trend === "up" ? "text-green-500" : trend === "down" ? "text-red-500" : "text-gray-400",
+                trend === "up" ? "text-m8bs-green" : trend === "down" ? "text-red-400" : "text-m8bs-cyan",
               )}
             >
               {trend === "up" ? (
@@ -95,7 +90,7 @@ export function TrendMetricCard({
                 <Minus className="mr-1 h-4 w-4" />
               )}
               <span>{trendValue !== undefined ? `${Math.abs(trendValue)}%` : ""}</span>
-              {trendLabel && <span className="ml-1 text-xs text-gray-500">{trendLabel}</span>}
+              {trendLabel && <span className="ml-1 text-xs text-m8bs-muted">{trendLabel}</span>}
             </div>
           </div>
         </div>

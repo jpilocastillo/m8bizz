@@ -22,11 +22,11 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
   }
 
   return (
-    <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+    <Card className="bg-black border-gray-800 shadow-lg">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-m8bs-blue/20 p-2 rounded-lg">
+            <div className="bg-m8bs-card-alt p-2 rounded-lg">
               <Award className="h-6 w-6 text-m8bs-blue" />
             </div>
             <div>

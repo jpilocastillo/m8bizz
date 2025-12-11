@@ -22,13 +22,13 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
 
   return (
     <Card
-      className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-md h-full flex flex-col transition-all duration-300 hover:shadow-lg hover:border-emerald-500/30 group"
+      className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md h-full flex flex-col transition-all duration-300 hover:shadow-lg group"
       onMouseEnter={() => setIsCardHovered(true)}
       onMouseLeave={() => setIsCardHovered(false)}
     >
-      <CardHeader className="bg-m8bs-card-alt border-b border-m8bs-border px-6 py-4 transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-m8bs-card-alt group-hover:to-emerald-900/30">
-        <CardTitle className="text-lg font-extrabold text-white flex items-center tracking-tight transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-emerald-300 group-hover:to-emerald-100">
-          <DollarSign className="mr-2 h-5 w-5 text-green-400 transition-all duration-300 group-hover:text-emerald-300 group-hover:rotate-12 group-hover:scale-110" />
+      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+        <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
+          <DollarSign className="mr-3 h-6 w-6 text-green-500" />
           Marketing Expenses
         </CardTitle>
       </CardHeader>
@@ -89,10 +89,10 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
               )}
             </svg>
             <div className="absolute inset-0 flex items-center justify-center flex-col transition-all duration-500 group-hover:scale-105">
-              <span className="text-2xl font-bold text-white transition-all duration-300 group-hover:text-emerald-300">
+              <span className="text-2xl font-extrabold tracking-tight text-white transition-all duration-300 group-hover:text-emerald-300">
                 {formatCurrency(total)}
               </span>
-              <span className="text-sm text-gray-400 transition-all duration-300 group-hover:text-gray-300">
+              <span className="text-sm text-white/80 font-medium transition-all duration-300 group-hover:text-white">
                 Total Expenses
               </span>
             </div>
@@ -102,7 +102,7 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
         <div className="w-full flex flex-col items-stretch mt-6 mb-2">
           <div className="w-full h-10 bg-gray-800 rounded-full flex overflow-hidden relative">
             <div
-              className="bg-blue-500 h-full transition-all duration-500 flex items-center justify-center relative"
+              className="bg-gray-500 h-full transition-all duration-500 flex items-center justify-center relative"
               style={{ width: `${advertisingPercentage}%` }}
               title={`Advertising: ${advertisingPercentage.toFixed(1)}%`}
             >
@@ -124,7 +124,7 @@ export function MarketingExpensesCard({ advertising, foodVenue }: MarketingExpen
               )}
             </div>
           </div>
-          <div className="flex justify-between text-sm text-gray-300 mt-2 font-semibold">
+          <div className="flex justify-between text-sm text-white/80 mt-2 font-medium">
             <span>Advertising</span>
             <span>Food/Venue</span>
           </div>

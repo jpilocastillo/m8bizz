@@ -119,7 +119,7 @@ export function SingleEventExport({ data, eventName }: SingleEventExportProps) {
         csvData.push(['Annuity Commission', formatCurrency(data.financialProduction.annuity_commission || 0)])
         csvData.push(['Life Insurance Commission', formatCurrency(data.financialProduction.life_insurance_commission || 0)])
         csvData.push(['AUM Fees', formatCurrency(data.financialProduction.aum_fees || 0)])
-        csvData.push(['AUM Accounts Opened', formatNumber(data.financialProduction.aum_accounts_opened || 0)])
+        csvData.push(['AUM Households', formatNumber(data.financialProduction.aum_accounts_opened || 0)])
       }
       
       // Convert to CSV string

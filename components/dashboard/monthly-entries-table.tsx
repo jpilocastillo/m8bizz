@@ -460,9 +460,9 @@ export function MonthlyEntriesTable() {
                       <TableCell className="font-medium">
                         {format(parseISO(entry.month_year + "-01"), "MMMM yyyy")}
                       </TableCell>
-                      <TableCell>{entry.new_clients}</TableCell>
-                      <TableCell>{entry.new_appointments}</TableCell>
-                      <TableCell>{entry.new_leads}</TableCell>
+                      <TableCell>{entry.new_clients.toLocaleString()}</TableCell>
+                      <TableCell>{entry.new_appointments.toLocaleString()}</TableCell>
+                      <TableCell>{entry.new_leads.toLocaleString()}</TableCell>
                       <TableCell>
                         {new Intl.NumberFormat('en-US', {
                           style: 'currency',

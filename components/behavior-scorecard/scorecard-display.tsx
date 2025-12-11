@@ -49,7 +49,7 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
   }
 
   return (
-    <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+    <Card className="bg-black border-gray-800 shadow-lg">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
@@ -116,7 +116,7 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
             ))}
 
             {/* Average Row */}
-            <div className="grid grid-cols-6 gap-4 p-4 bg-gradient-to-r from-m8bs-blue/20 to-m8bs-blue-dark/20 rounded-lg border-2 border-m8bs-blue/50 font-bold">
+            <div className="grid grid-cols-6 gap-4 p-4 bg-m8bs-card-alt rounded-lg border-2 border-m8bs-border font-bold">
               <div className="col-span-2 text-white">Average Grade</div>
               <div className="col-span-2"></div>
               <div className="text-right text-white">

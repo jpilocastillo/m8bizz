@@ -69,7 +69,10 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
   // Calculate clients needed using formulas
   const E11 = avgAUMSize > 0 ? annuityClosed / avgAUMSize : 0 // D5/B11
   const E10 = avgAnnuitySize > 0 ? currentAUM / avgAnnuitySize : 0 // D6/B10
-  const clientsNeeded = (E11 + E10) / 2
+  const calculatedClientsNeeded = Math.ceil((E11 + E10) / 2)
+  
+  // Use the stored clients_needed value from the database, fallback to calculated value
+  const clientsNeeded = clientMetrics?.clients_needed || calculatedClientsNeeded
 
   const clientMetricsData = [
     { metric: "Avg Annuity Size", value: `$${avgAnnuitySize.toLocaleString()}` },
@@ -79,39 +82,49 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
     { metric: "Average Close Ratio", value: `${avgCloseRatio}%` },
     { metric: "# of Annuity Closed", value: annuityClosed.toString() },
     { metric: "# of AUM Accounts", value: aumAccounts.toString() },
-    { metric: "Clients Needed", value: clientMetrics?.clients_needed?.toString() || clientsNeeded.toFixed(1) },
+    { metric: "Clients Needed", value: clientsNeeded.toString() },
   ]
 
   // Calculate appointment metrics using proper formulas
-  // Note: appointmentAttrition and avgCloseRatio are already defined above
-
-  // Calculate proper formulas based on business logic
   // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
   const annualIdealClosingProspects = avgCloseRatio > 0 
-    ? (clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100)
-    : monthlyIdealProspects * 12 // Fallback to stored value
+    ? Math.ceil((clientsNeeded / (avgCloseRatio / 100)) * (1 + appointmentAttrition / 100))
+    : Math.ceil(monthlyIdealProspects * 12) // Fallback to stored value
 
   // Monthly Ideal Prospects = Annual Ideal Closing Prospects / 12
   const calculatedMonthlyIdealProspects = annualIdealClosingProspects / 12
 
   // Monthly New Appointments = Monthly Ideal Prospects * 3
-  const totalNewMonthlyAppointments = calculatedMonthlyIdealProspects * 3
+  const totalNewMonthlyAppointments = Math.ceil(calculatedMonthlyIdealProspects * 3)
   
   // Annual Total Prospects Necessary = Monthly New Appointments * 12
   const annualTotalProspects = totalNewMonthlyAppointments * 12
   
-  const numCampaignsMonthly = appointmentsPerCampaign > 0 ? totalNewMonthlyAppointments / appointmentsPerCampaign : 0 // H8 / H12
+  // Number of Campaigns Monthly = Total New Monthly Appointments / Appointments Per Campaign
+  const numCampaignsMonthly = appointmentsPerCampaign > 0 
+    ? Math.ceil(totalNewMonthlyAppointments / appointmentsPerCampaign) 
+    : 0
 
+  // Appointment & Prospect Metrics - no duplicates
   const appointmentMetrics = [
-    { metric: "Monthly Ideal Prospects", value: calculatedMonthlyIdealProspects.toFixed(2), metric2: "Total New Monthly Appointments Needed", value2: totalNewMonthlyAppointments.toFixed(2) },
+    { 
+      metric: "Monthly Ideal Prospects", 
+      value: Math.ceil(calculatedMonthlyIdealProspects).toString(), 
+      metric2: "Total New Monthly Appointments Needed", 
+      value2: totalNewMonthlyAppointments.toString() 
+    },
     {
       metric: "Annual Ideal Closing Prospects Needed",
-      value: annualIdealClosingProspects.toFixed(2),
+      value: annualIdealClosingProspects.toString(),
       metric2: "Annual Total Prospects Necessary",
-      value2: annualTotalProspects.toFixed(2),
+      value2: annualTotalProspects.toString(),
     },
-    { metric: "Appointments Per Campaign", value: appointmentsPerCampaign.toFixed(2), metric2: "# of Campaigns Monthly", value2: numCampaignsMonthly.toFixed(2) },
-    { metric: "Total New Monthly Appointments", value: totalNewMonthlyAppointments.toFixed(2), metric2: "Annual Total Prospects Necessary", value2: annualTotalProspects.toFixed(2) },
+    { 
+      metric: "Appointments Per Campaign", 
+      value: Math.ceil(appointmentsPerCampaign).toString(), 
+      metric2: "# of Campaigns Monthly", 
+      value2: numCampaignsMonthly.toString() 
+    },
   ]
 
   const chartData = goalData.map((item) => ({
@@ -124,10 +137,10 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
   return (
     <div className="grid gap-6">
 
-          <Card className="border-none shadow-lg">
-            <CardHeader>
-              <CardTitle>Goal Progress</CardTitle>
-              <CardDescription>Progress Towards Business Goals Using Your Actual Data</CardDescription>
+          <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+            <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+              <CardTitle className="text-xl font-extrabold text-white tracking-tight">Goal Progress</CardTitle>
+              <CardDescription className="text-m8bs-muted mt-2">Progress Towards Business Goals Using Your Actual Data</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -159,10 +172,10 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
           </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Client Metrics</CardTitle>
-            <CardDescription>Key Client Performance Indicators</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Client Metrics</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Key Client Performance Indicators</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -184,10 +197,10 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Appointment & Prospect Metrics</CardTitle>
-            <CardDescription>Appointment And Prospect Tracking</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Appointment & Prospect Metrics</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Appointment And Prospect Tracking</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

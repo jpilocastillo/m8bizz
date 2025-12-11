@@ -121,15 +121,15 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
     try {
       await deleteEvent(eventToDelete)
       toast({
-        title: "Event deleted",
-        description: "The event has been successfully deleted.",
+        title: "Event Deleted",
+        description: "The Event Has Been Successfully Deleted.",
       })
       router.refresh()
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete the event. Please try again.",
+        description: "Failed To Delete The Event. Please Try Again.",
       })
     } finally {
       setIsDeleting(false)
@@ -162,7 +162,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
       case "completed":
         return "bg-green-500/20 text-green-400"
       case "upcoming":
-        return "bg-blue-500/20 text-blue-400"
+        return "bg-gray-500/20 text-gray-400"
       case "cancelled":
         return "bg-red-500/20 text-red-400"
       default:
@@ -176,10 +176,10 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search events..."
+            placeholder="Search Events..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 bg-m8bs-card border-m8bs-border text-white"
+            className="pl-8 bg-black border-m8bs-border text-white"
           />
         </div>
       </div>
@@ -187,7 +187,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
       <div className="rounded-md border border-m8bs-border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-m8bs-card-alt bg-gradient-to-r from-m8bs-card to-m8bs-card-alt">
+            <TableRow className="hover:bg-black-alt bg-black">
               <TableHead className="text-gray-400 cursor-pointer font-medium py-4" onClick={() => handleSort("date")}>
                 <div className="flex items-center gap-2">
                   Date
@@ -217,7 +217,7 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
           </TableHeader>
           <TableBody>
             {sortedEvents.map((event) => (
-              <TableRow key={event.id} className="hover:bg-m8bs-card-alt">
+              <TableRow key={event.id} className="hover:bg-black-alt">
                 <TableCell className="font-medium text-white">{formatDate(event.date)}</TableCell>
                 <TableCell>
                   <div className="space-y-1">
@@ -285,15 +285,15 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-m8bs-card border-m8bs-border">
+        <AlertDialogContent className="bg-black border-m8bs-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle className="text-white">Are You Sure?</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              This action cannot be undone. This will permanently delete the event and all associated data.
+              This Action Cannot Be Undone. This Will Permanently Delete The Event And All Associated Data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-m8bs-card-alt border-m8bs-border text-white hover:bg-m8bs-card">
+            <AlertDialogCancel className="bg-black-alt border-m8bs-border text-white hover:bg-black">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

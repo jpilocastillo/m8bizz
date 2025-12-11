@@ -22,11 +22,11 @@ export function AnalyticsSkeleton() {
 
       {/* Summary Cards Skeleton */}
       <div className="grid grid-cols-1 gap-4 lg:gap-6">
-        <div className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-2xl p-6 shadow-lg">
+        <div className="bg-m8bs-card rounded-2xl p-6 shadow-sm">
           <div className="overflow-x-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 min-w-[900px]">
               {Array.from({ length: 7 }).map((_, index) => (
-                <Card key={index} className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-lg h-full">
+                <Card key={index} className="bg-m8bs-card text-white shadow-sm h-full">
                   <CardContent className="p-3 flex flex-col h-full">
                     <div className="flex items-center justify-between mb-2">
                       <Skeleton className="h-4 w-20 bg-m8bs-border/50" />
@@ -49,7 +49,7 @@ export function AnalyticsSkeleton() {
         {/* Top Row - Top Performers and Heatmap */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Top Performers Skeleton */}
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+          <Card className="bg-m8bs-card shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
                 <Skeleton className="h-5 w-5 bg-m8bs-border/50" />
@@ -101,7 +101,7 @@ export function AnalyticsSkeleton() {
           </Card>
 
           {/* Performance Heatmap Skeleton */}
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+          <Card className="bg-m8bs-card shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-2">
                 <Skeleton className="h-5 w-5 bg-m8bs-border/50" />

@@ -26,7 +26,7 @@ export function StatGroup({ items, className, columns = 4 }: StatGroupProps) {
   return (
     <Card
       className={cn(
-        "bg-[#131525] border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300",
+        "bg-m8bs-card shadow-sm",
         className,
       )}
     >
@@ -35,9 +35,9 @@ export function StatGroup({ items, className, columns = 4 }: StatGroupProps) {
           {items.map((item, index) => (
             <div
               key={index}
-              className="flex flex-col items-center justify-center p-4 rounded-lg bg-gradient-to-b from-[#1f2037]/80 to-[#1f2037]/40 hover:from-[#1f2037] hover:to-[#1f2037]/60 transition-all duration-300 shadow-md"
+              className="flex flex-col items-center justify-center p-4 rounded-lg bg-m8bs-card/80 hover:bg-m8bs-card-alt transition-all duration-300 shadow-md"
             >
-              {item.icon && <div className={cn("mb-3 p-2 rounded-full bg-[#131525]", item.color)}>{item.icon}</div>}
+              {item.icon && <div className={cn("mb-3 p-2 rounded-full bg-m8bs-card", item.color)}>{item.icon}</div>}
               <div className="text-2xl font-bold text-white">
                 {typeof item.value === "number" ? item.value.toLocaleString() : item.value}
               </div>

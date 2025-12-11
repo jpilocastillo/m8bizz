@@ -6,19 +6,17 @@ import { DashboardMetrics } from "@/components/business-dashboard/dashboard-metr
 import { GoalProgress } from "@/components/business-dashboard/goal-progress"
 import { IncomeBreakdown } from "@/components/business-dashboard/income-breakdown"
 import { CampaignTable } from "@/components/business-dashboard/campaign-table"
-import { FinancialOptions } from "@/components/business-dashboard/financial-options"
 import { PerformanceCharts } from "@/components/business-dashboard/performance-charts"
 import { ClientAcquisition } from "@/components/business-dashboard/client-acquisition"
 import { DataEntryFormV2 } from "@/components/business-dashboard/data-entry-form-v2"
 import { MonthlyDataEntryComponent } from "@/components/business-dashboard/monthly-data-entry"
 import { PDFExport } from "@/components/business-dashboard/pdf-export"
 import { CSVExport } from "@/components/business-dashboard/csv-export"
-import { DataValidation } from "@/components/business-dashboard/data-validation"
 import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { RefreshCw, BarChart3 } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function BusinessDashboard() {
@@ -26,7 +24,7 @@ export default function BusinessDashboard() {
   const { data, loading, loadData } = useAdvisorBasecamp(user)
   const [editMode, setEditMode] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("goals")
   const [profile, setProfile] = useState<any>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -118,7 +116,7 @@ export default function BusinessDashboard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
-          <p className="text-muted-foreground">Please log in to access the advisor basecamp.</p>
+          <p className="text-muted-foreground">Please Log In To Access The Advisor Basecamp.</p>
         </div>
       </div>
     )
@@ -131,7 +129,7 @@ export default function BusinessDashboard() {
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
           <div className="text-white">
             <h3 className="text-lg font-semibold">Loading Advisor Basecamp</h3>
-            <p className="text-gray-300">Preparing your dashboard...</p>
+            <p className="text-gray-300">Preparing Your Dashboard...</p>
           </div>
         </div>
       </div>
@@ -145,28 +143,19 @@ export default function BusinessDashboard() {
     console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode)
     return (
       <div className="py-8 space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
-                  <BarChart3 className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-extrabold text-white tracking-tight">
-                    M8 Advisor Basecamp
-                  </h1>
-                  <p className="text-m8bs-muted mt-1">
-                    Complete your profile to unlock all dashboard features
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-3xl font-extrabold text-white tracking-tight">
+                  M8 Advisor Basecamp
+                </h1>
+                <p className="text-m8bs-muted mt-1">
+                  Complete Your Profile To Unlock All Dashboard Features
+                </p>
               </div>
-              
-              <DataValidation 
-                data={data} 
-                onEditData={() => setEditMode(true)} 
-              />
               
               <DataEntryFormV2
                 user={user}
                 onComplete={handleDataSubmitted}
+                onCancel={() => setEditMode(false)}
                 isEditMode={editMode}
               />
       </div>
@@ -179,18 +168,13 @@ export default function BusinessDashboard() {
   return (
       <div className="space-y-6 w-full max-w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
-            <BarChart3 className="h-8 w-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">
-              M8 Advisor Basecamp
-            </h1>
-            <p className="text-m8bs-muted mt-1">
-              Track your financial metrics, client acquisition, and business goals
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">
+            M8 Advisor Basecamp
+          </h1>
+          <p className="text-m8bs-muted mt-1">
+            Track Your Financial Metrics, Client Acquisition, And Business Goals
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -209,51 +193,59 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      <DashboardMetrics 
-        key={`metrics-${JSON.stringify(data)}`}
-        businessGoals={data.businessGoals}
-        currentValues={data.currentValues}
-        clientMetrics={data.clientMetrics}
-      />
-
-      <Tabs defaultValue="overview" className="space-y-6" onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 md:grid-cols-8 w-full h-auto">
-          <TabsTrigger value="overview" className="py-2">
-            Overview
+      <Tabs defaultValue="goals" className="space-y-6" onValueChange={setActiveTab}>
+        <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid grid-cols-2 md:grid-cols-6 w-full h-auto">
+          <TabsTrigger 
+            value="goals" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+          >
+            Goals
           </TabsTrigger>
-          <TabsTrigger value="goals" className="py-2">
-            Goals & Metrics
-          </TabsTrigger>
-          <TabsTrigger value="clients" className="py-2">
+          <TabsTrigger 
+            value="clients" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+          >
             Client Acquisition
           </TabsTrigger>
-          <TabsTrigger value="income" className="py-2">
+          <TabsTrigger 
+            value="income" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+          >
             Income Details
           </TabsTrigger>
-          <TabsTrigger value="campaigns" className="py-2">
+          <TabsTrigger 
+            value="campaigns" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+          >
             Campaigns
           </TabsTrigger>
-          <TabsTrigger value="options" className="py-2">
-            Financial Options
-          </TabsTrigger>
-          <TabsTrigger value="monthly" className="py-2">
+          <TabsTrigger 
+            value="monthly" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+          >
             Monthly Data
           </TabsTrigger>
-          <TabsTrigger value="pdf" className="py-2">
+          <TabsTrigger 
+            value="pdf" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+          >
             PDF Report
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="goals" className="space-y-6">
+          <DashboardMetrics 
+            key={`metrics-${JSON.stringify(data)}`}
+            businessGoals={data.businessGoals}
+            currentValues={data.currentValues}
+            clientMetrics={data.clientMetrics}
+          />
           <PerformanceCharts 
             key={`charts-${JSON.stringify(data)}`}
             businessGoals={data.businessGoals}
             currentValues={data.currentValues}
             clientMetrics={data.clientMetrics}
           />
-        </TabsContent>
-
-        <TabsContent value="goals" className="space-y-6">
           <GoalProgress 
             key={`goals-${JSON.stringify(data)}`}
             businessGoals={data.businessGoals}
@@ -263,7 +255,7 @@ export default function BusinessDashboard() {
         </TabsContent>
 
         <TabsContent value="clients" className="space-y-6">
-          <ClientAcquisition />
+          <ClientAcquisition data={data} />
         </TabsContent>
 
         <TabsContent value="income" className="space-y-6">
@@ -279,20 +271,6 @@ export default function BusinessDashboard() {
           <CampaignTable />
         </TabsContent>
 
-        <TabsContent value="options" className="space-y-6">
-          <FinancialOptions 
-            data={{
-              currentValues: data.currentValues ? {
-                current_annuity: data.currentValues.current_annuity,
-                current_aum: data.currentValues.current_aum
-              } : undefined,
-              financialBook: data.financialBook ? {
-                qualified_money_value: data.financialBook.qualified_money_value
-              } : undefined,
-              financialOptions: undefined
-            } as any} 
-          />
-        </TabsContent>
         <TabsContent value="monthly" className="space-y-6">
           <MonthlyDataEntryComponent />
         </TabsContent>

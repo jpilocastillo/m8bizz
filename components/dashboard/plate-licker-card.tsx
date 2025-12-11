@@ -10,16 +10,12 @@ export function PlateLickerCard({ plateLickers, attendees }: PlateLickerCardProp
   const percentage = attendees > 0 ? (plateLickers / attendees) * 100 : 0;
   console.log('Plate Licker Data:', { plateLickers, attendees, percentage });
   return (
-    <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-md">
-      <CardHeader className="bg-m8bs-card-alt border-b border-m8bs-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-extrabold text-white tracking-tight text-center">
-            Plate Lickers
-          </CardTitle>
-          <div className="bg-blue-500/20 p-2 rounded-lg">
-            <Users className="h-5 w-5 text-blue-400" />
-          </div>
-        </div>
+    <Card className="bg-black border-m8bs-border rounded-lg overflow-hidden shadow-md">
+      <CardHeader className="bg-black border-b border-m8bs-border px-6 py-4">
+        <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
+          <Users className="mr-3 h-6 w-6 text-gray-500" />
+          Plate Lickers
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-6 flex flex-col items-center justify-center">
         <div>

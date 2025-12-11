@@ -40,7 +40,7 @@ export function ThemeSwitcher({ onThemeChange }: ThemeSwitcherProps) {
           <span className="sr-only">Theme switcher</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-m8bs-card border-m8bs-border text-white">
+      <DropdownMenuContent align="end" className="w-56 bg-black border-m8bs-border text-white">
         <div className="px-4 py-3 border-b border-m8bs-border">
           <p className="text-sm font-medium">Dashboard Theme</p>
         </div>
@@ -66,11 +66,11 @@ export function ThemeSwitcher({ onThemeChange }: ThemeSwitcherProps) {
         </div>
         <div className="border-t border-m8bs-border p-2">
           <div className="flex justify-between">
-            <DropdownMenuItem className="hover:bg-m8bs-card-alt cursor-pointer font-medium flex-1 justify-center">
+            <DropdownMenuItem className="hover:bg-black-alt cursor-pointer font-medium flex-1 justify-center">
               <Sun className="h-4 w-4 mr-2" />
               Light
             </DropdownMenuItem>
-            <DropdownMenuItem className="hover:bg-m8bs-card-alt cursor-pointer font-medium flex-1 justify-center">
+            <DropdownMenuItem className="hover:bg-black-alt cursor-pointer font-medium flex-1 justify-center">
               <Moon className="h-4 w-4 mr-2" />
               Dark
             </DropdownMenuItem>

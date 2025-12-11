@@ -50,7 +50,7 @@ export function EnhancedMetricCard({
   }
 
   const colorVariants = {
-    blue: "from-blue-500/20 to-blue-600/5 border-blue-500/20 shadow-blue-500/10",
+    blue: "from-gray-500/20 to-gray-600/5 border-gray-500/20 shadow-gray-500/10",
     green: "from-green-500/20 to-green-600/5 border-green-500/20 shadow-green-500/10",
     purple: "from-purple-500/20 to-purple-600/5 border-purple-500/20 shadow-purple-500/10",
     amber: "from-amber-500/20 to-amber-600/5 border-amber-500/20 shadow-amber-500/10",
@@ -59,7 +59,7 @@ export function EnhancedMetricCard({
   }
 
   const iconColorVariants = {
-    blue: "text-blue-400",
+    blue: "text-gray-400",
     green: "text-green-400",
     purple: "text-purple-400",
     amber: "text-amber-400",

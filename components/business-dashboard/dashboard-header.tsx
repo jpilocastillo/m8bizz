@@ -21,7 +21,7 @@ export function DashboardHeader() {
   const { setTheme, theme } = useTheme()
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
+    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-m8bs-border bg-gradient-to-r from-m8bs-card to-m8bs-card-alt px-4 md:px-6 shadow-lg backdrop-blur-sm">
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="md:hidden">
@@ -51,26 +51,32 @@ export function DashboardHeader() {
 
       <MainNav className="hidden md:flex mx-6" />
 
-      <div className="ml-auto flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
+      <div className="ml-auto flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-lg text-m8bs-muted hover:text-m8bs-blue hover:bg-m8bs-card-alt transition-all duration-200">
           <Bell className="h-5 w-5" />
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+          <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-gradient-to-r from-m8bs-pink to-m8bs-purple text-white border-2 border-m8bs-card">
             3
           </Badge>
           <span className="sr-only">Notifications</span>
         </Button>
 
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-m8bs-muted hover:text-m8bs-blue hover:bg-m8bs-card-alt transition-all duration-200">
           <MessageSquare className="h-5 w-5" />
           <span className="sr-only">Messages</span>
         </Button>
 
-        <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="h-9 w-9 rounded-lg text-m8bs-muted hover:text-m8bs-blue hover:bg-m8bs-card-alt transition-all duration-200"
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        >
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           <span className="sr-only">Toggle theme</span>
         </Button>
 
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-m8bs-muted hover:text-m8bs-blue hover:bg-m8bs-card-alt transition-all duration-200">
           <HelpCircle className="h-5 w-5" />
           <span className="sr-only">Help</span>
         </Button>

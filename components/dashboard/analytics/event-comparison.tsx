@@ -99,7 +99,7 @@ export function EventComparison({ events }: EventComparisonProps) {
       case "ROI":
         return { icon: TrendingUp, color: "text-emerald-400", bgColor: "bg-emerald-500/20" }
       case "Conversion":
-        return { icon: Target, color: "text-blue-400", bgColor: "bg-blue-500/20" }
+        return { icon: Target, color: "text-gray-400", bgColor: "bg-gray-500/20" }
       case "Revenue":
         return { icon: DollarSign, color: "text-green-400", bgColor: "bg-green-500/20" }
       case "Expenses":
@@ -111,7 +111,7 @@ export function EventComparison({ events }: EventComparisonProps) {
       case "Clients":
         return { icon: Award, color: "text-cyan-400", bgColor: "bg-cyan-500/20" }
       default:
-        return { icon: TrendingUp, color: "text-blue-400", bgColor: "bg-blue-500/20" }
+        return { icon: TrendingUp, color: "text-gray-400", bgColor: "bg-gray-500/20" }
     }
   }
 

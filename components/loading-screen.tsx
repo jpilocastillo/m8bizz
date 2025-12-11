@@ -5,7 +5,7 @@ export function LoadingScreen() {
     <div className="fixed inset-0 flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <div className="flex items-center gap-2">
-          <div className="bg-blue-500 text-white rounded-full p-2 w-10 h-10 flex items-center justify-center font-bold">
+          <div className="bg-gray-500 text-white rounded-full p-2 w-10 h-10 flex items-center justify-center font-bold">
             M8BS
           </div>
           <h2 className="text-xl font-bold">Marketing Dashboard</h2>

@@ -75,7 +75,7 @@ export function ExportButton({ data }: ExportButtonProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="bg-[#131525] border-[#1f2037] text-white hover:bg-[#1f2037] hover:text-white"
+          className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt hover:text-white"
           disabled={isExporting}
         >
           {isExporting ? (
@@ -91,7 +91,7 @@ export function ExportButton({ data }: ExportButtonProps) {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-[#131525] border-[#1f2037] text-white">
+      <DropdownMenuContent align="end" className="bg-m8bs-card border-m8bs-border text-white">
         <DropdownMenuItem onClick={() => handleExport("csv")} className="cursor-pointer hover:bg-[#1f2037]">
           <FileSpreadsheet className="mr-2 h-4 w-4" />
           Export as CSV

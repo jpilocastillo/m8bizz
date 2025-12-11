@@ -81,10 +81,10 @@ export function TrendAnalysisChart({ monthlyData }: TrendAnalysisChartProps) {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-md card-hover">
+    <Card className="bg-m8bs-card shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2 mb-2">
-          <TrendingUp className="h-5 w-5 text-blue-400" />
+          <TrendingUp className="h-5 w-5 text-m8bs-cyan" />
           <CardTitle className="text-lg font-medium text-white">Performance Trends</CardTitle>
         </div>
         <div className="flex flex-wrap gap-2 mt-2">
@@ -103,8 +103,8 @@ export function TrendAnalysisChart({ monthlyData }: TrendAnalysisChartProps) {
               size="sm"
               className={`border-[#1f2037] ${
                 activeMetrics.includes(metric as MetricType)
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-[#131525] text-white hover:bg-[#1f2037]"
+                  ? "bg-gray-600 text-white hover:bg-gray-700"
+                  : "bg-m8bs-card text-white hover:bg-m8bs-card-alt"
               }`}
               onClick={() => toggleMetric(metric as MetricType)}
             >

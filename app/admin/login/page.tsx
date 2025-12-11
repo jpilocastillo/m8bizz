@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
 
   if (configError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-black p-4">
         <Card className="w-full max-w-2xl border-red-200">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">

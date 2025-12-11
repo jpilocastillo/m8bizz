@@ -34,7 +34,7 @@ export default async function AnalyticsPage() {
     if (!events || events.length === 0) {
       return (
         <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-lg text-gray-500">No events found. Start by creating your first event.</p>
+          <p className="text-lg text-gray-500">No Events Found. Start By Creating Your First Event.</p>
         </div>
       )
     }
@@ -86,6 +86,17 @@ export default async function AnalyticsPage() {
           const totalClients = events.reduce((sum, event) => sum + (event.attendance?.clients_from_event || 0), 0)
           return totalAttendees > 0 ? (totalClients / totalAttendees) * 100 : 0
         })(),
+        totalAppointmentsSet: events.reduce((sum, event) => {
+          const setAtEvent = event.event_appointments?.set_at_event || 0
+          const setAfterEvent = event.event_appointments?.set_after_event || 0
+          return sum + setAtEvent + setAfterEvent
+        }, 0),
+        totalAppointmentsMade: events.reduce((sum, event) => {
+          const firstAttended = event.event_appointments?.first_appointment_attended || 0
+          const secondAttended = event.event_appointments?.second_appointment_attended || 0
+          return sum + firstAttended + secondAttended
+        }, 0),
+        totalRegistrants: events.reduce((sum, event) => sum + (event.attendance?.registrant_responses || 0), 0),
       },
       events: events.map(event => {
         const totalProduction = (event.financial_production?.aum_fees || 0) + 
@@ -119,6 +130,16 @@ export default async function AnalyticsPage() {
           clients: event.attendance?.clients_from_event || 0,
           registrants: event.attendance?.registrant_responses || 0,
           confirmations: event.attendance?.confirmations || 0,
+          appointmentsSet: (() => {
+            const setAtEvent = event.event_appointments?.set_at_event || 0
+            const setAfterEvent = event.event_appointments?.set_after_event || 0
+            return setAtEvent + setAfterEvent
+          })(),
+          appointmentsMade: (() => {
+            const firstAttended = event.event_appointments?.first_appointment_attended || 0
+            const secondAttended = event.event_appointments?.second_appointment_attended || 0
+            return firstAttended + secondAttended
+          })(),
           roi: { value: expenses > 0 ? Math.round(((totalProduction - expenses) / expenses) * 100) : 0 },
           conversionRate: (() => {
             const attendees = event.attendance?.attendees || 0;
@@ -242,6 +263,6 @@ export default async function AnalyticsPage() {
     )
   } catch (error) {
     console.error("Error in AnalyticsPage:", error)
-    return <DashboardError error="An error occurred loading the analytics. Please try again later." />
+    return <DashboardError error="An Error Occurred Loading The Analytics. Please Try Again Later." />
   }
 } 

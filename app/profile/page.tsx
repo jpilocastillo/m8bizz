@@ -42,7 +42,7 @@ export default function ProfilePage() {
         console.error("Error loading profile:", error)
         toast({
           title: "Error",
-          description: "Failed to load profile information",
+          description: "Failed To Load Profile Information",
           variant: "destructive"
         })
       } finally {
@@ -131,7 +131,7 @@ export default function ProfilePage() {
           // Keep the existing avatar URL if upload fails
           toast({
             title: "Warning",
-            description: "Avatar upload failed, but other changes will be saved",
+            description: "Avatar Upload Failed, But Other Changes Will Be Saved",
             variant: "destructive"
           })
         }
@@ -168,7 +168,7 @@ export default function ProfilePage() {
 
       toast({
         title: "Success",
-        description: "Profile updated successfully"
+        description: "Profile Updated Successfully"
       })
 
       // Update local state
@@ -179,7 +179,7 @@ export default function ProfilePage() {
       console.error("Error updating profile:", error)
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: "Failed To Update Profile",
         variant: "destructive"
       })
     } finally {
@@ -203,7 +203,7 @@ export default function ProfilePage() {
             Profile Settings
           </h1>
           <p className="text-muted-foreground mt-2">
-            Manage your account information and preferences
+            Manage Your Account Information And Preferences
           </p>
         </div>
 
@@ -211,7 +211,7 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="text-white">Personal Information</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Update your profile information and avatar
+              Update Your Profile Information And Avatar
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -240,7 +240,7 @@ export default function ProfilePage() {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Profile Picture</p>
                 <p className="text-xs text-muted-foreground">
-                  Click the camera icon to upload a new image
+                  Click The Camera Icon To Upload A New Image
                 </p>
               </div>
             </div>
@@ -252,7 +252,7 @@ export default function ProfilePage() {
                 id="full_name"
                 value={profile.full_name}
                 onChange={(e) => setProfile(prev => ({ ...prev, full_name: e.target.value }))}
-                placeholder="Enter your full name"
+                placeholder="Enter Your Full Name"
                 className="bg-m8bs-card-alt border-m8bs-border text-white placeholder:text-muted-foreground"
               />
             </div>
@@ -267,7 +267,7 @@ export default function ProfilePage() {
                 className="bg-muted border-m8bs-border text-muted-foreground"
               />
               <p className="text-xs text-muted-foreground">
-                Email address cannot be changed
+                Email Address Cannot Be Changed
               </p>
             </div>
 

@@ -23,7 +23,7 @@ export default async function NewEventPage() {
     }
 
     return (
-      <div className="container mx-auto py-6">
+      <div className="py-6">
         <EventForm userId={data.user.id} />
       </div>
     )

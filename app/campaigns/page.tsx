@@ -22,7 +22,7 @@ export default async function CampaignsPage() {
     }
 
     return (
-      <div className="container mx-auto py-6">
+      <div className="py-6">
         <h1 className="text-2xl font-bold mb-6">Campaigns</h1>
         <p>Campaigns feature coming soon...</p>
       </div>

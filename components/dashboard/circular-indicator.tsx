@@ -79,7 +79,7 @@ export function CircularIndicator({
   const strokeDashoffset = `${circumference - (percentage / 100) * circumference}`
 
   const colorMap = {
-    blue: "text-blue-500",
+    blue: "text-gray-500",
     green: "text-green-500",
     red: "text-red-500",
     orange: "text-orange-500",

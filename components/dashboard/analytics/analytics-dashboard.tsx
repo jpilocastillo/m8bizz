@@ -8,9 +8,11 @@ import { EnhancedExport } from "@/components/dashboard/analytics/enhanced-export
 import { PerformanceHeatmap } from "@/components/dashboard/analytics/performance-heatmap"
 import { AnalyticsFilters } from "@/components/dashboard/analytics/analytics-filters"
 import { TrendAnalysis } from "@/components/dashboard/analytics/trend-analysis"
+import { ConversionBreakdown } from "@/components/dashboard/analytics/conversion-breakdown"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import { BarChart3, TrendingUp, Activity, AlertCircle, RefreshCw, DollarSign, Users, Target } from "lucide-react"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -29,6 +31,9 @@ const defaultData = {
     appointmentConversionRate: 0,
     avgAppointments: 0,
     avgClients: 0,
+    totalAppointmentsSet: 0,
+    totalAppointmentsMade: 0,
+    totalRegistrants: 0,
   },
   events: [],
   monthlyData: [],
@@ -72,17 +77,17 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   // Data validation
   const validateData = useCallback((data: any) => {
     if (!data) {
-      setError("No analytics data available")
+      setError("No Analytics Data Available")
       return false
     }
 
     if (!data.events || !Array.isArray(data.events)) {
-      setError("Invalid events data format")
+      setError("Invalid Events Data Format")
       return false
     }
 
     if (!data.summary || typeof data.summary !== 'object') {
-      setError("Invalid summary data format")
+      setError("Invalid Summary Data Format")
       return false
     }
 
@@ -102,7 +107,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
         setFilteredData(analyticsData)
       }
     } catch (err) {
-      setError("Failed to refresh data. Please try again.")
+      setError("Failed To Refresh Data. Please Try Again.")
     } finally {
       setIsRefreshing(false)
     }
@@ -169,6 +174,9 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
           totalExpenses: filteredEvents.reduce((sum, event) => sum + (event.expenses || 0), 0),
           totalProfit: filteredEvents.reduce((sum, event) => sum + (event.profit || 0), 0),
           totalClients: filteredEvents.reduce((sum, event) => sum + (event.clients || 0), 0),
+          totalAppointmentsSet: filteredEvents.reduce((sum, event) => sum + (event.appointmentsSet || 0), 0),
+          totalAppointmentsMade: filteredEvents.reduce((sum, event) => sum + (event.appointmentsMade || 0), 0),
+          totalRegistrants: filteredEvents.reduce((sum, event) => sum + (event.registrants || 0), 0),
         }
       }
       setFilteredData(updatedData)
@@ -202,15 +210,12 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
-              <BarChart3 className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">Multi-Event Analytics Dashboard</h1>
-              <p className="text-m8bs-muted mt-1">Comprehensive insights across all your marketing events</p>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Multi Event</h1>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-m8bs-blue-light to-m8bs-blue bg-clip-text text-transparent">
+              Analytics Dashboard
+            </h2>
           </div>
           <Button 
             variant="outline" 
@@ -235,7 +240,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
 
   return (
     <motion.div 
-      className="space-y-6 lg:space-y-8"
+      className="space-y-6 lg:space-y-8 pb-0"
       variants={container}
       initial="hidden"
       animate="show"
@@ -244,17 +249,14 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
     >
       {/* Header Section */}
       <motion.div 
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2"
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         variants={item}
       >
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl" aria-hidden="true">
-            <BarChart3 className="h-8 w-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Multi-Event Analytics Dashboard</h1>
-            <p className="text-m8bs-muted mt-1">Comprehensive insights across all your marketing events</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Multi Event</h1>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-m8bs-blue-light to-m8bs-blue bg-clip-text text-transparent">
+            Analytics Dashboard
+          </h2>
         </div>
         <div className="flex items-center gap-2">
           <Button 
@@ -284,7 +286,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
         className="grid grid-cols-1 gap-4 lg:gap-6"
         variants={item}
       >
-        <div className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-2xl p-6 shadow-lg card-hover">
+        <div className="bg-m8bs-card rounded-2xl p-6 shadow-sm">
           <AnalyticsSummary data={filteredData?.summary || defaultData.summary} />
         </div>
       </motion.div>
@@ -326,9 +328,9 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
           </Card>
         </div>
 
-        {/* Bottom Row - Event Comparison and Trend Analysis */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <div className="space-y-4">
+        {/* Bottom Row - Event Comparison, Monthly Summary, Conversion Funnel, and Trend Analysis */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+          <div className="space-y-4 flex flex-col">
             <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
@@ -342,7 +344,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
             </Card>
 
             {/* Monthly Summary Card */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex-1 flex flex-col">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
                   <Target className="h-5 w-5 text-m8bs-blue" />
@@ -352,7 +354,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                   Track your monthly performance across all marketing events with key metrics and ROI analysis
                 </p>
               </CardHeader>
-              <CardContent className="pt-2">
+              <CardContent className="pt-2 flex-1 flex flex-col gap-4">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -394,6 +396,8 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                               month,
                               events: monthEvents.length,
                               revenue: totalRevenue,
+                              expenses: totalExpenses,
+                              profit: totalRevenue - totalExpenses,
                               attendees: totalAttendees,
                               clients: totalClients,
                               roi: roi
@@ -433,21 +437,119 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Monthly Trends Chart */}
+                {(() => {
+                  // Group events by month for chart
+                  const monthlyData: { [key: string]: any[] } = {}
+                  const events = filteredData?.events || []
+                  
+                  events.forEach(event => {
+                    const eventDate = new Date(event.date)
+                    const monthKey = eventDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                    
+                    if (!monthlyData[monthKey]) {
+                      monthlyData[monthKey] = []
+                    }
+                    monthlyData[monthKey].push(event)
+                  })
+
+                  // Calculate metrics for each month
+                  const chartData = Object.entries(monthlyData)
+                    .map(([month, monthEvents]) => {
+                      const totalRevenue = monthEvents.reduce((sum, event) => sum + (event.revenue || 0), 0)
+                      const totalExpenses = monthEvents.reduce((sum, event) => sum + (event.expenses || 0), 0)
+                      const totalProfit = totalRevenue - totalExpenses
+
+                      return {
+                        month,
+                        revenue: Math.round(totalRevenue),
+                        expenses: Math.round(totalExpenses),
+                        profit: Math.round(totalProfit),
+                      }
+                    })
+                    .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
+                    .slice(-6) // Show last 6 months
+
+                  if (chartData.length === 0) return null
+
+                  const formatCurrency = (value: number) => {
+                    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`
+                    if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`
+                    return `$${value.toFixed(0)}`
+                  }
+
+                  return (
+                    <div className="mt-4 pt-4 border-t border-m8bs-border">
+                      <h4 className="text-sm font-semibold text-white mb-3">Monthly Financial Trends</h4>
+                      <div className="h-[200px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2037" />
+                            <XAxis 
+                              dataKey="month" 
+                              stroke="#94a3b8"
+                              tick={{ fill: '#94a3b8', fontSize: 12 }}
+                            />
+                            <YAxis 
+                              stroke="#94a3b8"
+                              tick={{ fill: '#94a3b8', fontSize: 12 }}
+                              tickFormatter={(value) => {
+                                if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`
+                                if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`
+                                return `$${value}`
+                              }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "#131525",
+                                border: "1px solid #1f2037",
+                                borderRadius: "6px",
+                                color: "#fff",
+                              }}
+                              formatter={(value: number, name: string) => {
+                                return [formatCurrency(value), name.charAt(0).toUpperCase() + name.slice(1)]
+                              }}
+                            />
+                            <Legend 
+                              wrapperStyle={{ color: '#94a3b8', fontSize: '12px' }}
+                            />
+                            <Bar dataKey="revenue" fill="#22c55e" name="Revenue" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="expenses" fill="#ef4444" name="Expenses" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="profit" fill="#3b82f6" name="Profit" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )
+                })()}
               </CardContent>
             </Card>
           </div>
 
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-m8bs-blue" />
-                Trend Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <TrendAnalysis events={filteredData?.events || []} />
-            </CardContent>
-          </Card>
+          <div className="space-y-4 flex flex-col">
+            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-m8bs-blue" />
+                  Trend Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <TrendAnalysis events={filteredData?.events || []} />
+              </CardContent>
+            </Card>
+
+            {/* Conversion Breakdown Card */}
+            <div className="flex-1">
+              <ConversionBreakdown
+                registrants={filteredData?.summary?.totalRegistrants || 0}
+                attendees={filteredData?.summary?.totalAttendees || 0}
+                appointmentsSet={filteredData?.summary?.totalAppointmentsSet || 0}
+                clientsCreated={filteredData?.summary?.totalClients || 0}
+              />
+            </div>
+          </div>
         </div>
       </motion.div>
     </motion.div>

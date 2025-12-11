@@ -120,35 +120,35 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     switch (field) {
       case 'name':
         if (!value || value.toString().trim().length < 2) {
-          errors.name = 'Event name must be at least 2 characters'
+          errors.name = 'Event Name Must Be At Least 2 Characters'
         } else {
           delete errors.name
         }
         break
       case 'date':
         if (!value) {
-          errors.date = 'Event date is required'
+          errors.date = 'Event Date Is Required'
         } else {
           delete errors.date
         }
         break
       case 'location':
         if (!value || value.toString().trim().length < 2) {
-          errors.location = 'Location must be at least 2 characters'
+          errors.location = 'Location Must Be At Least 2 Characters'
         } else {
           delete errors.location
         }
         break
       case 'marketingType':
         if (!value) {
-          errors.marketingType = 'Marketing type is required'
+          errors.marketingType = 'Marketing Type Is Required'
         } else {
           delete errors.marketingType
         }
         break
       case 'topic':
         if (!value || value.toString().trim().length < 2) {
-          errors.topic = 'Topic must be at least 2 characters'
+          errors.topic = 'Topic Must Be At Least 2 Characters'
         } else {
           delete errors.topic
         }
@@ -343,7 +343,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         toast({
           variant: "destructive",
           title: "Error",
-          description: "You must be logged in to create an event.",
+          description: "You Must Be Logged In To Create An Event.",
         })
         return
       }
@@ -456,7 +456,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         toast({
           variant: "destructive",
           title: "Error",
-          description: result.error || `Failed to ${isEditing ? 'update' : 'create'} event. Please try again.`,
+          description: result.error || `Failed To ${isEditing ? 'Update' : 'Create'} Event. Please Try Again.`,
         })
         return
       }
@@ -465,7 +465,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
       toast({
         title: "Success",
-        description: `Event ${isEditing ? 'updated' : 'created'} successfully!`,
+          description: `Event ${isEditing ? 'Updated' : 'Created'} Successfully!`,
       })
 
       console.log('Redirecting to homepage...')
@@ -515,7 +515,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         toast({
           variant: "destructive",
           title: "Error",
-          description: "You must be logged in to update an event.",
+          description: "You Must Be Logged In To Update An Event.",
         })
         return
       }
@@ -678,7 +678,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   return (
     <div className="space-y-6">
       {/* Form Header with Progress */}
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+      <Card className="bg-black border-m8bs-border shadow-lg">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
@@ -724,7 +724,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
       <form onSubmit={handleSubmit}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="bg-gradient-to-r from-m8bs-card to-m8bs-card-alt p-1 border border-m8bs-border rounded-lg shadow-lg">
+          <TabsList className="bg-black p-1 border border-m8bs-border rounded-lg shadow-lg">
             <TabsTrigger value="event" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Event Details
@@ -748,7 +748,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
           </TabsList>
 
         <TabsContent value="event" className="space-y-4">
-          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-lg">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-m8bs-blue" />
@@ -771,7 +771,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       setName(e.target.value)
                       validateField('name', e.target.value)
                     }}
-                    className={`bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
+                    className={`bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
                       formErrors.name ? 'border-red-500 focus:border-red-500' : ''
                     }`}
                     placeholder="Enter Event Name (E.g., Retirement Planning Seminar)"
@@ -796,7 +796,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       setDate(e.target.value)
                       validateField('date', e.target.value)
                     }}
-                    className={`bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
+                    className={`bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
                       formErrors.date ? 'border-red-500 focus:border-red-500' : ''
                     }`}
                     required
@@ -819,7 +819,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       setLocation(e.target.value)
                       validateField('location', e.target.value)
                     }}
-                    className={`bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
+                    className={`bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
                       formErrors.location ? 'border-red-500 focus:border-red-500' : ''
                     }`}
                     placeholder="Enter Venue Location"
@@ -874,7 +874,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="marketingType"
                     value={marketingType}
                     onChange={(e) => setMarketingType(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="E.g. MBI Mailer, Facebook Ads"
                     required
                   />
@@ -887,7 +887,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="topic"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="E.g. Retirement Outlook"
                     required
                   />
@@ -900,7 +900,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="ageRange"
                     value={ageRange}
                     onChange={(e) => setAgeRange(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="E.g. 58-71"
                   />
                 </div>
@@ -912,7 +912,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="mileRadius"
                     value={mileRadius}
                     onChange={(e) => setMileRadius(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="E.g. 10-15 Mi"
                   />
                 </div>
@@ -924,7 +924,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="incomeAssets"
                     value={incomeAssets}
                     onChange={(e) => setIncomeAssets(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="E.g. 500k-2m"
                   />
                 </div>
@@ -938,7 +938,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     min="0"
                     value={marketingAudience ?? ""}
                     onChange={e => setMarketingAudience(e.target.value === "" ? null : e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="Enter Total Number Of People"
                   />
                 </div>
@@ -967,7 +967,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         </TabsContent>
 
         <TabsContent value="expenses" className="space-y-4">
-          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-lg">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-m8bs-blue" />
@@ -991,7 +991,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       const rawValue = parseCurrencyInput(e.target.value)
                       setAdvertisingCost(rawValue)
                     }}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="$0"
                   />
                 </div>
@@ -1007,7 +1007,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       const rawValue = parseCurrencyInput(e.target.value)
                       setFoodVenueCost(rawValue)
                     }}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="$0"
                   />
                 </div>
@@ -1023,13 +1023,13 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       const rawValue = parseCurrencyInput(e.target.value)
                       setOtherCosts(rawValue)
                     }}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="$0"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-white font-medium">Total Cost ($)</Label>
-                  <div className="bg-m8bs-card-alt border border-m8bs-border rounded-md p-3 text-white font-medium">
+                  <div className="bg-black-alt border border-m8bs-border rounded-md p-3 text-white font-medium">
                     {formatCurrencyUtil(calculateTotalCost())}
                   </div>
                 </div>
@@ -1040,7 +1040,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 type="button"
                 variant="outline"
                 onClick={handlePrevTab}
-                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt transition-colors"
+                className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
               >
                 Previous
               </Button>
@@ -1068,11 +1068,11 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-4">
-          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-lg">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <svg
-                  className="h-5 w-5 text-blue-400"
+                  className="h-5 w-5 text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1100,7 +1100,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={registrantResponses}
                     onChange={(e) => setRegistrantResponses(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1113,7 +1113,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={confirmations}
                     onChange={(e) => setConfirmations(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1126,7 +1126,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={attendees}
                     onChange={(e) => setAttendees(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1139,7 +1139,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={clientsFromEvent}
                     onChange={(e) => setClientsFromEvent(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1152,7 +1152,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={plateLickers}
                     onChange={(e) => setPlateLickers(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="No Interest In Appointments Or Services"
                   />
                 </div>
@@ -1163,7 +1163,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 type="button"
                 variant="outline"
                 onClick={handlePrevTab}
-                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt transition-colors"
+                className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
               >
                 Previous
               </Button>
@@ -1191,11 +1191,11 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         </TabsContent>
 
         <TabsContent value="appointments" className="space-y-4">
-          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-lg">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <svg
-                  className="h-5 w-5 text-blue-400"
+                  className="h-5 w-5 text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1223,7 +1223,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={setAtEvent}
                     onChange={(e) => setSetAtEvent(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1236,7 +1236,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={setAfterEvent}
                     onChange={(e) => setSetAfterEvent(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1249,7 +1249,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={firstAppointmentAttended}
                     onChange={(e) => setFirstAppointmentAttended(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1262,7 +1262,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={firstAppointmentNoShows}
                     onChange={(e) => setFirstAppointmentNoShows(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1275,7 +1275,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={secondAppointmentAttended}
                     onChange={(e) => setSecondAppointmentAttended(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     required
                   />
                 </div>
@@ -1288,7 +1288,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={notQualified}
                     onChange={(e) => setNotQualified(e.target.value)}
-                    className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                     placeholder="Number Of Prospects Not Qualified"
                   />
                 </div>
@@ -1299,7 +1299,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 type="button"
                 variant="outline"
                 onClick={handlePrevTab}
-                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt transition-colors"
+                className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
               >
                 Previous
               </Button>
@@ -1327,7 +1327,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         </TabsContent>
 
         <TabsContent value="financial" className="space-y-4">
-          <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-lg">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-m8bs-blue" />
@@ -1351,7 +1351,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       type="number"
                       value={annuitiesSold}
                       onChange={(e) => setAnnuitiesSold(e.target.value)}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       required
                     />
                   </div>
@@ -1367,7 +1367,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                         const rawValue = parseCurrencyInput(e.target.value)
                         setAnnuityPremium(rawValue)
                       }}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       placeholder="$0"
                     />
                   </div>
@@ -1383,7 +1383,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       max="100"
                       value={annuityCommissionPercentage}
                       onChange={(e) => setAnnuityCommissionPercentage(e.target.value)}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       required
                     />
                   </div>
@@ -1410,7 +1410,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="aumAccountsOpened" className="text-white font-medium">
-                      AUM Accounts Opened
+                      AUM Households
                     </Label>
                     <Input
                       id="aumAccountsOpened"
@@ -1418,8 +1418,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       min="0"
                       value={aumAccountsOpened}
                       onChange={e => setAumAccountsOpened(e.target.value)}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                      placeholder="Number Of AUM Accounts Opened"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      placeholder="Number Of AUM Households"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1434,7 +1434,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                         const rawValue = parseCurrencyInput(e.target.value)
                         setAum(rawValue)
                       }}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       placeholder="$0"
                       required
                     />
@@ -1451,7 +1451,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       max="100"
                       value={aumFeePercentage}
                       onChange={(e) => setAumFeePercentage(e.target.value)}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       required
                     />
                   </div>
@@ -1483,7 +1483,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       type="number"
                       value={lifePoliciesSold}
                       onChange={(e) => setLifePoliciesSold(e.target.value)}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       required
                     />
                   </div>
@@ -1499,7 +1499,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                         const rawValue = parseCurrencyInput(e.target.value)
                         setLifeInsurancePremium(rawValue)
                       }}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       placeholder="$0"
                     />
                   </div>
@@ -1515,7 +1515,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       max="100"
                       value={lifeInsuranceCommissionPercentage}
                       onChange={(e) => setLifeInsuranceCommissionPercentage(e.target.value)}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       required
                     />
                   </div>
@@ -1550,7 +1550,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       min="0"
                       value={financialPlansSold}
                       onChange={e => setFinancialPlansSold(e.target.value)}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       placeholder="Number Of Financial Plans Sold"
                     />
                   </div>
@@ -1566,7 +1566,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                         const rawValue = parseCurrencyInput(e.target.value)
                         setFinancialPlanning(rawValue)
                       }}
-                      className="bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       placeholder="$0"
                       required
                     />
@@ -1588,7 +1588,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
 
       {/* Form Actions */}
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+      <Card className="bg-black border-m8bs-border shadow-lg">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1606,7 +1606,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
-                className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt"
+                className="bg-black border-m8bs-border text-white hover:bg-black-alt"
               >
                 Cancel
               </Button>

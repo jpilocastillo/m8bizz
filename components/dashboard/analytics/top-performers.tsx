@@ -84,7 +84,7 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
       case "ROI":
         return { icon: TrendingUp, color: "text-emerald-400", bgColor: "bg-emerald-500/20" }
       case "Conversion":
-        return { icon: Target, color: "text-blue-400", bgColor: "bg-blue-500/20" }
+        return { icon: Target, color: "text-gray-400", bgColor: "bg-gray-500/20" }
       case "Revenue":
         return { icon: DollarSign, color: "text-green-400", bgColor: "bg-green-500/20" }
       case "Attendees":
@@ -92,7 +92,7 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
       case "Clients":
         return { icon: Award, color: "text-amber-400", bgColor: "bg-amber-500/20" }
       default:
-        return { icon: TrendingUp, color: "text-blue-400", bgColor: "bg-blue-500/20" }
+        return { icon: TrendingUp, color: "text-gray-400", bgColor: "bg-gray-500/20" }
     }
   }
 
@@ -246,10 +246,10 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
                             {/* Key Metrics - Hidden on mobile, shown on larger screens */}
                             <div className="hidden lg:flex flex-col items-end gap-1 text-sm">
                               <div className="text-m8bs-muted">
-                                Attendees: <span className="text-white font-semibold">{event.attendees || 0}</span>
+                                Attendees: <span className="text-white font-semibold">{(event.attendees || 0).toLocaleString()}</span>
                               </div>
                               <div className="text-m8bs-muted">
-                                Clients: <span className="text-white font-semibold">{event.clients || 0}</span>
+                                Clients: <span className="text-white font-semibold">{(event.clients || 0).toLocaleString()}</span>
                               </div>
                               <div className="text-m8bs-muted">
                                 Revenue: <span className="text-white font-semibold">

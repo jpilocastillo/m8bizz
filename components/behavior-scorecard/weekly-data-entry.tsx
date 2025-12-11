@@ -128,14 +128,14 @@ export function WeeklyDataEntry({ roleName, roleId, metrics, year, month, onSave
   }
 
   return (
-    <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
+    <Card className="border-m8bs-border/50 shadow-2xl bg-black backdrop-blur-sm border-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-blue-300">
           <Calendar className="h-5 w-5" />
           {roleName} - Weekly Data Entry
         </CardTitle>
         <CardDescription className="text-m8bs-muted">
-          Enter weekly data for {month}/{year}
+          Enter Weekly Data For {month}/{year}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

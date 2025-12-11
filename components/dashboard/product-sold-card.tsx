@@ -51,11 +51,11 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
 
   const colorVariants = {
     blue: {
-      primary: "bg-blue-500",
-      secondary: "bg-blue-600",
-      text: "text-blue-400",
-      light: "bg-blue-500/10",
-      border: "border-blue-500/20",
+      primary: "bg-gray-500",
+      secondary: "bg-gray-600",
+      text: "text-gray-400",
+      light: "bg-gray-500/10",
+      border: "border-gray-500/20",
       gradient: "from-blue-500/20 to-blue-600/5",
     },
     red: {
@@ -100,7 +100,7 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
     },
   }
 
-  const colorClasses = colorVariants[color]
+  const colorClasses = colorVariants[color] || colorVariants.blue
 
   return (
     <motion.div
@@ -111,19 +111,11 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
       onHoverEnd={() => setIsHovered(false)}
     >
       <Card
-        className={`bg-[#0c0f1f] border-[#1a1f35] rounded-lg overflow-hidden shadow-lg h-full relative bg-gradient-to-br ${colorClasses.gradient}`}
+        className="bg-m8bs-card rounded-lg overflow-hidden shadow-sm h-full relative"
       >
-        {/* Decorative elements */}
-        <div
-          className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-10 ${colorClasses.primary}`}
-        ></div>
-        <div
-          className={`absolute bottom-0 left-0 w-24 h-24 rounded-full blur-2xl opacity-10 ${colorClasses.secondary}`}
-        ></div>
-
-        <CardHeader className="bg-[#0c0f1f]/80 border-b border-[#1a1f35] px-4 py-3 backdrop-blur-sm">
-          <CardTitle className="text-lg font-extrabold text-white flex items-center tracking-tight">
-            <div className={`p-1.5 rounded-md mr-2 ${colorClasses.light}`}>{icon}</div>
+        <CardHeader className="bg-m8bs-card px-6 py-4">
+          <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
+            <div className={`p-2 rounded-lg mr-3 ${colorClasses.light}`}>{icon}</div>
             {title}
           </CardTitle>
         </CardHeader>
@@ -177,9 +169,9 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
 
                 {/* Centered count */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-4xl font-bold text-white">{animatedCount}</span>
-                  <span className={`text-sm ${colorClasses.text}`}>{
-                    title === "AUM Accounts Opened"
+                  <span className="text-4xl font-extrabold tracking-tight text-white">{animatedCount.toLocaleString()}</span>
+                  <span className={`text-sm font-medium ${colorClasses.text}`}>{
+                    title === "AUM Households"
                       ? (animatedCount === 1 ? "Account" : "Accounts")
                       : (animatedCount === 1 ? "Policy" : "Policies")
                   }</span>
@@ -206,8 +198,8 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
                 .filter(detail => detail.label.toLowerCase() !== 'commission rate')
                 .map((detail, index) => (
                   <div key={index} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">{detail.label}</span>
-                    <span className="text-white font-medium">{detail.value}</span>
+                    <span className="text-white/80 font-medium">{detail.label}</span>
+                    <span className="text-white font-extrabold">{detail.value}</span>
                   </div>
                 ))}
             </div>
@@ -218,19 +210,19 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
               {benefits.map((benefit, index) => (
                 <div key={index} className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className={`h-4 w-4 ${colorClasses.text}`} />
-                  <span className="text-gray-300">{benefit}</span>
+                  <span className="text-white/80 font-medium">{benefit}</span>
                 </div>
               ))}
             </div>
 
             {/* Trend indicator */}
-            <div className="mt-4 pt-3 border-t border-[#1a1f35] flex items-center justify-between">
+            <div className="mt-4 pt-3 border-t border-m8bs-border flex items-center justify-between">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1 cursor-help">
-                      <Info className="h-3.5 w-3.5 text-gray-500" />
-                      <span className="text-xs text-gray-500">Performance</span>
+                      <Info className="h-3.5 w-3.5 text-white/60" />
+                      <span className="text-xs text-white/60 font-medium">Performance</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">

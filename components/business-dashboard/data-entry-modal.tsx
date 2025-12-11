@@ -37,7 +37,7 @@ export function DataEntryModal({ onDataSubmit, user }: { onDataSubmit: (data: an
           <DialogTitle>Business Data Entry</DialogTitle>
           <DialogDescription>Enter your business data to generate visualizations and insights.</DialogDescription>
         </DialogHeader>
-        <DataEntryFormV2 user={user} onComplete={handleSubmit} />
+        <DataEntryFormV2 user={user} onComplete={handleSubmit} onCancel={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   )

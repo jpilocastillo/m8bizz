@@ -143,7 +143,7 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
 
   const getColorClasses = (color: string) => {
     const colorMap = {
-      blue: "bg-blue-500/20 text-blue-400 border-blue-500/50",
+      blue: "bg-gray-500/20 text-gray-400 border-gray-500/50",
       green: "bg-green-500/20 text-green-400 border-green-500/50",
       purple: "bg-purple-500/20 text-purple-400 border-purple-500/50",
       orange: "bg-orange-500/20 text-orange-400 border-orange-500/50",
@@ -154,7 +154,7 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
   }
 
   return (
-    <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+    <Card className="bg-black border-m8bs-border shadow-lg">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>

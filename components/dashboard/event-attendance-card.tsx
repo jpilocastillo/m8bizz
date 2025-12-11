@@ -31,14 +31,12 @@ export function EventAttendanceCard({
   const clientRateFormatted = Math.round(clientRate * 10) / 10
 
   return (
-    <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-md">
-      <CardHeader className="bg-m8bs-card-alt border-b border-m8bs-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-extrabold text-white tracking-tight">Event Attendance Breakdown</CardTitle>
-          <div className="bg-blue-500/20 p-2 rounded-lg">
-            <Users className="h-5 w-5 text-blue-400" />
-          </div>
-        </div>
+    <Card className="bg-black border-m8bs-border rounded-lg overflow-hidden shadow-md">
+      <CardHeader className="bg-black border-b border-m8bs-border px-6 py-4">
+        <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
+          <Users className="mr-3 h-6 w-6 text-gray-500" />
+          Event Attendance Breakdown
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="grid grid-cols-1 divide-y divide-m8bs-border">
@@ -49,7 +47,7 @@ export function EventAttendanceCard({
               <div className="text-white text-4xl font-bold">{registrantResponses}</div>
             </div>
             <div className="flex-shrink-0">
-              <CircularProgress value={responseRateFormatted} max={100} size={70} strokeWidth={8} color="blue" glowEffect={true}>
+              <CircularProgress value={responseRateFormatted} max={100} size={70} strokeWidth={8} color="gray" glowEffect={true}>
                 <span className="text-white text-sm font-bold">{responseRateFormatted}%</span>
               </CircularProgress>
             </div>
@@ -75,7 +73,7 @@ export function EventAttendanceCard({
               <div className="text-white text-4xl font-bold">{attendees}</div>
             </div>
             <div className="flex-shrink-0">
-              <CircularProgress value={attendeeRateFormatted} max={100} size={70} strokeWidth={8} color="blue" glowEffect={true}>
+              <CircularProgress value={attendeeRateFormatted} max={100} size={70} strokeWidth={8} color="gray" glowEffect={true}>
                 <span className="text-white text-sm font-bold">{attendeeRateFormatted}%</span>
               </CircularProgress>
             </div>

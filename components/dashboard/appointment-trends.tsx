@@ -43,13 +43,55 @@ export function AppointmentTrends({
   const overallConversionRate = Math.round((secondAppointmentAttended / (setAtEvent + setAfterEvent)) * 100)
   const closingRate = secondAppointmentAttended > 0 ? Math.round((clients / secondAppointmentAttended) * 100) : 0
 
+  // Helper function to get icon color from bg color
+  const getIconColor = (bgColor: string) => {
+    const colorMap: { [key: string]: string } = {
+      "bg-gray-500": "text-gray-500",
+      "bg-rose-500": "text-rose-500",
+      "bg-cyan-400": "text-cyan-500",
+      "bg-emerald-500": "text-emerald-500",
+      "bg-slate-400": "text-slate-400",
+      "bg-red-500": "text-red-500",
+      "bg-amber-400": "text-amber-500",
+    }
+    return colorMap[bgColor] || "text-white/60"
+  }
+
+  // Helper function to get border color from bg color
+  const getBorderColor = (bgColor: string) => {
+    const colorMap: { [key: string]: string } = {
+      "bg-gray-500": "border-gray-500/60",
+      "bg-rose-500": "border-rose-500/60",
+      "bg-cyan-400": "border-cyan-500/60",
+      "bg-emerald-500": "border-emerald-500/60",
+      "bg-slate-400": "border-slate-400/60",
+      "bg-red-500": "border-red-500/60",
+      "bg-amber-400": "border-amber-500/60",
+    }
+    return colorMap[bgColor] || "border-m8bs-border/40"
+  }
+
+  // Helper function to get bg color for icon container
+  const getIconBgColor = (bgColor: string) => {
+    const colorMap: { [key: string]: string } = {
+      "bg-gray-500": "bg-gray-500/20",
+      "bg-rose-500": "bg-rose-500/20",
+      "bg-cyan-400": "bg-cyan-500/20",
+      "bg-emerald-500": "bg-emerald-500/20",
+      "bg-slate-400": "bg-slate-400/20",
+      "bg-red-500": "bg-red-500/20",
+      "bg-amber-400": "bg-amber-500/20",
+    }
+    return colorMap[bgColor] || "bg-black/30"
+  }
+
   // Data for the journey steps
   const journeySteps = [
     {
       label: "Set at Event",
       value: setAtEvent,
       icon: Calendar,
-      color: "bg-blue-500",
+      color: "bg-gray-500",
       gradient: "from-blue-600 to-blue-400",
       description: "Appointments scheduled during the event",
     },
@@ -108,8 +150,8 @@ export function AppointmentTrends({
     {
       text: `${firstAppointmentRate}% of prospects attend their first appointment`,
       color: "text-amber-400",
-      hoverBg: "bg-blue-500/20",
-      hoverBorder: "border-blue-500/50",
+      hoverBg: "bg-gray-500/20",
+      hoverBorder: "border-gray-500/50",
       icon: CheckCircle,
     },
     {
@@ -147,7 +189,7 @@ export function AppointmentTrends({
 
   return (
     <Card
-      className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-md h-full transition-all duration-300 hover:shadow-lg hover:shadow-amber-900/20"
+      className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md h-full transition-all duration-300 hover:shadow-lg hover:shadow-amber-900/20"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false)
@@ -155,31 +197,27 @@ export function AppointmentTrends({
         setHoveredInsight(null)
       }}
     >
-      <CardHeader className="bg-m8bs-card-alt border-b border-m8bs-border px-6 py-4">
+      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-extrabold text-white tracking-tight group">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-amber-200 transition-all duration-300 group-hover:from-amber-200 group-hover:to-white">
-              From Event to Engagement: Appointment Trends
-            </span>
+          <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
+            <Calendar className="mr-3 h-6 w-6 text-m8bs-muted" />
+            Appointment Trends
           </CardTitle>
-          <div
-            className={`p-2 rounded-lg transition-all duration-300 transform ${
-              isHovered ? "bg-amber-500/20 rotate-12 scale-110" : ""
-            }`}
-          >
-            <Calendar className="h-5 w-5 text-amber-400" />
-          </div>
         </div>
       </CardHeader>
       <CardContent className="p-6 relative">
-        <div className="mb-4 text-sm bg-gray-800/50 p-3 rounded-md border border-gray-700 transition-all duration-300 hover:bg-gray-800/80 hover:border-amber-500/30 hover:shadow-md hover:shadow-amber-900/10 group">
+        <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 mb-6 transition-all duration-300 hover:bg-black/50 hover:border-amber-500/60 hover:shadow-md">
           <div className="flex items-center">
-            <Info className="h-4 w-4 mr-2 text-amber-400 group-hover:animate-pulse" />
-            <span className="text-gray-400">
-              Overall conversion: {" "}
-              <span className="text-amber-400 font-bold group-hover:text-amber-300">{overallConversionRate}%</span> from
-              initial contact to second appointment
-            </span>
+            <div className="bg-amber-500/20 p-2 rounded-lg mr-3">
+              <Info className="h-4 w-4 text-amber-400" />
+            </div>
+            <div>
+              <span className="text-sm text-white font-medium tracking-wide">
+                Overall conversion: {" "}
+                <span className="text-xl font-extrabold text-white">{overallConversionRate}%</span> from
+                initial contact to second appointment
+              </span>
+            </div>
           </div>
         </div>
 
@@ -190,11 +228,13 @@ export function AppointmentTrends({
             {journeySteps.map((step, index) => (
               <div key={step.label} className="flex items-center justify-center w-full">
                 <div
-                  className={`rounded-full p-2 transition-all duration-300 ${
-                    activeStep === index ? `${step.color} text-white scale-110 shadow-lg` : "bg-gray-800"
+                  className={`rounded-lg p-2 transition-all duration-300 ${
+                    activeStep === index 
+                      ? `${getIconBgColor(step.color)} border-2 ${getBorderColor(step.color)} scale-110 shadow-md` 
+                      : "bg-black/30 border border-m8bs-border/40"
                   }`}
                 >
-                  <step.icon className={`h-5 w-5 ${activeStep === index ? "animate-pulse text-white" : step.color.replace('bg-', 'text-')}`} />
+                  <step.icon className={`h-4 w-4 ${getIconColor(step.color)}`} />
                 </div>
               </div>
             ))}
@@ -203,11 +243,7 @@ export function AppointmentTrends({
           <div className="grid grid-cols-7 gap-4 items-end text-center mb-1">
             {journeySteps.map((step, index) => (
               <div key={step.label} className="flex items-center justify-center w-full">
-                <p
-                  className={`text-sm font-medium transition-colors duration-300 ${
-                    activeStep === index ? "text-white" : "text-gray-400"
-                  }`}
-                >
+                <p className="text-xs font-medium text-white tracking-wide">
                   {step.label}
                 </p>
               </div>
@@ -217,7 +253,7 @@ export function AppointmentTrends({
           <div className="grid grid-cols-7 gap-4 items-end text-center">
             {journeySteps.map((step, index) => (
               <div key={step.label} className="flex items-center justify-center w-full">
-                <div className="text-2xl font-extrabold text-white leading-tight min-h-[2.5rem] flex items-end justify-center">{step.value}</div>
+                <div className="text-xl font-extrabold tracking-tight text-white min-h-[2.5rem] flex items-end justify-center">{step.value}</div>
               </div>
             ))}
           </div>
@@ -228,38 +264,35 @@ export function AppointmentTrends({
           {[0, 1, 2, 3, 4, 5].map((index) => (
             <ArrowRight
               key={`arrow-${index}`}
-              className={`h-5 w-5 text-gray-600 transition-all duration-300 ${
-                activeStep === index || activeStep === index + 1 ? "text-amber-400 scale-125" : ""
+              className={`h-5 w-5 text-white transition-all duration-300 ${
+                activeStep === index || activeStep === index + 1 ? "scale-125" : ""
               }`}
             />
           ))}
         </div>
 
         {/* Journey Insights */}
-        <div className="mt-2 bg-gray-800/50 rounded-lg p-4 border border-gray-700 transition-all duration-300 hover:bg-gray-800/70 hover:border-gray-600">
-          <h4 className="text-white font-bold mb-3 flex items-center">
+        <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:bg-black/50 hover:border-amber-500/60 hover:shadow-md">
+          <h4 className="text-sm font-semibold text-white tracking-wide mb-3 flex items-center">
             <TrendingUp className="h-4 w-4 mr-2 text-amber-400" />
             Journey Insights
           </h4>
-          <div className="text-sm text-gray-300 space-y-3">
+          <div className="space-y-3">
             {journeyInsights.map((insight, index) => (
               <div
                 key={`insight-${index}`}
-                className={`p-2 rounded-md transition-all duration-300 border border-transparent ${
-                  hoveredInsight === index ? `${insight.hoverBg} ${insight.hoverBorder}` : ""
-                }`}
+                className="p-2 rounded-md transition-all duration-300"
                 onMouseEnter={() => setHoveredInsight(index)}
                 onMouseLeave={() => setHoveredInsight(null)}
               >
-                <p className="flex items-center">
+                <p className="flex items-center text-sm font-medium">
                   <insight.icon
-                    className={`h-4 w-4 mr-2 ${insight.color} ${hoveredInsight === index ? "animate-pulse" : ""}`}
+                    className={`h-4 w-4 mr-2 ${insight.color}`}
                   />
-                  •{" "}
-                  <span className={`ml-1 ${hoveredInsight === index ? "text-white" : ""}`}>
+                  <span className="text-white">
                     {insight.text.split(/([\d.]+%)/).map((part, i) =>
                       /[\d.]+%/.test(part) ? (
-                        <span key={i} className={insight.color + " font-medium"}>
+                        <span key={i} className="text-white font-extrabold">
                           {part}
                         </span>
                       ) : (

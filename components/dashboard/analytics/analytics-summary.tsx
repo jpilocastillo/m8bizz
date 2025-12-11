@@ -16,6 +16,9 @@ interface AnalyticsSummaryData {
   totalClients: number
   avgAttendees: number
   totalPlateLickers?: number
+  totalAppointmentsSet?: number
+  totalAppointmentsMade?: number
+  totalRegistrants?: number
 }
 
 interface AnalyticsSummaryProps {
@@ -37,6 +40,9 @@ export const AnalyticsSummary = memo(function AnalyticsSummary({ data }: Analyti
     totalClients: data?.totalClients || 0,
     avgAttendees: data?.avgAttendees || 0,
     totalPlateLickers: data?.totalPlateLickers || 0,
+    totalAppointmentsSet: data?.totalAppointmentsSet || 0,
+    totalAppointmentsMade: data?.totalAppointmentsMade || 0,
+    totalRegistrants: data?.totalRegistrants || 0,
   }
 
   // Use backend-calculated values directly where available
@@ -71,27 +77,9 @@ export const AnalyticsSummary = memo(function AnalyticsSummary({ data }: Analyti
       value: safeData.totalEvents,
       icon: BarChart3,
       color: "blue",
-      bgColor: "bg-m8bs-blue/20",
+      bgColor: "bg-m8bs-card-alt",
       iconColor: "text-m8bs-blue",
-      subtitle: "Marketing campaigns"
-    },
-    {
-      title: "Total Revenue",
-      value: formatCurrency(safeData.totalRevenue),
-      icon: DollarSign,
-      color: "emerald",
-      bgColor: "bg-emerald-500/20",
-      iconColor: "text-emerald-500",
-      subtitle: `Avg: ${formatCurrency(avgRevenuePerEvent)} per event`
-    },
-    {
-      title: "Total Profit",
-      value: formatCurrency(safeData.totalProfit),
-      icon: TrendingUp,
-      color: "purple",
-      bgColor: "bg-purple-500/20",
-      iconColor: "text-purple-500",
-      subtitle: `ROI: ${formatPercent(overallROI)}`
+      subtitle: "Marketing Campaigns"
     },
     {
       title: "Total Attendees",
@@ -100,7 +88,7 @@ export const AnalyticsSummary = memo(function AnalyticsSummary({ data }: Analyti
       color: "cyan",
       bgColor: "bg-cyan-500/20",
       iconColor: "text-cyan-500",
-      subtitle: `Avg: ${Math.round(safeData.avgAttendees)} per event`
+      subtitle: `Avg: ${Math.round(safeData.avgAttendees)} Per Event`
     },
     {
       title: "Total Clients",
@@ -118,16 +106,34 @@ export const AnalyticsSummary = memo(function AnalyticsSummary({ data }: Analyti
       color: "red",
       bgColor: "bg-red-500/20",
       iconColor: "text-red-500",
-      subtitle: "Marketing costs"
+      subtitle: "Marketing Costs"
     },
     {
-      title: "Avg ROI",
+      title: "Total Revenue",
+      value: formatCurrency(safeData.totalRevenue),
+      icon: DollarSign,
+      color: "emerald",
+      bgColor: "bg-emerald-500/20",
+      iconColor: "text-emerald-500",
+      subtitle: `Avg: ${formatCurrency(avgRevenuePerEvent)} Per Event`
+    },
+    {
+      title: "Total Profit",
+      value: formatCurrency(safeData.totalProfit),
+      icon: TrendingUp,
+      color: "purple",
+      bgColor: "bg-purple-500/20",
+      iconColor: "text-purple-500",
+      subtitle: `Revenue - Expenses`
+    },
+    {
+      title: "Total ROI",
       value: formatPercent(overallROI),
       icon: Activity,
       color: "green",
       bgColor: "bg-green-500/20",
       iconColor: "text-green-500",
-      subtitle: "Return on investment"
+      subtitle: "Return On Investment"
     }
   ]
 
@@ -162,7 +168,7 @@ export const AnalyticsSummary = memo(function AnalyticsSummary({ data }: Analyti
             transition={{ type: "spring", stiffness: 300 }}
           >
             <Card 
-              className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-lg card-hover h-full"
+              className="bg-m8bs-card text-white shadow-sm h-full"
               role="article"
               aria-label={`${card.title}: ${card.value}`}
             >

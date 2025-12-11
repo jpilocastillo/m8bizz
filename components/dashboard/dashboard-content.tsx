@@ -23,7 +23,6 @@ import { DashboardError } from "./dashboard-error"
 import { createClient } from "@/lib/supabase/client"
 import { PlateLickerCard } from "@/components/dashboard/plate-licker-card"
 import { SingleEventExport } from "@/components/dashboard/single-event-export"
-import { MonthlyEntriesTable } from "@/components/dashboard/monthly-entries-table"
 import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
 
@@ -364,9 +363,9 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             title="Return on Investment"
             value={roi}
             format="percent"
-            icon={<TrendingUp className="h-5 w-5 text-blue-400" />}
+            icon={<TrendingUp className="h-5 w-5 text-gray-400" />}
             description="Return On Investment From Marketing Expenses"
-            color="blue"
+            color="gray"
           />
         </motion.div>
 
@@ -397,7 +396,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             value={overallConversion}
             format="percent"
             icon={<Percent className="h-5 w-5 text-amber-400" />}
-            description={`${registrants} registrants → ${clients} clients`}
+            description={`${registrants.toLocaleString()} registrants → ${clients.toLocaleString()} clients`}
             color="amber"
           />
         </motion.div>
@@ -510,8 +509,8 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           <ProductSoldCard
             title="Annuities Sold"
             count={dashboardData.financialProduction?.annuities_sold || 0}
-            icon={<Award className="h-5 w-5 text-blue-400" />}
-            color="blue"
+            icon={<Award className="h-5 w-5 text-gray-400" />}
+            color="gray"
             details={[
               {
                 label: "Average Premium",
@@ -552,7 +551,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           transition={{ duration: 0.5, delay: 1.1 }}
         >
           <ProductSoldCard
-            title="AUM Accounts Opened"
+            title="AUM Households"
             count={dashboardData.financialProduction?.aum_accounts_opened || 0}
             icon={<DollarSign className="h-5 w-5 text-emerald-400" />}
             color="green"
@@ -630,16 +629,6 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
         </motion.div>
       </div>
 
-      {/* Monthly Entries Section */}
-      <SectionDivider title="Monthly Performance" />
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
-      >
-        <MonthlyEntriesTable />
-      </motion.div>
     </div>
   )
 }

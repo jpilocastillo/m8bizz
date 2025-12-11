@@ -91,7 +91,7 @@ const formSchema = z.object({
   campaigns: z.array(campaignSchema).min(1, "At least one campaign is required"),
 
   // Commission Percentages
-  planningFeeRate: z.string().min(1, "Planning fee rate is required"),
+  planningFeeRate: z.string().min(1, "Average planning fee rate is required"),
   annuityCommission: z.string().min(1, "Annuity commission percentage is required"),
   aumCommission: z.string().min(1, "AUM commission percentage is required"),
   lifeCommission: z.string().min(1, "Life commission percentage is required"),
@@ -378,7 +378,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
         <Tabs defaultValue="goals" className="w-full">
           <TabsList className="grid grid-cols-3 md:grid-cols-5 w-full">
             <TabsTrigger value="goals">Goals</TabsTrigger>
-            <TabsTrigger value="current">Advisor Book</TabsTrigger>
+            <TabsTrigger value="current">Current Advisor Book</TabsTrigger>
             <TabsTrigger value="clients">Client Metrics</TabsTrigger>
             <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
             <TabsTrigger value="income">Income</TabsTrigger>
@@ -536,11 +536,11 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
             </Card>
           </TabsContent>
 
-          {/* Advisor Book Tab */}
+          {/* Current Advisor Book Tab */}
           <TabsContent value="current">
             <Card>
               <CardHeader>
-                <CardTitle>Advisor Book</CardTitle>
+                <CardTitle>Current Advisor Book</CardTitle>
                 <CardDescription>Enter Your Current Advisor Book Values And Financial Options</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1326,7 +1326,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           name="planningFeeRate"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Planning Fee Rate ($)</FormLabel>
+                              <FormLabel>Average Planning Fee Rate ($)</FormLabel>
                               <FormControl>
                                 <Input
                                   type="text"
@@ -1415,7 +1415,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                       <div className="flex justify-between">
                         <span>
-                          Planning Fees (${Number.parseFloat(watchedValues[8] || "0").toLocaleString()} × $
+                          Average Planning Fees (${Number.parseFloat(watchedValues[8] || "0").toLocaleString()} × $
                           {clientsNeeded} clients):
                         </span>
                         <span className="font-medium">${planningFeesValue.toLocaleString()}</span>

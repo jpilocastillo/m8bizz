@@ -6,32 +6,36 @@
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
 
-  --card: 222.2 84% 4.9%;
+  --card: 0 0% 4%;
   --card-foreground: 210 40% 98%;
 
   --popover: 222.2 84% 4.9%;
   --popover-foreground: 210 40% 98%;
 
-  --primary: 217.2 91.2% 59.8%;
+  --primary: 217.2 100% 70%;
   --primary-foreground: 222.2 47.4% 11.2%;
 
-  --secondary: 217.2 32.6% 17.5%;
+  --secondary: 217.2 50% 35%;
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted: 217.2 30% 65%;
+  --muted-foreground: 215 30% 85%;
 
-  --accent: 217.2 32.6% 17.5%;
+  --accent: 270 85% 75%;
   --accent-foreground: 210 40% 98%;
 
-  --destructive: 0 62.8% 30.6%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
+  --border: 0 0% 18%;
+  --input: 240 20% 25%;
+  --ring: 217.2 91.2% 59.8%;
 
   --radius: 0.5rem;
+}
+
+html {
+  @apply bg-m8bs-bg;
 }
 
 body {
@@ -41,6 +45,9 @@ body {
 @layer base {
   * {
     @apply border-border;
+  }
+  html {
+    @apply bg-m8bs-bg;
   }
   body {
     @apply bg-m8bs-bg text-foreground;
@@ -87,41 +94,57 @@ body {
   @apply bg-m8bs-card-alt;
 }
 
-/* Glow effects */
+/* Enhanced Glow effects - Brighter */
 .glow-blue {
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 25px rgba(79, 158, 255, 0.8), 0 0 50px rgba(79, 158, 255, 0.4);
 }
 
 .glow-green {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 25px rgba(52, 211, 153, 0.8), 0 0 50px rgba(52, 211, 153, 0.4);
 }
 
 .glow-red {
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.8), 0 0 50px rgba(239, 68, 68, 0.4);
+}
+
+.glow-purple {
+  box-shadow: 0 0 25px rgba(192, 132, 252, 0.8), 0 0 50px rgba(192, 132, 252, 0.4);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.8), 0 0 50px rgba(34, 211, 238, 0.4);
 }
 
 .glow-text {
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(59, 130, 246, 0.5);
 }
 
-/* Enhanced Card Styling */
+.glow-text-accent {
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.8), 0 0 20px rgba(168, 85, 247, 0.5);
+}
+
+/* Subtle Card Styling */
 .card-enhanced {
-  @apply bg-gradient-to-b from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg transition-all duration-300 hover:shadow-xl;
+  @apply bg-m8bs-card border-m8bs-border shadow-sm transition-all duration-200;
 }
 
-/* Blue gradient button */
+/* Gray gradient button */
 .btn-blue-gradient {
   @apply bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark hover:from-m8bs-blue-light hover:to-m8bs-blue text-white border-0 transition-all duration-300;
 }
 
-/* Dark blue gradient background */
+/* Dark gray gradient background */
 .bg-dark-blue-gradient {
   @apply bg-gradient-to-b from-m8bs-card to-m8bs-bg;
 }
 
-/* Card hover effect */
+/* Subtle Card hover effect */
 .card-hover {
-  @apply transition-all duration-300 hover:shadow-lg hover:border-m8bs-blue/50;
+  @apply transition-all duration-200;
+}
+
+.card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Animated Progress */
@@ -226,13 +249,52 @@ body {
 
 /* 3. Glowing Input Focus */
 .focus-glow {
-  @apply focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-300;
+  @apply focus:ring-2 focus:ring-m8bs-blue/50 focus:border-m8bs-blue transition-all duration-300;
+}
+
+/* Sleek card animations */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.card-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.1),
+    transparent
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* Sleek border gradient */
+.border-gradient {
+  border-image: linear-gradient(90deg, rgba(59, 130, 246, 0.5), rgba(168, 85, 247, 0.5)) 1;
+}
+
+/* Ensure all pages have consistent background */
+html,
+body {
+  background: #0a0a0f !important;
+  background-color: #0a0a0f !important;
+}
+
+main {
+  background: #0a0a0f !important;
+  background-color: #0a0a0f !important;
+  background-image: none !important;
 }
 
 /* Remove gradient from bucket-plan page */
 html[data-path*="bucket-plan"] main,
 body[data-path*="bucket-plan"] main {
-  background: #05071F !important;
+  background: #0a0a0f !important;
   background-image: none !important;
-  background-color: #05071F !important;
+  background-color: #0a0a0f !important;
 }

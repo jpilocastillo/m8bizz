@@ -23,10 +23,10 @@ export default async function SettingsPage() {
     }
 
     return (
-      <div className="container mx-auto py-6 space-y-8">
+      <div className="py-6 space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-white mb-2">Settings</h1>
-          <p className="text-gray-400">Manage your account settings and preferences</p>
+          <p className="text-gray-400">Manage Your Account Settings And Preferences</p>
         </div>
 
         <div className="grid gap-6">
@@ -45,6 +45,6 @@ export default async function SettingsPage() {
       throw error
     }
 
-    return <DashboardError error="An error occurred loading the settings. Please try again later." />
+    return <DashboardError error="An Error Occurred Loading The Settings. Please Try Again Later." />
   }
 }

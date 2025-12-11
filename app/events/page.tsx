@@ -34,7 +34,7 @@ export default async function EventsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Marketing Events</h1>
-            <p className="text-muted-foreground">Manage and track your marketing events</p>
+            <p className="text-muted-foreground">Manage And Track Your Marketing Events</p>
           </div>
           <Link href="/events/new">
             <Button className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white">
@@ -54,6 +54,6 @@ export default async function EventsPage() {
       throw error
     }
 
-    return <DashboardError error="An error occurred loading the events. Please try again later." />
+    return <DashboardError error="An Error Occurred Loading The Events. Please Try Again Later." />
   }
 }

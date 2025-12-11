@@ -17,7 +17,7 @@ export function ProgressBar({
   maxValue = 100,
   label,
   valueLabel,
-  color = "bg-blue-500",
+  color = "bg-gray-500",
   height = "md",
   className,
 }: ProgressBarProps) {

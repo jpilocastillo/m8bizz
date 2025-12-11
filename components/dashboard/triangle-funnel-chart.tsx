@@ -73,7 +73,7 @@ export function TriangleFunnelChart({ title, description, data, className }: Tri
 
   return (
     <Card
-      className={`bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-xl shadow-lg ${className}`}
+      className={`bg-m8bs-card border-m8bs-border rounded-xl shadow-sm ${className}`}
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">

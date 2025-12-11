@@ -17,42 +17,42 @@ import Link from "next/link"
 const tools = [
   {
     title: "Bucket Plan Calculator",
-    description: "Plan and optimize your client's retirement income strategy using the bucket approach.",
+    description: "Plan And Optimize Your Client's Retirement Income Strategy Using The Bucket Approach.",
     href: "/tools/bucket-plan",
     icon: Calculator,
     color: "from-blue-500 to-blue-600"
   },
   {
     title: "Annuity Analysis Program",
-    description: "Analyze and compare annuity products to find the best fit for your clients.",
+    description: "Analyze And Compare Annuity Products To Find The Best Fit For Your Clients.",
     href: "/tools/annuity-analysis",
     icon: Target,
     color: "from-green-500 to-green-600"
   },
   {
     title: "Missing Money Report",
-    description: "Identify and recover unclaimed assets for your clients.",
+    description: "Identify And Recover Unclaimed Assets For Your Clients.",
     href: "/tools/missing-money",
     icon: Users,
     color: "from-orange-500 to-orange-600"
   },
   {
     title: "Client Missing Money Report",
-    description: "Professional cost analysis report showing opportunity costs over 1, 5, and 10 years.",
+    description: "Professional Cost Analysis Report Showing Opportunity Costs Over 1, 5, And 10 Years.",
     href: "/tools/client-missing-money-report",
     icon: DollarSign,
     color: "from-emerald-500 to-emerald-600"
   },
   {
     title: "Annual Business Planner",
-    description: "Plan and track your business goals and objectives for the year.",
+    description: "Plan And Track Your Business Goals And Objectives For The Year.",
     href: "/tools/annual-planner",
     icon: FileText,
     color: "from-indigo-500 to-indigo-600"
   },
   {
     title: "Business Behavior Scorecard",
-    description: "Evaluate and improve your business practices and client relationships.",
+    description: "Evaluate And Improve Your Business Practices And Client Relationships.",
     href: "/tools/behavior-scorecard",
     icon: Briefcase,
     color: "from-pink-500 to-pink-600"
@@ -70,7 +70,7 @@ export default function ToolsPage() {
           </h1>
         </div>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Access powerful financial planning tools designed to help you serve your clients better and grow your practice.
+          Access Powerful Financial Planning Tools Designed To Help You Serve Your Clients Better And Grow Your Practice.
         </p>
       </div>
 
@@ -110,13 +110,13 @@ export default function ToolsPage() {
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-bold text-white">Need Help Getting Started?</h2>
             <p className="text-m8bs-muted max-w-2xl mx-auto">
-            Each tool is designed to be intuitive and user-friendly. If you need assistance with any specific tool, 
-            refer to the help documentation or contact support.
+            Each Tool Is Designed To Be Intuitive And User-Friendly. If You Need Assistance With Any Specific Tool, 
+            Refer To The Help Documentation Or Contact Support.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/business-dashboard">
               <Button variant="outline" className="w-full sm:w-auto">
-                Back to Dashboard
+                Back To Dashboard
               </Button>
             </Link>
             <Link href="/settings">

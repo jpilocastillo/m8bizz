@@ -66,7 +66,7 @@ export function ProgressIndicator({
   }, [percentage, animated])
 
   const colorMap = {
-    blue: "text-blue-500",
+    blue: "text-gray-500",
     green: "text-green-500",
     red: "text-red-500",
     orange: "text-orange-500",
@@ -74,7 +74,7 @@ export function ProgressIndicator({
   }
 
   const bgColorMap = {
-    blue: "bg-blue-500",
+    blue: "bg-gray-500",
     green: "bg-green-500",
     red: "bg-red-500",
     orange: "bg-orange-500",

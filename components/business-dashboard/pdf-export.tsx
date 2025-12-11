@@ -892,7 +892,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                   </thead>
                   <tbody>
                     <tr className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-4 font-medium text-gray-700">Planning Fees (@ $1,000)</td>
+                      <td className="p-4 font-medium text-gray-700">Average Planning Fees (@ $1,000)</td>
                       <td className="p-4 text-right text-gray-600">$29,777.78</td>
                       <td className="p-4 text-right text-gray-500">-</td>
                       <td className="p-4 text-right text-gray-600">0.01%</td>

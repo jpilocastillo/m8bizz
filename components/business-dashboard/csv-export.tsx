@@ -70,7 +70,7 @@ export function CSVExport({ data, profile }: CSVExportProps) {
       // Commission Rates
       if (data.commissionRates) {
         csvData.push(['COMMISSION RATES'])
-        csvData.push(['Planning Fee Rate', formatCurrency(data.commissionRates.planning_fee_rate || 0)])
+        csvData.push(['Average Planning Fee Rate', formatCurrency(data.commissionRates.planning_fee_rate || 0)])
         csvData.push(['Annuity Commission', `${data.commissionRates.annuity_commission || 0}%`])
         csvData.push(['AUM Commission', `${data.commissionRates.aum_commission || 0}%`])
         csvData.push(['Life Commission', `${data.commissionRates.life_commission || 0}%`])

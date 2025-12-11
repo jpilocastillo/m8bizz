@@ -83,7 +83,7 @@ export function EventSelector({ events, selectedEventId, onSelect, isLoading = f
               <DropdownMenuItem
                 key={event.id}
                 className={`flex flex-col items-start cursor-pointer ${
-                  event.id === selectedEventId ? "bg-blue-600/20" : ""
+                  event.id === selectedEventId ? "bg-gray-600/20" : ""
                 } hover:bg-[#1f2037]`}
                 onClick={() => {
                   onSelect(event.id)

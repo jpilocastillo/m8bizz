@@ -146,7 +146,7 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
   if (processedData.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="bg-m8bs-blue/20 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+        <div className="bg-m8bs-card-alt p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
           <BarChart3 className="h-8 w-8 text-m8bs-blue" />
         </div>
         <h3 className="text-xl font-semibold text-white mb-2">No Trend Data Available</h3>
@@ -200,13 +200,13 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
 
       {/* Key Insights Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border">
+        <Card className="bg-m8bs-card shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="p-3 rounded-lg bg-m8bs-blue/20">
+              <div className="p-3 rounded-lg bg-m8bs-card-alt">
                 <MetricIcon className="h-6 w-6 text-m8bs-blue" />
               </div>
-              <Badge variant="secondary" className="bg-m8bs-blue/20 text-m8bs-blue border-m8bs-blue/50">
+              <Badge variant="secondary" className="bg-m8bs-card-alt text-m8bs-blue border-m8bs-border">
                 Latest
               </Badge>
             </div>
@@ -222,7 +222,7 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border">
+        <Card className="bg-m8bs-card shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-lg ${
@@ -271,7 +271,7 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border">
+        <Card className="bg-m8bs-card shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-lg ${
@@ -317,7 +317,7 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
       </div>
 
       {/* Simple Chart */}
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border">
+      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt">
         <CardHeader className="text-center">
           <CardTitle className="text-white flex items-center justify-center gap-2">
             <BarChart3 className="h-5 w-5 text-m8bs-blue" />

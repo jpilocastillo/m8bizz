@@ -101,7 +101,7 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
 
   // Get color based on metric value with enhanced gradients
   const getColor = (value: number | null, metric: MetricType) => {
-    if (value === null) return "bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border border-m8bs-border"
+    if (value === null) return "bg-m8bs-card border border-m8bs-border"
 
     // Define thresholds based on metric type
     let thresholds: number[] = []

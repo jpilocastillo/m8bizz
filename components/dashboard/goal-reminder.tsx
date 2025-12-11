@@ -42,7 +42,7 @@ export function GoalReminder({ initialGoal, userId }: GoalReminderProps) {
 
   if (!goal && !isEditing) {
     return (
-      <Card className="bg-gradient-to-b from-m8bs-card to-m8bs-card-alt border border-m8bs-border rounded-xl shadow-xl">
+      <Card className="bg-black border border-m8bs-border rounded-xl shadow-xl">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -52,7 +52,7 @@ export function GoalReminder({ initialGoal, userId }: GoalReminderProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-m8bs-blue hover:text-m8bs-blue-light hover:bg-blue-900/20"
+              className="text-m8bs-blue hover:text-m8bs-blue-light hover:bg-gray-900/20"
               onClick={() => setIsEditing(true)}
             >
               <Edit2 className="h-4 w-4 mr-1" />
@@ -66,7 +66,7 @@ export function GoalReminder({ initialGoal, userId }: GoalReminderProps) {
 
   return (
     <Card
-      className={`bg-gradient-to-b ${isCompleted ? "from-green-900/20 to-green-800/10" : "from-m8bs-card to-m8bs-card-alt"} border border-m8bs-border rounded-xl shadow-xl`}
+      className={`bg-gradient-to-b ${isCompleted ? "from-green-900/20 to-green-800/10" : "from-black to-black"} border border-m8bs-border rounded-xl shadow-xl`}
     >
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
@@ -95,7 +95,7 @@ export function GoalReminder({ initialGoal, userId }: GoalReminderProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-m8bs-blue hover:text-m8bs-blue-light hover:bg-blue-900/20"
+                  className="text-m8bs-blue hover:text-m8bs-blue-light hover:bg-gray-900/20"
                   onClick={handleSave}
                 >
                   Save
@@ -117,7 +117,7 @@ export function GoalReminder({ initialGoal, userId }: GoalReminderProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-m8bs-blue hover:text-m8bs-blue-light hover:bg-blue-900/20"
+                  className="text-m8bs-blue hover:text-m8bs-blue-light hover:bg-gray-900/20"
                   onClick={() => setIsEditing(true)}
                 >
                   <Edit2 className="h-4 w-4" />

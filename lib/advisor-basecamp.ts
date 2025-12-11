@@ -50,8 +50,10 @@ export interface MarketingCampaign {
   events: number
   leads: number
   status: 'Active' | 'Planned' | 'Completed' | 'Paused'
+  frequency?: 'Monthly' | 'Quarterly' | 'Semi-Annual' | 'Annual'
   cost_per_lead?: number
   cost_per_client?: number
+  total_cost_of_event?: number
   food_costs?: number
   created_at?: string
   updated_at?: string
@@ -80,6 +82,28 @@ export interface FinancialBook {
   updated_at?: string
 }
 
+export interface FinancialOptions {
+  id?: string
+  user_id?: string
+  surrender_percent: number
+  income_rider_percent: number
+  free_withdrawal_percent: number
+  life_insurance_percent: number
+  life_strategy1_percent: number
+  life_strategy2_percent: number
+  ira_to_7702_percent: number
+  approval_rate_percent: number
+  surrender_rate: number
+  income_rider_rate: number
+  free_withdrawal_rate: number
+  life_insurance_rate: number
+  life_strategy1_rate: number
+  life_strategy2_rate: number
+  ira_to_7702_rate: number
+  created_at?: string
+  updated_at?: string
+}
+
 export interface MonthlyDataEntry {
   id?: string
   user_id?: string
@@ -103,6 +127,7 @@ export interface AdvisorBasecampData {
   campaigns: MarketingCampaign[]
   commissionRates?: CommissionRates | null
   financialBook?: FinancialBook | null
+  financialOptions?: FinancialOptions | null
   monthlyDataEntries?: MonthlyDataEntry[]
 }
 
@@ -510,6 +535,73 @@ class AdvisorBasecampService {
     }
   }
 
+  // Financial Options
+  async getFinancialOptions(user: User): Promise<FinancialOptions | null> {
+    const { data, error } = await this.supabase
+      .from('financial_options')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error fetching financial options:', error)
+      return null
+    }
+
+    return data
+  }
+
+  async upsertFinancialOptions(user: User, options: FinancialOptions): Promise<FinancialOptions | null> {
+    try {
+      // First check if a record exists for this user
+      const { data: existing } = await this.supabase
+        .from('financial_options')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (existing) {
+        // Update existing record
+        const { data, error } = await this.supabase
+          .from('financial_options')
+          .update({
+            ...options,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error updating financial options:', error)
+          return null
+        }
+
+        return data
+      } else {
+        // Insert new record
+        const { data, error } = await this.supabase
+          .from('financial_options')
+          .insert({
+            user_id: user.id,
+            ...options
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error inserting financial options:', error)
+          return null
+        }
+
+        return data
+      }
+    } catch (error) {
+      console.error('Error in upsertFinancialOptions:', error)
+      return null
+    }
+  }
+
   // Monthly Data Entries
   async getMonthlyDataEntries(user: User): Promise<MonthlyDataEntry[]> {
     const { data, error } = await this.supabase
@@ -603,6 +695,7 @@ class AdvisorBasecampService {
       campaigns,
       commissionRates,
       financialBook,
+      financialOptions,
       monthlyDataEntries
     ] = await Promise.all([
       this.getBusinessGoals(user),
@@ -611,6 +704,7 @@ class AdvisorBasecampService {
       this.getMarketingCampaigns(user),
       this.getCommissionRates(user),
       this.getFinancialBook(user),
+      this.getFinancialOptions(user),
       this.getMonthlyDataEntries(user)
     ])
 
@@ -621,6 +715,7 @@ class AdvisorBasecampService {
       campaigns,
       commissionRates,
       financialBook,
+      financialOptions,
       monthlyDataEntries
     }
   }
@@ -672,6 +767,15 @@ class AdvisorBasecampService {
         const savedBook = await this.upsertFinancialBook(user, data.financialBook)
         if (!savedBook) {
           console.error('Failed to save financial book')
+          return false
+        }
+      }
+
+      if (data.financialOptions) {
+        console.log('Saving financial options...')
+        const savedOptions = await this.upsertFinancialOptions(user, data.financialOptions)
+        if (!savedOptions) {
+          console.error('Failed to save financial options')
           return false
         }
       }

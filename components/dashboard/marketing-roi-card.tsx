@@ -49,16 +49,14 @@ export function MarketingROICard({ roi, totalIncome, totalCost, className }: Mar
 
   return (
     <Card
-      className={`bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border rounded-lg overflow-hidden shadow-xl h-full transition-all duration-300 hover:shadow-purple-900/20 hover:border-purple-700/50 ${className}`}
+      className={`bg-m8bs-card border-m8bs-border rounded-lg text-white shadow-md h-full flex flex-col ${className}`}
     >
-      <CardHeader className="bg-m8bs-card-alt border-b border-m8bs-border px-6 py-4 transition-all duration-300 hover:bg-gradient-to-r hover:from-m8bs-card-alt hover:to-purple-900/40">
+      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center transition-all duration-300 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-purple-300 hover:to-indigo-400">
+          <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
+            <TrendingUp className="mr-3 h-6 w-6 text-purple-500" />
             Marketing ROI
           </CardTitle>
-          <div className="p-2 rounded-full bg-purple-500/10 transition-all duration-300 hover:bg-purple-500/20 hover:rotate-12 hover:scale-110">
-            <TrendingUp className="h-5 w-5 text-purple-400 transition-all duration-300 hover:text-purple-300" />
-          </div>
         </div>
       </CardHeader>
       <CardContent className="p-6 relative">
@@ -78,7 +76,7 @@ export function MarketingROICard({ roi, totalIncome, totalCost, className }: Mar
             ></div>
 
             {/* Background circle with subtle pattern */}
-            <div className="absolute inset-0 rounded-full bg-m8bs-card-alt/50 backdrop-blur-sm overflow-hidden transition-all duration-300 group-hover/circle:bg-m8bs-card-alt/70">
+            <div className="absolute inset-0 rounded-full bg-black/50 backdrop-blur-sm overflow-hidden transition-all duration-300 group-hover/circle:bg-black/70">
               <div
                 className="absolute inset-0 opacity-10 transition-all duration-300 group-hover/circle:opacity-20"
                 style={{
@@ -151,32 +149,32 @@ export function MarketingROICard({ roi, totalIncome, totalCost, className }: Mar
 
           {/* Metrics at bottom */}
           <div className="grid grid-cols-2 gap-6 w-full mt-2">
-            <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-green-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/metric">
+            <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-green-700/60 hover:bg-black/50 hover:scale-[1.02] hover:-translate-y-0.5 group/metric">
               <div className="flex items-center mb-1">
                 <DollarSign className="h-4 w-4 text-green-400 mr-1 transition-all duration-300 group-hover/metric:text-green-300 group-hover/metric:rotate-6" />
-                <div className="text-sm text-gray-400 transition-colors duration-300 group-hover/metric:text-gray-300">
+                <div className="text-sm text-white/80 font-medium transition-colors duration-300 group-hover/metric:text-white">
                   Total Income
                 </div>
               </div>
-              <div className="text-xl font-bold text-white transition-colors duration-300 group-hover/metric:text-green-300">
+              <div className="text-xl font-extrabold text-white tracking-tight transition-colors duration-300 group-hover/metric:text-green-300">
                 ${totalIncome.toLocaleString()}
               </div>
-              <div className="text-xs text-green-400 mt-1 transition-colors duration-300 group-hover/metric:text-green-300">
+              <div className="text-xs text-white/60 font-medium mt-1 transition-colors duration-300 group-hover/metric:text-green-300">
                 +{profitPercentage.toFixed(1)}% profit margin
               </div>
             </div>
 
-            <div className="bg-m8bs-card-alt/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-purple-700/60 hover:bg-m8bs-card-alt/50 hover:scale-[1.02] hover:-translate-y-0.5 group/metric">
+            <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:shadow-md hover:border-purple-700/60 hover:bg-black/50 hover:scale-[1.02] hover:-translate-y-0.5 group/metric">
               <div className="flex items-center mb-1">
                 <BarChart3 className="h-4 w-4 text-purple-400 mr-1 transition-all duration-300 group-hover/metric:text-purple-300 group-hover/metric:rotate-6" />
-                <div className="text-sm text-gray-400 transition-colors duration-300 group-hover/metric:text-gray-300">
+                <div className="text-sm text-white/80 font-medium transition-colors duration-300 group-hover/metric:text-white">
                   Total Cost
                 </div>
               </div>
-              <div className="text-xl font-bold text-white transition-colors duration-300 group-hover/metric:text-purple-300">
+              <div className="text-xl font-extrabold text-white tracking-tight transition-colors duration-300 group-hover/metric:text-purple-300">
                 ${totalCost.toLocaleString()}
               </div>
-              <div className="text-xs text-purple-400 mt-1 transition-colors duration-300 group-hover/metric:text-purple-300">
+              <div className="text-xs text-white/60 font-medium mt-1 transition-colors duration-300 group-hover/metric:text-purple-300">
                 ${profit.toLocaleString()} net profit
               </div>
             </div>

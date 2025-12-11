@@ -45,19 +45,18 @@ export function ComparisonMetric({
   return (
     <Card
       className={cn(
-        "bg-gradient-to-b from-[#131525] to-[#0f1029] border-[#1f2037] overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300",
-        isPositive ? "hover:border-green-500/30" : isNegative ? "hover:border-red-500/30" : "hover:border-blue-500/30",
+        "bg-m8bs-card overflow-hidden shadow-sm",
         className,
       )}
     >
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium text-gray-400">{title}</p>
+          <p className="text-sm font-medium text-m8bs-muted">{title}</p>
           {icon && (
             <div
               className={cn(
-                "text-gray-400 p-2 rounded-full",
-                isPositive ? "bg-green-500/10" : isNegative ? "bg-red-500/10" : "bg-blue-500/10",
+                "text-m8bs-cyan p-2 rounded-full",
+                isPositive ? "bg-m8bs-green/20" : isNegative ? "bg-red-500/20" : "bg-m8bs-card-alt",
               )}
             >
               {icon}
@@ -75,7 +74,7 @@ export function ComparisonMetric({
             <div
               className={cn(
                 "text-xs mt-2",
-                isPositive ? "text-green-500" : isNegative ? "text-red-500" : "text-gray-400",
+                isPositive ? "text-m8bs-green" : isNegative ? "text-red-400" : "text-m8bs-cyan",
               )}
             >
               {isPositive ? "↑" : isNegative ? "↓" : "–"} {Math.abs(change).toFixed(1)}%

@@ -25,7 +25,7 @@ export function ProgressCard({
   className,
   valueLabel,
   subtitle,
-  color = "text-blue-500",
+  color = "text-gray-500",
   icon,
 }: ProgressCardProps) {
   // Calculate percentage
@@ -34,7 +34,7 @@ export function ProgressCard({
   return (
     <Card
       className={cn(
-        "bg-gradient-to-b from-[#131525] to-[#0f1029] border-[#1f2037] overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300",
+        "bg-m8bs-card overflow-hidden shadow-sm",
         className,
       )}
     >
@@ -44,16 +44,16 @@ export function ProgressCard({
           {icon && (
             <div
               className={cn(
-                "text-gray-400 p-2 rounded-full",
-                color === "text-blue-500"
-                  ? "bg-blue-500/10"
+                "text-m8bs-cyan p-2 rounded-full",
+                color === "text-gray-500"
+                  ? "bg-gray-500/10"
                   : color === "text-green-500"
                     ? "bg-green-500/10"
                     : color === "text-red-500"
                       ? "bg-red-500/10"
                       : color === "text-purple-500"
                         ? "bg-purple-500/10"
-                        : "bg-blue-500/10",
+                        : "bg-gray-500/10",
               )}
             >
               {icon}
@@ -70,12 +70,12 @@ export function ProgressCard({
           >
             <div className="text-center">
               <div className="text-3xl font-bold text-white">{valueLabel || value}</div>
-              {subtitle && <div className="text-xs text-gray-400 mt-1">{subtitle}</div>}
+              {subtitle && <div className="text-xs text-m8bs-muted mt-1">{subtitle}</div>}
             </div>
           </CircularProgressIndicator>
         </div>
         <div className="text-center mt-4">
-          <div className="text-sm text-gray-400">{maxValue !== 100 ? `${value} of ${maxValue}` : `${percentage}%`}</div>
+          <div className="text-sm text-m8bs-muted">{maxValue !== 100 ? `${value} of ${maxValue}` : `${percentage}%`}</div>
         </div>
       </CardContent>
     </Card>

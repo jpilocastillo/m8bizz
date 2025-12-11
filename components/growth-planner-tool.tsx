@@ -933,7 +933,7 @@ export function GrowthPlannerTool() {
             </p>
             <div className="flex items-center justify-center gap-2 mt-4">
               <Star className="h-4 w-4 text-yellow-400 animate-pulse" />
-              <span className="text-sm text-blue-300 font-medium">Advanced Retirement Planning</span>
+              <span className="text-sm text-gray-300 font-medium">Advanced Retirement Planning</span>
               <Star className="h-4 w-4 text-yellow-400 animate-pulse" />
             </div>
           </div>
@@ -947,13 +947,13 @@ export function GrowthPlannerTool() {
                 className={`group relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-lg sm:text-xl font-medium border-2 transition-all duration-500 transform hover:scale-110 ${
                   currentStage >= stage.id
                     ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white border-green-400 shadow-2xl shadow-green-500/40 scale-110"
-                    : "bg-blue-900/50 text-blue-300 border-blue-400 hover:bg-blue-800/50 hover:border-blue-300 shadow-lg"
+                    : "bg-gray-900/50 text-gray-300 border-gray-400 hover:bg-gray-800/50 hover:border-gray-300 shadow-lg"
                 }`}
               >
                 {getIcon(stage.icon, "h-6 w-6 text-green-400 drop-shadow-lg")}
               </div>
               <div className="text-center sm:text-left">
-                <p className="text-sm sm:text-lg font-bold text-blue-100">{stage.title}</p>
+                <p className="text-sm sm:text-lg font-bold text-gray-100">{stage.title}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground max-w-xs hidden sm:block">{stage.description}</p>
               </div>
               {index < stages.length - 1 && (
@@ -973,7 +973,7 @@ export function GrowthPlannerTool() {
       <Tabs value={currentStage.toString()} className="space-y-6">
         {/* Stage 1: Client Information */}
         <TabsContent value="1" className="space-y-12 mt-20">
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+          <Card className="bg-black border-gray-800 shadow-lg">
             <CardHeader className="p-10 pb-14">
               <CardTitle className="flex items-center gap-4 text-white text-3xl mb-5 font-bold">
                 <div className="p-4 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-2xl shadow-xl shadow-m8bs-blue/50 ring-2 ring-m8bs-blue/30">
@@ -1026,7 +1026,7 @@ export function GrowthPlannerTool() {
                   <Label>Time to Income Start</Label>
                   <div className="p-3 bg-green-900/20 rounded-lg border border-green-700/30">
                     <p className="text-sm text-muted-foreground">Years until income begins:</p>
-                    <p className="text-lg font-bold text-blue-300">
+                    <p className="text-lg font-bold text-gray-300">
                       {Math.max(0, clientData.incomeStartAge - clientData.retirementAge)} years
                     </p>
                   </div>
@@ -1038,7 +1038,7 @@ export function GrowthPlannerTool() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Sprout className="h-5 w-5 text-blue-500" />
-                  <h3 className="text-lg font-semibold text-blue-400">Retirement Seeds to Plant</h3>
+                  <h3 className="text-lg font-semibold text-gray-400">Retirement Seeds to Plant</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Break down your client's investible assets by tax treatment
@@ -1087,8 +1087,8 @@ export function GrowthPlannerTool() {
 
                 <div className="p-4 bg-green-900/20 rounded-lg border border-green-700/30">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-blue-400">Total Investible Assets:</span>
-                    <span className="text-lg font-bold text-blue-300">${formatCurrency(totalInvestibleAssets)}</span>
+                    <span className="font-medium text-gray-400">Total Investible Assets:</span>
+                    <span className="text-lg font-bold text-gray-300">${formatCurrency(totalInvestibleAssets)}</span>
                   </div>
                 </div>
 
@@ -1121,7 +1121,7 @@ export function GrowthPlannerTool() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <TreePine className="h-5 w-5 text-blue-500" />
-                  <h3 className="text-lg font-semibold text-blue-400">Tax Climate Zone</h3>
+                  <h3 className="text-lg font-semibold text-gray-400">Tax Climate Zone</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -1160,7 +1160,7 @@ export function GrowthPlannerTool() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Leaf className="h-5 w-5 text-blue-500" />
-                  <h3 className="text-lg font-semibold text-blue-400">Income Harvest Analysis</h3>
+                  <h3 className="text-lg font-semibold text-gray-400">Income Harvest Analysis</h3>
                 </div>
 
                 <div className="space-y-4">
@@ -1238,7 +1238,7 @@ export function GrowthPlannerTool() {
                   <div className="p-4 bg-green-900/20 rounded-lg border border-green-700/30">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Total Current Income:</span>
-                      <span className="font-bold text-blue-300">${formatCurrency(totalCurrentIncome)}</span>
+                      <span className="font-bold text-gray-300">${formatCurrency(totalCurrentIncome)}</span>
                     </div>
                   </div>
                   <div className="p-4 bg-yellow-900/20 rounded-lg border border-yellow-700/30">
@@ -1265,7 +1265,7 @@ export function GrowthPlannerTool() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Flower className="h-5 w-5 text-blue-500" />
-                  <h3 className="text-lg font-semibold text-blue-400">Growth Conditions</h3>
+                  <h3 className="text-lg font-semibold text-gray-400">Growth Conditions</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -1304,7 +1304,7 @@ export function GrowthPlannerTool() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Sun className="h-5 w-5 text-blue-500" />
-                  <h3 className="text-lg font-semibold text-blue-400">Client Goals & Aspirations</h3>
+                  <h3 className="text-lg font-semibold text-gray-400">Client Goals & Aspirations</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Document your client's specific retirement goals and dreams to ensure the plan aligns with their vision
@@ -1428,7 +1428,7 @@ export function GrowthPlannerTool() {
 
         {/* Stage 2: Bucket Allocation */}
         <TabsContent value="2" className="space-y-12 mt-20">
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+          <Card className="bg-black border-gray-800 shadow-lg">
             <CardHeader className="p-10 pb-14">
               <CardTitle className="flex items-center gap-4 text-white text-3xl mb-5 font-bold">
                 <div className="p-4 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-2xl shadow-xl shadow-m8bs-blue/50 ring-2 ring-m8bs-blue/30">
@@ -1485,7 +1485,7 @@ export function GrowthPlannerTool() {
                     const estimatedPremiums = calculateEstimatedPremiums()
 
                     return (
-                      <Card key={bucket.id} className="bg-m8bs-card border-m8bs-card-alt shadow-lg mb-6">
+                      <Card key={bucket.id} className="bg-black border-gray-800 shadow-lg mb-6">
                         <CardHeader className="p-7">
                           <div className="flex items-center justify-between">
                             <CardTitle className="flex items-center gap-4 text-white text-xl font-bold">
@@ -1525,7 +1525,7 @@ export function GrowthPlannerTool() {
                               <Calculator className="h-5 w-5 text-green-400" />
                             </div>
                             <div>
-                              <h5 className="font-semibold text-base text-blue-300">Allocation Tracker</h5>
+                              <h5 className="font-semibold text-base text-gray-300">Allocation Tracker</h5>
                               <p className="text-xs text-muted-foreground">Real-time allocation status</p>
                             </div>
                           </div>
@@ -1556,10 +1556,10 @@ export function GrowthPlannerTool() {
 
                           <div className="space-y-1.5 p-3 bg-m8bs-card/40 rounded-lg border border-green-700/30 hover:bg-m8bs-card/50 transition-colors">
                             <div className="flex items-center gap-1.5">
-                              <Target className="h-3.5 w-3.5 text-blue-400" />
+                              <Target className="h-3.5 w-3.5 text-gray-400" />
                               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Total Allocated</p>
                             </div>
-                            <p className="text-base font-bold text-blue-300">
+                            <p className="text-base font-bold text-gray-300">
                               ${formatCurrency(totalAllocated)}
                             </p>
                             {totalInvestibleAssets > 0 && (
@@ -1651,7 +1651,7 @@ export function GrowthPlannerTool() {
                               {totalAllocated > 0 && (
                                 <div className="flex justify-between items-center">
                                   <span className="text-muted-foreground">% of Allocated:</span>
-                                  <span className="font-bold text-blue-300">
+                                  <span className="font-bold text-gray-300">
                                     {(((bucket.premiumAmount || 0) / totalAllocated) * 100).toFixed(2)}%
                                   </span>
                                 </div>
@@ -1664,7 +1664,7 @@ export function GrowthPlannerTool() {
                             <div className="space-y-1.5 text-xs">
                               <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Allocated:</span>
-                                <span className="font-bold text-blue-300">${formatCurrency(totalAllocated)}</span>
+                                <span className="font-bold text-gray-300">${formatCurrency(totalAllocated)}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Remaining:</span>
@@ -2131,7 +2131,7 @@ export function GrowthPlannerTool() {
                         <Button
                           variant="outline"
                           onClick={() => addNewBucket("conservative", "annuity")}
-                          className="border-blue-700/30 text-blue-400 hover:bg-blue-900/20 flex items-center gap-2"
+                          className="border-blue-700/30 text-gray-400 hover:bg-blue-900/20 flex items-center gap-2"
                         >
                           <Plus className="h-4 w-4" />
                           Add Growth Annuity
@@ -2150,7 +2150,7 @@ export function GrowthPlannerTool() {
                         <Button
                           variant="outline"
                           onClick={() => addNewBucket("aggressive", "annuity")}
-                          className="border-blue-700/30 text-blue-400 hover:bg-blue-900/20 flex items-center gap-2"
+                          className="border-blue-700/30 text-gray-400 hover:bg-blue-900/20 flex items-center gap-2"
                         >
                           <Plus className="h-4 w-4" />
                           Add Growth Annuity
@@ -2158,7 +2158,7 @@ export function GrowthPlannerTool() {
                         <Button
                           variant="outline"
                           onClick={() => addNewBucket("aggressive", "portfolio")}
-                          className="border-blue-700/30 text-blue-400 hover:bg-blue-900/20 flex items-center gap-2"
+                          className="border-blue-700/30 text-gray-400 hover:bg-blue-900/20 flex items-center gap-2"
                         >
                           <Plus className="h-4 w-4" />
                           Add Growth Portfolio
@@ -2195,7 +2195,7 @@ export function GrowthPlannerTool() {
 
         {/* Stage 3: Review & Finalize */}
         <TabsContent value="3" className="space-y-12 mt-20">
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+          <Card className="bg-black border-gray-800 shadow-lg">
             <CardHeader className="p-10 pb-14">
               <CardTitle className="flex items-center gap-4 text-white text-3xl mb-5 font-bold">
                 <div className="p-4 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-2xl shadow-xl shadow-m8bs-blue/50 ring-2 ring-m8bs-blue/30">
@@ -2248,7 +2248,7 @@ export function GrowthPlannerTool() {
                     </div>
                     <div className="w-full">
                       <p className="text-sm text-muted-foreground mb-1">Total Income Generated</p>
-                      <p className="text-2xl font-bold text-blue-300 break-words">
+                      <p className="text-2xl font-bold text-gray-300 break-words">
                         ${formatCurrency(
                           buckets.reduce((sum, bucket) => {
                             const values = calculateBucketValues(bucket)
@@ -2330,7 +2330,7 @@ export function GrowthPlannerTool() {
                           <div key={bucket.id} className="flex flex-col items-center">
                             {/* Enhanced Large Plant Icon */}
                             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 border-4 border-blue-500 shadow-2xl shadow-blue-900/50 flex items-center justify-center mb-4">
-                              <div className="text-blue-400 scale-150 drop-shadow-lg">{getIcon(bucket.icon, "h-6 w-6")}</div>
+                              <div className="text-gray-400 scale-150 drop-shadow-lg">{getIcon(bucket.icon, "h-6 w-6")}</div>
                             </div>
 
                             {/* Year Badge */}
@@ -2346,7 +2346,7 @@ export function GrowthPlannerTool() {
                             <Card className="w-full p-4 bg-m8bs-card shadow-md border-2 border-blue-700/30">
                               <div className="text-center space-y-2">
                                 <p className="text-xs text-muted-foreground">Annual Income</p>
-                                <p className="text-2xl font-bold text-blue-300">
+                                <p className="text-2xl font-bold text-gray-300">
                                   ${formatCurrency(values.incomeSolve)}
                                 </p>
                                 <Separator className="my-2" />
@@ -2441,10 +2441,10 @@ export function GrowthPlannerTool() {
                         <Card className="p-6 bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-2 border-green-600/50 shadow-lg">
                           <div className="text-center">
                             <p className="text-sm text-muted-foreground mb-2">Projected Future Value</p>
-                            <p className="text-4xl font-bold text-blue-300 mb-2">
+                            <p className="text-4xl font-bold text-gray-300 mb-2">
                               ${formatCurrency(values.futureValue)}
                             </p>
-                            <p className="text-xs text-blue-400">
+                            <p className="text-xs text-gray-400">
                               {bucket.investmentType === "Fixed Annuity" 
                                 ? "Guaranteed growth over time" 
                                 : "Growth-based portfolio appreciation"}
@@ -2457,7 +2457,7 @@ export function GrowthPlannerTool() {
                           <div className="grid grid-cols-2 gap-3">
                             <Card className="p-4 bg-m8bs-card-alt shadow-sm border-l-4 border-l-m8bs-blue">
                               <p className="text-xs text-muted-foreground mb-1">Gross Payment</p>
-                              <p className="text-lg font-bold text-blue-400">
+                              <p className="text-lg font-bold text-gray-400">
                                 ${formatCurrency(values.payments)}
                               </p>
                             </Card>
@@ -2485,7 +2485,7 @@ export function GrowthPlannerTool() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Total Portfolio Investment</p>
-                        <p className="text-4xl font-bold text-blue-300">${formatCurrency(totalInvestibleAssets)}</p>
+                        <p className="text-4xl font-bold text-gray-300">${formatCurrency(totalInvestibleAssets)}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -2506,7 +2506,7 @@ export function GrowthPlannerTool() {
 
               {/* Income Flow Chart */}
               <Card className="p-8 bg-m8bs-card border-2 border-blue-700/30 shadow-lg">
-                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-400">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-400">
                   <div className="p-2 bg-gray-700/50 rounded-lg shadow-sm border border-green-700/30">
                     <Droplets className="h-6 w-6 text-blue-500" />
                   </div>
@@ -2544,7 +2544,7 @@ export function GrowthPlannerTool() {
                     <div className="space-y-4">
                       <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-700/30">
                         <p className="text-sm text-muted-foreground mb-1">Desired Monthly Income</p>
-                        <p className="text-2xl font-bold text-blue-400">
+                        <p className="text-2xl font-bold text-gray-400">
                           ${formatCurrency(clientData.desiredMonthlyIncome)}
                         </p>
                       </div>
@@ -2563,7 +2563,7 @@ export function GrowthPlannerTool() {
 
               {/* Data Visualizations Section */}
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-400">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-400">
                   <div className="p-2 bg-gray-700/50 rounded-lg shadow-sm border border-blue-700/30">
                     <TrendingUp className="h-6 w-6 text-blue-500" />
                   </div>
@@ -2971,7 +2971,7 @@ export function GrowthPlannerTool() {
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
                   {/* Portfolio Distribution Chart */}
                   <div className="space-y-4" ref={pieChartRef} data-chart="portfolio">
-                    <h3 className="text-lg font-semibold text-blue-300">Portfolio Distribution</h3>
+                    <h3 className="text-lg font-semibold text-gray-300">Portfolio Distribution</h3>
                     <div className="bg-m8bs-card-alt rounded-2xl p-4 sm:p-6 border border-m8bs-border shadow-lg">
                       <div className="h-[250px] sm:h-[280px] mb-4">
                         <ResponsiveContainer width="100%" height="100%">
@@ -3115,20 +3115,20 @@ export function GrowthPlannerTool() {
 
               {/* Enhanced Income Projection Charts */}
               <Card className="p-8 bg-m8bs-card-alt border border-m8bs-border shadow-lg hover:shadow-xl transition-all duration-300">
-                <h2 className="text-3xl font-bold mb-8 flex items-center gap-4 text-blue-300">
+                <h2 className="text-3xl font-bold mb-8 flex items-center gap-4 text-gray-300">
                   <div className="p-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg">
                     <Droplets className="h-8 w-8 text-white drop-shadow-lg" />
                   </div>
                   Income Projection Analysis
                   <div className="ml-auto">
-                    <Zap className="h-6 w-6 text-blue-400 drop-shadow-lg" />
+                    <Zap className="h-6 w-6 text-gray-400 drop-shadow-lg" />
                   </div>
                 </h2>
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
                   {/* Enhanced Annual Income by Bucket */}
                   <div className="space-y-6" ref={barChartRef} data-chart="income">
-                    <h3 className="text-xl font-bold text-blue-300 flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-gray-300 flex items-center gap-2">
                       <TrendingUp className="h-5 w-5" />
                       Annual Income by Investment
                     </h3>
@@ -3172,7 +3172,7 @@ export function GrowthPlannerTool() {
 
                   {/* Enhanced Growth Projection Over Time */}
                   <div className="space-y-6">
-                    <h3 className="text-xl font-bold text-blue-300 flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-gray-300 flex items-center gap-2">
                       <Shield className="h-5 w-5" />
                       Growth Projection Timeline
                     </h3>
@@ -3299,20 +3299,20 @@ export function GrowthPlannerTool() {
 
               {/* Enhanced Risk Analysis and Performance Metrics */}
               <Card className="p-8 bg-m8bs-card-alt border border-m8bs-border shadow-lg hover:shadow-xl transition-all duration-300">
-                <h2 className="text-3xl font-bold mb-8 flex items-center gap-4 text-blue-300">
+                <h2 className="text-3xl font-bold mb-8 flex items-center gap-4 text-gray-300">
                   <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
                     <Sun className="h-8 w-8 text-white drop-shadow-lg" />
                   </div>
                   Risk Analysis & Performance Metrics
                   <div className="ml-auto">
-                    <Star className="h-6 w-6 text-blue-400 drop-shadow-lg" />
+                    <Star className="h-6 w-6 text-gray-400 drop-shadow-lg" />
                   </div>
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {/* Risk Distribution */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-blue-300">Risk Distribution</h3>
+                    <h3 className="text-lg font-semibold text-gray-300">Risk Distribution</h3>
                     <div className="space-y-3">
                       {["conservative", "moderate", "aggressive"].map((risk) => {
                         const riskBuckets = buckets.filter(b => b.riskTolerance === risk)
@@ -3334,7 +3334,7 @@ export function GrowthPlannerTool() {
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            <div className="text-sm text-blue-300 mt-1">
+                            <div className="text-sm text-gray-300 mt-1">
                               ${formatCurrency(totalRiskAmount)}
                             </div>
                           </div>
@@ -3345,7 +3345,7 @@ export function GrowthPlannerTool() {
 
                   {/* Investment Type Breakdown */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-blue-300">Investment Types</h3>
+                    <h3 className="text-lg font-semibold text-gray-300">Investment Types</h3>
                     <div className="space-y-3">
                       {Array.from(new Set(buckets.map(b => b.investmentType))).map((type) => {
                         const typeBuckets = buckets.filter(b => b.investmentType === type)
@@ -3367,7 +3367,7 @@ export function GrowthPlannerTool() {
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            <div className="text-sm text-blue-300 mt-1">
+                            <div className="text-sm text-gray-300 mt-1">
                               ${formatCurrency(totalTypeAmount)}
                             </div>
                           </div>
@@ -3378,21 +3378,21 @@ export function GrowthPlannerTool() {
 
                   {/* Performance Summary */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-blue-300">Performance Summary</h3>
+                    <h3 className="text-lg font-semibold text-gray-300">Performance Summary</h3>
                     <div className="space-y-4">
                       <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-700/20">
                         <div className="text-sm text-muted-foreground mb-1">Total Investment</div>
-                        <div className="text-2xl font-bold text-blue-300">${formatCurrency(totalInvestibleAssets)}</div>
+                        <div className="text-2xl font-bold text-gray-300">${formatCurrency(totalInvestibleAssets)}</div>
                       </div>
                       <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-700/20">
                         <div className="text-sm text-muted-foreground mb-1">Projected Value</div>
-                        <div className="text-2xl font-bold text-blue-300">
+                        <div className="text-2xl font-bold text-gray-300">
                           ${formatCurrency(buckets.reduce((sum, b) => sum + calculateBucketValues(b).futureValue, 0))}
                         </div>
                       </div>
                       <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-700/20">
                         <div className="text-sm text-muted-foreground mb-1">Total Annual Income</div>
-                        <div className="text-2xl font-bold text-blue-300">
+                        <div className="text-2xl font-bold text-gray-300">
                           ${formatCurrency(buckets.reduce((sum, b) => sum + calculateBucketValues(b).incomeSolve, 0))}
                         </div>
                       </div>

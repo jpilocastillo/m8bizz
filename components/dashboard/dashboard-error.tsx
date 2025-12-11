@@ -12,7 +12,7 @@ interface DashboardErrorProps {
 export function DashboardError({ error }: DashboardErrorProps) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-      <Card className="bg-gradient-to-b from-m8bs-card to-m8bs-card-alt border border-red-500/50 rounded-xl shadow-xl overflow-hidden">
+      <Card className="bg-black border border-red-500/50 rounded-xl shadow-xl overflow-hidden">
         <div className="absolute inset-0 bg-red-500/5 backdrop-blur-sm"></div>
         <CardContent className="relative flex flex-col items-center justify-center p-8 z-10">
           <div className="bg-red-500/20 p-5 rounded-full mb-5 shadow-lg shadow-red-500/20">

@@ -225,11 +225,11 @@ export function EnhancedChart({ title, type, data, height = 300, className, opti
   return (
     <Card
       className={cn(
-        "bg-[#131525] border-[#1f2037] overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300",
+        "bg-m8bs-card overflow-hidden shadow-sm",
         className,
       )}
     >
-      <CardHeader className="pb-2 bg-[#0f1029]/50 border-b border-[#1f2037]">
+      <CardHeader className="pb-2 bg-m8bs-card">
         <CardTitle className="text-lg font-medium text-white">{title}</CardTitle>
       </CardHeader>
       <CardContent className="p-4">

@@ -1,10 +1,8 @@
 import type React from "react"
 import { Suspense } from "react"
-import { DashboardHeader } from "@/components/dashboard/header"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { fetchUserEvents } from "@/lib/data"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
 import { DatabaseStatus } from "@/components/database-status"
 
@@ -17,7 +15,6 @@ export default async function ProfileLayout({
 }) {
   // Attempt to create the Supabase client
   let user = null
-  let events = []
 
   try {
     const supabase = await createClient()
@@ -32,14 +29,13 @@ export default async function ProfileLayout({
     }
 
     user = authUser
-    events = await fetchUserEvents(user.id)
   } catch (error) {
     console.error("Error in profile layout:", error)
     redirect("/login")
   }
 
   return (
-    <div className="min-h-screen bg-m8bs-bg">
+    <div className="min-h-screen bg-black">
       <AnimatedBackground />
       <DatabaseStatus />
       
@@ -47,12 +43,12 @@ export default async function ProfileLayout({
         <Sidebar />
         
         <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader events={events} />
-          
-          <main className="flex-1 overflow-y-auto bg-m8bs-bg">
-            <Suspense fallback={<div>Loading...</div>}>
-              {children}
-            </Suspense>
+          <main className="flex-1 overflow-y-auto px-6 sm:px-8 lg:px-10 xl:px-12 pt-12 sm:pt-16 pb-8 sm:pb-10 bg-black">
+            <div className="max-w-7xl mx-auto">
+              <Suspense fallback={<div>Loading...</div>}>
+                {children}
+              </Suspense>
+            </div>
           </main>
         </div>
       </div>

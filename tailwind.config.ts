@@ -53,17 +53,22 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // M8BS custom theme colors - Dark blue theme
-        "m8bs-bg": "#05071F", // Darkest blue for backgrounds
-        "m8bs-card": "#0A0D2C", // Dark blue for cards
-        "m8bs-card-alt": "#0F1339", // Slightly lighter blue for hover states
-        "m8bs-border": "#1A2155", // Blue border color
-        "m8bs-muted": "#8E92B2", // Muted text color
+        // M8BS custom theme colors - Bright and vibrant theme
+        "m8bs-bg": "#0a0a0f", // Slightly lighter black with blue tint
+        "m8bs-card": "#111118", // Brighter dark for cards
+        "m8bs-card-alt": "#000000", // Black for hover states
+        "m8bs-border": "#2a2a3e", // Brighter border
+        "m8bs-muted": "#b8c5e0", // Brighter muted text (light blue-grey)
         "m8bs-text": "#ffffff", // White text
-        "m8bs-blue": "#3B82F6", // Primary blue
-        "m8bs-blue-dark": "#1E40AF", // Darker blue for gradients
-        "m8bs-blue-light": "#60A5FA", // Lighter blue for gradients
-        "m8bs-accent": "#4F46E5", // Accent color (indigo)
+        "m8bs-blue": "#4f9eff", // Brighter vibrant blue
+        "m8bs-blue-dark": "#3b82f6", // Medium blue
+        "m8bs-blue-light": "#6bb3ff", // Lighter bright blue
+        "m8bs-accent": "#a855f7", // Bright purple accent
+        "m8bs-cyan": "#22d3ee", // Bright cyan highlight
+        "m8bs-purple": "#c084fc", // Bright purple highlight
+        "m8bs-pink": "#f472b6", // Bright pink highlight
+        "m8bs-green": "#34d399", // Bright green highlight
+        "m8bs-orange": "#fb923c", // Bright orange highlight
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -91,8 +96,8 @@ const config = {
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "blue-gradient": "linear-gradient(to right, #3B82F6, #1E40AF)",
-        "dark-blue-gradient": "linear-gradient(to bottom, #0A0D2C, #05071F)",
+        "blue-gradient": "linear-gradient(to right, #6b7280, #4b5563)",
+        "dark-blue-gradient": "linear-gradient(to bottom, #1a1a1a, #000000)",
       },
     },
   },

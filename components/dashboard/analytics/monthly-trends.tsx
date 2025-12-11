@@ -42,7 +42,7 @@ export function MonthlyTrends({ data }: MonthlyTrendsProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md">
+      <Card className="bg-m8bs-card text-white shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl font-bold">Monthly Revenue & Expenses</CardTitle>
         </CardHeader>
@@ -93,7 +93,7 @@ export function MonthlyTrends({ data }: MonthlyTrendsProps) {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md">
+        <Card className="bg-m8bs-card text-white shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl font-bold">Monthly ROI Trend</CardTitle>
           </CardHeader>
@@ -127,7 +127,7 @@ export function MonthlyTrends({ data }: MonthlyTrendsProps) {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md">
+        <Card className="bg-m8bs-card text-white shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl font-bold">Monthly Conversion Rate</CardTitle>
           </CardHeader>

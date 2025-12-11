@@ -120,10 +120,10 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
     <div className="grid gap-6">
       {/* Distribution Charts - Side by Side */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Book Distribution</CardTitle>
-            <CardDescription>Annuity vs AUM distribution</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Book Distribution</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Annuity vs AUM distribution</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[350px]">
@@ -175,10 +175,10 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Account Distribution</CardTitle>
-            <CardDescription>Annuity Closed vs AUM Accounts</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Account Distribution</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Annuity Closed vs AUM Accounts</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[350px]">
@@ -208,10 +208,10 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Goal Progress</CardTitle>
-            <CardDescription>Current progress towards goals</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Goal Progress</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Current progress towards goals</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -246,10 +246,10 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Performance Ratios</CardTitle>
-            <CardDescription>Attrition vs Close Ratio</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Performance Ratios</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Attrition vs Close Ratio</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -278,10 +278,10 @@ export function PerformanceCharts({ businessGoals, currentValues, clientMetrics 
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Total Advisor Book Value</CardTitle>
-            <CardDescription>Current total advisor book value</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Total Advisor Book Value</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Current total advisor book value</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center h-[300px]">
             <div className="text-6xl font-bold text-center mb-4 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">

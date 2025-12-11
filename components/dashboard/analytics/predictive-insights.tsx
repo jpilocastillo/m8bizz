@@ -60,7 +60,7 @@ export function PredictiveInsights({ data }: PredictiveInsightsProps) {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-md card-hover">
+    <Card className="bg-m8bs-card shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-purple-400" />
@@ -69,44 +69,44 @@ export function PredictiveInsights({ data }: PredictiveInsightsProps) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          <div className="bg-[#131525] border border-[#1f2037] rounded-lg p-4">
+          <div className="bg-m8bs-card rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="h-4 w-4 text-blue-400" />
+              <Users className="h-4 w-4 text-m8bs-cyan" />
               <h3 className="text-sm font-medium text-white">Projected Attendance</h3>
             </div>
             <div className="text-2xl font-bold text-white">{predictions.nextMonthAttendees}</div>
-            <div className="text-xs text-gray-400 mt-1">Next event projection based on recent trends</div>
+            <div className="text-xs text-m8bs-muted mt-1">Next event projection based on recent trends</div>
           </div>
 
-          <div className="bg-[#131525] border border-[#1f2037] rounded-lg p-4">
+          <div className="bg-m8bs-card rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4 text-green-400" />
               <h3 className="text-sm font-medium text-white">Projected Revenue</h3>
             </div>
             <div className="text-2xl font-bold text-white">{formatCurrency(predictions.nextMonthRevenue)}</div>
-            <div className="text-xs text-gray-400 mt-1">Estimated revenue for your next event</div>
+            <div className="text-xs text-m8bs-muted mt-1">Estimated revenue for your next event</div>
           </div>
 
-          <div className="bg-[#131525] border border-[#1f2037] rounded-lg p-4">
+          <div className="bg-m8bs-card rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-4 w-4 text-yellow-400" />
               <h3 className="text-sm font-medium text-white">Projected ROI</h3>
             </div>
             <div className="text-2xl font-bold text-white">{predictions.nextMonthROI.toFixed(1)}%</div>
-            <div className="text-xs text-gray-400 mt-1">Expected return on investment</div>
+            <div className="text-xs text-m8bs-muted mt-1">Expected return on investment</div>
           </div>
 
-          <div className="bg-[#131525] border border-[#1f2037] rounded-lg p-4">
+          <div className="bg-m8bs-card rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <Percent className="h-4 w-4 text-red-400" />
               <h3 className="text-sm font-medium text-white">Projected Conversion</h3>
             </div>
             <div className="text-2xl font-bold text-white">{predictions.nextMonthConversion.toFixed(1)}%</div>
-            <div className="text-xs text-gray-400 mt-1">Expected attendee to client conversion rate</div>
+            <div className="text-xs text-m8bs-muted mt-1">Expected attendee to client conversion rate</div>
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-[#1f2037]/50 rounded-md border border-[#1f2037] text-sm text-gray-300">
+        <div className="mt-4 p-3 bg-m8bs-card-alt/50 rounded-md text-sm text-m8bs-muted">
           <p>
             These projections are based on your historical performance data and industry trends. Actual results may vary
             based on event execution and market conditions.

@@ -19,7 +19,7 @@ export function MiniBarChart({
   className,
   barClassName,
   barSpacing = 2,
-  colors = ["bg-blue-500"],
+  colors = ["bg-gray-500"],
   animated = true,
 }: MiniBarChartProps) {
   const max = Math.max(...data, 1)

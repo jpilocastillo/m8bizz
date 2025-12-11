@@ -199,15 +199,15 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
       </div>
 
       {/* Event details */}
-      <Card className="bg-[#131525] border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-        <CardHeader className="bg-[#0f1029]/50 border-b border-[#1f2037]">
+      <Card className="bg-m8bs-card shadow-sm overflow-hidden">
+        <CardHeader className="bg-m8bs-card border-b border-m8bs-border">
           <CardTitle className="text-lg font-medium text-white">Event Details</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-500/20 p-2 rounded-lg">
-                <Calendar className="h-5 w-5 text-blue-500" />
+              <div className="bg-gray-500/20 p-2 rounded-lg">
+                <Calendar className="h-5 w-5 text-gray-500" />
               </div>
               <div>
                 <p className="text-sm text-gray-400">Day of Week</p>
@@ -270,8 +270,8 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
 
       {/* Marketing expenses and attendance */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-[#131525] border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-          <CardHeader className="bg-[#0f1029]/50 border-b border-[#1f2037]">
+        <Card className="bg-black border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+          <CardHeader className="bg-black border-b border-[#1f2037]">
             <CardTitle className="text-lg font-medium text-white">Marketing Expenses</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -280,7 +280,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                 value={100}
                 size={180}
                 strokeWidth={24}
-                color="blue"
+                color="gray"
                 secondaryColor="green"
                 secondaryValue={
                   data.marketingExpenses.total === 0
@@ -299,7 +299,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-gray-500"></div>
                   <span className="text-sm text-gray-300">Advertising Cost</span>
                 </div>
                 <div className="text-white font-medium">${data.marketingExpenses.advertising.toLocaleString()}</div>
@@ -307,7 +307,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
               <ProgressBar
                 value={data.marketingExpenses.advertising}
                 maxValue={data.marketingExpenses.total || 1}
-                color="bg-blue-500"
+                color="bg-gray-500"
                 height="md"
               />
 
@@ -328,8 +328,8 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#131525] border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-          <CardHeader className="bg-[#0f1029]/50 border-b border-[#1f2037]">
+        <Card className="bg-black border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+          <CardHeader className="bg-black border-b border-[#1f2037]">
             <CardTitle className="text-lg font-medium text-white">Event Attendance</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -363,7 +363,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                 label="Registration to Attendance"
                 valueLabel={`${data.conversionEfficiency.registrationToAttendance.toFixed(1)}%`}
                 value={data.conversionEfficiency.registrationToAttendance}
-                color="bg-blue-500"
+                color="bg-gray-500"
               />
               <ProgressBar
                 label="Confirmation to Attendance"
@@ -422,8 +422,8 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
 
       {/* Client acquisition and conversion */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-[#131525] border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-          <CardHeader className="bg-[#0f1029]/50 border-b border-[#1f2037]">
+        <Card className="bg-black border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+          <CardHeader className="bg-black border-b border-[#1f2037]">
             <CardTitle className="text-lg font-medium text-white">Client Acquisition Cost</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -449,8 +449,8 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#131525] border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-          <CardHeader className="bg-[#0f1029]/50 border-b border-[#1f2037]">
+        <Card className="bg-black border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+          <CardHeader className="bg-black border-b border-[#1f2037]">
             <CardTitle className="text-lg font-medium text-white">Conversion Efficiency</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -466,7 +466,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                 label="Attendance to Appointment"
                 valueLabel={`${data.conversionEfficiency.attendanceToAppointment.toFixed(1)}%`}
                 value={data.conversionEfficiency.attendanceToAppointment}
-                color="bg-blue-500"
+                color="bg-gray-500"
               />
 
               <ProgressBar
@@ -502,8 +502,8 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
 
       {/* Appointment trends and products sold */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-[#131525] border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-          <CardHeader className="bg-[#0f1029]/50 border-b border-[#1f2037]">
+        <Card className="bg-black border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+          <CardHeader className="bg-black border-b border-[#1f2037]">
             <CardTitle className="text-lg font-medium text-white">Appointment Funnel</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -524,7 +524,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                 label="Appointment Attendance Rate"
                 valueLabel={`${appointmentAttendanceRate.toFixed(1)}%`}
                 value={appointmentAttendanceRate}
-                color="bg-blue-500"
+                color="bg-gray-500"
               />
             </div>
           </CardContent>
@@ -536,7 +536,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           maxValue={data.productsSold.annuities}
           size={120}
           strokeWidth={12}
-          color="text-blue-500"
+          color="text-gray-500"
           icon={<Award className="h-5 w-5" />}
         />
 
@@ -553,8 +553,8 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
 
       {/* Financial production */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-[#131525] border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden md:col-span-2">
-          <CardHeader className="bg-[#0f1029]/50 border-b border-[#1f2037]">
+        <Card className="bg-black border-[#1f2037] shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden md:col-span-2">
+          <CardHeader className="bg-black border-b border-[#1f2037]">
             <CardTitle className="text-lg font-medium text-white">Financial Production</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -592,7 +592,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
               </div>
               <div className="h-3 bg-[#1f2037] rounded-full overflow-hidden flex">
                 <div
-                  className="h-full bg-blue-500"
+                  className="h-full bg-gray-500"
                   style={{
                     width: `${(data.financialProduction.fixedAnnuity / data.financialProduction.total) * 100}%`,
                   }}

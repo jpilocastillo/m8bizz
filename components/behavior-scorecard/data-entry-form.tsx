@@ -171,7 +171,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   }
 
   return (
-    <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+    <Card className="bg-black border-gray-800 shadow-lg">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
@@ -292,7 +292,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
             <div className="flex items-center gap-2">
               <Calculator className="h-4 w-4 text-m8bs-muted" />
               <span className="text-sm text-m8bs-muted">
-                Enter values for each week. Totals and averages are calculated automatically.
+                Enter Values For Each Week. Totals And Averages Are Calculated Automatically.
               </span>
             </div>
             <Button

@@ -24,15 +24,15 @@ import { Line, LineChart as RechartsLineChart, Bar, BarChart, PieChart as Rechar
 
 // Form schema for monthly data entry
 const monthlyEntrySchema = z.object({
-  month: z.string().min(1, "Month is required"),
-  year: z.string().min(1, "Year is required"),
-  new_clients: z.string().min(1, "New clients is required"),
-  new_appointments: z.string().min(1, "New appointments is required"),
-  new_leads: z.string().min(1, "New leads is required"),
-  annuity_sales: z.string().min(1, "Annuity sales is required"),
-  aum_sales: z.string().min(1, "AUM sales is required"),
-  life_sales: z.string().min(1, "Life sales is required"),
-  marketing_expenses: z.string().min(1, "Marketing expenses is required"),
+  month: z.string().min(1, "Month Is Required"),
+  year: z.string().min(1, "Year Is Required"),
+  new_clients: z.string().min(1, "New Clients Is Required"),
+  new_appointments: z.string().min(1, "New Appointments Is Required"),
+  new_leads: z.string().min(1, "New Leads Is Required"),
+  annuity_sales: z.string().min(1, "Annuity Sales Is Required"),
+  aum_sales: z.string().min(1, "AUM Sales Is Required"),
+  life_sales: z.string().min(1, "Life Sales Is Required"),
+  marketing_expenses: z.string().min(1, "Marketing Expenses Is Required"),
   notes: z.string().optional(),
 })
 
@@ -87,7 +87,7 @@ export function MonthlyDataEntryComponent() {
         console.log("Missing month or year")
         toast({
           title: "Error",
-          description: "Please select both month and year.",
+          description: "Please Select Both Month And Year.",
           variant: "destructive",
         })
         return
@@ -123,14 +123,14 @@ export function MonthlyDataEntryComponent() {
 
       if (success) {
         toast({
-          title: editingEntry ? "Entry updated successfully" : "Entry added successfully",
-          description: "Your monthly data has been saved.",
+          title: editingEntry ? "Entry Updated Successfully" : "Entry Added Successfully",
+          description: "Your Monthly Data Has Been Saved.",
         })
         handleCloseDialog()
       } else {
         toast({
           title: "Error",
-          description: "Failed to save entry. Please try again.",
+          description: "Failed To Save Entry. Please Try Again.",
           variant: "destructive",
         })
       }
@@ -138,7 +138,7 @@ export function MonthlyDataEntryComponent() {
       console.error("Error submitting form:", error)
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+          description: "An Unexpected Error Occurred. Please Try Again.",
         variant: "destructive",
       })
     }
@@ -164,17 +164,17 @@ export function MonthlyDataEntryComponent() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this entry?")) {
+    if (confirm("Are You Sure You Want To Delete This Entry?")) {
       const success = await deleteMonthlyDataEntry(id)
       if (success) {
         toast({
-          title: "Entry deleted successfully",
-          description: "The monthly data entry has been removed.",
+          title: "Entry Deleted Successfully",
+          description: "The Monthly Data Entry Has Been Removed.",
         })
       } else {
         toast({
           title: "Error",
-          description: "Failed to delete entry. Please try again.",
+          description: "Failed To Delete Entry. Please Try Again.",
           variant: "destructive",
         })
       }
@@ -731,18 +731,18 @@ export function MonthlyDataEntryComponent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">New Clients</div>
-                <div className="text-2xl font-bold">{selectedMonthData.new_clients}</div>
-                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newClientsGoal}</div>
+                <div className="text-2xl font-bold">{selectedMonthData.new_clients.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newClientsGoal.toLocaleString()}</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">Appointments Booked</div>
-                <div className="text-2xl font-bold">{selectedMonthData.new_appointments}</div>
-                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newAppointmentsGoal}</div>
+                <div className="text-2xl font-bold">{selectedMonthData.new_appointments.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newAppointmentsGoal.toLocaleString()}</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">New Leads</div>
-                <div className="text-2xl font-bold">{selectedMonthData.new_leads}</div>
-                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newLeadsGoal}</div>
+                <div className="text-2xl font-bold">{selectedMonthData.new_leads.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newLeadsGoal.toLocaleString()}</div>
               </div>
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">Total Sales</div>
@@ -827,7 +827,7 @@ export function MonthlyDataEntryComponent() {
                     {((selectedMonthData.new_clients / goals.newClientsGoal) * 100).toFixed(0)}%
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {selectedMonthData.new_clients} Of {goals.newClientsGoal} Clients
+                    {selectedMonthData.new_clients.toLocaleString()} Of {goals.newClientsGoal.toLocaleString()} Clients
                   </div>
                 </div>
               </div>

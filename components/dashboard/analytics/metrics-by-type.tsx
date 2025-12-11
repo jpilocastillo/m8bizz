@@ -40,7 +40,7 @@ export function MetricsByType({ data }: MetricsByTypeProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md">
+      <Card className="bg-m8bs-card text-white shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl font-bold">Revenue & Expenses by Event Type</CardTitle>
         </CardHeader>
@@ -71,7 +71,7 @@ export function MetricsByType({ data }: MetricsByTypeProps) {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md">
+        <Card className="bg-m8bs-card text-white shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl font-bold">ROI by Event Type</CardTitle>
           </CardHeader>
@@ -98,7 +98,7 @@ export function MetricsByType({ data }: MetricsByTypeProps) {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md">
+        <Card className="bg-m8bs-card text-white shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl font-bold">Conversion Rate by Event Type</CardTitle>
           </CardHeader>
@@ -126,7 +126,7 @@ export function MetricsByType({ data }: MetricsByTypeProps) {
         </Card>
       </div>
 
-      <Card className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border text-white shadow-md">
+      <Card className="bg-m8bs-card text-white shadow-sm">
         <CardHeader>
           <CardTitle className="text-xl font-bold">Event Type Performance Summary</CardTitle>
         </CardHeader>

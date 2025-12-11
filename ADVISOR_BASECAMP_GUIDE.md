@@ -52,9 +52,9 @@ For each campaign, provide:
 
 *You can add multiple campaigns by clicking the "Add Campaign" button.*
 
-#### Tab 5: Income & Book
+#### Tab 5: Revenue
 **Commission Rates:**
-- **Planning Fee Rate**: Your planning fee rate
+- **Average Planning Fee Rate**: Your average planning fee rate
 - **Annuity Commission**: Commission percentage for annuities
 - **AUM Commission**: Commission percentage for AUM
 - **Life Commission**: Commission percentage for life insurance
