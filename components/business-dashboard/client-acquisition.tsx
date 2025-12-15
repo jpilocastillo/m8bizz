@@ -30,41 +30,25 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
   const campaigns = data?.campaigns || []
   const clientMetrics = data?.clientMetrics
 
-  // Calculate metrics from campaign data and monthly entries
+  // Calculate metrics from campaign data
   const calculatedMetrics = useMemo(() => {
     // Get client metrics values
     const appointmentAttrition = clientMetrics?.appointment_attrition || 0
     const avgCloseRatio = clientMetrics?.avg_close_ratio || 0
     const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
-    const monthlyEntries = data?.monthlyDataEntries || []
 
-    // Calculate totals from monthly entries if available (more accurate)
-    let totalLeads = 0
-    let totalAppointments = 0
-    let totalClients = 0
+    // Calculate totals from campaigns
+    const totalLeads = campaigns.reduce((sum, campaign) => sum + (campaign.leads || 0), 0)
+    const totalEvents = campaigns.reduce((sum, campaign) => sum + (campaign.events || 0), 0)
     
-    if (monthlyEntries.length > 0) {
-      // Use real monthly data
-      totalLeads = monthlyEntries.reduce((sum, entry) => sum + (entry.new_leads || 0), 0)
-      totalAppointments = monthlyEntries.reduce((sum, entry) => sum + (entry.new_appointments || 0), 0)
-      totalClients = monthlyEntries.reduce((sum, entry) => sum + (entry.new_clients || 0), 0)
-    } else {
-      // Fallback to campaign calculations
-      totalLeads = campaigns.reduce((sum, campaign) => sum + (campaign.leads || 0), 0)
-      const totalEvents = campaigns.reduce((sum, campaign) => sum + (campaign.events || 0), 0)
-      
-      // Calculate appointments from campaigns
-      totalAppointments = appointmentsPerCampaign > 0 
-        ? totalEvents * appointmentsPerCampaign
-        : Math.round(totalLeads * 0.4) // Fallback: assume 40% of leads become appointments
-      
-      // Calculate clients from prospects and close ratio
-      const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
-      totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
-    }
-
-    // Calculate prospects (appointments after accounting for attrition)
+    // Calculate appointments from campaigns
+    const totalAppointments = appointmentsPerCampaign > 0 
+      ? totalEvents * appointmentsPerCampaign
+      : Math.round(totalLeads * 0.4) // Fallback: assume 40% of leads become appointments
+    
+    // Calculate clients from prospects and close ratio
     const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
+    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
 
     // Calculate budget from campaigns
     const totalBudget = campaigns.reduce((sum, campaign) => sum + (campaign.budget || 0), 0)
@@ -97,7 +81,7 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
       appointmentAttrition,
       avgCloseRatio,
     }
-  }, [campaigns, clientMetrics, data?.monthlyDataEntries])
+  }, [campaigns, clientMetrics])
 
   // Client acquisition funnel data
   const funnelData = [
@@ -107,55 +91,36 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
     { name: "Clients", value: calculatedMetrics.totalClients, color: "#ef4444" },
   ]
 
-  // Monthly client acquisition data - use real monthly data entries if available
+  // Monthly client acquisition data - calculated from campaigns
   const monthlyData = useMemo(() => {
-    const monthlyEntries = data?.monthlyDataEntries || []
     const appointmentAttrition = clientMetrics?.appointment_attrition || 0
-    
-    // Create a map of month_year to entry data for quick lookup
-    const entriesMap = new Map<string, typeof monthlyEntries[0]>()
-    monthlyEntries.forEach(entry => {
-      entriesMap.set(entry.month_year, entry)
-    })
+    const avgCloseRatio = clientMetrics?.avg_close_ratio || 0
+    const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
 
-    // Get current year for building month keys
-    const currentYear = new Date().getFullYear()
+    // Calculate totals from campaigns
+    const totalLeads = campaigns.reduce((sum, campaign) => sum + (campaign.leads || 0), 0)
+    const totalEvents = campaigns.reduce((sum, campaign) => sum + (campaign.events || 0), 0)
+    const totalAppointments = appointmentsPerCampaign > 0 
+      ? totalEvents * appointmentsPerCampaign
+      : Math.round(totalLeads * 0.4)
+    const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
+    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
+
+    // Distribute campaign data evenly across 12 months
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    const monthlyLeads = Math.round(totalLeads / 12)
+    const monthlyAppointments = Math.round(totalAppointments / 12)
+    const monthlyProspects = Math.round(totalProspects / 12)
+    const monthlyClients = Math.round(totalClients / 12)
     
-    // Build monthly data array for the current year
-    return monthNames.map((monthName, index) => {
-      const monthNumber = (index + 1).toString().padStart(2, '0')
-      const monthYear = `${currentYear}-${monthNumber}`
-      const entry = entriesMap.get(monthYear)
-      
-      if (entry) {
-        // Use real data from monthly entries
-        const leads = entry.new_leads || 0
-        const appointments = entry.new_appointments || 0
-        // Calculate prospects: appointments after accounting for attrition
-        const prospects = Math.round(appointments * (1 - appointmentAttrition / 100))
-        // Use actual clients from monthly entry
-        const clients = entry.new_clients || 0
-        
-        return {
-          name: monthName,
-          leads,
-          appointments,
-          prospects,
-          clients,
-        }
-      } else {
-        // No data for this month - show zeros
-        return {
-          name: monthName,
-          leads: 0,
-          appointments: 0,
-          prospects: 0,
-          clients: 0,
-        }
-      }
-    })
-  }, [data?.monthlyDataEntries, clientMetrics?.appointment_attrition])
+    return monthNames.map((monthName) => ({
+      name: monthName,
+      leads: monthlyLeads,
+      appointments: monthlyAppointments,
+      prospects: monthlyProspects,
+      clients: monthlyClients,
+    }))
+  }, [campaigns, clientMetrics?.appointment_attrition, clientMetrics?.avg_close_ratio, clientMetrics?.appointments_per_campaign])
 
   // Lead source data from campaigns
   const leadSourceData = useMemo(() => {

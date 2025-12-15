@@ -34,6 +34,8 @@ const defaultData = {
     totalAppointmentsSet: 0,
     totalAppointmentsMade: 0,
     totalRegistrants: 0,
+    totalFirstAppointmentNoShows: 0,
+    totalNotQualified: 0,
   },
   events: [],
   monthlyData: [],
@@ -177,6 +179,8 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
           totalAppointmentsSet: filteredEvents.reduce((sum, event) => sum + (event.appointmentsSet || 0), 0),
           totalAppointmentsMade: filteredEvents.reduce((sum, event) => sum + (event.appointmentsMade || 0), 0),
           totalRegistrants: filteredEvents.reduce((sum, event) => sum + (event.registrants || 0), 0),
+          totalFirstAppointmentNoShows: filteredEvents.reduce((sum, event) => sum + (event.firstAppointmentNoShows || 0), 0),
+          totalNotQualified: filteredEvents.reduce((sum, event) => sum + (event.notQualified || 0), 0),
         }
       }
       setFilteredData(updatedData)
@@ -546,6 +550,8 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                 registrants={filteredData?.summary?.totalRegistrants || 0}
                 attendees={filteredData?.summary?.totalAttendees || 0}
                 appointmentsSet={filteredData?.summary?.totalAppointmentsSet || 0}
+                firstAppointmentNoShows={filteredData?.summary?.totalFirstAppointmentNoShows || 0}
+                notQualified={filteredData?.summary?.totalNotQualified || 0}
                 clientsCreated={filteredData?.summary?.totalClients || 0}
               />
             </div>

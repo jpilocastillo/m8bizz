@@ -27,7 +27,7 @@ export default function CurrentBookOpportunitiesPage() {
 
   if (!mounted || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+      <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
           <div className="text-white">

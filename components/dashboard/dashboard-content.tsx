@@ -519,7 +519,6 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
               { label: "Commission Rate", value: "4.5%" },
               { label: "Total Commission", value: formatCurrency(annuityCommission) },
             ]}
-            benefits={["Tax-deferred growth", "Guaranteed income", "Principal protection"]}
             chartData={[65, 40, 85, 30, 55, 65, 75]}
           />
         </motion.div>
@@ -541,7 +540,6 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
               { label: "Commission Rate", value: "85%" },
               { label: "Total Commission", value: formatCurrency(lifeInsuranceCommission) },
             ]}
-            benefits={["Death benefit", "Cash value growth", "Living benefits"]}
             chartData={[45, 60, 35, 70, 45, 60, 35]}
           />
         </motion.div>
@@ -559,7 +557,6 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
               { label: "AUM Fee %", value: `${aumFeePercentage}%` },
               { label: "Annual AUM Fees", value: formatCurrency(aumFees) },
             ]}
-            benefits={["Scalable Revenue", "Recurring Revenue Stream", "Client Retention"]}
             chartData={[30, 50, 40, 60, 80, 70, 90]}
           />
         </motion.div>

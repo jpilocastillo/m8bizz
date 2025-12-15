@@ -97,6 +97,8 @@ export default async function AnalyticsPage() {
           return sum + firstAttended + secondAttended
         }, 0),
         totalRegistrants: events.reduce((sum, event) => sum + (event.attendance?.registrant_responses || 0), 0),
+        totalFirstAppointmentNoShows: events.reduce((sum, event) => sum + (event.event_appointments?.first_appointment_no_shows || 0), 0),
+        totalNotQualified: events.reduce((sum, event) => sum + (event.event_appointments?.not_qualified || 0), 0),
       },
       events: events.map(event => {
         const totalProduction = (event.financial_production?.aum_fees || 0) + 
@@ -140,6 +142,8 @@ export default async function AnalyticsPage() {
             const secondAttended = event.event_appointments?.second_appointment_attended || 0
             return firstAttended + secondAttended
           })(),
+          firstAppointmentNoShows: event.event_appointments?.first_appointment_no_shows || 0,
+          notQualified: event.event_appointments?.not_qualified || 0,
           roi: { value: expenses > 0 ? Math.round(((totalProduction - expenses) / expenses) * 100) : 0 },
           conversionRate: (() => {
             const attendees = event.attendance?.attendees || 0;

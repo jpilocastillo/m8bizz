@@ -27,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className="bg-m8bs-bg">
-      <body className={`${inter.className} bg-m8bs-bg`}>
+    <html lang="en" suppressHydrationWarning className="bg-black">
+      <body className={`${inter.className} bg-black`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
             {children}

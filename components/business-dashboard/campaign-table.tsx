@@ -7,7 +7,7 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Search, Plus, Edit, Trash2 } from "lucide-react"
@@ -275,27 +275,27 @@ export function CampaignTable() {
   return (
     <div className="grid gap-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search Campaigns..." className="pl-8" />
+        <div>
+          <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">Annual Campaign Goals</h2>
+          <p className="text-m8bs-muted">Your Campaign Goals For The Year</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button
               size="sm"
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+              className="bg-gradient-to-r from-m8bs-blue to-m8bs-purple hover:from-m8bs-blue-dark hover:to-m8bs-purple text-white"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Campaign
+              Add Campaign Goal
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>
-                {editingCampaign ? "Edit Campaign" : "Add New Campaign"}
+                {editingCampaign ? "Edit Campaign Goal" : "Add Annual Campaign Goal"}
               </DialogTitle>
               <DialogDescription>
-                {editingCampaign ? "Update campaign details" : "Add a new marketing campaign"}
+                {editingCampaign ? "Update annual campaign goal details" : "Add a new annual campaign goal for the year"}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -305,23 +305,11 @@ export function CampaignTable() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Campaign Name</FormLabel>
+                      <FormLabel className="text-white">Campaign Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter campaign name" {...field} />
+                        <Input placeholder="Enter campaign name" className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price per Event</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="0.00" {...field} />
-                      </FormControl>
+                      <FormDescription className="text-white/60">Name of your annual campaign goal</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -331,10 +319,11 @@ export function CampaignTable() {
                   name="events"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Monthly Events</FormLabel>
+                      <FormLabel className="text-white">Monthly Events</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
+                        <Input type="number" placeholder="0" className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} />
                       </FormControl>
+                      <FormDescription className="text-white/60">Number of events per month for this campaign</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -344,10 +333,11 @@ export function CampaignTable() {
                   name="leads"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Leads Generated</FormLabel>
+                      <FormLabel className="text-white">Monthly Leads Generated</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
+                        <Input type="number" placeholder="0" className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} />
                       </FormControl>
+                      <FormDescription className="text-white/60">Number of leads generated per month</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -357,10 +347,11 @@ export function CampaignTable() {
                   name="budget"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Budget</FormLabel>
+                      <FormLabel className="text-white">Monthly Budget</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0.00" {...field} />
+                        <Input type="number" placeholder="0.00" className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} />
                       </FormControl>
+                      <FormDescription className="text-white/60">Monthly budget for this campaign (annual = monthly × 12)</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -370,14 +361,14 @@ export function CampaignTable() {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel className="text-white">Status</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-m8bs-card-alt border-m8bs-border text-white">
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="bg-m8bs-card border-m8bs-border">
                           <SelectItem value="Active">Active</SelectItem>
                           <SelectItem value="Planned">Planned</SelectItem>
                           <SelectItem value="Completed">Completed</SelectItem>
@@ -402,102 +393,124 @@ export function CampaignTable() {
         </Dialog>
       </div>
 
-      <Card className="border-none shadow-lg">
-        <CardHeader>
-          <CardTitle>Campaigns Monthly Budget</CardTitle>
-          <CardDescription>Track campaign performance and budget allocation</CardDescription>
+      <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md">
+        <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+          <CardTitle className="text-xl font-extrabold text-white tracking-tight">Annual Campaign Goals</CardTitle>
+          <CardDescription className="text-m8bs-muted mt-2">Your Annual Campaign Goals For The Year</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Campaigns</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Monthly Events</TableHead>
-                <TableHead>Leads Generated</TableHead>
-                <TableHead>Budget</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {campaigns.map((item, index) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.campaign}</TableCell>
-                  <TableCell>${item.price.toLocaleString()}</TableCell>
-                  <TableCell>{item.events}</TableCell>
-                  <TableCell>{item.leads}</TableCell>
-                  <TableCell>${item.budget.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Badge variant={item.status === "Active" ? "default" : "outline"}>{item.status}</Badge>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-white">Campaign Goal</TableHead>
+                  <TableHead className="text-white">Annual Target</TableHead>
+                  <TableHead className="text-white">Monthly Average</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium text-white">Total Annual Events</TableCell>
+                  <TableCell className="text-white font-semibold">{totalEvents * 12}</TableCell>
+                  <TableCell className="text-white/70">{totalEvents} events/month</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium text-white">Total Annual Leads</TableCell>
+                  <TableCell className="text-white font-semibold">{totalLeads * 12}</TableCell>
+                  <TableCell className="text-white/70">{totalLeads} leads/month</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium text-white">Total Annual Budget</TableCell>
+                  <TableCell className="text-white font-semibold">${(totalBudget * 12).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">${totalBudget.toLocaleString()}/month</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium text-white">Annual Appointments Goal</TableCell>
+                  <TableCell className="text-white font-semibold">
+                    {(() => {
+                      const clientMetrics = data.clientMetrics
+                      const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
+                      const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
+                      const goalAppointments = monthlyIdealProspects * 3 // Monthly new appointments needed
+                      return (goalAppointments * 12).toLocaleString()
+                    })()}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(item)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <TableCell className="text-white/70">
+                    {(() => {
+                      const clientMetrics = data.clientMetrics
+                      const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
+                      return (monthlyIdealProspects * 3).toLocaleString()
+                    })()} appointments/month
                   </TableCell>
                 </TableRow>
-              ))}
-              <TableRow className="font-bold">
-                <TableCell>Total</TableCell>
-                <TableCell>-</TableCell>
-                <TableCell>{totalEvents}</TableCell>
-                <TableCell>{totalLeads}</TableCell>
-                <TableCell>${totalBudget.toLocaleString()}</TableCell>
-                <TableCell>-</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Marketing Appt Goal</TableCell>
-                <TableCell colSpan={4}>
-                  {(() => {
-                    const clientMetrics = data.clientMetrics
-                    const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
-                    const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
-                    const goalAppointments = monthlyIdealProspects * 3 // Monthly new appointments needed
-                    const actualAppointments = appointmentsPerCampaign > 0 
-                      ? totalEvents * appointmentsPerCampaign
-                      : Math.round(totalLeads * 0.4)
-                    const goalPercentage = goalAppointments > 0 
-                      ? (actualAppointments / goalAppointments) * 100 
-                      : 0
-                    return `${goalPercentage.toFixed(0)}%`
-                  })()}
-                </TableCell>
-                <TableCell>-</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Total Monthly Budget</TableCell>
-                <TableCell colSpan={4}>${totalBudget.toLocaleString()}</TableCell>
-                <TableCell>-</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Total Annual Budget</TableCell>
-                <TableCell colSpan={4}>${(totalBudget * 12).toLocaleString()}</TableCell>
-                <TableCell>-</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Individual Campaign Goals */}
+        {campaigns.length > 0 && (
+          <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md">
+            <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+              <CardTitle className="text-xl font-extrabold text-white tracking-tight">Individual Campaign Goals</CardTitle>
+              <CardDescription className="text-m8bs-muted mt-2">Campaign goals that make up your annual targets</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-white">Campaign Name</TableHead>
+                    <TableHead className="text-white">Monthly Events</TableHead>
+                    <TableHead className="text-white">Monthly Leads</TableHead>
+                    <TableHead className="text-white">Monthly Budget</TableHead>
+                    <TableHead className="text-white">Annual Budget</TableHead>
+                    <TableHead className="text-white">Status</TableHead>
+                    <TableHead className="text-white">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {campaigns.map((item, index) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-white">{item.campaign}</TableCell>
+                      <TableCell className="text-white">{item.events}</TableCell>
+                      <TableCell className="text-white">{item.leads}</TableCell>
+                      <TableCell className="text-white">${item.budget.toLocaleString()}</TableCell>
+                      <TableCell className="text-white">${(item.budget * 12).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={item.status === "Active" ? "default" : "outline"}>{item.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(item)}
+                            className="text-white hover:text-white hover:bg-m8bs-card-alt"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(item)}
+                            className="text-white hover:text-white hover:bg-m8bs-card-alt"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Campaign Performance</CardTitle>
-            <CardDescription>Quarterly budget and lead generation</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Annual Campaign Performance</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Quarterly breakdown of annual campaign goals</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -547,42 +560,42 @@ export function CampaignTable() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle>Campaign ROI</CardTitle>
-            <CardDescription>Return on investment metrics</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Annual Campaign ROI</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">Return on investment metrics for annual campaigns</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Metric</TableHead>
-                  <TableHead>Value</TableHead>
+                  <TableHead className="text-white">Metric</TableHead>
+                  <TableHead className="text-white">Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow>
-                  <TableCell className="font-medium">Cost Per Lead</TableCell>
-                  <TableCell>${roiMetrics.costPerLead.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium text-white">Cost Per Lead</TableCell>
+                  <TableCell className="text-white">${roiMetrics.costPerLead.toFixed(2)}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Cost Per Appointment</TableCell>
-                  <TableCell>${roiMetrics.costPerAppointment.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium text-white">Cost Per Appointment</TableCell>
+                  <TableCell className="text-white">${roiMetrics.costPerAppointment.toFixed(2)}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Cost Per Client</TableCell>
-                  <TableCell>${roiMetrics.costPerClient.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium text-white">Cost Per Client</TableCell>
+                  <TableCell className="text-white">${roiMetrics.costPerClient.toFixed(2)}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Lead to Appointment Ratio</TableCell>
-                  <TableCell>{roiMetrics.leadToAppointmentRatio.toFixed(1)}%</TableCell>
+                  <TableCell className="font-medium text-white">Lead to Appointment Ratio</TableCell>
+                  <TableCell className="text-white">{roiMetrics.leadToAppointmentRatio.toFixed(1)}%</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Appointment to Client Ratio</TableCell>
-                  <TableCell>{roiMetrics.appointmentToClientRatio.toFixed(1)}%</TableCell>
+                  <TableCell className="font-medium text-white">Appointment to Client Ratio</TableCell>
+                  <TableCell className="text-white">{roiMetrics.appointmentToClientRatio.toFixed(1)}%</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Marketing ROI</TableCell>
+                  <TableCell className="font-medium text-white">Marketing ROI</TableCell>
                   <TableCell className={roiMetrics.marketingROI >= 0 ? "text-green-500" : "text-red-500"}>
                     {roiMetrics.marketingROI.toFixed(1)}%
                   </TableCell>

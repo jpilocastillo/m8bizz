@@ -2,13 +2,15 @@
 
 import { memo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, UserCheck, Calendar, Target, TrendingDown, TrendingUp } from "lucide-react"
+import { Users, UserCheck, Calendar, Target, TrendingDown, TrendingUp, XCircle, AlertCircle } from "lucide-react"
 import { motion } from "framer-motion"
 
 interface ConversionBreakdownProps {
   registrants: number
   attendees: number
   appointmentsSet: number
+  firstAppointmentNoShows: number
+  notQualified: number
   clientsCreated: number
 }
 
@@ -16,17 +18,23 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
   registrants,
   attendees,
   appointmentsSet,
+  firstAppointmentNoShows,
+  notQualified,
   clientsCreated,
 }: ConversionBreakdownProps) {
   // Calculate conversion rates
   const registrantsToAttendees = registrants > 0 ? (attendees / registrants) * 100 : 0
   const attendeesToAppointments = attendees > 0 ? (appointmentsSet / attendees) * 100 : 0
+  const appointmentsToNoShows = appointmentsSet > 0 ? (firstAppointmentNoShows / appointmentsSet) * 100 : 0
+  const appointmentsToNotQualified = appointmentsSet > 0 ? (notQualified / appointmentsSet) * 100 : 0
   const appointmentsToClients = appointmentsSet > 0 ? (clientsCreated / appointmentsSet) * 100 : 0
   const overallConversion = registrants > 0 ? (clientsCreated / registrants) * 100 : 0
 
   // Calculate drop-off rates
   const dropOffRegistrantsToAttendees = 100 - registrantsToAttendees
   const dropOffAttendeesToAppointments = 100 - attendeesToAppointments
+  const dropOffAppointmentsToNoShows = appointmentsToNoShows
+  const dropOffAppointmentsToNotQualified = appointmentsToNotQualified
   const dropOffAppointmentsToClients = 100 - appointmentsToClients
 
   const formatNumber = (num: number) => {
@@ -76,6 +84,30 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
       conversionRate: attendeesToAppointments,
       width: getFunnelWidth(appointmentsSet),
       dropOff: dropOffAttendeesToAppointments,
+    },
+    {
+      label: "1st Appointment No Shows",
+      value: firstAppointmentNoShows,
+      icon: XCircle,
+      color: "text-red-400",
+      bgColor: "bg-red-500/20",
+      borderColor: "border-red-500/30",
+      progressColor: "bg-red-500",
+      conversionRate: appointmentsToNoShows,
+      width: getFunnelWidth(firstAppointmentNoShows),
+      dropOff: dropOffAppointmentsToNoShows,
+    },
+    {
+      label: "Not Qualified",
+      value: notQualified,
+      icon: AlertCircle,
+      color: "text-orange-400",
+      bgColor: "bg-orange-500/20",
+      borderColor: "border-orange-500/30",
+      progressColor: "bg-orange-500",
+      conversionRate: appointmentsToNotQualified,
+      width: getFunnelWidth(notQualified),
+      dropOff: dropOffAppointmentsToNotQualified,
     },
     {
       label: "Clients Created",

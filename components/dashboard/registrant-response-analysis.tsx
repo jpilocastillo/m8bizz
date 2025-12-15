@@ -98,7 +98,7 @@ export function RegistrantResponseAnalysis({
               <div className="mb-3">
                 <div className="text-xs font-semibold text-cyan-400 tracking-wide uppercase mb-2">Plate Lickers</div>
                 <div className="text-2xl font-extrabold text-white tabular-nums leading-none">{plateLickers.toLocaleString()}</div>
-                <div className="text-xs text-cyan-400/80 font-medium mt-1.5 tabular-nums">{attendees > 0 ? formatPercentage((plateLickers / attendees) * 100, 1) : '0'}%</div>
+                <div className="text-xs text-cyan-400/80 font-medium mt-1.5 tabular-nums">{registrants > 0 ? formatPercentage((plateLickers / registrants) * 100, 1) : '0'}%</div>
               </div>
             </div>
           </div>
@@ -178,16 +178,16 @@ export function RegistrantResponseAnalysis({
               </div>
               <div className="flex items-baseline justify-between mb-3">
                 <div className="text-lg font-extrabold tracking-tight text-white tabular-nums">
-                  {plateLickers.toLocaleString()} / {attendees.toLocaleString()}
+                  {plateLickers.toLocaleString()} / {registrants.toLocaleString()}
                 </div>
                 <div className="text-base font-extrabold text-cyan-400 tabular-nums">
-                  {attendees > 0 ? formatPercentage((plateLickers / attendees) * 100, 1) : '0'}%
+                  {registrants > 0 ? formatPercentage((plateLickers / registrants) * 100, 1) : '0'}%
                 </div>
               </div>
               <div className="w-full bg-m8bs-border/30 rounded-full h-2">
                 <div
                   className="bg-cyan-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(attendees > 0 ? (plateLickers / attendees) * 100 : 0, 100)}%` }}
+                  style={{ width: `${Math.min(registrants > 0 ? (plateLickers / registrants) * 100 : 0, 100)}%` }}
                 />
               </div>
             </div>
@@ -371,16 +371,16 @@ export function RegistrantResponseAnalysis({
                 <div className="h-10 bg-m8bs-border/30 rounded-lg relative overflow-hidden">
                   <div
                     className="absolute inset-y-0 left-0 bg-cyan-500 rounded-lg transition-all duration-300"
-                    style={{ width: `${attendees > 0 ? (plateLickers / attendees) * 100 : 0}%` }}
+                    style={{ width: `${registrants > 0 ? (plateLickers / registrants) * 100 : 0}%` }}
                   ></div>
                 </div>
               </div>
               <div className="w-20 pl-4 text-right">
                 <div className="text-sm font-extrabold text-white tabular-nums">
-                  {attendees > 0 ? formatPercentage((plateLickers / attendees) * 100, 1) : '0'}%
+                  {registrants > 0 ? formatPercentage((plateLickers / registrants) * 100, 1) : '0'}%
                 </div>
                 <div className="text-xs text-white/60 font-medium tabular-nums">
-                  -{attendees > 0 ? formatPercentage(100 - (plateLickers / attendees) * 100, 1) : '0'}%
+                  -{registrants > 0 ? formatPercentage(100 - (plateLickers / registrants) * 100, 1) : '0'}%
                 </div>
               </div>
             </div>
@@ -418,7 +418,7 @@ export function RegistrantResponseAnalysis({
                   : "Your attendance rate is excellent. Your event is delivering on its promised value."}
             </p>
 
-            {plateLickers / Math.max(1, attendees) > 0.3 && (
+            {plateLickers / Math.max(1, registrants) > 0.3 && (
               <p className="text-white/80">A high percentage of plate lickers may indicate a need to refine your event targeting or value proposition.</p>
             )}
           </div>

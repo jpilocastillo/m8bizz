@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardMetrics } from "@/components/business-dashboard/dashboard-metrics"
 import { GoalProgress } from "@/components/business-dashboard/goal-progress"
+import { CurrentAdvisorBook } from "@/components/business-dashboard/current-advisor-book"
 import { IncomeBreakdown } from "@/components/business-dashboard/income-breakdown"
 import { CampaignTable } from "@/components/business-dashboard/campaign-table"
 import { PerformanceCharts } from "@/components/business-dashboard/performance-charts"
@@ -28,6 +29,23 @@ export default function BusinessDashboard() {
   const [profile, setProfile] = useState<any>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+
+  // Load saved tab from localStorage on mount
+  useEffect(() => {
+    if (user && typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem(`advisor-basecamp-tab-${user.id}`)
+      if (savedTab) {
+        setActiveTab(savedTab)
+      }
+    }
+  }, [user])
+
+  // Save tab to localStorage when it changes
+  useEffect(() => {
+    if (user && typeof window !== 'undefined' && activeTab) {
+      localStorage.setItem(`advisor-basecamp-tab-${user.id}`, activeTab)
+    }
+  }, [activeTab, user])
 
   // Debug logging to track data changes
   useEffect(() => {
@@ -124,7 +142,7 @@ export default function BusinessDashboard() {
 
   if (!mounted || loading || profileLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
+      <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
           <div className="text-white">
@@ -193,13 +211,19 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      <Tabs defaultValue="goals" className="space-y-6" onValueChange={setActiveTab}>
-        <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid grid-cols-2 md:grid-cols-6 w-full h-auto">
+      <Tabs value={activeTab} className="space-y-6" onValueChange={setActiveTab}>
+        <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid grid-cols-2 md:grid-cols-7 w-full h-auto">
           <TabsTrigger 
             value="goals" 
             className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
           >
             Goals
+          </TabsTrigger>
+          <TabsTrigger 
+            value="book" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+          >
+            Current Book
           </TabsTrigger>
           <TabsTrigger 
             value="clients" 
@@ -234,20 +258,36 @@ export default function BusinessDashboard() {
         </TabsList>
 
         <TabsContent value="goals" className="space-y-6">
+          {/* Dashboard Metrics - Top 5 Cards */}
           <DashboardMetrics 
             key={`metrics-${JSON.stringify(data)}`}
             businessGoals={data.businessGoals}
             currentValues={data.currentValues}
             clientMetrics={data.clientMetrics}
           />
+
+          {/* Goals Section */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">Business Goals</h2>
+              <p className="text-m8bs-muted">Your Target Business Goals</p>
+            </div>
+            <GoalProgress 
+              key={`goals-${JSON.stringify(data)}`}
+              businessGoals={data.businessGoals}
+              currentValues={data.currentValues}
+              clientMetrics={data.clientMetrics}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="book" className="space-y-6">
+          <CurrentAdvisorBook 
+            key={`book-${JSON.stringify(data)}`}
+            currentValues={data.currentValues}
+          />
           <PerformanceCharts 
             key={`charts-${JSON.stringify(data)}`}
-            businessGoals={data.businessGoals}
-            currentValues={data.currentValues}
-            clientMetrics={data.clientMetrics}
-          />
-          <GoalProgress 
-            key={`goals-${JSON.stringify(data)}`}
             businessGoals={data.businessGoals}
             currentValues={data.currentValues}
             clientMetrics={data.clientMetrics}

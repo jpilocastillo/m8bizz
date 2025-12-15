@@ -262,31 +262,58 @@ export class BehaviorScorecardService {
 
         // Calculate scores for each metric
         for (const metric of metrics) {
-          // Get weekly data for this metric for the month
-          // For now, we'll sum all weeks in the month (assuming 4 weeks per month)
-          const weeksInMonth = 4
-          let totalActual = 0
-          let weekCount = 0
+          // Get monthly data (stored in week 1, with weeks 2-4 set to 0 to indicate monthly entry)
+          // Check if this is monthly data (week 1 has value, weeks 2-4 are 0 or null)
+          const { data: week1Data } = await this.supabase
+            .from('scorecard_weekly_data')
+            .select('actual_value')
+            .eq('metric_id', metric.id)
+            .eq('week_number', 1)
+            .eq('year', year)
+            .maybeSingle()
 
-          for (let week = 1; week <= weeksInMonth; week++) {
-            const { data: weeklyData } = await this.supabase
-              .from('scorecard_weekly_data')
-              .select('actual_value')
-              .eq('metric_id', metric.id)
-              .eq('week_number', week)
-              .eq('year', year)
-              .maybeSingle()
+          const { data: week2Data } = await this.supabase
+            .from('scorecard_weekly_data')
+            .select('actual_value')
+            .eq('metric_id', metric.id)
+            .eq('week_number', 2)
+            .eq('year', year)
+            .maybeSingle()
 
-            if (weeklyData) {
-              totalActual += Number(weeklyData.actual_value)
-              weekCount++
+          // If week 1 has data and week 2 is 0 or null, this is monthly data
+          const isMonthlyData = week1Data && (!week2Data || Number(week2Data.actual_value) === 0)
+
+          let actualValue = 0
+
+          if (isMonthlyData) {
+            // Use monthly value directly from week 1
+            actualValue = Number(week1Data.actual_value)
+          } else {
+            // Fallback to weekly aggregation for backward compatibility
+            const weeksInMonth = 4
+            let totalActual = 0
+            let weekCount = 0
+
+            for (let week = 1; week <= weeksInMonth; week++) {
+              const { data: weeklyData } = await this.supabase
+                .from('scorecard_weekly_data')
+                .select('actual_value')
+                .eq('metric_id', metric.id)
+                .eq('week_number', week)
+                .eq('year', year)
+                .maybeSingle()
+
+              if (weeklyData) {
+                totalActual += Number(weeklyData.actual_value)
+                weekCount++
+              }
             }
-          }
 
-          // For some metrics, we want the average (like ratings), for others the sum (like counts)
-          const actualValue = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
-            ? (weekCount > 0 ? totalActual / weekCount : 0)
-            : totalActual
+            // For some metrics, we want the average (like ratings), for others the sum (like counts)
+            actualValue = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
+              ? (weekCount > 0 ? totalActual / weekCount : 0)
+              : totalActual
+          }
 
           const goalValue = Number(metric.goal_value)
           const percentageOfGoal = calculatePercentageOfGoal(actualValue, goalValue, metric.is_inverted)

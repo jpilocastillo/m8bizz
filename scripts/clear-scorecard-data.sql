@@ -31,3 +31,5 @@ BEGIN
   RAISE NOTICE 'Successfully cleared all business behavior scorecard data for jazminpilo@gmail.com';
 END $$;
 
+
+

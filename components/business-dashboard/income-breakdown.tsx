@@ -114,7 +114,17 @@ export function IncomeBreakdown({
 
     const totalIncome = incomeData.reduce((sum, item) => sum + item.amount, 0)
     const totalAnnualIncome = totalIncome // This represents annual income from goals
-    const marketingROI = 1215 // This would need to be calculated from actual marketing data
+    
+    // Calculate marketing ROI excluding trail income
+    // Marketing income = income from marketing activities (annuity, AUM, life, planning fees)
+    // Trail income is from existing clients, not from marketing
+    const marketingIncome = annuityIncome + aumIncome + lifeIncome + planningFeesValue
+    const marketingExpenses = 62376 // Marketing expenses from campaigns
+    const marketingROI = marketingExpenses > 0 
+      ? Math.round(((marketingIncome - marketingExpenses) / marketingExpenses) * 100 * 10) / 10 // Round to 1 decimal place
+      : marketingIncome > 0 
+        ? 9999 // Show high ROI when there's income but no expenses
+        : 0
 
     return {
       incomeData,
@@ -188,7 +198,7 @@ export function IncomeBreakdown({
                   </TableRow>
                   <TableRow>
                     <TableCell>Marketing ROI</TableCell>
-                    <TableCell colSpan={3}>{marketingROI}%</TableCell>
+                    <TableCell colSpan={3}>{marketingROI.toFixed(1)}%</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Total Annual Income</TableCell>
@@ -363,24 +373,20 @@ export function IncomeBreakdown({
                   <TableCell>$62,376.00</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Operational Expenses</TableCell>
-                  <TableCell>$180,000.00</TableCell>
-                </TableRow>
-                <TableRow>
                   <TableCell className="font-medium">Total Expenses</TableCell>
-                  <TableCell>$242,376.00</TableCell>
+                  <TableCell>$62,376.00</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Net Income</TableCell>
-                  <TableCell>{formatCurrency(totalAnnualIncome - 242376)}</TableCell>
+                  <TableCell>{formatCurrency(totalAnnualIncome - 62376)}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Profit Margin</TableCell>
-                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - 242376) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
+                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - 62376) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing ROI</TableCell>
-                  <TableCell className="text-green-500">{marketingROI}%</TableCell>
+                  <TableCell className="text-green-500">{marketingROI.toFixed(1)}%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

@@ -19,7 +19,7 @@ interface ProductSoldCardProps {
   icon: React.ReactNode
   color: "blue" | "red" | "green" | "purple" | "amber" | "cyan"
   details: ProductDetail[]
-  benefits: string[]
+  benefits?: string[]
   chartData: number[]
 }
 
@@ -205,15 +205,17 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
             </div>
 
             {/* Benefits section */}
-            <div className="space-y-2 mt-auto">
-              <h4 className={`text-xs uppercase font-semibold ${colorClasses.text} mb-2`}>Key Benefits</h4>
-              {benefits.map((benefit, index) => (
-                <div key={index} className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className={`h-4 w-4 ${colorClasses.text}`} />
-                  <span className="text-white/80 font-medium">{benefit}</span>
-                </div>
-              ))}
-            </div>
+            {benefits && benefits.length > 0 && (
+              <div className="space-y-2 mt-auto">
+                <h4 className={`text-xs uppercase font-semibold ${colorClasses.text} mb-2`}>Key Benefits</h4>
+                {benefits.map((benefit, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className={`h-4 w-4 ${colorClasses.text}`} />
+                    <span className="text-white/80 font-medium">{benefit}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Trend indicator */}
             <div className="mt-4 pt-3 border-t border-m8bs-border flex items-center justify-between">

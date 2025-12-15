@@ -63,7 +63,7 @@ export default function AdminTestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-black p-8">
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardHeader>

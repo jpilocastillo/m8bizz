@@ -33,6 +33,38 @@ const parseCurrency = (value: string): string => {
   return value.replace(/[$,]/g, '')
 }
 
+// Helper function to get annual multiplier based on frequency
+const getAnnualMultiplier = (frequency: string | undefined): number => {
+  switch (frequency) {
+    case "Monthly":
+      return 12
+    case "Quarterly":
+      return 4
+    case "Semi-Annual":
+      return 2
+    case "Annual":
+      return 1
+    default:
+      return 12 // Default to monthly
+  }
+}
+
+// Helper function to get frequency label
+const getFrequencyLabel = (frequency: string | undefined): string => {
+  switch (frequency) {
+    case "Monthly":
+      return "Monthly"
+    case "Quarterly":
+      return "Quarterly"
+    case "Semi-Annual":
+      return "Semi-Annual"
+    case "Annual":
+      return "Annual"
+    default:
+      return "Monthly"
+  }
+}
+
 // Campaign schema
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
@@ -738,16 +770,16 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
         <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
           {isEditMode ? "Edit Business Data" : "Setup Your Advisor Basecamp"}
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-white/80 mt-2">
           {isEditMode 
             ? "Update Your Business Goals, Metrics, And Campaign Data."
             : "Complete Your Business Profile To Access Your Personalized Advisor Dashboard."
           }
         </p>
         {!isEditMode && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-            <p className="text-sm text-blue-800">
-              <strong>New User Setup:</strong> Fill Out All 5 Tabs Completely, Then Click "Submit Data" At The Bottom. 
+          <div className="bg-m8bs-blue/20 border border-m8bs-blue/50 rounded-lg p-4 mt-4">
+            <p className="text-sm text-white">
+              <strong className="text-m8bs-blue">New User Setup:</strong> Fill Out All 5 Tabs Completely, Then Click "Submit Data" At The Bottom. 
               Once Submitted, You'll Automatically See Your Personalized Advisor Basecamp Dashboard With Charts, Metrics, And Insights.
               All Currency Fields Will Be Automatically Formatted With Commas And Decimals.
             </p>
@@ -777,28 +809,28 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800">{error}</p>
+        <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
+          <p className="text-red-400">{error}</p>
         </div>
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 [&_label]:text-white [&_p.text-sm]:text-white/60">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-3 md:grid-cols-5 w-full">
               <TabsTrigger value="goals">Goals</TabsTrigger>
               <TabsTrigger value="current">Current Advisor Book</TabsTrigger>
               <TabsTrigger value="clients">Client Metrics</TabsTrigger>
-              <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+              <TabsTrigger value="campaigns">Annual Campaigns</TabsTrigger>
               <TabsTrigger value="income">Revenue</TabsTrigger>
             </TabsList>
 
             {/* Goals Tab */}
             <TabsContent value="goals">
-              <Card>
+              <Card className="bg-m8bs-card border-m8bs-border">
                 <CardHeader>
-                  <CardTitle>Business Goals</CardTitle>
-                  <CardDescription>Set Your Business Goals For The Year</CardDescription>
+                  <CardTitle className="text-white">Business Goals</CardTitle>
+                  <CardDescription className="text-white/70">Set Your Business Goals For The Year</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -806,11 +838,12 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                     name="businessGoal"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Business Goal ($)</FormLabel>
+                        <FormLabel className="text-white">Business Goal ($)</FormLabel>
                         <FormControl>
                           <Input
                             type="text"
                             placeholder="$0"
+                            className="bg-m8bs-card-alt border-m8bs-border text-white"
                             {...field}
                             value={formatCurrency(field.value)}
                             onChange={(e) => {
@@ -819,7 +852,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                             }}
                           />
                         </FormControl>
-                        <FormDescription>Your Overall Business Goal In Dollars</FormDescription>
+                        <FormDescription className="text-white/60">Your Overall Business Goal In Dollars</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -831,11 +864,11 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="aumGoalPercentage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>AUM Goal Percentage (%)</FormLabel>
+                          <FormLabel className="text-white">AUM Goal Percentage (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" max="100" step="0.1" {...field} />
+                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
-                          <FormDescription>Percentage Of Business Goal For AUM</FormDescription>
+                          <FormDescription className="text-white/60">Percentage Of Business Goal For AUM</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -846,11 +879,11 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="annuityGoalPercentage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Annuity Goal Percentage (%)</FormLabel>
+                          <FormLabel className="text-white" className="text-white">Annuity Goal Percentage (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" max="100" step="0.1" {...field} />
+                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} />
                           </FormControl>
-                          <FormDescription>Percentage Of Business Goal For Annuity</FormDescription>
+                          <FormDescription className="text-white/60" className="text-white/60">Percentage Of Business Goal For Annuity</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -863,22 +896,22 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="lifeTargetGoalPercentage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Target Goal Percentage (%)</FormLabel>
+                          <FormLabel className="text-white" className="text-white">Life Target Goal Percentage (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" max="100" step="0.1" {...field} />
+                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} />
                           </FormControl>
-                          <FormDescription>Percentage Of Business Goal For Life Insurance</FormDescription>
+                          <FormDescription className="text-white/60" className="text-white/60">Percentage Of Business Goal For Life Insurance</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
                     <div className="flex items-end">
-                      <div className="w-full p-4 bg-muted rounded-lg">
-                        <p className="text-sm text-muted-foreground">Calculated Goals</p>
-                        <p className="text-lg font-semibold">AUM: {formatCurrency(aumGoalAmount)}</p>
-                        <p className="text-lg font-semibold">Annuity: {formatCurrency(annuityGoalAmount)}</p>
-                        <p className="text-lg font-semibold">Life: {formatCurrency(lifeTargetGoalAmount)}</p>
+                      <div className="w-full p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                        <p className="text-sm text-white/70 mb-2">Calculated Goals</p>
+                        <p className="text-lg font-semibold text-white">AUM: {formatCurrency(aumGoalAmount)}</p>
+                        <p className="text-lg font-semibold text-white">Annuity: {formatCurrency(annuityGoalAmount)}</p>
+                        <p className="text-lg font-semibold text-white">Life: {formatCurrency(lifeTargetGoalAmount)}</p>
                       </div>
                     </div>
                   </div>
@@ -888,10 +921,10 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
 
             {/* Current Advisor Book Tab */}
             <TabsContent value="current">
-              <Card>
+              <Card className="bg-m8bs-card border-m8bs-border">
                 <CardHeader>
-                  <CardTitle>Current Advisor Book</CardTitle>
-                  <CardDescription>Your Current Advisor Book Metrics</CardDescription>
+                  <CardTitle className="text-white">Current Advisor Book</CardTitle>
+                  <CardDescription className="text-white/70">Your Current Advisor Book Metrics</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -900,11 +933,12 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="currentAUM"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Current AUM ($)</FormLabel>
+                          <FormLabel className="text-white" className="text-white">Current AUM ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
                               placeholder="$0"
+                              className="bg-m8bs-card-alt border-m8bs-border text-white"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -923,11 +957,12 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="currentAnnuity"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Current Annuity ($)</FormLabel>
+                          <FormLabel className="text-white" className="text-white">Current Annuity ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
                               placeholder="$0"
+                              className="bg-m8bs-card-alt border-m8bs-border text-white"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -946,11 +981,12 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="currentLifeProduction"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Insurance Cash Value ($)</FormLabel>
+                          <FormLabel className="text-white" className="text-white">Life Insurance Cash Value ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
                               placeholder="$0"
+                              className="bg-m8bs-card-alt border-m8bs-border text-white"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -970,10 +1006,10 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
 
             {/* Client Metrics Tab */}
             <TabsContent value="clients">
-              <Card>
+              <Card className="bg-m8bs-card border-m8bs-border">
                 <CardHeader>
-                  <CardTitle>Client Metrics</CardTitle>
-                  <CardDescription>Key Performance Indicators For Your Client Base</CardDescription>
+                  <CardTitle className="text-white">Client Metrics</CardTitle>
+                  <CardDescription className="text-white/70">Key Performance Indicators For Your Client Base</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -982,11 +1018,12 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="avgAnnuitySize"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Average Annuity Size ($)</FormLabel>
+                          <FormLabel className="text-white">Average Annuity Size ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
                               placeholder="$0"
+                              className="bg-m8bs-card-alt border-m8bs-border text-white"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -1005,11 +1042,12 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="avgAUMSize"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Average AUM Size ($)</FormLabel>
+                          <FormLabel className="text-white">Average AUM Size ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
                               placeholder="$0"
+                              className="bg-m8bs-card-alt border-m8bs-border text-white"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -1030,7 +1068,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="avgNetWorthNeeded"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Average Net Worth Needed ($)</FormLabel>
+                          <FormLabel className="text-white">Average Net Worth Needed ($)</FormLabel>
                           <FormControl>
                             <Input 
                               type="text"
@@ -1041,7 +1079,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                               className="bg-muted"
                             />
                           </FormControl>
-                          <FormDescription>Auto-Calculated: Average Annuity Size + Average AUM Size</FormDescription>
+                          <FormDescription className="text-white/60">Auto-Calculated: Average Annuity Size + Average AUM Size</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1052,9 +1090,9 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="appointmentAttrition"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Appointment Attrition (%)</FormLabel>
+                          <FormLabel className="text-white">Appointment Attrition (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" max="100" step="0.1" {...field} />
+                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1068,9 +1106,9 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="avgCloseRatio"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Average Close Ratio (%)</FormLabel>
+                          <FormLabel className="text-white">Average Close Ratio (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" max="100" step="0.1" {...field} />
+                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1109,22 +1147,23 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
 
             {/* Campaigns Tab */}
             <TabsContent value="campaigns">
-              <Card>
+              <Card className="bg-m8bs-card border-m8bs-border">
                 <CardHeader>
-                  <CardTitle>Marketing Campaigns</CardTitle>
-                  <CardDescription>Track Your Marketing Campaigns And Their Performance</CardDescription>
+                  <CardTitle className="text-white">Annual Campaign Goals</CardTitle>
+                  <CardDescription className="text-white/70">Set Your Annual Campaign Goals For The Year (Monthly values are used to calculate annual totals)</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {fields.map((field, index) => (
                     <div key={field.id} className="border rounded-lg p-4 space-y-4">
                       <div className="flex justify-between items-center">
-                        <h4 className="font-medium">Campaign {index + 1}</h4>
+                        <h4 className="font-medium text-white">Annual Campaign Goal {index + 1}</h4>
                         {fields.length > 1 && (
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => remove(index)}
+                            className="text-white border-m8bs-border hover:bg-m8bs-card-alt"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1137,10 +1176,11 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                           name={`campaigns.${index}.name`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Campaign Name</FormLabel>
+                              <FormLabel className="text-white">Campaign Name</FormLabel>
                               <FormControl>
-                                <Input {...field} />
+                                <Input className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} placeholder="e.g., Facebook Seminars" />
                               </FormControl>
+                              <FormDescription className="text-white/60">Name of your annual campaign goal</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1151,14 +1191,14 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                           name={`campaigns.${index}.status`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Status</FormLabel>
+                              <FormLabel className="text-white">Status</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger>
+                                  <SelectTrigger className="bg-m8bs-card-alt border-m8bs-border text-white">
                                     <SelectValue placeholder="Select status" />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent>
+                                <SelectContent className="bg-m8bs-card border-m8bs-border">
                                   <SelectItem value="Active">Active</SelectItem>
                                   <SelectItem value="Planned">Planned</SelectItem>
                                   <SelectItem value="Completed">Completed</SelectItem>
@@ -1175,20 +1215,21 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                           name={`campaigns.${index}.frequency`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Frequency</FormLabel>
+                              <FormLabel className="text-white">Campaign Frequency</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value || "Monthly"}>
                                 <FormControl>
-                                  <SelectTrigger>
+                                  <SelectTrigger className="bg-m8bs-card-alt border-m8bs-border text-white">
                                     <SelectValue placeholder="Select frequency" />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="Monthly">Monthly</SelectItem>
-                                  <SelectItem value="Quarterly">Quarterly</SelectItem>
-                                  <SelectItem value="Semi-Annual">Semi-Annual</SelectItem>
-                                  <SelectItem value="Annual">Annual</SelectItem>
+                                <SelectContent className="bg-m8bs-card border-m8bs-border">
+                                  <SelectItem value="Monthly">Monthly (×12 annually)</SelectItem>
+                                  <SelectItem value="Quarterly">Quarterly (×4 annually)</SelectItem>
+                                  <SelectItem value="Semi-Annual">Semi-Annual (×2 annually)</SelectItem>
+                                  <SelectItem value="Annual">Annual (×1 annually)</SelectItem>
                                 </SelectContent>
                               </Select>
+                              <FormDescription className="text-white/60">Select how often this campaign runs. Labels below will update automatically.</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1199,52 +1240,80 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                         <FormField
                           control={form.control}
                           name={`campaigns.${index}.budget`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Marketing Costs ($)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="text"
-                                  placeholder="$0"
-                                  {...field}
-                                  value={formatCurrency(field.value)}
-                                  onChange={(e) => {
-                                    const rawValue = parseCurrency(e.target.value)
-                                    field.onChange(rawValue)
-                                  }}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          render={({ field }) => {
+                            const frequency = form.watch(`campaigns.${index}.frequency`) || "Monthly"
+                            const frequencyLabel = getFrequencyLabel(frequency)
+                            const multiplier = getAnnualMultiplier(frequency)
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel className="text-white">{frequencyLabel} Budget ($)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="text"
+                                    placeholder="$0"
+                                    className="bg-m8bs-card-alt border-m8bs-border text-white"
+                                    {...field}
+                                    value={formatCurrency(field.value)}
+                                    onChange={(e) => {
+                                      const rawValue = parseCurrency(e.target.value)
+                                      field.onChange(rawValue)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormDescription className="text-white/60">
+                                  {frequencyLabel} budget (Annual = {frequencyLabel} × {multiplier})
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }}
                         />
 
                         <FormField
                           control={form.control}
                           name={`campaigns.${index}.events`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Events (#)</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          render={({ field }) => {
+                            const frequency = form.watch(`campaigns.${index}.frequency`) || "Monthly"
+                            const frequencyLabel = getFrequencyLabel(frequency)
+                            const multiplier = getAnnualMultiplier(frequency)
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel className="text-white">{frequencyLabel} Events (#)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" placeholder="0" {...field} />
+                                </FormControl>
+                                <FormDescription className="text-white/60">
+                                  Events per {frequencyLabel.toLowerCase()} (Annual = {frequencyLabel} × {multiplier})
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }}
                         />
 
                         <FormField
                           control={form.control}
                           name={`campaigns.${index}.leads`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Leads Generated (#)</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                          render={({ field }) => {
+                            const frequency = form.watch(`campaigns.${index}.frequency`) || "Monthly"
+                            const frequencyLabel = getFrequencyLabel(frequency)
+                            const multiplier = getAnnualMultiplier(frequency)
+                            
+                            return (
+                              <FormItem>
+                                <FormLabel className="text-white">{frequencyLabel} Leads Generated (#)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" placeholder="0" {...field} />
+                                </FormControl>
+                                <FormDescription className="text-white/60">
+                                  Leads per {frequencyLabel.toLowerCase()} (Annual = {frequencyLabel} × {multiplier})
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }}
                         />
                       </div>
 
@@ -1260,7 +1329,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                             
                             return (
                               <FormItem>
-                                <FormLabel>Total Cost of Event ($)</FormLabel>
+                                <FormLabel className="text-white">Total Cost of Event ($)</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="text" 
@@ -1271,7 +1340,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                                     onBlur={() => {}} // Prevent blur events
                                   />
                                 </FormControl>
-                                <FormDescription>Auto-Calculated: (Marketing Costs + Food Costs) ÷ Events</FormDescription>
+                                <FormDescription className="text-white/60">Auto-Calculated: (Marketing Costs + Food Costs) ÷ Events</FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )
@@ -1289,7 +1358,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                             
                             return (
                               <FormItem>
-                                <FormLabel>Cost per Lead ($)</FormLabel>
+                                <FormLabel className="text-white">Cost per Lead ($)</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="text" 
@@ -1300,7 +1369,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                                     onBlur={() => {}} // Prevent blur events
                                   />
                                 </FormControl>
-                                <FormDescription>Auto-Calculated: (Marketing Costs + Food Costs) ÷ Leads Generated</FormDescription>
+                                <FormDescription className="text-white/60">Auto-Calculated: (Marketing Costs + Food Costs) ÷ Leads Generated</FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )
@@ -1322,7 +1391,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                             
                             return (
                               <FormItem>
-                                <FormLabel>Cost per Client ($)</FormLabel>
+                                <FormLabel className="text-white">Cost per Client ($)</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="text" 
@@ -1333,7 +1402,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                                     onBlur={() => {}} // Prevent blur events
                                   />
                                 </FormControl>
-                                <FormDescription>Auto-Calculated: Cost Per Lead ÷ Close Ratio</FormDescription>
+                                <FormDescription className="text-white/60">Auto-Calculated: Cost Per Lead ÷ Close Ratio</FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )
@@ -1345,7 +1414,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                           name={`campaigns.${index}.foodCosts`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Food Costs ($)</FormLabel>
+                              <FormLabel className="text-white">Food Costs ($)</FormLabel>
                               <FormControl>
                                 <Input
                                   type="text"
@@ -1366,9 +1435,56 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                     </div>
                   ))}
 
-                  <Button type="button" variant="outline" onClick={addCampaign}>
+                  {/* Annual Campaign Goals Summary */}
+                  {fields.length > 0 && (
+                    <div className="mt-6 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                      <h4 className="text-lg font-semibold text-white mb-4">Annual Campaign Goals Summary</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm text-white/70 mb-1">Total Annual Events</p>
+                          <p className="text-xl font-bold text-white">
+                            {fields.reduce((sum, _, index) => {
+                              const events = Number.parseFloat(form.watch(`campaigns.${index}.events`) || "0")
+                              const frequency = form.watch(`campaigns.${index}.frequency`) || "Monthly"
+                              const multiplier = getAnnualMultiplier(frequency)
+                              return sum + (events * multiplier)
+                            }, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-white/70 mb-1">Total Annual Leads</p>
+                          <p className="text-xl font-bold text-white">
+                            {fields.reduce((sum, _, index) => {
+                              const leads = Number.parseFloat(form.watch(`campaigns.${index}.leads`) || "0")
+                              const frequency = form.watch(`campaigns.${index}.frequency`) || "Monthly"
+                              const multiplier = getAnnualMultiplier(frequency)
+                              return sum + (leads * multiplier)
+                            }, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-white/70 mb-1">Total Annual Budget</p>
+                          <p className="text-xl font-bold text-white">
+                            {formatCurrency(fields.reduce((sum, _, index) => {
+                              const budget = Number.parseFloat(form.watch(`campaigns.${index}.budget`) || "0")
+                              const frequency = form.watch(`campaigns.${index}.frequency`) || "Monthly"
+                              const multiplier = getAnnualMultiplier(frequency)
+                              return sum + (budget * multiplier)
+                            }, 0))}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={addCampaign}
+                    className="mt-4 text-white border-m8bs-border hover:bg-m8bs-card-alt"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Campaign
+                    Add Annual Campaign Goal
                   </Button>
                 </CardContent>
               </Card>
@@ -1377,10 +1493,10 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
             {/* Revenue Tab */}
             <TabsContent value="income">
               <div className="space-y-6">
-                <Card>
+                <Card className="bg-m8bs-card border-m8bs-border">
                   <CardHeader>
-                    <CardTitle>Commission Rates</CardTitle>
-                    <CardDescription>Set Your Commission Percentages And Rates</CardDescription>
+                    <CardTitle className="text-white">Commission Rates</CardTitle>
+                    <CardDescription className="text-white/70">Set Your Commission Percentages And Rates</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1389,7 +1505,7 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                         name="planningFeeRate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Average Planning Fee Rate ($)</FormLabel>
+                            <FormLabel className="text-white">Average Planning Fee Rate ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="text"
@@ -1415,9 +1531,9 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                         name="annuityCommission"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Annuity Commission (%)</FormLabel>
+                            <FormLabel className="text-white">Annuity Commission (%)</FormLabel>
                             <FormControl>
-                              <Input type="number" min="0" max="100" step="0.01" {...field} />
+                              <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.01" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1429,9 +1545,9 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                         name="aumCommission"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>AUM Commission (%)</FormLabel>
+                            <FormLabel className="text-white">AUM Commission (%)</FormLabel>
                             <FormControl>
-                              <Input type="number" min="0" max="100" step="0.01" {...field} />
+                              <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.01" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1443,9 +1559,9 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                         name="lifeCommission"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Life Commission (%)</FormLabel>
+                            <FormLabel className="text-white">Life Commission (%)</FormLabel>
                             <FormControl>
-                              <Input type="number" min="0" max="100" step="0.01" {...field} />
+                              <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.01" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1458,9 +1574,9 @@ export function DataEntryFormV2({ user, onComplete, onCancel, isEditMode = false
                       name="trailIncomePercentage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Trail Income Percentage (%)</FormLabel>
+                          <FormLabel className="text-white">Trail Income Percentage (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" min="0" max="100" step="0.01" {...field} />
+                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.01" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

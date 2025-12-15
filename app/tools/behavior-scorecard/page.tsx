@@ -511,16 +511,16 @@ export default function BehaviorScorecardPage() {
                     </div>
                   ) : null}
 
-                  {/* Step 3: Enter Weekly Data */}
+                  {/* Step 3: Enter Monthly Data */}
                   {rolesHaveMetrics() ? (
                     <div className="flex items-start gap-4 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-m8bs-blue flex items-center justify-center text-white font-bold">
                         {roles.length === 0 ? '1' : hasAnyMetrics() ? '3' : '2'}
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-white mb-2">Enter Weekly Data</h4>
+                        <h4 className="font-semibold text-white mb-2">Enter Monthly Data</h4>
                         <p className="text-m8bs-muted text-sm mb-3">
-                          Start entering weekly data for each role's metrics. This data will be used to calculate your scorecard.
+                          Start entering monthly data for each role's metrics. This data will be used to calculate your scorecard.
                         </p>
                         <Button 
                           onClick={() => setActiveTab("entry")} 
@@ -562,7 +562,7 @@ export default function BehaviorScorecardPage() {
                 Select Role for Data Entry
               </CardTitle>
               <CardDescription className="text-m8bs-muted">
-                Choose a role to enter weekly data for {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                Choose a role to enter monthly data for {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -597,7 +597,7 @@ export default function BehaviorScorecardPage() {
                 await loadScorecard()
                 toast({
                   title: "Data saved",
-                  description: "Goals and weekly data have been saved and summary calculated.",
+                  description: "Goals and monthly data have been saved and summary calculated.",
                 })
               }}
             />
@@ -639,7 +639,7 @@ export default function BehaviorScorecardPage() {
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-m8bs-blue flex items-center justify-center text-white text-xs font-bold">
                       4
                     </div>
-                    <p className="text-sm text-m8bs-muted">Return here to enter weekly data</p>
+                    <p className="text-sm text-m8bs-muted">Return here to enter monthly data</p>
                   </div>
                   <div className="pt-4">
                     <Button 
@@ -706,7 +706,7 @@ export default function BehaviorScorecardPage() {
                 <Settings className="h-16 w-16 text-m8bs-muted mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2 text-white">Select a Role</h3>
                 <p className="text-m8bs-muted">
-                  Please select a role above to enter weekly data.
+                  Please select a role above to enter monthly data.
                 </p>
               </CardContent>
             </Card>

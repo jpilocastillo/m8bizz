@@ -278,23 +278,23 @@ body {
   border-image: linear-gradient(90deg, rgba(59, 130, 246, 0.5), rgba(168, 85, 247, 0.5)) 1;
 }
 
-/* Ensure all pages have consistent background */
+/* Ensure all pages have consistent black background */
 html,
 body {
-  background: #0a0a0f !important;
-  background-color: #0a0a0f !important;
+  background: #000000 !important;
+  background-color: #000000 !important;
 }
 
 main {
-  background: #0a0a0f !important;
-  background-color: #0a0a0f !important;
+  background: #000000 !important;
+  background-color: #000000 !important;
   background-image: none !important;
 }
 
 /* Remove gradient from bucket-plan page */
 html[data-path*="bucket-plan"] main,
 body[data-path*="bucket-plan"] main {
-  background: #0a0a0f !important;
+  background: #000000 !important;
   background-image: none !important;
-  background-color: #0a0a0f !important;
+  background-color: #000000 !important;
 }

@@ -54,7 +54,7 @@ const config = {
           foreground: "hsl(var(--card-foreground))",
         },
         // M8BS custom theme colors - Bright and vibrant theme
-        "m8bs-bg": "#0a0a0f", // Slightly lighter black with blue tint
+        "m8bs-bg": "#000000", // Pure black
         "m8bs-card": "#111118", // Brighter dark for cards
         "m8bs-card-alt": "#000000", // Black for hover states
         "m8bs-border": "#2a2a3e", // Brighter border

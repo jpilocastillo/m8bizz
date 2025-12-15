@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,52 +22,47 @@ interface DataEntryFormProps {
 
 export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }: DataEntryFormProps) {
   const { toast } = useToast()
-  const [weekData, setWeekData] = useState<Record<string, Record<number, number>>>({})
+  const [monthlyData, setMonthlyData] = useState<Record<string, number>>({})
   const [goalData, setGoalData] = useState<Record<string, number>>({})
   const [saving, setSaving] = useState(false)
 
-  // Initialize week data structure and goals
+  const loadMonthlyData = useCallback(async () => {
+    for (const metric of metrics) {
+      // Load monthly data from week 1 (where we store monthly values)
+      const result = await behaviorScorecardService.getWeeklyData(metric.id, year)
+      if (result.success && result.data) {
+        // Find week 1 data for this month (we use week 1 to store monthly value)
+        const week1Data = result.data.find(wd => wd.weekNumber === 1)
+        if (week1Data) {
+          setMonthlyData(prev => ({
+            ...prev,
+            [metric.id]: week1Data.actualValue,
+          }))
+        }
+      }
+    }
+  }, [metrics, year])
+
+  // Initialize monthly data structure and goals
   useEffect(() => {
-    const initialData: Record<string, Record<number, number>> = {}
+    const initialData: Record<string, number> = {}
     const initialGoals: Record<string, number> = {}
     metrics.forEach(metric => {
-      initialData[metric.id] = {}
+      initialData[metric.id] = 0
       initialGoals[metric.id] = metric.goalValue
-      for (let week = 1; week <= 4; week++) {
-        initialData[metric.id][week] = 0
-      }
     })
-    setWeekData(initialData)
+    setMonthlyData(initialData)
     setGoalData(initialGoals)
 
     // Load existing data
-    loadWeeklyData()
-  }, [metrics, year])
+    loadMonthlyData()
+  }, [metrics, year, month, loadMonthlyData])
 
-  const loadWeeklyData = async () => {
-    for (const metric of metrics) {
-      const result = await behaviorScorecardService.getWeeklyData(metric.id, year)
-      if (result.success && result.data) {
-        setWeekData(prev => {
-          const updated = { ...prev }
-          updated[metric.id] = {}
-          result.data!.forEach(wd => {
-            updated[metric.id][wd.weekNumber] = wd.actualValue
-          })
-          return updated
-        })
-      }
-    }
-  }
-
-  const handleWeekValueChange = (metricId: string, week: number, value: string) => {
+  const handleMonthlyValueChange = (metricId: string, value: string) => {
     const numValue = parseFloat(value) || 0
-    setWeekData(prev => ({
+    setMonthlyData(prev => ({
       ...prev,
-      [metricId]: {
-        ...prev[metricId],
-        [week]: numValue,
-      },
+      [metricId]: numValue,
     }))
   }
 
@@ -90,12 +85,14 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
         }
       }
 
-      // Save weekly data
+      // Save monthly data (store in week 1, set weeks 2-4 to 0)
       for (const metric of metrics) {
-        for (let week = 1; week <= 4; week++) {
-          const value = weekData[metric.id]?.[week] || 0
-          // Save even if 0, to allow clearing values
-          await behaviorScorecardService.saveWeeklyData(metric.id, week, year, value)
+        const monthlyValue = monthlyData[metric.id] || 0
+        // Save monthly value in week 1
+        await behaviorScorecardService.saveWeeklyData(metric.id, 1, year, monthlyValue)
+        // Clear weeks 2-4 to indicate this is monthly data
+        for (let week = 2; week <= 4; week++) {
+          await behaviorScorecardService.saveWeeklyData(metric.id, week, year, 0)
         }
       }
 
@@ -104,7 +101,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
 
       toast({
         title: "Data saved successfully",
-        description: `Goals and weekly data for ${roleName} have been saved.`,
+        description: `Goals and monthly data for ${roleName} have been saved.`,
       })
 
       if (onSave) {
@@ -142,16 +139,8 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
     return value.toString()
   }
 
-  const calculateTotal = (metricId: string) => {
-    const data = weekData[metricId] || {}
-    return Object.values(data).reduce((sum, val) => sum + val, 0)
-  }
-
-  const calculateAverage = (metricId: string) => {
-    const data = weekData[metricId] || {}
-    const values = Object.values(data).filter(v => v > 0)
-    if (values.length === 0) return 0
-    return values.reduce((sum, val) => sum + val, 0) / values.length
+  const getMonthlyValue = (metricId: string) => {
+    return monthlyData[metricId] || 0
   }
 
   const getMetricType = (metricId: string): string => {
@@ -180,7 +169,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
               {roleName} - Data Entry Form
             </CardTitle>
             <CardDescription className="text-m8bs-muted mt-1">
-              Enter weekly data for {new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              Enter monthly data for {new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </CardDescription>
           </div>
           <Button
@@ -206,32 +195,13 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                     Goal
                   </TableHead>
                   <TableHead className="text-center text-white font-semibold min-w-[120px]">
-                    Week 1
+                    Monthly Value
                   </TableHead>
-                  <TableHead className="text-center text-white font-semibold min-w-[120px]">
-                    Week 2
-                  </TableHead>
-                  <TableHead className="text-center text-white font-semibold min-w-[120px]">
-                    Week 3
-                  </TableHead>
-                  <TableHead className="text-center text-white font-semibold min-w-[120px]">
-                    Week 4
-                  </TableHead>
-                  <TableHead className="text-center text-white font-semibold min-w-[120px]">
-                    Total
-                  </TableHead>
-                  {metrics.some(m => m.metricType === 'rating_1_5' || m.metricType === 'rating_scale') && (
-                    <TableHead className="text-center text-white font-semibold min-w-[120px]">
-                      Average
-                    </TableHead>
-                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {metrics.map((metric, index) => {
-                  const total = calculateTotal(metric.id)
-                  const average = calculateAverage(metric.id)
-                  const showAverage = metric.metricType === 'rating_1_5' || metric.metricType === 'rating_scale'
+                  const monthlyValue = getMonthlyValue(metric.id)
                   
                   return (
                     <TableRow 
@@ -257,28 +227,18 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                           placeholder="0"
                         />
                       </TableCell>
-                      {[1, 2, 3, 4].map(week => (
-                        <TableCell key={week} className="p-2">
-                          <Input
-                            type="number"
-                            step={getInputStep(metric.metricType)}
-                            min="0"
-                            max={getInputMax(metric.metricType)}
-                            value={weekData[metric.id]?.[week] || 0}
-                            onChange={(e) => handleWeekValueChange(metric.id, week, e.target.value)}
-                            className="w-full text-center bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue h-9"
-                            placeholder="0"
-                          />
-                        </TableCell>
-                      ))}
-                      <TableCell className="text-center font-semibold text-white">
-                        {formatValue(total, metric.metricType)}
+                      <TableCell className="p-2">
+                        <Input
+                          type="number"
+                          step={getInputStep(metric.metricType)}
+                          min="0"
+                          max={getInputMax(metric.metricType)}
+                          value={monthlyValue}
+                          onChange={(e) => handleMonthlyValueChange(metric.id, e.target.value)}
+                          className="w-full text-center bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue h-9"
+                          placeholder="0"
+                        />
                       </TableCell>
-                      {showAverage && (
-                        <TableCell className="text-center font-semibold text-white">
-                          {average.toFixed(1)}
-                        </TableCell>
-                      )}
                     </TableRow>
                   )
                 })}
@@ -292,7 +252,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
             <div className="flex items-center gap-2">
               <Calculator className="h-4 w-4 text-m8bs-muted" />
               <span className="text-sm text-m8bs-muted">
-                Enter Values For Each Week. Totals And Averages Are Calculated Automatically.
+                Enter Monthly Values For Each Metric.
               </span>
             </div>
             <Button
