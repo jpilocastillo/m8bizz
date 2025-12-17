@@ -13,7 +13,7 @@ import {
   MonthlyDataEntry
 } from '@/lib/advisor-basecamp'
 
-export function useAdvisorBasecamp(user: User | null) {
+export function useAdvisorBasecamp(user: User | null, year: number = new Date().getFullYear()) {
   const [data, setData] = useState<AdvisorBasecampData>({
     campaigns: []
   })
@@ -21,20 +21,22 @@ export function useAdvisorBasecamp(user: User | null) {
   const [error, setError] = useState<string | null>(null)
   const hasLoadedRef = useRef(false)
   const userIdRef = useRef<string | null>(null)
+  const yearRef = useRef<number>(year)
 
   // Internal load function
-  const loadDataInternal = useCallback(async (targetUser: User) => {
+  const loadDataInternal = useCallback(async (targetUser: User, targetYear: number) => {
     if (!targetUser) return
 
     try {
       setLoading(true)
       setError(null)
-      console.log('Loading advisor basecamp data for user:', targetUser.id)
-      const advisorData = await advisorBasecampService.getAllAdvisorBasecampData(targetUser)
+      console.log('Loading advisor basecamp data for user:', targetUser.id, 'year:', targetYear)
+      const advisorData = await advisorBasecampService.getAllAdvisorBasecampData(targetUser, targetYear)
       console.log('Loaded advisor basecamp data:', advisorData)
       setData(advisorData)
       hasLoadedRef.current = true
       userIdRef.current = targetUser.id
+      yearRef.current = targetYear
     } catch (err) {
       console.error('Error loading advisor basecamp data:', err)
       setError('Failed to load data')
@@ -43,15 +45,15 @@ export function useAdvisorBasecamp(user: User | null) {
     }
   }, [])
 
-  // Public loadData function that uses current user (forces reload)
+  // Public loadData function that uses current user and year (forces reload)
   const loadData = useCallback(async () => {
     if (!user) return
     // Reset the ref so it will reload even if data was previously loaded
     hasLoadedRef.current = false
-    await loadDataInternal(user)
-  }, [user, loadDataInternal])
+    await loadDataInternal(user, year)
+  }, [user, year, loadDataInternal])
 
-  // Load data only on initial mount or when user changes
+  // Load data only on initial mount or when user/year changes
   useEffect(() => {
     if (!user) {
       setData({ campaigns: [] })
@@ -61,14 +63,14 @@ export function useAdvisorBasecamp(user: User | null) {
       return
     }
 
-    // Only load if we haven't loaded yet, or if the user has changed
-    if (!hasLoadedRef.current || userIdRef.current !== user.id) {
-      loadDataInternal(user)
+    // Only load if we haven't loaded yet, or if the user or year has changed
+    if (!hasLoadedRef.current || userIdRef.current !== user.id || yearRef.current !== year) {
+      loadDataInternal(user, year)
     } else {
-      // Data already loaded for this user, just set loading to false
+      // Data already loaded for this user and year, just set loading to false
       setLoading(false)
     }
-  }, [user?.id, loadDataInternal]) // Only depend on user.id and the stable loadDataInternal
+  }, [user?.id, year, loadDataInternal]) // Depend on user.id, year, and the stable loadDataInternal
 
   const updateBusinessGoals = async (goals: BusinessGoals) => {
     if (!user) return false
@@ -303,7 +305,7 @@ export function useAdvisorBasecamp(user: User | null) {
       if (success) {
         console.log('saveAllData: Save successful, reloading data from database...')
         // Reload data from database to ensure we have the latest state
-        await loadData()
+        await loadDataInternal(user, year)
         console.log('saveAllData: Data reloaded successfully')
         return true
       }

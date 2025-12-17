@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -160,29 +160,17 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   }
 
   return (
-    <Card className="bg-black border-gray-800 shadow-lg">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-m8bs-blue" />
-              {roleName} - Data Entry Form
-            </CardTitle>
-            <CardDescription className="text-m8bs-muted mt-1">
-              Enter monthly data for {new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </CardDescription>
-          </div>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-          >
-            <Save className="h-4 w-4" />
-            {saving ? 'Saving...' : 'Save Data'}
-          </Button>
-        </div>
+    <Card className="bg-black border-m8bs-border shadow-lg">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl text-white flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-m8bs-blue" />
+          {roleName} - Data Entry Form
+        </CardTitle>
+        <CardDescription className="text-m8bs-muted">
+          Enter Monthly Data For {new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <ScrollArea className="w-full">
           <div className="rounded-md border border-m8bs-border">
             <Table>
@@ -223,7 +211,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                           min="0"
                           value={goalData[metric.id] ?? metric.goalValue}
                           onChange={(e) => handleGoalChange(metric.id, e.target.value)}
-                          className="w-full text-center bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue h-9"
+                          className="w-full text-center bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
                           placeholder="0"
                         />
                       </TableCell>
@@ -235,7 +223,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                           max={getInputMax(metric.metricType)}
                           value={monthlyValue}
                           onChange={(e) => handleMonthlyValueChange(metric.id, e.target.value)}
-                          className="w-full text-center bg-m8bs-card-alt border-m8bs-border text-white focus:border-m8bs-blue h-9"
+                          className="w-full text-center bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
                           placeholder="0"
                         />
                       </TableCell>
@@ -247,24 +235,16 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
           </div>
         </ScrollArea>
 
-        <div className="mt-6 p-4 bg-m8bs-card-alt rounded-lg border border-m8bs-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calculator className="h-4 w-4 text-m8bs-muted" />
-              <span className="text-sm text-m8bs-muted">
-                Enter Monthly Values For Each Metric.
-              </span>
-            </div>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? 'Saving...' : 'Save All Data'}
-            </Button>
-          </div>
-        </div>
+        <CardFooter className="flex justify-end gap-2 pt-4">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? 'Saving...' : 'Save All Data'}
+          </Button>
+        </CardFooter>
       </CardContent>
     </Card>
   )

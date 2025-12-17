@@ -297,7 +297,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
 
       {/* Main Content Grid */}
       <motion.div variants={item} className="space-y-4">
-        {/* Top Row - Top Performers and Heatmap */}
+        {/* Top Row - Top Performers and Conversion Funnel */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
             <CardHeader className="pb-2">
@@ -315,24 +315,19 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
             </CardContent>
           </Card>
 
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                <Activity className="h-5 w-5 text-m8bs-blue" />
-                Performance Heatmap
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <PerformanceHeatmap
-                data={filteredData}
-                activeMetric={heatmapMetric}
-                onMetricChange={setHeatmapMetric}
-              />
-            </CardContent>
-          </Card>
+          <div className="flex-1">
+            <ConversionBreakdown
+              registrants={filteredData?.summary?.totalRegistrants || 0}
+              attendees={filteredData?.summary?.totalAttendees || 0}
+              appointmentsSet={filteredData?.summary?.totalAppointmentsSet || 0}
+              firstAppointmentNoShows={filteredData?.summary?.totalFirstAppointmentNoShows || 0}
+              notQualified={filteredData?.summary?.totalNotQualified || 0}
+              clientsCreated={filteredData?.summary?.totalClients || 0}
+            />
+          </div>
         </div>
 
-        {/* Bottom Row - Event Comparison, Monthly Summary, Conversion Funnel, and Trend Analysis */}
+        {/* Bottom Row - Event Comparison, Monthly Summary, Performance Heatmap, and Trend Analysis */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
           <div className="space-y-4 flex flex-col">
             <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
@@ -544,17 +539,22 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
               </CardContent>
             </Card>
 
-            {/* Conversion Breakdown Card */}
-            <div className="flex-1">
-              <ConversionBreakdown
-                registrants={filteredData?.summary?.totalRegistrants || 0}
-                attendees={filteredData?.summary?.totalAttendees || 0}
-                appointmentsSet={filteredData?.summary?.totalAppointmentsSet || 0}
-                firstAppointmentNoShows={filteredData?.summary?.totalFirstAppointmentNoShows || 0}
-                notQualified={filteredData?.summary?.totalNotQualified || 0}
-                clientsCreated={filteredData?.summary?.totalClients || 0}
-              />
-            </div>
+            {/* Performance Heatmap Card */}
+            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-m8bs-blue" />
+                  Performance Heatmap
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <PerformanceHeatmap
+                  data={filteredData}
+                  activeMetric={heatmapMetric}
+                  onMetricChange={setHeatmapMetric}
+                />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </motion.div>

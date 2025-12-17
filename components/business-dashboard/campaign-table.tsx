@@ -410,18 +410,18 @@ export function CampaignTable() {
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Events</TableCell>
-                  <TableCell className="text-white font-semibold">{totalEvents * 12}</TableCell>
-                  <TableCell className="text-white/70">{totalEvents} events/month</TableCell>
+                  <TableCell className="text-white font-semibold">{Math.round(totalEvents * 12).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">{Math.round(totalEvents).toLocaleString()} events/month</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Leads</TableCell>
-                  <TableCell className="text-white font-semibold">{totalLeads * 12}</TableCell>
-                  <TableCell className="text-white/70">{totalLeads} leads/month</TableCell>
+                  <TableCell className="text-white font-semibold">{Math.round(totalLeads * 12).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">{Math.round(totalLeads).toLocaleString()} leads/month</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Budget</TableCell>
-                  <TableCell className="text-white font-semibold">${(totalBudget * 12).toLocaleString()}</TableCell>
-                  <TableCell className="text-white/70">${totalBudget.toLocaleString()}/month</TableCell>
+                  <TableCell className="text-white font-semibold">${Math.round(totalBudget * 12).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">${Math.round(totalBudget).toLocaleString()}/month</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Annual Appointments Goal</TableCell>
@@ -431,14 +431,14 @@ export function CampaignTable() {
                       const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
                       const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
                       const goalAppointments = monthlyIdealProspects * 3 // Monthly new appointments needed
-                      return (goalAppointments * 12).toLocaleString()
+                      return Math.round(goalAppointments * 12).toLocaleString()
                     })()}
                   </TableCell>
                   <TableCell className="text-white/70">
                     {(() => {
                       const clientMetrics = data.clientMetrics
                       const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
-                      return (monthlyIdealProspects * 3).toLocaleString()
+                      return Math.round(monthlyIdealProspects * 3).toLocaleString()
                     })()} appointments/month
                   </TableCell>
                 </TableRow>

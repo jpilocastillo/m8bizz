@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -128,17 +128,17 @@ export function WeeklyDataEntry({ roleName, roleId, metrics, year, month, onSave
   }
 
   return (
-    <Card className="border-m8bs-border/50 shadow-2xl bg-black backdrop-blur-sm border-2">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-blue-300">
-          <Calendar className="h-5 w-5" />
+    <Card className="bg-black border-m8bs-border shadow-lg">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl text-white flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-m8bs-blue" />
           {roleName} - Weekly Data Entry
         </CardTitle>
         <CardDescription className="text-m8bs-muted">
           Enter Weekly Data For {month}/{year}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         <Tabs defaultValue="week1" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="week1">Week 1</TabsTrigger>
@@ -151,16 +151,16 @@ export function WeeklyDataEntry({ roleName, roleId, metrics, year, month, onSave
             <TabsContent key={week} value={`week${week}`} className="space-y-4">
               <div className="grid gap-4">
                 {metrics.map(metric => (
-                  <div key={metric.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center p-4 bg-m8bs-card-alt/70 rounded-lg border border-m8bs-border/50">
+                  <div key={metric.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center p-4 bg-black-alt rounded-lg border border-m8bs-border">
                     <div className="md:col-span-2">
-                      <Label className="text-blue-300 font-semibold">{metric.metricName}</Label>
+                      <Label className="text-white font-medium">{metric.metricName}</Label>
                       <p className="text-xs text-m8bs-muted mt-1">
                         Goal: {formatValue(metric.goalValue, metric.metricType)}
                         {metric.isInverted && ' (lower is better)'}
                       </p>
                     </div>
                     <div>
-                      <Label htmlFor={`${metric.id}-week${week}`} className="text-m8bs-muted">
+                      <Label htmlFor={`${metric.id}-week${week}`} className="text-white font-medium">
                         Week {week} Value
                       </Label>
                       <Input
@@ -171,7 +171,7 @@ export function WeeklyDataEntry({ roleName, roleId, metrics, year, month, onSave
                         max={metric.metricType === 'rating_1_5' ? '5' : undefined}
                         value={weekData[metric.id]?.[week] || 0}
                         onChange={(e) => handleWeekValueChange(metric.id, week, e.target.value)}
-                        className="bg-m8bs-card-alt/50 border-m8bs-border/50 text-white focus:border-m8bs-blue"
+                        className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       />
                     </div>
                     <div className="text-right">
@@ -187,16 +187,16 @@ export function WeeklyDataEntry({ roleName, roleId, metrics, year, month, onSave
           ))}
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-m8bs-border/50">
+        <CardFooter className="flex justify-end gap-2 pt-4">
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+            className="flex items-center gap-2 bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving...' : 'Save Weekly Data'}
           </Button>
-        </div>
+        </CardFooter>
       </CardContent>
     </Card>
   )

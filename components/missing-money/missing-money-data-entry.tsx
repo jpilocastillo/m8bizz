@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -110,10 +110,10 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
 
   return (
     <div className="space-y-6">
-      <Card className="border-m8bs-border/50 shadow-2xl bg-gradient-to-br from-m8bs-card/90 to-m8bs-card-alt/90 backdrop-blur-sm border-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-300">
-            <Calculator className="h-5 w-5" />
+      <Card className="bg-black border-m8bs-border shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl text-white flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-m8bs-blue" />
             Missing Money Data Entry
           </CardTitle>
           <CardDescription className="text-m8bs-muted">
@@ -127,7 +127,7 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
             </div>
             <Button 
               onClick={handleAddCostCenter}
-              className="flex items-center gap-2 bg-m8bs-blue hover:bg-m8bs-blue-dark text-white"
+              className="flex items-center gap-2 bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
             >
               <Plus className="h-4 w-4" />
               Add Cost Center
@@ -136,13 +136,13 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
 
           <div className="grid gap-4">
             {costCenters.length === 0 ? (
-              <Card className="p-8 bg-m8bs-card-alt/70 border-m8bs-border/50 border-dashed">
+              <Card className="p-8 bg-black-alt border-m8bs-border border-dashed">
                 <div className="text-center text-m8bs-muted">
                   <p className="mb-4">No Cost Centers Added Yet.</p>
                   <Button 
                     onClick={handleAddCostCenter}
                     variant="outline"
-                    className="border-m8bs-border/50 text-blue-300 hover:bg-m8bs-card-alt/50"
+                    className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Your First Cost Center
@@ -155,7 +155,7 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                 const isEditingName = editingNameId === center.id
                 
                 return (
-                  <Card key={center.id} className="p-4 bg-m8bs-card-alt/70 border-m8bs-border/50">
+                  <Card key={center.id} className="p-4 bg-black-alt border-m8bs-border">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3 flex-1">
                         <div 
@@ -174,13 +174,13 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                                   handleCancelEditName()
                                 }
                               }}
-                              className="bg-m8bs-card-alt/50 border-m8bs-border/50 text-white focus:border-m8bs-blue"
+                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               autoFocus
                             />
                             <Button
                               size="sm"
                               onClick={() => handleSaveName(center.id)}
-                              className="bg-green-600 hover:bg-green-700 text-white"
+                              className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
                             >
                               Save
                             </Button>
@@ -188,19 +188,19 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                               size="sm"
                               variant="outline"
                               onClick={handleCancelEditName}
-                              className="border-m8bs-border/50 text-blue-300 hover:bg-m8bs-card-alt/50"
+                              className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
                             >
                               Cancel
                             </Button>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 flex-1">
-                            <h3 className="font-semibold text-lg text-blue-300">{center.name}</h3>
+                            <h3 className="font-semibold text-lg text-white">{center.name}</h3>
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleStartEditName(center.id, center.name)}
-                              className="text-m8bs-muted hover:text-blue-300 p-1 h-6 w-6"
+                              className="text-m8bs-muted hover:text-white p-1 h-6 w-6"
                             >
                               <Edit2 className="h-3 w-3" />
                             </Button>
@@ -219,29 +219,29 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`${center.id}-current`} className="text-m8bs-muted">Current Numbers</Label>
+                      <Label htmlFor={`${center.id}-current`} className="text-white font-medium">Current Numbers</Label>
                       <Input
                         id={`${center.id}-current`}
                         type="number"
                         value={center.current}
                         onChange={(e) => handleInputChange(center.id, 'current', e.target.value)}
-                        className="text-right bg-m8bs-card-alt/50 border-m8bs-border/50 text-white focus:border-m8bs-blue"
+                        className="text-right bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor={`${center.id}-proposed`} className="text-m8bs-muted">Proposed Numbers</Label>
+                      <Label htmlFor={`${center.id}-proposed`} className="text-white font-medium">Proposed Numbers</Label>
                       <Input
                         id={`${center.id}-proposed`}
                         type="number"
                         value={center.proposed}
                         onChange={(e) => handleInputChange(center.id, 'proposed', e.target.value)}
-                        className="text-right bg-m8bs-card-alt/50 border-m8bs-border/50 text-white focus:border-m8bs-blue"
+                        className="text-right bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-m8bs-muted">1 Year Difference</Label>
+                      <Label className="text-white font-medium">1 Year Difference</Label>
                       <div className={`p-2 rounded-md text-right font-semibold ${
                         difference < 0 
                           ? 'bg-green-900/50 text-green-400 border border-green-700' 
@@ -277,18 +277,18 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
           </div>
 
           {/* Summary Card */}
-          <Card className="bg-m8bs-card-alt/70 border-m8bs-border/50">
-            <CardHeader>
-              <CardTitle className="text-blue-300">Summary</CardTitle>
+          <Card className="bg-black-alt border-m8bs-border">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl text-white">Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-300">{formatCurrency(currentTotal)}</div>
+                  <div className="text-2xl font-bold text-white">{formatCurrency(currentTotal)}</div>
                   <div className="text-sm text-m8bs-muted">Current Total</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-300">{formatCurrency(proposedTotal)}</div>
+                  <div className="text-2xl font-bold text-white">{formatCurrency(proposedTotal)}</div>
                   <div className="text-sm text-m8bs-muted">Proposed Total</div>
                 </div>
                 <div className="text-center">
@@ -311,15 +311,15 @@ export function MissingMoneyDataEntry({ data, onUpdate, onSubmit }: MissingMoney
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setCostCenters(data.costCenters)} className="border-m8bs-border/50 text-blue-300 hover:bg-m8bs-card-alt/50">
+          <CardFooter className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setCostCenters(data.costCenters)} className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors">
               Reset
             </Button>
-            <Button onClick={handleSave} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white">
+            <Button onClick={handleSave} className="flex items-center gap-2 bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors">
               <Save className="h-4 w-4" />
               Save & View Report
             </Button>
-          </div>
+          </CardFooter>
         </CardContent>
       </Card>
     </div>

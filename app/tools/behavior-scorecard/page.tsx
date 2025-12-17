@@ -401,16 +401,16 @@ export default function BehaviorScorecardPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "view" | "entry" | "settings")} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="view" className="flex items-center gap-2">
+        <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid w-full grid-cols-3">
+          <TabsTrigger value="view" className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all">
             <BarChart3 className="h-4 w-4" />
             View Scorecard
           </TabsTrigger>
-          <TabsTrigger value="entry" className="flex items-center gap-2">
+          <TabsTrigger value="entry" className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all">
             <Calendar className="h-4 w-4" />
             Data Entry
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
+          <TabsTrigger value="settings" className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all">
             <Settings className="h-4 w-4" />
             Settings
           </TabsTrigger>

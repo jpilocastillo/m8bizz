@@ -36,10 +36,10 @@ export function IncomeBreakdown({
   if (!businessGoals || !currentValues || !clientMetrics || !commissionRates) {
     return (
       <div className="space-y-6">
-        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md">
-          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Breakdown</CardTitle>
-            <CardDescription className="text-m8bs-muted mt-2">Loading income data...</CardDescription>
+        <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-none">
+          <CardHeader>
+            <CardTitle className="text-white">Income Breakdown</CardTitle>
+            <CardDescription className="text-gray-300">Loading income data...</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="animate-pulse space-y-4">
@@ -82,7 +82,7 @@ export function IncomeBreakdown({
 
     const incomeData = [
       { 
-        source: `Average Planning Fees (@ ${formatCurrency(commissionRates.planning_fee_rate || 0)})`, 
+        source: `Planning Fees (@ $${(commissionRates.planning_fee_rate || 0).toLocaleString()})`, 
         amount: planningFeesValue, 
         commission: "-", 
         color: "#64748b" 
@@ -114,17 +114,7 @@ export function IncomeBreakdown({
 
     const totalIncome = incomeData.reduce((sum, item) => sum + item.amount, 0)
     const totalAnnualIncome = totalIncome // This represents annual income from goals
-    
-    // Calculate marketing ROI excluding trail income
-    // Marketing income = income from marketing activities (annuity, AUM, life, planning fees)
-    // Trail income is from existing clients, not from marketing
-    const marketingIncome = annuityIncome + aumIncome + lifeIncome + planningFeesValue
-    const marketingExpenses = 62376 // Marketing expenses from campaigns
-    const marketingROI = marketingExpenses > 0 
-      ? Math.round(((marketingIncome - marketingExpenses) / marketingExpenses) * 100 * 10) / 10 // Round to 1 decimal place
-      : marketingIncome > 0 
-        ? 9999 // Show high ROI when there's income but no expenses
-        : 0
+    const marketingROI = 1215 // This would need to be calculated from actual marketing data
 
     return {
       incomeData,
@@ -161,15 +151,25 @@ export function IncomeBreakdown({
   return (
     <div className="grid gap-6">
       <Tabs defaultValue="table" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="table">Table View</TabsTrigger>
-          <TabsTrigger value="chart">Chart View</TabsTrigger>
+        <TabsList className="bg-gray-800/50 p-1 border border-gray-700/50 rounded-lg shadow-lg grid w-full grid-cols-2">
+          <TabsTrigger 
+            value="table" 
+            className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-white/70"
+          >
+            Table View
+          </TabsTrigger>
+          <TabsTrigger 
+            value="chart" 
+            className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-white/70"
+          >
+            Chart View
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="table">
-          <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-            <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-              <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Details</CardTitle>
-              <CardDescription className="text-m8bs-muted mt-2">Breakdown Of Income Sources</CardDescription>
+          <Card className="border-none shadow-lg">
+            <CardHeader>
+              <CardTitle>Income Details</CardTitle>
+              <CardDescription>Breakdown of income sources</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -185,24 +185,24 @@ export function IncomeBreakdown({
                   {incomeData.map((item, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{item.source}</TableCell>
-                      <TableCell>{formatCurrency(item.amount)}</TableCell>
+                      <TableCell>${item.amount.toLocaleString()}</TableCell>
                       <TableCell>{item.commission}</TableCell>
                       <TableCell>{((item.amount / totalIncome) * 100).toFixed(2)}%</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="font-bold">
                     <TableCell>Total</TableCell>
-                    <TableCell>{formatCurrency(totalIncome)}</TableCell>
+                    <TableCell>${totalIncome.toLocaleString()}</TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>100%</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Marketing ROI</TableCell>
-                    <TableCell colSpan={3}>{marketingROI.toFixed(1)}%</TableCell>
+                    <TableCell colSpan={3}>{marketingROI}%</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell>Total Annual Income</TableCell>
-                    <TableCell colSpan={3}>{formatCurrency(totalAnnualIncome)}</TableCell>
+                    <TableCell colSpan={3}>${totalAnnualIncome.toLocaleString()}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -210,109 +210,143 @@ export function IncomeBreakdown({
           </Card>
         </TabsContent>
         <TabsContent value="chart">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-              <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-                <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Distribution</CardTitle>
-                <CardDescription className="text-m8bs-muted mt-2">Percentage Breakdown By Source</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[350px]">
+          <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+            <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+              <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Distribution</CardTitle>
+              <CardDescription className="text-m8bs-muted mt-2">Percentage Breakdown By Source</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {/* Chart Section */}
+                <div className="h-[450px] relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
+                      <defs>
+                        {chartData.map((entry, index) => {
+                          const baseColor = entry.color || '#64748b';
+                          const gradientId = `gradient-${index}`;
+                          return (
+                            <linearGradient key={gradientId} id={gradientId} x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor={baseColor} stopOpacity={1} />
+                              <stop offset="100%" stopColor={baseColor} stopOpacity={0.75} />
+                            </linearGradient>
+                          );
+                        })}
+                      </defs>
                       <Pie
                         data={chartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={80}
-                        outerRadius={120}
-                        paddingAngle={5}
+                        innerRadius={110}
+                        outerRadius={170}
+                        paddingAngle={4}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
-                        labelLine={false}
-                      >
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value, name, props) => {
-                          const color = props.payload?.color || '#fff';
-                          return [<span style={{ color, fontWeight: 600 }}>{formatCurrency(value as number)}</span>];
+                        label={({ name, percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                          const RADIAN = Math.PI / 180;
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          const percentValue = (percent * 100).toFixed(1);
+                          
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill="#ffffff"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fontSize={14}
+                              fontWeight={800}
+                              style={{
+                                textShadow: '0 2px 6px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.8)',
+                              }}
+                            >
+                              {percentValue}%
+                            </text>
+                          );
                         }}
-                        contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
-                        labelStyle={{ color: '#fff' }}
-                      />
-                      <Legend />
+                        labelLine={false}
+                        animationBegin={0}
+                        animationDuration={800}
+                        animationEasing="ease-out"
+                      >
+                        {chartData.map((entry, index) => {
+                          const baseColor = entry.color || '#64748b';
+                          const gradientId = `gradient-${index}`;
+                          return (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={`url(#${gradientId})`}
+                              stroke="#1f2937" 
+                              strokeWidth={3}
+                              style={{
+                                filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))',
+                              }}
+                            />
+                          );
+                        })}
+                      </Pie>
                     </PieChart>
                   </ResponsiveContainer>
+                  {/* Center Total Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-center">
+                      <div className="text-sm text-gray-400 mb-2 font-semibold">Total Income</div>
+                      <div className="text-3xl font-black text-green-400" style={{ textShadow: '0 2px 10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(16, 185, 129, 0.3)' }}>
+                        {formatCurrency(totalIncome)}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-              <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-                <CardTitle className="text-xl font-extrabold text-white tracking-tight">Annual Income</CardTitle>
-                <CardDescription className="text-m8bs-muted mt-2">Visual Comparison By Source</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[350px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.2} horizontal={false} />
-                      <XAxis
-                        type="number"
-                        stroke="#888"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(value) => {
-                          if (value >= 1000000) return formatCurrency(value / 1000000) + 'M'
-                          if (value >= 1000) return formatCurrency(value / 1000) + 'K'
-                          return formatCurrency(value)
-                        }}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        stroke="#888"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Tooltip
-                        formatter={(value) => [formatCurrency(value as number), undefined]}
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--popover))",
-                          borderRadius: "6px",
-                          border: "1px solid hsl(var(--border))",
-                          color: "hsl(var(--foreground))",
-                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          padding: "8px 12px",
-                        }}
-                      />
-                      <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                {/* Enhanced Legend Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-gray-700">
+                  {chartData.map((entry, index) => {
+                    const percent = ((entry.value / totalIncome) * 100).toFixed(1);
+                    return (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between p-4 rounded-lg bg-gray-800/50 border border-gray-700/50 hover:bg-gray-800 hover:border-gray-600 transition-all duration-200"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div 
+                            className="w-5 h-5 rounded-full flex-shrink-0 shadow-lg"
+                            style={{ 
+                              backgroundColor: entry.color,
+                              boxShadow: `0 0 10px ${entry.color}60`
+                            }}
+                          />
+                          <span className="text-sm font-semibold text-white truncate">
+                            {entry.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 flex-shrink-0 ml-3">
+                          <span 
+                            className="text-base font-bold"
+                            style={{ color: entry.color }}
+                          >
+                            {percent}%
+                          </span>
+                          <span className="text-sm font-semibold text-gray-300 whitespace-nowrap">
+                            {formatCurrency(entry.value)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
       </Tabs>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income Projections</CardTitle>
-            <CardDescription className="text-m8bs-muted mt-2">Projected Income For Next Year</CardDescription>
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle>Income Projections</CardTitle>
+            <CardDescription>Projected income for next year</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -333,16 +367,16 @@ export function IncomeBreakdown({
                   return (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{item.source}</TableCell>
-                      <TableCell>{formatCurrency(currentAmount)}</TableCell>
-                      <TableCell>{formatCurrency(projectedAmount)}</TableCell>
+                      <TableCell>${currentAmount.toLocaleString()}</TableCell>
+                      <TableCell>${projectedAmount.toLocaleString()}</TableCell>
                       <TableCell className="text-green-500">+{growthPercentage}%</TableCell>
                     </TableRow>
                   )
                 })}
                 <TableRow className="font-bold">
                   <TableCell>Total</TableCell>
-                  <TableCell>{formatCurrency(totalIncome)}</TableCell>
-                  <TableCell>{formatCurrency(totalIncome * 1.15)}</TableCell>
+                  <TableCell>${totalIncome.toLocaleString()}</TableCell>
+                  <TableCell>${(totalIncome * 1.15).toLocaleString()}</TableCell>
                   <TableCell className="text-green-500">+15.0%</TableCell>
                 </TableRow>
               </TableBody>
@@ -350,10 +384,10 @@ export function IncomeBreakdown({
           </CardContent>
         </Card>
 
-        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Income vs Expenses</CardTitle>
-            <CardDescription className="text-m8bs-muted mt-2">ROI And Profitability Metrics</CardDescription>
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle>Income vs Expenses</CardTitle>
+            <CardDescription>ROI and profitability metrics</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -366,27 +400,31 @@ export function IncomeBreakdown({
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium">Total Annual Income</TableCell>
-                  <TableCell>{formatCurrency(totalAnnualIncome)}</TableCell>
+                  <TableCell>${totalAnnualIncome.toLocaleString()}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing Expenses</TableCell>
                   <TableCell>$62,376.00</TableCell>
                 </TableRow>
                 <TableRow>
+                  <TableCell className="font-medium">Operational Expenses</TableCell>
+                  <TableCell>$180,000.00</TableCell>
+                </TableRow>
+                <TableRow>
                   <TableCell className="font-medium">Total Expenses</TableCell>
-                  <TableCell>$62,376.00</TableCell>
+                  <TableCell>$242,376.00</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Net Income</TableCell>
-                  <TableCell>{formatCurrency(totalAnnualIncome - 62376)}</TableCell>
+                  <TableCell>${(totalAnnualIncome - 242376).toLocaleString()}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Profit Margin</TableCell>
-                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - 62376) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
+                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - 242376) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing ROI</TableCell>
-                  <TableCell className="text-green-500">{marketingROI.toFixed(1)}%</TableCell>
+                  <TableCell className="text-green-500">{marketingROI}%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

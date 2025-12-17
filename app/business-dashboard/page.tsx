@@ -17,35 +17,70 @@ import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, Calendar } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function BusinessDashboard() {
   const { user } = useAuth()
-  const { data, loading, loadData } = useAdvisorBasecamp(user)
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+  const { data, loading, loadData } = useAdvisorBasecamp(user, selectedYear)
   const [editMode, setEditMode] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState("goals")
   const [profile, setProfile] = useState<any>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [availableYears, setAvailableYears] = useState<number[]>([new Date().getFullYear()])
 
-  // Load saved tab from localStorage on mount
+  // Load available years and saved tab/year from localStorage on mount
+  useEffect(() => {
+    async function loadAvailableYears() {
+      if (!user) return
+      try {
+        const { advisorBasecampService } = await import('@/lib/advisor-basecamp')
+        const years = await advisorBasecampService.getAvailableYears(user)
+        setAvailableYears(years)
+      } catch (error) {
+        console.error('Error loading available years:', error)
+      }
+    }
+    loadAvailableYears()
+  }, [user])
+
   useEffect(() => {
     if (user && typeof window !== 'undefined') {
       const savedTab = localStorage.getItem(`advisor-basecamp-tab-${user.id}`)
       if (savedTab) {
         setActiveTab(savedTab)
       }
+      const savedYear = localStorage.getItem(`advisor-basecamp-year-${user.id}`)
+      if (savedYear) {
+        const yearNum = Number.parseInt(savedYear)
+        if (!isNaN(yearNum)) {
+          setSelectedYear(yearNum)
+        }
+      }
     }
   }, [user])
 
-  // Save tab to localStorage when it changes
+  // Save tab and year to localStorage when they change
   useEffect(() => {
     if (user && typeof window !== 'undefined' && activeTab) {
       localStorage.setItem(`advisor-basecamp-tab-${user.id}`, activeTab)
     }
   }, [activeTab, user])
+  
+  useEffect(() => {
+    if (user && typeof window !== 'undefined' && selectedYear) {
+      localStorage.setItem(`advisor-basecamp-year-${user.id}`, selectedYear.toString())
+    }
+  }, [selectedYear, user])
+  
+  // Filter monthly data entries by selected year
+  const filteredMonthlyData = data.monthlyDataEntries?.filter(entry => 
+    entry.month_year.startsWith(selectedYear.toString())
+  ) || []
 
   // Debug logging to track data changes
   useEffect(() => {
@@ -172,6 +207,7 @@ export default function BusinessDashboard() {
               
               <DataEntryFormV2
                 user={user}
+                year={selectedYear}
                 onComplete={handleDataSubmitted}
                 onCancel={() => setEditMode(false)}
                 isEditMode={editMode}
@@ -195,6 +231,39 @@ export default function BusinessDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-m8bs-card border border-m8bs-border rounded-lg px-3 py-2">
+            <Calendar className="h-4 w-4 text-m8bs-muted" />
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(value) => setSelectedYear(Number.parseInt(value))}
+            >
+              <SelectTrigger className="w-[120px] border-none bg-transparent text-white focus:ring-0 focus:ring-offset-0 h-auto p-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-m8bs-card border-m8bs-border">
+                {availableYears.length > 0 ? (
+                  availableYears.map((year) => (
+                    <SelectItem key={year} value={year.toString()} className="text-white">
+                      {year}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value={selectedYear.toString()} className="text-white">
+                    {selectedYear}
+                  </SelectItem>
+                )}
+                {/* Always show current year and allow adding new years */}
+                {!availableYears.includes(new Date().getFullYear()) && (
+                  <SelectItem 
+                    value={new Date().getFullYear().toString()} 
+                    className="text-white"
+                  >
+                    {new Date().getFullYear()} (New)
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
           <Button 
             variant="outline" 
             onClick={handleRefresh}
@@ -258,20 +327,21 @@ export default function BusinessDashboard() {
         </TabsList>
 
         <TabsContent value="goals" className="space-y-6">
-          {/* Dashboard Metrics - Top 5 Cards */}
-          <DashboardMetrics 
-            key={`metrics-${JSON.stringify(data)}`}
-            businessGoals={data.businessGoals}
-            currentValues={data.currentValues}
-            clientMetrics={data.clientMetrics}
-          />
-
           {/* Goals Section */}
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">Business Goals</h2>
               <p className="text-m8bs-muted">Your Target Business Goals</p>
             </div>
+            
+            {/* Dashboard Metrics - Top 5 Cards - What's Needed to Reach Business Goals */}
+            <DashboardMetrics 
+              key={`metrics-${JSON.stringify(data)}`}
+              businessGoals={data.businessGoals}
+              currentValues={data.currentValues}
+              clientMetrics={data.clientMetrics}
+            />
+            
             <GoalProgress 
               key={`goals-${JSON.stringify(data)}`}
               businessGoals={data.businessGoals}
@@ -291,11 +361,18 @@ export default function BusinessDashboard() {
             businessGoals={data.businessGoals}
             currentValues={data.currentValues}
             clientMetrics={data.clientMetrics}
+            monthlyDataEntries={filteredMonthlyData}
           />
         </TabsContent>
 
         <TabsContent value="clients" className="space-y-6">
-          <ClientAcquisition data={data} />
+          <ClientAcquisition 
+            data={data} 
+            businessGoals={data.businessGoals}
+            commissionRates={data.commissionRates}
+            monthlyDataEntries={filteredMonthlyData}
+            selectedYear={selectedYear.toString()}
+          />
         </TabsContent>
 
         <TabsContent value="income" className="space-y-6">
@@ -312,11 +389,11 @@ export default function BusinessDashboard() {
         </TabsContent>
 
         <TabsContent value="monthly" className="space-y-6">
-          <MonthlyDataEntryComponent />
+          <MonthlyDataEntryComponent selectedYear={selectedYear.toString()} />
         </TabsContent>
         
         <TabsContent value="pdf" className="space-y-6">
-          <PDFExport data={data} profile={profile} />
+          <PDFExport data={data} profile={profile} year={selectedYear} />
         </TabsContent>
       </Tabs>
     </div>

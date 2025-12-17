@@ -55,12 +55,17 @@ const parseCurrency = (value: string): string => {
   return value.replace(/[$,]/g, '')
 }
 
-export function MonthlyDataEntryComponent() {
+interface MonthlyDataEntryComponentProps {
+  selectedYear?: string
+}
+
+export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComponentProps = {}) {
   const { user } = useAuth()
   const { data, addMonthlyDataEntry, updateMonthlyDataEntry, deleteMonthlyDataEntry } = useAdvisorBasecamp(user)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<MonthlyDataEntry | null>(null)
   const [selectedMonthForComparison, setSelectedMonthForComparison] = useState<string>("")
+  const currentYear = selectedYear || new Date().getFullYear().toString()
 
   const form = useForm<MonthlyEntryFormData>({
     resolver: zodResolver(monthlyEntrySchema),
@@ -217,7 +222,6 @@ export function MonthlyDataEntryComponent() {
 
   // Calculate year-to-date totals from monthly entries
   const calculateYearToDate = () => {
-    const currentYear = new Date().getFullYear().toString()
     const yearEntries = monthlyEntries.filter(entry => entry.month_year.startsWith(currentYear))
     
     return yearEntries.reduce((acc, entry) => ({
@@ -324,7 +328,6 @@ export function MonthlyDataEntryComponent() {
 
   // Prepare chart data for goal comparison
   const prepareGoalComparisonData = () => {
-    const currentYear = new Date().getFullYear().toString()
     const yearEntries = monthlyEntries
       .filter(entry => entry.month_year.startsWith(currentYear))
       .sort((a, b) => a.month_year.localeCompare(b.month_year))
@@ -356,7 +359,6 @@ export function MonthlyDataEntryComponent() {
   }
 
   const prepareGoalProgressData = () => {
-    const currentYear = new Date().getFullYear().toString()
     const yearEntries = monthlyEntries.filter(entry => entry.month_year.startsWith(currentYear))
     
     const totalAnnuity = yearEntries.reduce((sum, entry) => sum + entry.annuity_sales, 0)
@@ -375,7 +377,6 @@ export function MonthlyDataEntryComponent() {
 
 
   const prepareMonthlyProgressData = () => {
-    const currentYear = new Date().getFullYear().toString()
     const yearEntries = monthlyEntries
       .filter(entry => entry.month_year.startsWith(currentYear))
       .sort((a, b) => a.month_year.localeCompare(b.month_year))
@@ -445,7 +446,7 @@ export function MonthlyDataEntryComponent() {
                     name="month"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Month</FormLabel>
+                        <FormLabel className="text-white font-medium">Month</FormLabel>
                         <FormControl>
                           <select
                             {...field}
@@ -476,7 +477,7 @@ export function MonthlyDataEntryComponent() {
                     name="year"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Year</FormLabel>
+                        <FormLabel className="text-white font-medium">Year</FormLabel>
                         <FormControl>
                           <select
                             {...field}
@@ -503,7 +504,7 @@ export function MonthlyDataEntryComponent() {
                     name="new_clients"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>New Clients</FormLabel>
+                        <FormLabel className="text-white font-medium">New Clients</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="0" {...field} />
                         </FormControl>
@@ -519,7 +520,7 @@ export function MonthlyDataEntryComponent() {
                     name="new_appointments"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Monthly New Appointments Booked</FormLabel>
+                        <FormLabel className="text-white font-medium">Monthly New Appointments Booked</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="0" {...field} />
                         </FormControl>
@@ -533,7 +534,7 @@ export function MonthlyDataEntryComponent() {
                     name="new_leads"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>New Leads</FormLabel>
+                        <FormLabel className="text-white font-medium">New Leads</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="0" {...field} />
                         </FormControl>
@@ -549,7 +550,7 @@ export function MonthlyDataEntryComponent() {
                     name="annuity_sales"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Annuity Sales ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">Annuity Sales ($)</FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -572,7 +573,7 @@ export function MonthlyDataEntryComponent() {
                     name="aum_sales"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>AUM Sales ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">AUM Sales ($)</FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -595,7 +596,7 @@ export function MonthlyDataEntryComponent() {
                     name="life_sales"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Life Sales ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">Life Sales ($)</FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -620,7 +621,7 @@ export function MonthlyDataEntryComponent() {
                     name="marketing_expenses"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Marketing Expenses ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">Marketing Expenses ($)</FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -644,7 +645,7 @@ export function MonthlyDataEntryComponent() {
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Notes</FormLabel>
+                      <FormLabel className="text-white font-medium">Notes</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Add any notes about this month's performance..."
@@ -1157,7 +1158,7 @@ export function MonthlyDataEntryComponent() {
                       <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
                       <Tooltip 
                         formatter={(value: any) => [`$${value.toLocaleString()}`, 'Sales']}
-                        labelFormatter={(label) => `${label} ${new Date().getFullYear()}`}
+                        labelFormatter={(label) => `${label} ${currentYear}`}
                       />
                       <Legend />
                       <Bar dataKey="totalSales" fill="#3b82f6" name="Monthly Sales" />
@@ -1186,7 +1187,7 @@ export function MonthlyDataEntryComponent() {
                       <YAxis tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
                       <Tooltip 
                         formatter={(value: any) => [`$${value.toLocaleString()}`, 'Amount']}
-                        labelFormatter={(label) => `${label} ${new Date().getFullYear()}`}
+                        labelFormatter={(label) => `${label} ${currentYear}`}
                       />
                       <Legend />
                       <Area 
@@ -1231,7 +1232,7 @@ export function MonthlyDataEntryComponent() {
                         <YAxis tickFormatter={(value) => `${value.toFixed(0)}%`} />
                         <Tooltip 
                           formatter={(value: any) => [`${value.toFixed(1)}%`, 'ROI']}
-                          labelFormatter={(label) => `${label} ${new Date().getFullYear()}`}
+                          labelFormatter={(label) => `${label} ${currentYear}`}
                         />
                         <Line 
                           type="monotone" 
@@ -1264,7 +1265,7 @@ export function MonthlyDataEntryComponent() {
                         <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
                         <Tooltip 
                           formatter={(value: any) => [`$${value.toLocaleString()}`, 'Amount']}
-                          labelFormatter={(label) => `${label} ${new Date().getFullYear()}`}
+                          labelFormatter={(label) => `${label} ${currentYear}`}
                         />
                         <Legend />
                         <Bar dataKey="totalSales" fill="#10b981" name="Total Sales" />
@@ -1312,8 +1313,8 @@ export function MonthlyDataEntryComponent() {
                     const monthlyGoal = businessGoal / 12
                     const salesProgress = calculateProgress(totalSales, monthlyGoal)
                     
-                    // Check if this is the current year
-                    const isCurrentYear = entry.month_year.startsWith(new Date().getFullYear().toString())
+                    // Check if this is the selected year
+                    const isCurrentYear = entry.month_year.startsWith(currentYear)
                     
                     return (
                       <TableRow key={entry.id}>

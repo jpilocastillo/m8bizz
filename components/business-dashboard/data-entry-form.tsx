@@ -8,8 +8,19 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/components/ui/use-toast"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, RotateCcw } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { User } from "@supabase/supabase-js"
 import { useAuth } from "@/components/auth-provider"
@@ -46,6 +57,8 @@ const parseCurrency = (value: string): string => {
 
 // Update the form schema to remove notes field
 const formSchema = z.object({
+  // Year
+  year: z.string().min(1, "Year is required"),
   // Business Goals
   businessGoal: z.string().min(1, "Business goal is required"),
   aumGoal: z.string().min(1, "AUM goal is required"),
@@ -99,66 +112,72 @@ const formSchema = z.object({
 })
 
 export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; onCancel?: () => void }) {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      businessGoal: "20000000",
-      aumGoal: "12000000",
-      aumGoalPercentage: "60",
-      annuityGoal: "8000000",
-      annuityGoalPercentage: "40",
-      lifeTargetGoal: "200000",
-      lifeTargetGoalPercentage: "1",
-      currentAUM: "62000000",
-      currentAnnuity: "180000000",
-      currentLifeProduction: "0",
-      qualifiedMoneyValue: "1000000",
-      
-      // Financial Options Percentages
-      surrenderPercent: "10",
-      incomeRiderPercent: "6",
-      freeWithdrawalPercent: "10",
-      lifeInsurancePercent: "10",
-      lifeStrategy1Percent: "1",
-      lifeStrategy2Percent: "2",
-      iraTo7702Percent: "33",
-      approvalRatePercent: "50",
-      
-      // Financial Options Rates
-      surrenderRate: "6",
-      incomeRiderRate: "10",
-      freeWithdrawalRate: "6",
-      lifeInsuranceRate: "10",
-      lifeStrategy1Rate: "10",
-      lifeStrategy2Rate: "10",
-      iraTo7702Rate: "10",
-      
-      avgAnnuitySize: "225000",
-      avgAUMSize: "500000",
-      appointmentAttrition: "10",
-      avgCloseRatio: "70",
-      appointmentsPerCampaign: "12",
-      campaigns: [
-        {
-          name: "Facebook Seminars",
-          budget: "5198",
-          events: "2",
-          leads: "20",
-          status: "Active",
-          costPerLead: "259.90",
-          costPerClient: "1732.67",
-          foodCosts: "800",
-        },
-      ],
-      planningFeeRate: "1000",
-      annuityCommission: "6.50",
-      aumCommission: "1.00",
-      lifeCommission: "1.0",
-      trailIncomePercentage: "1.00",
-    },
+  const currentYear = new Date().getFullYear()
+  
+  // Default values for form reset
+  const getDefaultValues = () => ({
+    year: currentYear.toString(),
+    businessGoal: "20000000",
+    aumGoal: "12000000",
+    aumGoalPercentage: "60",
+    annuityGoal: "8000000",
+    annuityGoalPercentage: "40",
+    lifeTargetGoal: "200000",
+    lifeTargetGoalPercentage: "1",
+    currentAUM: "62000000",
+    currentAnnuity: "180000000",
+    currentLifeProduction: "0",
+    qualifiedMoneyValue: "1000000",
+    
+    // Financial Options Percentages
+    surrenderPercent: "10",
+    incomeRiderPercent: "6",
+    freeWithdrawalPercent: "10",
+    lifeInsurancePercent: "10",
+    lifeStrategy1Percent: "1",
+    lifeStrategy2Percent: "2",
+    iraTo7702Percent: "33",
+    approvalRatePercent: "50",
+    
+    // Financial Options Rates
+    surrenderRate: "6",
+    incomeRiderRate: "10",
+    freeWithdrawalRate: "6",
+    lifeInsuranceRate: "10",
+    lifeStrategy1Rate: "10",
+    lifeStrategy2Rate: "10",
+    iraTo7702Rate: "10",
+    
+    avgAnnuitySize: "225000",
+    avgAUMSize: "500000",
+    appointmentAttrition: "10",
+    avgCloseRatio: "70",
+    appointmentsPerCampaign: "12",
+    campaigns: [
+      {
+        name: "Facebook Seminars",
+        budget: "5198",
+        events: "2",
+        leads: "20",
+        status: "Active" as const,
+        costPerLead: "259.90",
+        costPerClient: "1732.67",
+        foodCosts: "800",
+      },
+    ],
+    planningFeeRate: "1000",
+    annuityCommission: "6.50",
+    aumCommission: "1.00",
+    lifeCommission: "1.0",
+    trailIncomePercentage: "1.00",
   })
 
-  const { fields, append, remove } = useFieldArray({
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: getDefaultValues(),
+  })
+
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "campaigns",
   })
@@ -195,16 +214,6 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
   // Get current AUM for trail income calculation
   const currentAUM = Number.parseFloat(form.watch("currentAUM") || "0")
 
-  // Calculate income values using the calculated goal amounts
-  const annuityIncome = (annuityGoalAmount * Number.parseFloat(watchedValues[4] || "0")) / 100
-  const aumIncome = (aumGoalAmount * Number.parseFloat(watchedValues[5] || "0")) / 100
-  const lifeIncome = (lifeTargetGoalAmount * Number.parseFloat(watchedValues[6] || "0")) / 100
-  const trailIncome = (currentAUM * Number.parseFloat(watchedValues[7] || "0")) / 100
-  // Calculate planning fees count as clients needed
-  const clientsNeeded = Math.round((annuitiesClosed + aumAccountsCount) / 2)
-  const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * clientsNeeded
-  const totalIncome = annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
-
   // Auto-calculated client metrics
   const currentAnnuityValue = Number.parseFloat(watchedClientMetrics[0] || "0")
   const currentAUMValue = Number.parseFloat(watchedClientMetrics[1] || "0")
@@ -220,6 +229,15 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
   
   // Calculate prospects and appointments using proper formulas
   const clientsNeeded = annuitiesClosed + aumAccountsCount
+
+  // Calculate income values using the calculated goal amounts
+  const annuityIncome = (annuityGoalAmount * Number.parseFloat(watchedValues[4] || "0")) / 100
+  const aumIncome = (aumGoalAmount * Number.parseFloat(watchedValues[5] || "0")) / 100
+  const lifeIncome = (lifeTargetGoalAmount * Number.parseFloat(watchedValues[6] || "0")) / 100
+  const trailIncome = (currentAUM * Number.parseFloat(watchedValues[7] || "0")) / 100
+  // Calculate planning fees count as clients needed
+  const planningFeesValue = Number.parseFloat(watchedValues[8] || "0") * clientsNeeded
+  const totalIncome = annuityIncome + aumIncome + lifeIncome + trailIncome + planningFeesValue
   
   // Annual Ideal Closing Prospects = (Clients Needed / Close Ratio) * (1 + Appointment Attrition)
   const annualIdealClosingProspects = avgCloseRatioValue > 0 
@@ -252,8 +270,10 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
     console.log("User ID:", user.id)
     
     // Transform form data to database format
+    const year = Number.parseInt(values.year)
     const advisorData = {
       businessGoals: {
+        year: year,
         business_goal: Number.parseFloat(values.businessGoal),
         aum_goal: Number.parseFloat(values.aumGoal),
         aum_goal_percentage: Number.parseFloat(values.aumGoalPercentage),
@@ -263,11 +283,13 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
         life_target_goal_percentage: Number.parseFloat(values.lifeTargetGoalPercentage),
       },
       currentValues: {
+        year: year,
         current_aum: Number.parseFloat(values.currentAUM),
         current_annuity: Number.parseFloat(values.currentAnnuity),
         current_life_production: Number.parseFloat(values.currentLifeProduction),
       },
       financialOptions: {
+        year: year,
         surrender_percent: Number.parseFloat(values.surrenderPercent),
         income_rider_percent: Number.parseFloat(values.incomeRiderPercent),
         free_withdrawal_percent: Number.parseFloat(values.freeWithdrawalPercent),
@@ -285,6 +307,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
         ira_to_7702_rate: Number.parseFloat(values.iraTo7702Rate),
       },
       clientMetrics: {
+        year: year,
         avg_annuity_size: Number.parseFloat(values.avgAnnuitySize),
         avg_aum_size: Number.parseFloat(values.avgAUMSize),
         avg_net_worth_needed: avgNetWorthNeeded, // Use calculated value
@@ -307,6 +330,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
         food_costs: c.foodCosts ? Number.parseFloat(c.foodCosts) : undefined,
       })),
       commissionRates: {
+        year: year,
         planning_fee_rate: Number.parseFloat(values.planningFeeRate),
         planning_fees_count: clientsNeeded, // Automatically calculated from clients needed
         annuity_commission: Number.parseFloat(values.annuityCommission),
@@ -315,6 +339,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
         trail_income_percentage: Number.parseFloat(values.trailIncomePercentage),
       },
       financialBook: {
+        year: year,
         annuity_book_value: 0, // You can add a field for this if needed
         aum_book_value: 0,     // You can add a field for this if needed
         qualified_money_value: Number.parseFloat(values.qualifiedMoneyValue),
@@ -365,6 +390,18 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
     })
   }
 
+  const handleClearForm = () => {
+    const defaultValues = getDefaultValues()
+    // Reset campaigns array first using replace
+    replace(defaultValues.campaigns)
+    // Then reset the entire form
+    form.reset(defaultValues)
+    toast({
+      title: "Form cleared",
+      description: "All form fields have been reset to default values.",
+    })
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit, (errors) => {
@@ -375,21 +412,47 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
           variant: "destructive",
         })
       })} className="space-y-6">
+        {/* Year Selector */}
+        <Card className="bg-black border-m8bs-border shadow-lg">
+          <CardContent className="pt-6">
+            <FormField
+              control={form.control}
+              name="year"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white font-medium text-lg">Year</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="2020"
+                      max="2100"
+                      placeholder={currentYear.toString()}
+                      {...field}
+                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors max-w-xs"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-m8bs-muted">Select the year for this business data</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
         <Tabs defaultValue="goals" className="w-full">
-          <TabsList className="grid grid-cols-3 md:grid-cols-5 w-full">
-            <TabsTrigger value="goals">Goals</TabsTrigger>
-            <TabsTrigger value="current">Current Advisor Book</TabsTrigger>
-            <TabsTrigger value="clients">Client Metrics</TabsTrigger>
-            <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-            <TabsTrigger value="income">Income</TabsTrigger>
+          <TabsList className="bg-m8bs-blue/20 p-1 border border-m8bs-blue/50 rounded-lg shadow-lg grid grid-cols-3 md:grid-cols-5 w-full">
+            <TabsTrigger value="goals" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Goals</TabsTrigger>
+            <TabsTrigger value="current" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Current Advisor Book</TabsTrigger>
+            <TabsTrigger value="clients" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Client Metrics</TabsTrigger>
+            <TabsTrigger value="campaigns" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Campaigns</TabsTrigger>
+            <TabsTrigger value="income" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Income</TabsTrigger>
           </TabsList>
 
           {/* Goals Tab */}
           <TabsContent value="goals">
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Goals</CardTitle>
-                <CardDescription>Set Your Business Goals For The Year</CardDescription>
+            <Card className="bg-black border-m8bs-border shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl text-white flex items-center gap-2">Business Goals</CardTitle>
+                <CardDescription className="text-m8bs-muted">Set Your Business Goals For The Year</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -397,7 +460,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                   name="businessGoal"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Business Goal</FormLabel>
+                        <FormLabel className="text-white font-medium">Business Goal</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -408,6 +471,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                             const rawValue = parseCurrency(e.target.value)
                             field.onChange(rawValue)
                           }}
+                          className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                         />
                       </FormControl>
                       <FormDescription>Your Total Business Goal For The Year</FormDescription>
@@ -422,16 +486,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="aumGoal"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>AUM Goal ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">AUM Goal ($)</FormLabel>
                         <FormControl>
-                          <Input
-                            type="text"
-                            placeholder="$12,000,000"
-                            {...field}
-                            value={formatCurrency(aumGoalAmount)}
-                            readOnly
-                            className="bg-muted"
-                          />
+                            <Input
+                              type="text"
+                              placeholder="$12,000,000"
+                              {...field}
+                              value={formatCurrency(aumGoalAmount)}
+                              readOnly
+                              className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                            />
                         </FormControl>
                         <FormDescription>Auto-Calculated Based On Business Goal And Percentage</FormDescription>
                         <FormMessage />
@@ -444,9 +508,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="aumGoalPercentage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>AUM Goal Percentage (%)</FormLabel>
+                        <FormLabel className="text-white font-medium">AUM Goal Percentage (%)</FormLabel>
                         <FormControl>
-                          <Input type="number" min="0" max="100" step="0.1" placeholder="60" {...field} />
+                          <Input type="number" min="0" max="100" step="0.1" placeholder="60" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                         </FormControl>
                         <FormDescription>Percentage Of Business Goal For AUM</FormDescription>
                         <FormMessage />
@@ -461,16 +525,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="annuityGoal"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Annuity Goal ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">Annuity Goal ($)</FormLabel>
                         <FormControl>
-                          <Input
-                            type="text"
-                            placeholder="$8,000,000"
-                            {...field}
-                            value={formatCurrency(annuityGoalAmount)}
-                            readOnly
-                            className="bg-muted"
-                          />
+                            <Input
+                              type="text"
+                              placeholder="$8,000,000"
+                              {...field}
+                              value={formatCurrency(annuityGoalAmount)}
+                              readOnly
+                              className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                            />
                         </FormControl>
                         <FormDescription>Auto-Calculated Based On Business Goal And Percentage</FormDescription>
                         <FormMessage />
@@ -483,7 +547,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="annuityGoalPercentage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Annuity Goal Percentage (%)</FormLabel>
+                        <FormLabel className="text-white font-medium">Annuity Goal Percentage (%)</FormLabel>
                         <FormControl>
                           <Input type="number" min="0" max="100" step="0.1" placeholder="40" {...field} />
                         </FormControl>
@@ -500,16 +564,16 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="lifeTargetGoal"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Life Target Goal ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">Life Target Goal ($)</FormLabel>
                         <FormControl>
-                          <Input
-                            type="text"
-                            placeholder="$200,000"
-                            {...field}
-                            value={formatCurrency(lifeTargetGoalAmount)}
-                            readOnly
-                            className="bg-muted"
-                          />
+                            <Input
+                              type="text"
+                              placeholder="$200,000"
+                              {...field}
+                              value={formatCurrency(lifeTargetGoalAmount)}
+                              readOnly
+                              className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                            />
                         </FormControl>
                         <FormDescription>Auto-Calculated Based On Business Goal And Percentage</FormDescription>
                         <FormMessage />
@@ -522,7 +586,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="lifeTargetGoalPercentage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Life Target Goal Percentage (%)</FormLabel>
+                        <FormLabel className="text-white font-medium">Life Target Goal Percentage (%)</FormLabel>
                         <FormControl>
                           <Input type="number" min="0" max="100" step="0.1" placeholder="1" {...field} />
                         </FormControl>
@@ -538,10 +602,10 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
           {/* Current Advisor Book Tab */}
           <TabsContent value="current">
-            <Card>
-              <CardHeader>
-                <CardTitle>Current Advisor Book</CardTitle>
-                <CardDescription>Enter Your Current Advisor Book Values And Financial Options</CardDescription>
+            <Card className="bg-black border-m8bs-border shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl text-white flex items-center gap-2">Current Advisor Book</CardTitle>
+                <CardDescription className="text-m8bs-muted">Enter Your Current Advisor Book Values And Financial Options</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Current Values Section */}
@@ -553,7 +617,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="currentAUM"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Current AUM ($)</FormLabel>
+                          <FormLabel className="text-white font-medium">Current AUM ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
@@ -564,6 +628,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                 const rawValue = parseCurrency(e.target.value)
                                 field.onChange(rawValue)
                               }}
+                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                             />
                           </FormControl>
                           <FormDescription>Your Current Assets Under Management</FormDescription>
@@ -577,7 +642,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="currentAnnuity"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Current Annuity ($)</FormLabel>
+                          <FormLabel className="text-white font-medium">Current Annuity ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
@@ -588,6 +653,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                 const rawValue = parseCurrency(e.target.value)
                                 field.onChange(rawValue)
                               }}
+                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                             />
                           </FormControl>
                           <FormDescription>Your Current Annuity Value</FormDescription>
@@ -601,7 +667,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="currentLifeProduction"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Insurance Cash Value ($)</FormLabel>
+                          <FormLabel className="text-white font-medium">Life Insurance Cash Value ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
@@ -612,6 +678,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                 const rawValue = parseCurrency(e.target.value)
                                 field.onChange(rawValue)
                               }}
+                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                             />
                           </FormControl>
                           <FormDescription>Your Life Insurance Cash Value</FormDescription>
@@ -625,7 +692,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="qualifiedMoneyValue"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Qualified Money Value ($)</FormLabel>
+                          <FormLabel className="text-white font-medium">Qualified Money Value ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
@@ -636,6 +703,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                 const rawValue = parseCurrency(e.target.value)
                                 field.onChange(rawValue)
                               }}
+                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                             />
                           </FormControl>
                           <FormDescription>Your Qualified Money Value</FormDescription>
@@ -657,7 +725,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="surrenderPercent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Surrender Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Surrender Percentage (%)</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
                           </FormControl>
@@ -672,9 +740,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="surrenderRate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Surrender Rate (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Surrender Rate (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="6" {...field} />
+                            <Input type="number" step="0.01" placeholder="6" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormDescription>Commission Rate For Surrender Transactions</FormDescription>
                           <FormMessage />
@@ -687,7 +755,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="incomeRiderPercent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Income Rider Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Income Rider Percentage (%)</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="6" {...field} />
                           </FormControl>
@@ -702,9 +770,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="incomeRiderRate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Income Rider Rate (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Income Rider Rate (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="10" {...field} />
+                            <Input type="number" step="0.01" placeholder="10" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormDescription>Commission Rate For Income Rider Transactions</FormDescription>
                           <FormMessage />
@@ -717,7 +785,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="freeWithdrawalPercent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Free Withdrawal Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Free Withdrawal Percentage (%)</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
                           </FormControl>
@@ -732,9 +800,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="freeWithdrawalRate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Free Withdrawal Rate (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Free Withdrawal Rate (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="6" {...field} />
+                            <Input type="number" step="0.01" placeholder="6" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormDescription>Commission Rate For Free Withdrawal Transactions</FormDescription>
                           <FormMessage />
@@ -747,7 +815,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="lifeInsurancePercent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Insurance Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Life Insurance Percentage (%)</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="10" {...field} />
                           </FormControl>
@@ -762,9 +830,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="lifeInsuranceRate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Insurance Rate (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Life Insurance Rate (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="10" {...field} />
+                            <Input type="number" step="0.01" placeholder="10" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormDescription>Commission rate for life insurance transactions</FormDescription>
                           <FormMessage />
@@ -785,7 +853,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="lifeStrategy1Percent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Strategy 1 Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Life Strategy 1 Percentage (%)</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="1" {...field} />
                           </FormControl>
@@ -800,9 +868,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="lifeStrategy1Rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Strategy 1 Rate (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Life Strategy 1 Rate (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="10" {...field} />
+                            <Input type="number" step="0.01" placeholder="10" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormDescription>Commission rate for life strategy 1 transactions</FormDescription>
                           <FormMessage />
@@ -815,7 +883,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="lifeStrategy2Percent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Strategy 2 Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Life Strategy 2 Percentage (%)</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="2" {...field} />
                           </FormControl>
@@ -830,9 +898,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="lifeStrategy2Rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Strategy 2 Rate (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Life Strategy 2 Rate (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="10" {...field} />
+                            <Input type="number" step="0.01" placeholder="10" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormDescription>Commission rate for life strategy 2 transactions</FormDescription>
                           <FormMessage />
@@ -853,7 +921,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="iraTo7702Percent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>IRA to 7702 Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">IRA to 7702 Percentage (%)</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="33" {...field} />
                           </FormControl>
@@ -868,9 +936,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="iraTo7702Rate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>IRA to 7702 Rate (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">IRA to 7702 Rate (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="10" {...field} />
+                            <Input type="number" step="0.01" placeholder="10" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormDescription>Commission rate for IRA to 7702 transactions</FormDescription>
                           <FormMessage />
@@ -883,7 +951,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="approvalRatePercent"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Approval Rate Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Approval Rate Percentage (%)</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" max="100" step="0.1" placeholder="50" {...field} />
                           </FormControl>
@@ -901,10 +969,10 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
           {/* Client Metrics Tab */}
           <TabsContent value="clients">
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Metrics</CardTitle>
-                <CardDescription>Key client performance indicators</CardDescription>
+            <Card className="bg-black border-m8bs-border shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl text-white flex items-center gap-2">Client Metrics</CardTitle>
+                <CardDescription className="text-m8bs-muted">Key client performance indicators</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -913,7 +981,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="avgAnnuitySize"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Average Annuity Size ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">Average Annuity Size ($)</FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -924,6 +992,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                               const rawValue = parseCurrency(e.target.value)
                               field.onChange(rawValue)
                             }}
+                            className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                           />
                         </FormControl>
                         <FormMessage />
@@ -936,7 +1005,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="avgAUMSize"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Average AUM Size ($)</FormLabel>
+                        <FormLabel className="text-white font-medium">Average AUM Size ($)</FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -947,6 +1016,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                               const rawValue = parseCurrency(e.target.value)
                               field.onChange(rawValue)
                             }}
+                            className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                           />
                         </FormControl>
                         <FormMessage />
@@ -961,9 +1031,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="appointmentAttrition"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Appointment Attrition (%)</FormLabel>
+                        <FormLabel className="text-white font-medium">Appointment Attrition (%)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="10" {...field} />
+                          <Input type="number" placeholder="10" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -975,9 +1045,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="avgCloseRatio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Average Close Ratio (%)</FormLabel>
+                        <FormLabel className="text-white font-medium">Average Close Ratio (%)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="70" {...field} />
+                          <Input type="number" placeholder="70" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -987,14 +1057,14 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormItem>
-                    <FormLabel>Average Net Worth Needed ($)</FormLabel>
+                    <FormLabel className="text-white font-medium">Average Net Worth Needed ($)</FormLabel>
                     <FormControl>
                       <Input 
                         type="text" 
                         placeholder="$725,000" 
                         value={formatCurrency(avgNetWorthNeeded)}
                         readOnly
-                        className="bg-muted"
+                        className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
                       />
                     </FormControl>
                     <FormDescription>Auto-calculated: Average Annuity Size + Average AUM Size</FormDescription>
@@ -1003,28 +1073,28 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormItem>
-                    <FormLabel>Number of Annuities Closed</FormLabel>
+                    <FormLabel className="text-white font-medium">Number of Annuities Closed</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         placeholder="36" 
                         value={annuitiesClosed}
                         readOnly
-                        className="bg-muted"
+                        className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
                       />
                     </FormControl>
                     <FormDescription>Auto-calculated: Annuity Goal / Average Annuity Size</FormDescription>
                   </FormItem>
 
                   <FormItem>
-                    <FormLabel>Number of AUM Accounts</FormLabel>
+                    <FormLabel className="text-white font-medium">Number of AUM Accounts</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         placeholder="24" 
                         value={aumAccountsCount}
                         readOnly
-                        className="bg-muted"
+                        className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
                       />
                     </FormControl>
                     <FormDescription>Auto-calculated: AUM Goal / Average AUM Size</FormDescription>
@@ -1037,9 +1107,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                     name="appointmentsPerCampaign"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Appointments Per Campaign</FormLabel>
+                        <FormLabel className="text-white font-medium">Appointments Per Campaign</FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input type="number" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1047,13 +1117,13 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                   />
 
                   <FormItem>
-                    <FormLabel>Monthly Ideal Prospects</FormLabel>
+                    <FormLabel className="text-white font-medium">Monthly Ideal Prospects</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         value={monthlyIdealProspects.toFixed(1)}
                         readOnly
-                        className="bg-muted"
+                        className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
                       />
                     </FormControl>
                     <FormDescription>Auto-calculated: Annual Ideal Closing Prospects / 12</FormDescription>
@@ -1062,26 +1132,26 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormItem>
-                    <FormLabel>Total New Monthly Appointments Needed</FormLabel>
+                    <FormLabel className="text-white font-medium">Total New Monthly Appointments Needed</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         value={totalNewMonthlyAppointments.toFixed(1)}
                         readOnly
-                        className="bg-muted"
+                        className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
                       />
                     </FormControl>
                     <FormDescription>Auto-calculated: Monthly Ideal Prospects × 3</FormDescription>
                   </FormItem>
 
                   <FormItem>
-                    <FormLabel>Annual Ideal Closing Prospects Needed</FormLabel>
+                    <FormLabel className="text-white font-medium">Annual Ideal Closing Prospects Needed</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         value={annualIdealClosingProspects.toFixed(1)}
                         readOnly
-                        className="bg-muted"
+                        className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
                       />
                     </FormControl>
                     <FormDescription>Auto-calculated: (Annual Total Prospects Necessary / Close Ratio) × (1 + Attrition)</FormDescription>
@@ -1090,13 +1160,13 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormItem>
-                    <FormLabel>Annual Total Prospects Necessary</FormLabel>
+                    <FormLabel className="text-white font-medium">Annual Total Prospects Necessary</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         value={annualTotalProspectsNecessary.toFixed(1)}
                         readOnly
-                        className="bg-muted"
+                        className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
                       />
                     </FormControl>
                     <FormDescription>Auto-calculated: Total New Monthly Appointments × 12</FormDescription>
@@ -1109,10 +1179,10 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
           {/* Campaigns Tab - Updated with food costs */}
           <TabsContent value="campaigns">
-            <Card>
-              <CardHeader>
-                <CardTitle>Marketing Campaigns</CardTitle>
-                <CardDescription>Add and manage your marketing campaigns</CardDescription>
+            <Card className="bg-black border-m8bs-border shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl text-white flex items-center gap-2">Marketing Campaigns</CardTitle>
+                <CardDescription className="text-m8bs-muted">Add and manage your marketing campaigns</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {fields.map((field, index) => (
@@ -1138,9 +1208,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.name`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Campaign Name</FormLabel>
+                            <FormLabel className="text-white font-medium">Campaign Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="e.g., Facebook Seminars" {...field} />
+                              <Input placeholder="e.g., Facebook Seminars" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1152,7 +1222,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.status`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Status</FormLabel>
+                            <FormLabel className="text-white font-medium">Status</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger>
@@ -1178,7 +1248,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.budget`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Marketing Costs ($)</FormLabel>
+                            <FormLabel className="text-white font-medium">Marketing Costs ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="text"
@@ -1189,6 +1259,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                   const rawValue = parseCurrency(e.target.value)
                                   field.onChange(rawValue)
                                 }}
+                                className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               />
                             </FormControl>
                             <FormMessage />
@@ -1201,9 +1272,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.events`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Number of Events</FormLabel>
+                            <FormLabel className="text-white font-medium">Number of Events</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="2" {...field} />
+                              <Input type="number" placeholder="2" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1215,7 +1286,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.foodCosts`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Food Costs ($)</FormLabel>
+                            <FormLabel className="text-white font-medium">Food Costs ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="text"
@@ -1226,6 +1297,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                   const rawValue = parseCurrency(e.target.value)
                                   field.onChange(rawValue)
                                 }}
+                                className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               />
                             </FormControl>
                             <FormDescription>Cost of food/catering for events</FormDescription>
@@ -1241,9 +1313,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.leads`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Leads Generated</FormLabel>
+                            <FormLabel className="text-white font-medium">Leads Generated</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="20" {...field} />
+                              <Input type="number" placeholder="20" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1255,7 +1327,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.costPerLead`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Cost Per Lead ($)</FormLabel>
+                            <FormLabel className="text-white font-medium">Cost Per Lead ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="text"
@@ -1266,6 +1338,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                   const rawValue = parseCurrency(e.target.value)
                                   field.onChange(rawValue)
                                 }}
+                                className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               />
                             </FormControl>
                             <FormMessage />
@@ -1278,7 +1351,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                         name={`campaigns.${index}.costPerClient`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Cost Per Client ($)</FormLabel>
+                            <FormLabel className="text-white font-medium">Cost Per Client ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="text"
@@ -1289,6 +1362,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                   const rawValue = parseCurrency(e.target.value)
                                   field.onChange(rawValue)
                                 }}
+                                className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               />
                             </FormControl>
                             <FormMessage />
@@ -1314,10 +1388,10 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
           {/* Income Tab */}
           <TabsContent value="income">
-            <Card>
-              <CardHeader>
-                <CardTitle>Income Details</CardTitle>
-                <CardDescription>Breakdown of income from different business parts</CardDescription>
+            <Card className="bg-black border-m8bs-border shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl text-white flex items-center gap-2">Income Details</CardTitle>
+                <CardDescription className="text-m8bs-muted">Breakdown of income from different business parts</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1326,7 +1400,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                           name="planningFeeRate"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Average Planning Fee Rate ($)</FormLabel>
+                              <FormLabel className="text-white font-medium">Average Planning Fee Rate ($)</FormLabel>
                               <FormControl>
                                 <Input
                                   type="text"
@@ -1337,6 +1411,7 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                                     const rawValue = parseCurrency(e.target.value)
                                     field.onChange(rawValue)
                                   }}
+                                  className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                                 />
                               </FormControl>
                               <FormDescription>Rate per planning fee</FormDescription>
@@ -1356,9 +1431,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="annuityCommission"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Annuity Commission (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Annuity Commission (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="6.50" {...field} />
+                            <Input type="number" step="0.01" placeholder="6.50" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1370,9 +1445,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="aumCommission"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>AUM Commission (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">AUM Commission (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="1.00" {...field} />
+                            <Input type="number" step="0.01" placeholder="1.00" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1384,9 +1459,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="lifeCommission"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Life Insurance Commission (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Life Insurance Commission (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="1.0" {...field} />
+                            <Input type="number" step="0.01" placeholder="1.0" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1398,9 +1473,9 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                       name="trailIncomePercentage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Trail Income (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Trail Income (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" step="0.01" placeholder="1.00" {...field} />
+                            <Input type="number" step="0.01" placeholder="1.00" {...field} className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" />
                           </FormControl>
                           <FormDescription>Percentage of current AUM</FormDescription>
                           <FormMessage />
@@ -1410,35 +1485,35 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
                   </div>
 
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Calculated Income</h3>
+                    <h3 className="text-lg font-medium text-white">Calculated Income</h3>
 
-                    <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                      <div className="flex justify-between">
+                    <div className="bg-m8bs-blue/20 border border-m8bs-blue/50 p-4 rounded-lg space-y-3">
+                      <div className="flex justify-between text-white">
                         <span>
                           Average Planning Fees (${Number.parseFloat(watchedValues[8] || "0").toLocaleString()} × $
                           {clientsNeeded} clients):
                         </span>
                         <span className="font-medium">${planningFeesValue.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-white">
                         <span>Annuity Income:</span>
                         <span className="font-medium">${annuityIncome.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-white">
                         <span>AUM Income:</span>
                         <span className="font-medium">${aumIncome.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-white">
                         <span>Life Production Income:</span>
                         <span className="font-medium">${lifeIncome.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between text-white">
                         <span>Trail Income ({Number.parseFloat(watchedValues[7] || "0")}% of Current AUM):</span>
                         <span className="font-medium">${trailIncome.toLocaleString()}</span>
                       </div>
-                      <div className="border-t pt-2 flex justify-between font-bold">
+                      <div className="border-t border-m8bs-blue/50 pt-2 flex justify-between font-bold text-white">
                         <span>Total Annual Income:</span>
-                        <span className="text-green-600">${totalIncome.toLocaleString()}</span>
+                        <span className="text-green-400">${totalIncome.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -1450,16 +1525,47 @@ export function DataEntryForm({ onSubmit, onCancel }: { onSubmit: () => void; on
 
         </Tabs>
 
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-          >
-            Update Dashboard
-          </Button>
+        <div className="flex justify-between gap-4">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="outline" className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Clear Form
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-black border-m8bs-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">Clear Form Data?</AlertDialogTitle>
+                <AlertDialogDescription className="text-m8bs-muted">
+                  This will reset all form fields to their default values. This action cannot be undone. 
+                  Your data in the database will not be affected - only the form fields will be cleared.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-black-alt border-m8bs-border text-white hover:bg-black">
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleClearForm}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Clear Form
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
+          <div className="flex gap-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+            >
+              Update Dashboard
+            </Button>
+          </div>
         </div>
       </form>
     </Form>

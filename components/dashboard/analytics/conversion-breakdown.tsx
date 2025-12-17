@@ -110,7 +110,7 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
       dropOff: dropOffAppointmentsToNotQualified,
     },
     {
-      label: "Clients Created",
+      label: "Clients",
       value: clientsCreated,
       icon: Target,
       color: "text-amber-400",

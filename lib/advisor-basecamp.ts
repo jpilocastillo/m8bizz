@@ -4,6 +4,7 @@ import { User } from '@supabase/supabase-js'
 export interface BusinessGoals {
   id?: string
   user_id?: string
+  year: number
   business_goal: number
   aum_goal: number
   aum_goal_percentage: number
@@ -18,6 +19,7 @@ export interface BusinessGoals {
 export interface CurrentValues {
   id?: string
   user_id?: string
+  year: number
   current_aum: number
   current_annuity: number
   current_life_production: number
@@ -28,6 +30,7 @@ export interface CurrentValues {
 export interface ClientMetrics {
   id?: string
   user_id?: string
+  year: number
   avg_annuity_size: number
   avg_aum_size: number
   avg_net_worth_needed: number
@@ -62,6 +65,7 @@ export interface MarketingCampaign {
 export interface CommissionRates {
   id?: string
   user_id?: string
+  year: number
   planning_fee_rate: number
   planning_fees_count: number
   annuity_commission: number
@@ -75,6 +79,7 @@ export interface CommissionRates {
 export interface FinancialBook {
   id?: string
   user_id?: string
+  year: number
   annuity_book_value: number
   aum_book_value: number
   qualified_money_value: number
@@ -85,6 +90,7 @@ export interface FinancialBook {
 export interface FinancialOptions {
   id?: string
   user_id?: string
+  year: number
   surrender_percent: number
   income_rider_percent: number
   free_withdrawal_percent: number
@@ -135,11 +141,12 @@ class AdvisorBasecampService {
   private supabase = createClient()
 
   // Business Goals
-  async getBusinessGoals(user: User): Promise<BusinessGoals | null> {
+  async getBusinessGoals(user: User, year: number): Promise<BusinessGoals | null> {
     const { data, error } = await this.supabase
       .from('business_goals')
       .select('*')
       .eq('user_id', user.id)
+      .eq('year', year)
       .maybeSingle()
 
     if (error) {
@@ -152,11 +159,12 @@ class AdvisorBasecampService {
 
   async upsertBusinessGoals(user: User, goals: BusinessGoals): Promise<BusinessGoals | null> {
     try {
-      // First check if a record exists for this user
+      // First check if a record exists for this user and year
       const { data: existing } = await this.supabase
         .from('business_goals')
         .select('id')
         .eq('user_id', user.id)
+        .eq('year', goals.year)
         .maybeSingle()
 
       if (existing) {
@@ -168,6 +176,7 @@ class AdvisorBasecampService {
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
+          .eq('year', goals.year)
           .select()
           .single()
 
@@ -202,11 +211,12 @@ class AdvisorBasecampService {
   }
 
   // Current Values
-  async getCurrentValues(user: User): Promise<CurrentValues | null> {
+  async getCurrentValues(user: User, year: number): Promise<CurrentValues | null> {
     const { data, error } = await this.supabase
       .from('current_values')
       .select('*')
       .eq('user_id', user.id)
+      .eq('year', year)
       .maybeSingle()
 
     if (error) {
@@ -219,11 +229,12 @@ class AdvisorBasecampService {
 
   async upsertCurrentValues(user: User, values: CurrentValues): Promise<CurrentValues | null> {
     try {
-      // First check if a record exists for this user
+      // First check if a record exists for this user and year
       const { data: existing } = await this.supabase
         .from('current_values')
         .select('id')
         .eq('user_id', user.id)
+        .eq('year', values.year)
         .maybeSingle()
 
       if (existing) {
@@ -235,6 +246,7 @@ class AdvisorBasecampService {
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
+          .eq('year', values.year)
           .select()
           .single()
 
@@ -269,11 +281,12 @@ class AdvisorBasecampService {
   }
 
   // Client Metrics
-  async getClientMetrics(user: User): Promise<ClientMetrics | null> {
+  async getClientMetrics(user: User, year: number): Promise<ClientMetrics | null> {
     const { data, error } = await this.supabase
       .from('client_metrics')
       .select('*')
       .eq('user_id', user.id)
+      .eq('year', year)
       .maybeSingle()
 
     if (error) {
@@ -286,11 +299,12 @@ class AdvisorBasecampService {
 
   async upsertClientMetrics(user: User, metrics: ClientMetrics): Promise<ClientMetrics | null> {
     try {
-      // First check if a record exists for this user
+      // First check if a record exists for this user and year
       const { data: existing } = await this.supabase
         .from('client_metrics')
         .select('id')
         .eq('user_id', user.id)
+        .eq('year', metrics.year)
         .maybeSingle()
 
       if (existing) {
@@ -302,6 +316,7 @@ class AdvisorBasecampService {
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
+          .eq('year', metrics.year)
           .select()
           .single()
 
@@ -402,11 +417,12 @@ class AdvisorBasecampService {
   }
 
   // Commission Rates
-  async getCommissionRates(user: User): Promise<CommissionRates | null> {
+  async getCommissionRates(user: User, year: number): Promise<CommissionRates | null> {
     const { data, error } = await this.supabase
       .from('commission_rates')
       .select('*')
       .eq('user_id', user.id)
+      .eq('year', year)
       .maybeSingle()
 
     if (error) {
@@ -419,11 +435,12 @@ class AdvisorBasecampService {
 
   async upsertCommissionRates(user: User, rates: CommissionRates): Promise<CommissionRates | null> {
     try {
-      // First check if a record exists for this user
+      // First check if a record exists for this user and year
       const { data: existing } = await this.supabase
         .from('commission_rates')
         .select('id')
         .eq('user_id', user.id)
+        .eq('year', rates.year)
         .maybeSingle()
 
       if (existing) {
@@ -435,6 +452,7 @@ class AdvisorBasecampService {
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
+          .eq('year', rates.year)
           .select()
           .single()
 
@@ -469,11 +487,12 @@ class AdvisorBasecampService {
   }
 
   // Financial Book
-  async getFinancialBook(user: User): Promise<FinancialBook | null> {
+  async getFinancialBook(user: User, year: number): Promise<FinancialBook | null> {
     const { data, error } = await this.supabase
       .from('financial_book')
       .select('*')
       .eq('user_id', user.id)
+      .eq('year', year)
       .maybeSingle()
 
     if (error) {
@@ -486,11 +505,12 @@ class AdvisorBasecampService {
 
   async upsertFinancialBook(user: User, book: FinancialBook): Promise<FinancialBook | null> {
     try {
-      // First check if a record exists for this user
+      // First check if a record exists for this user and year
       const { data: existing } = await this.supabase
         .from('financial_book')
         .select('id')
         .eq('user_id', user.id)
+        .eq('year', book.year)
         .maybeSingle()
 
       if (existing) {
@@ -502,6 +522,7 @@ class AdvisorBasecampService {
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
+          .eq('year', book.year)
           .select()
           .single()
 
@@ -536,11 +557,12 @@ class AdvisorBasecampService {
   }
 
   // Financial Options
-  async getFinancialOptions(user: User): Promise<FinancialOptions | null> {
+  async getFinancialOptions(user: User, year: number): Promise<FinancialOptions | null> {
     const { data, error } = await this.supabase
       .from('financial_options')
       .select('*')
       .eq('user_id', user.id)
+      .eq('year', year)
       .maybeSingle()
 
     if (error) {
@@ -553,11 +575,12 @@ class AdvisorBasecampService {
 
   async upsertFinancialOptions(user: User, options: FinancialOptions): Promise<FinancialOptions | null> {
     try {
-      // First check if a record exists for this user
+      // First check if a record exists for this user and year
       const { data: existing } = await this.supabase
         .from('financial_options')
         .select('id')
         .eq('user_id', user.id)
+        .eq('year', options.year)
         .maybeSingle()
 
       if (existing) {
@@ -569,6 +592,7 @@ class AdvisorBasecampService {
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
+          .eq('year', options.year)
           .select()
           .single()
 
@@ -686,8 +710,8 @@ class AdvisorBasecampService {
     }
   }
 
-  // Get all advisor basecamp data for a user
-  async getAllAdvisorBasecampData(user: User): Promise<AdvisorBasecampData> {
+  // Get all advisor basecamp data for a user and year
+  async getAllAdvisorBasecampData(user: User, year: number): Promise<AdvisorBasecampData> {
     const [
       businessGoals,
       currentValues,
@@ -698,13 +722,13 @@ class AdvisorBasecampService {
       financialOptions,
       monthlyDataEntries
     ] = await Promise.all([
-      this.getBusinessGoals(user),
-      this.getCurrentValues(user),
-      this.getClientMetrics(user),
+      this.getBusinessGoals(user, year),
+      this.getCurrentValues(user, year),
+      this.getClientMetrics(user, year),
       this.getMarketingCampaigns(user),
-      this.getCommissionRates(user),
-      this.getFinancialBook(user),
-      this.getFinancialOptions(user),
+      this.getCommissionRates(user, year),
+      this.getFinancialBook(user, year),
+      this.getFinancialOptions(user, year),
       this.getMonthlyDataEntries(user)
     ])
 
@@ -718,6 +742,23 @@ class AdvisorBasecampService {
       financialOptions,
       monthlyDataEntries
     }
+  }
+
+  // Get available years for a user
+  async getAvailableYears(user: User): Promise<number[]> {
+    const { data, error } = await this.supabase
+      .from('business_goals')
+      .select('year')
+      .eq('user_id', user.id)
+      .order('year', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching available years:', error)
+      return [new Date().getFullYear()]
+    }
+
+    const years = data?.map(row => row.year).filter((year, index, self) => self.indexOf(year) === index) || []
+    return years.length > 0 ? years : [new Date().getFullYear()]
   }
 
   // Save all advisor basecamp data
