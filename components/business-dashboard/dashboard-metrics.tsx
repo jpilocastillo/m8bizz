@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { DollarSign, Users, Target, Calendar } from "lucide-react"
 import { motion } from "framer-motion"
 import { BusinessGoals, CurrentValues, ClientMetrics } from "@/lib/advisor-basecamp"

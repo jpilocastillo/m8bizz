@@ -16,7 +16,7 @@ import {
   YAxis,
 } from "recharts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BusinessGoals, CurrentValues, ClientMetrics, CommissionRates } from "@/lib/advisor-basecamp"
+import { BusinessGoals, CurrentValues, ClientMetrics, CommissionRates, MarketingCampaign } from "@/lib/advisor-basecamp"
 import { formatCurrency } from "@/lib/utils"
 
 interface IncomeBreakdownProps {
@@ -24,13 +24,15 @@ interface IncomeBreakdownProps {
   currentValues?: CurrentValues | null
   clientMetrics?: ClientMetrics | null
   commissionRates?: CommissionRates | null
+  campaigns?: MarketingCampaign[]
 }
 
 export function IncomeBreakdown({ 
   businessGoals, 
   currentValues, 
   clientMetrics, 
-  commissionRates 
+  commissionRates,
+  campaigns = []
 }: IncomeBreakdownProps) {
   // Show loading state if data is not available
   if (!businessGoals || !currentValues || !clientMetrics || !commissionRates) {
@@ -60,7 +62,9 @@ export function IncomeBreakdown({
         incomeData: [],
         totalIncome: 0,
         totalAnnualIncome: 0,
-        marketingROI: 0
+        marketingROI: 0,
+        totalMarketingExpenses: 0,
+        totalOperationalExpenses: 0
       }
     }
 
@@ -114,17 +118,67 @@ export function IncomeBreakdown({
 
     const totalIncome = incomeData.reduce((sum, item) => sum + item.amount, 0)
     const totalAnnualIncome = totalIncome // This represents annual income from goals
-    const marketingROI = 1215 // This would need to be calculated from actual marketing data
+    
+    // Calculate marketing expenses from campaigns
+    // Campaigns store monthly budget, so multiply by 12 for annual
+    const totalMarketingExpenses = campaigns.reduce((sum, campaign) => {
+      const frequency = (campaign as any).frequency || "Monthly"
+      const multiplier = frequency === "Monthly" ? 12 : frequency === "Quarterly" ? 4 : frequency === "Semi-Annual" ? 2 : 1
+      const foodCosts = (campaign as any).food_costs || 0
+      return sum + ((campaign.budget || 0) * multiplier) + (foodCosts * multiplier)
+    }, 0)
+    
+    // Calculate operational expenses (if not available in data, set to 0)
+    // This should come from business data form if needed, for now set to 0
+    const totalOperationalExpenses = 0
+    
+    // Calculate Marketing ROI from actual campaign data
+    // ROI = ((Revenue - Marketing Costs) / Marketing Costs) * 100
+    // Revenue is calculated from clients acquired through campaigns
+    const appointmentAttrition = clientMetrics.appointment_attrition || 0
+    const avgCloseRatio = clientMetrics.avg_close_ratio || 0
+    const appointmentsPerCampaign = clientMetrics.appointments_per_campaign || 0
+    const avgAnnuitySize = clientMetrics.avg_annuity_size || 0
+    const avgAUMSize = clientMetrics.avg_aum_size || 0
+    const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
+    
+    // Calculate total events, leads, and appointments from campaigns
+    let totalEvents = 0
+    let totalLeads = 0
+    
+    campaigns.forEach(campaign => {
+      const frequency = (campaign as any).frequency || "Monthly"
+      const multiplier = frequency === "Monthly" ? 12 : frequency === "Quarterly" ? 4 : frequency === "Semi-Annual" ? 2 : 1
+      totalEvents += (campaign.events || 0) * multiplier
+      totalLeads += (campaign.leads || 0) * multiplier
+    })
+    
+    // Calculate clients from campaigns
+    const totalAppointments = appointmentsPerCampaign > 0 
+      ? totalEvents * appointmentsPerCampaign
+      : Math.round(totalLeads * 0.4) // Fallback: 40% of leads become appointments
+    
+    const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
+    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
+    const campaignRevenue = totalClients * avgClientValue
+    
+    // Calculate ROI
+    const marketingROI = totalMarketingExpenses > 0 
+      ? ((campaignRevenue - totalMarketingExpenses) / totalMarketingExpenses) * 100
+      : 0
 
     return {
       incomeData,
       totalIncome,
       totalAnnualIncome,
-      marketingROI
+      marketingROI,
+      totalMarketingExpenses,
+      totalOperationalExpenses
     }
   }
 
-  const { incomeData, totalIncome, totalAnnualIncome, marketingROI } = calculateIncomeData()
+  const { incomeData, totalIncome, totalAnnualIncome, marketingROI, totalMarketingExpenses, totalOperationalExpenses } = calculateIncomeData()
+  const totalExpenses = totalMarketingExpenses + totalOperationalExpenses
 
   const chartData = incomeData.map((item) => ({
     name: item.source,
@@ -196,10 +250,10 @@ export function IncomeBreakdown({
                     <TableCell>-</TableCell>
                     <TableCell>100%</TableCell>
                   </TableRow>
-                  <TableRow>
-                    <TableCell>Marketing ROI</TableCell>
-                    <TableCell colSpan={3}>{marketingROI}%</TableCell>
-                  </TableRow>
+                <TableRow>
+                  <TableCell>Marketing ROI</TableCell>
+                  <TableCell colSpan={3}>{marketingROI.toFixed(1)}%</TableCell>
+                </TableRow>
                   <TableRow>
                     <TableCell>Total Annual Income</TableCell>
                     <TableCell colSpan={3}>${totalAnnualIncome.toLocaleString()}</TableCell>
@@ -404,23 +458,23 @@ export function IncomeBreakdown({
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing Expenses</TableCell>
-                  <TableCell>$62,376.00</TableCell>
+                  <TableCell>${totalMarketingExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Operational Expenses</TableCell>
-                  <TableCell>$180,000.00</TableCell>
+                  <TableCell>${totalOperationalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Total Expenses</TableCell>
-                  <TableCell>$242,376.00</TableCell>
+                  <TableCell>${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Net Income</TableCell>
-                  <TableCell>${(totalAnnualIncome - 242376).toLocaleString()}</TableCell>
+                  <TableCell>${(totalAnnualIncome - totalExpenses).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Profit Margin</TableCell>
-                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - 242376) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
+                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - totalExpenses) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing ROI</TableCell>

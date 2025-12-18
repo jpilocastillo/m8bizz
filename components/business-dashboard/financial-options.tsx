@@ -49,38 +49,38 @@ interface FinancialOptionsProps {
 }
 
 export function FinancialOptions({ data }: FinancialOptionsProps) {
-  // Base values from data or defaults
-  const annuityBook = data?.currentValues?.current_annuity || 180000000
-  const aumBook = data?.currentValues?.current_aum || 62000000
-  const qualifiedMoney = data?.financialBook?.qualified_money_value || 157300000
+  // Base values from data - no hardcoded defaults, use 0 if not available
+  const annuityBook = data?.currentValues?.current_annuity || 0
+  const aumBook = data?.currentValues?.current_aum || 0
+  const qualifiedMoney = data?.financialBook?.qualified_money_value || 0
 
-  // Dynamic percentages from data or defaults
+  // Dynamic percentages from data - use 0 if not available
   const percentages = {
     // Option 1 - Annuity Book
-    surrenderPercent: data?.financialOptions?.surrender_percent || 10,
-    incomeRiderPercent: data?.financialOptions?.income_rider_percent || 6,
-    freeWithdrawalPercent: data?.financialOptions?.free_withdrawal_percent || 10,
-    lifeInsurancePercent: data?.financialOptions?.life_insurance_percent || 10,
+    surrenderPercent: data?.financialOptions?.surrender_percent || 0,
+    incomeRiderPercent: data?.financialOptions?.income_rider_percent || 0,
+    freeWithdrawalPercent: data?.financialOptions?.free_withdrawal_percent || 0,
+    lifeInsurancePercent: data?.financialOptions?.life_insurance_percent || 0,
     // Option 2 - AUM Book
-    lifeStrategy1Percent: data?.financialOptions?.life_strategy1_percent || 1,
-    lifeStrategy2Percent: data?.financialOptions?.life_strategy2_percent || 2,
+    lifeStrategy1Percent: data?.financialOptions?.life_strategy1_percent || 0,
+    lifeStrategy2Percent: data?.financialOptions?.life_strategy2_percent || 0,
     // Option 3 - Qualified Money
-    iraTo7702Percent: data?.financialOptions?.ira_to_7702_percent || 33,
-    approvalRatePercent: data?.financialOptions?.approval_rate_percent || 50,
+    iraTo7702Percent: data?.financialOptions?.ira_to_7702_percent || 0,
+    approvalRatePercent: data?.financialOptions?.approval_rate_percent || 0,
   }
 
-  // Dynamic rates from data or defaults
+  // Dynamic rates from data - use 0 if not available
   const rates = {
     // Option 1 - Annuity Book
-    surrenderRate: data?.financialOptions?.surrender_rate || 6,
-    incomeRiderRate: data?.financialOptions?.income_rider_rate || 10,
-    freeWithdrawalRate: data?.financialOptions?.free_withdrawal_rate || 6,
-    lifeInsuranceRate: data?.financialOptions?.life_insurance_rate || 10,
+    surrenderRate: data?.financialOptions?.surrender_rate || 0,
+    incomeRiderRate: data?.financialOptions?.income_rider_rate || 0,
+    freeWithdrawalRate: data?.financialOptions?.free_withdrawal_rate || 0,
+    lifeInsuranceRate: data?.financialOptions?.life_insurance_rate || 0,
     // Option 2 - AUM Book
-    lifeStrategy1Rate: data?.financialOptions?.life_strategy1_rate || 10,
-    lifeStrategy2Rate: data?.financialOptions?.life_strategy2_rate || 10,
+    lifeStrategy1Rate: data?.financialOptions?.life_strategy1_rate || 0,
+    lifeStrategy2Rate: data?.financialOptions?.life_strategy2_rate || 0,
     // Option 3 - Qualified Money
-    iraTo7702Rate: data?.financialOptions?.ira_to_7702_rate || 10,
+    iraTo7702Rate: data?.financialOptions?.ira_to_7702_rate || 0,
   }
 
   // Calculate dynamic data based on percentages

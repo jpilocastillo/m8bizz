@@ -20,6 +20,38 @@ import { MarketingCampaign } from "@/lib/advisor-basecamp"
 import { useMemo } from "react"
 import { toast } from "@/components/ui/use-toast"
 
+// Helper function to get annual multiplier based on frequency
+const getAnnualMultiplier = (frequency: string | undefined): number => {
+  switch (frequency) {
+    case "Monthly":
+      return 12
+    case "Quarterly":
+      return 4
+    case "Semi-Annual":
+      return 2
+    case "Annual":
+      return 1
+    default:
+      return 12 // Default to monthly
+  }
+}
+
+// Helper function to get frequency label
+const getFrequencyLabel = (frequency: string | undefined): string => {
+  switch (frequency) {
+    case "Monthly":
+      return "Monthly"
+    case "Quarterly":
+      return "Quarterly"
+    case "Semi-Annual":
+      return "Semi-Annual"
+    case "Annual":
+      return "Annual"
+    default:
+      return "Monthly"
+  }
+}
+
 // Campaign form schema
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign Name Is Required"),
@@ -44,16 +76,22 @@ export function CampaignTable() {
   // Update campaigns when actual data changes
   useEffect(() => {
     if (actualCampaigns.length > 0) {
-      const mappedCampaigns = actualCampaigns.map((campaign, index) => ({
-        id: campaign.id || `temp-${index}`,
-        campaignId: campaign.id, // Store the actual database ID
-        campaign: campaign.name,
-        price: campaign.events > 0 ? campaign.budget / campaign.events : 0, // Calculate price per event
-        events: campaign.events,
-        leads: campaign.leads,
-        budget: campaign.budget,
-        status: campaign.status as "Active" | "Planned" | "Completed" | "Paused",
-      }))
+      const mappedCampaigns = actualCampaigns.map((campaign, index) => {
+        const frequency = (campaign as any).frequency || "Monthly"
+        const multiplier = getAnnualMultiplier(frequency)
+        return {
+          id: campaign.id || `temp-${index}`,
+          campaignId: campaign.id, // Store the actual database ID
+          campaign: campaign.name,
+          price: campaign.events > 0 ? campaign.budget / campaign.events : 0, // Calculate price per event
+          events: campaign.events,
+          leads: campaign.leads,
+          budget: campaign.budget,
+          status: campaign.status as "Active" | "Planned" | "Completed" | "Paused",
+          frequency: frequency,
+          multiplier: multiplier,
+        }
+      })
       setCampaigns(mappedCampaigns)
     } else {
       setCampaigns([])
@@ -75,10 +113,19 @@ export function CampaignTable() {
     },
   })
 
-  // Calculate totals
-  const totalEvents = campaigns.reduce((sum, item) => sum + (item.events || 0), 0)
-  const totalLeads = campaigns.reduce((sum, item) => sum + (item.leads || 0), 0)
-  const totalBudget = campaigns.reduce((sum, item) => sum + (item.budget || 0), 0)
+  // Calculate totals - account for frequency multipliers
+  const totalEvents = campaigns.reduce((sum, item) => {
+    const multiplier = item.multiplier || getAnnualMultiplier(item.frequency)
+    return sum + ((item.events || 0) * multiplier)
+  }, 0)
+  const totalLeads = campaigns.reduce((sum, item) => {
+    const multiplier = item.multiplier || getAnnualMultiplier(item.frequency)
+    return sum + ((item.leads || 0) * multiplier)
+  }, 0)
+  const totalBudget = campaigns.reduce((sum, item) => {
+    const multiplier = item.multiplier || getAnnualMultiplier(item.frequency)
+    return sum + ((item.budget || 0) * multiplier)
+  }, 0)
 
   // Calculate accurate ROI metrics
   const roiMetrics = useMemo(() => {
@@ -410,18 +457,18 @@ export function CampaignTable() {
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Events</TableCell>
-                  <TableCell className="text-white font-semibold">{Math.round(totalEvents * 12).toLocaleString()}</TableCell>
-                  <TableCell className="text-white/70">{Math.round(totalEvents).toLocaleString()} events/month</TableCell>
+                  <TableCell className="text-white font-semibold">{Math.round(totalEvents).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">Annual total across all campaigns</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Leads</TableCell>
-                  <TableCell className="text-white font-semibold">{Math.round(totalLeads * 12).toLocaleString()}</TableCell>
-                  <TableCell className="text-white/70">{Math.round(totalLeads).toLocaleString()} leads/month</TableCell>
+                  <TableCell className="text-white font-semibold">{Math.round(totalLeads).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">Annual total across all campaigns</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Budget</TableCell>
-                  <TableCell className="text-white font-semibold">${Math.round(totalBudget * 12).toLocaleString()}</TableCell>
-                  <TableCell className="text-white/70">${Math.round(totalBudget).toLocaleString()}/month</TableCell>
+                  <TableCell className="text-white font-semibold">${Math.round(totalBudget).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">Annual total across all campaigns</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Annual Appointments Goal</TableCell>
@@ -459,47 +506,66 @@ export function CampaignTable() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-white">Campaign Name</TableHead>
-                    <TableHead className="text-white">Monthly Events</TableHead>
-                    <TableHead className="text-white">Monthly Leads</TableHead>
-                    <TableHead className="text-white">Monthly Budget</TableHead>
+                    <TableHead className="text-white">Frequency</TableHead>
+                    <TableHead className="text-white">Events</TableHead>
+                    <TableHead className="text-white">Leads</TableHead>
+                    <TableHead className="text-white">Budget</TableHead>
                     <TableHead className="text-white">Annual Budget</TableHead>
                     <TableHead className="text-white">Status</TableHead>
                     <TableHead className="text-white">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {campaigns.map((item, index) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium text-white">{item.campaign}</TableCell>
-                      <TableCell className="text-white">{item.events}</TableCell>
-                      <TableCell className="text-white">{item.leads}</TableCell>
-                      <TableCell className="text-white">${item.budget.toLocaleString()}</TableCell>
-                      <TableCell className="text-white">${(item.budget * 12).toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge variant={item.status === "Active" ? "default" : "outline"}>{item.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(item)}
-                            className="text-white hover:text-white hover:bg-m8bs-card-alt"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(item)}
-                            className="text-white hover:text-white hover:bg-m8bs-card-alt"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {campaigns.map((item, index) => {
+                    const frequency = item.frequency || "Monthly"
+                    const frequencyLabel = getFrequencyLabel(frequency)
+                    const multiplier = item.multiplier || getAnnualMultiplier(frequency)
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium text-white">{item.campaign}</TableCell>
+                        <TableCell className="text-white">
+                          <Badge variant="outline" className="text-white border-m8bs-border">
+                            {frequencyLabel}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-white">
+                          {item.events} {frequencyLabel.toLowerCase()}
+                        </TableCell>
+                        <TableCell className="text-white">
+                          {item.leads} {frequencyLabel.toLowerCase()}
+                        </TableCell>
+                        <TableCell className="text-white">
+                          ${item.budget.toLocaleString()} {frequencyLabel.toLowerCase()}
+                        </TableCell>
+                        <TableCell className="text-white">
+                          ${(item.budget * multiplier).toLocaleString()} annual
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.status === "Active" ? "default" : "outline"}>{item.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(item)}
+                              className="text-white hover:text-white hover:bg-m8bs-card-alt"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(item)}
+                              className="text-white hover:text-white hover:bg-m8bs-card-alt"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </CardContent>

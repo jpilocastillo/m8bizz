@@ -471,6 +471,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
   }, [avgNetWorthNeeded, calculatedAnnuityClosed, calculatedAUMAccounts, monthlyIdealProspects, form])
 
   // Calculate form completion progress
+  // Only check fields that are actually in the form schema
   const watchedProgressFields = form.watch([
     'businessGoal',
     'aumGoalPercentage',
@@ -489,24 +490,6 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
     'aumCommission',
     'lifeCommission',
     'trailIncomePercentage',
-    'annuityBookValue',
-    'aumBookValue',
-    'qualifiedMoneyValue',
-    'surrenderPercent',
-    'incomeRiderPercent',
-    'freeWithdrawalPercent',
-    'lifeInsurancePercent',
-    'lifeStrategy1Percent',
-    'lifeStrategy2Percent',
-    'iraTo7702Percent',
-    'approvalRatePercent',
-    'surrenderRate',
-    'incomeRiderRate',
-    'freeWithdrawalRate',
-    'lifeInsuranceRate',
-    'lifeStrategy1Rate',
-    'lifeStrategy2Rate',
-    'iraTo7702Rate',
   ])
   
   const formProgress = useMemo(() => {
@@ -528,26 +511,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
       aumCommission,
       lifeCommission,
       trailIncomePercentage,
-      annuityBookValue,
-      aumBookValue,
-      qualifiedMoneyValue,
-      surrenderPercent,
-      incomeRiderPercent,
-      freeWithdrawalPercent,
-      lifeInsurancePercent,
-      lifeStrategy1Percent,
-      lifeStrategy2Percent,
-      iraTo7702Percent,
-      approvalRatePercent,
-      surrenderRate,
-      incomeRiderRate,
-      freeWithdrawalRate,
-      lifeInsuranceRate,
-      lifeStrategy1Rate,
-      lifeStrategy2Rate,
-      iraTo7702Rate,
     ] = watchedProgressFields
 
+    // Only include fields that are actually in the form schema (required fields)
     const requiredFields = [
       // Business Goals
       { key: 'businessGoal', value: businessGoal },
@@ -582,30 +548,6 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
       { key: 'aumCommission', value: aumCommission },
       { key: 'lifeCommission', value: lifeCommission },
       { key: 'trailIncomePercentage', value: trailIncomePercentage },
-      
-      // Financial Book
-      { key: 'annuityBookValue', value: annuityBookValue },
-      { key: 'aumBookValue', value: aumBookValue },
-      { key: 'qualifiedMoneyValue', value: qualifiedMoneyValue },
-      
-      // Financial Options Percentages
-      { key: 'surrenderPercent', value: surrenderPercent },
-      { key: 'incomeRiderPercent', value: incomeRiderPercent },
-      { key: 'freeWithdrawalPercent', value: freeWithdrawalPercent },
-      { key: 'lifeInsurancePercent', value: lifeInsurancePercent },
-      { key: 'lifeStrategy1Percent', value: lifeStrategy1Percent },
-      { key: 'lifeStrategy2Percent', value: lifeStrategy2Percent },
-      { key: 'iraTo7702Percent', value: iraTo7702Percent },
-      { key: 'approvalRatePercent', value: approvalRatePercent },
-      
-      // Financial Options Rates
-      { key: 'surrenderRate', value: surrenderRate },
-      { key: 'incomeRiderRate', value: incomeRiderRate },
-      { key: 'freeWithdrawalRate', value: freeWithdrawalRate },
-      { key: 'lifeInsuranceRate', value: lifeInsuranceRate },
-      { key: 'lifeStrategy1Rate', value: lifeStrategy1Rate },
-      { key: 'lifeStrategy2Rate', value: lifeStrategy2Rate },
-      { key: 'iraTo7702Rate', value: iraTo7702Rate },
     ]
     
     const completedFields = requiredFields.filter(field => {
@@ -621,14 +563,20 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
       return !isNaN(numValue) && numValue !== 0
     }).length
     
-    return Math.round((completedFields / requiredFields.length) * 100)
+    // Ensure we return 100% when all fields are completed
+    const percentage = Math.round((completedFields / requiredFields.length) * 100)
+    return Math.min(100, Math.max(0, percentage))
   }, [watchedProgressFields])
 
   // Save form data to localStorage whenever it changes
   useEffect(() => {
-    if (!hasLoadedFromStorage || !storageKey) return
+    if (!hasLoadedFromStorage || !storageKey || typeof window === 'undefined') return
     
     let timeoutId: NodeJS.Timeout | null = null
+    let isLocalChange = false // Track if the change is from this tab
+    
+    // Create BroadcastChannel for cross-tab communication
+    const broadcastChannel = new BroadcastChannel(`advisor-basecamp-form-${user.id}`)
     
     const subscription = form.watch((formData) => {
       // Clear previous timeout
@@ -638,17 +586,73 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
       
       // Debounce the save to avoid too many writes
       timeoutId = setTimeout(() => {
+        isLocalChange = true
         saveFormDataToStorage(formData as z.infer<typeof formSchema>)
+        
+        // Broadcast the change to other tabs
+        broadcastChannel.postMessage({
+          type: 'form-data-updated',
+          data: formData,
+          timestamp: Date.now()
+        })
+        
+        // Reset flag after a short delay
+        setTimeout(() => {
+          isLocalChange = false
+        }, 100)
       }, 500) // Save 500ms after user stops typing
     })
+    
+    // Listen for storage events from other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === storageKey && e.newValue && !isLocalChange) {
+        try {
+          const storedData = JSON.parse(e.newValue)
+          // Only update if the stored data is newer or different
+          const currentData = form.getValues()
+          const hasChanges = JSON.stringify(storedData) !== JSON.stringify(currentData)
+          
+          if (hasChanges) {
+            form.reset(storedData as z.infer<typeof formSchema>)
+          }
+        } catch (error) {
+          console.error('Error handling storage change:', error)
+        }
+      }
+    }
+    
+    // Listen for broadcast messages from other tabs
+    const handleBroadcastMessage = (event: MessageEvent) => {
+      if (event.data.type === 'form-data-updated' && !isLocalChange) {
+        try {
+          const storedData = loadFormDataFromStorage()
+          if (storedData) {
+            const currentData = form.getValues()
+            const hasChanges = JSON.stringify(storedData) !== JSON.stringify(currentData)
+            
+            if (hasChanges) {
+              form.reset(storedData as z.infer<typeof formSchema>)
+            }
+          }
+        } catch (error) {
+          console.error('Error handling broadcast message:', error)
+        }
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    broadcastChannel.addEventListener('message', handleBroadcastMessage)
     
     return () => {
       subscription.unsubscribe()
       if (timeoutId) {
         clearTimeout(timeoutId)
       }
+      window.removeEventListener('storage', handleStorageChange)
+      broadcastChannel.removeEventListener('message', handleBroadcastMessage)
+      broadcastChannel.close()
     }
-  }, [form, hasLoadedFromStorage, storageKey])
+  }, [form, hasLoadedFromStorage, storageKey, user.id])
 
   // Handle page visibility - restore form from localStorage when user comes back
   useEffect(() => {

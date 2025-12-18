@@ -381,6 +381,7 @@ export default function BusinessDashboard() {
             currentValues={data.currentValues}
             clientMetrics={data.clientMetrics}
             commissionRates={data.commissionRates}
+            campaigns={data.campaigns}
           />
         </TabsContent>
 
