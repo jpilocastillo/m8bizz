@@ -189,32 +189,32 @@ export function DashboardMetrics({ businessGoals, currentValues, clientMetrics }
       initial="hidden"
       animate="show"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
         {metrics.map((metric, index) => {
           const colorConfig = getColorConfig(metric.color)
           return (
             <motion.div
               key={index}
               variants={item}
-              whileHover={{ scale: 1.05, y: -5 }}
+              whileHover={{ scale: 1.03, y: -4 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <Card 
-                className="bg-m8bs-card text-white shadow-sm h-full"
+                className="bg-m8bs-card border-m8bs-border text-white shadow-md hover:shadow-lg transition-all duration-300 h-full"
                 role="article"
                 aria-label={`${metric.title}: ${metric.value}`}
               >
-                <CardContent className="p-3 flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-white/80 font-medium tracking-wide">{metric.title}</span>
-                    <div className={`${colorConfig.bgColor} p-2 rounded-lg`} aria-hidden="true">
-                      <metric.icon className={`h-4 w-4 ${colorConfig.iconColor}`} />
+                <CardContent className="p-4 flex flex-col h-full min-h-[100px]">
+                  <div className="flex items-start justify-between mb-2 gap-2">
+                    <span className="text-xs text-white/90 font-semibold tracking-wide leading-tight flex-1 line-clamp-2">{metric.title}</span>
+                    <div className={`${colorConfig.bgColor} p-1.5 rounded-lg flex-shrink-0`} aria-hidden="true">
+                      <metric.icon className={`h-3.5 w-3.5 ${colorConfig.iconColor}`} />
                     </div>
                   </div>
-                  <div className="text-xl font-extrabold tracking-tight text-white mb-1" aria-label={`Value: ${metric.value}`}>
+                  <div className="text-xl font-extrabold tracking-tight text-white mb-2 flex items-baseline leading-none" aria-label={`Value: ${metric.value}`}>
                     {metric.value}
                   </div>
-                  <div className="text-xs text-white/60 mt-auto font-medium" aria-label={`Additional info: ${metric.description}`}>
+                  <div className="text-xs text-white/70 mt-auto font-medium leading-relaxed line-clamp-2" aria-label={`Additional info: ${metric.description}`}>
                     {metric.description}
                   </div>
                 </CardContent>

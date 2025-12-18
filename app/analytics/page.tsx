@@ -97,6 +97,7 @@ export default async function AnalyticsPage() {
           return sum + firstAttended + secondAttended
         }, 0),
         totalRegistrants: events.reduce((sum, event) => sum + (event.attendance?.registrant_responses || 0), 0),
+        totalPlateLickers: events.reduce((sum, event) => sum + (event.attendance?.plate_lickers || 0), 0),
         totalFirstAppointmentNoShows: events.reduce((sum, event) => sum + (event.event_appointments?.first_appointment_no_shows || 0), 0),
         totalNotQualified: events.reduce((sum, event) => sum + (event.event_appointments?.not_qualified || 0), 0),
       },

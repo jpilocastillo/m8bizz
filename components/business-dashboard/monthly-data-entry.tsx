@@ -61,7 +61,8 @@ interface MonthlyDataEntryComponentProps {
 
 export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComponentProps = {}) {
   const { user } = useAuth()
-  const { data, addMonthlyDataEntry, updateMonthlyDataEntry, deleteMonthlyDataEntry } = useAdvisorBasecamp(user)
+  const year = selectedYear ? Number.parseInt(selectedYear) : new Date().getFullYear()
+  const { data, addMonthlyDataEntry, updateMonthlyDataEntry, deleteMonthlyDataEntry, loadData } = useAdvisorBasecamp(user, year)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<MonthlyDataEntry | null>(null)
   const [selectedMonthForComparison, setSelectedMonthForComparison] = useState<string>("")
@@ -127,6 +128,8 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       console.log("Save operation result:", success)
 
       if (success) {
+        // Refresh data after successful save
+        await loadData()
         toast({
           title: editingEntry ? "Entry Updated Successfully" : "Entry Added Successfully",
           description: "Your Monthly Data Has Been Saved.",

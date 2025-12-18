@@ -135,11 +135,13 @@ export default function BusinessDashboard() {
     console.log('handleDataSubmitted called - refreshing data...')
     setEditMode(false)
     
-    // Add a small delay to ensure the database has been updated
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Add a delay to ensure the database has been updated
+    await new Promise(resolve => setTimeout(resolve, 1000))
     
-    await loadData() // Refresh data after successful submission
-    console.log('Data refresh completed')
+    // Force reload data from database - this will update the data state
+    await loadData()
+    
+    console.log('Data refresh completed - all components should update with new data')
   }
 
   // Helper: check if all sections are filled
@@ -367,6 +369,7 @@ export default function BusinessDashboard() {
 
         <TabsContent value="clients" className="space-y-4">
           <ClientAcquisition 
+            key={`clients-${selectedYear}-${JSON.stringify(data)}`}
             data={data} 
             businessGoals={data.businessGoals}
             commissionRates={data.commissionRates}
@@ -377,6 +380,7 @@ export default function BusinessDashboard() {
 
         <TabsContent value="income" className="space-y-4">
           <IncomeBreakdown 
+            key={`income-${JSON.stringify(data)}`}
             businessGoals={data.businessGoals}
             currentValues={data.currentValues}
             clientMetrics={data.clientMetrics}
@@ -386,15 +390,23 @@ export default function BusinessDashboard() {
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-4">
-          <CampaignTable />
+          <CampaignTable key={`campaigns-${selectedYear}-${JSON.stringify(data.campaigns)}`} selectedYear={selectedYear} />
         </TabsContent>
 
         <TabsContent value="monthly" className="space-y-4">
-          <MonthlyDataEntryComponent selectedYear={selectedYear.toString()} />
+          <MonthlyDataEntryComponent 
+            key={`monthly-${selectedYear}-${JSON.stringify(data.monthlyDataEntries)}`}
+            selectedYear={selectedYear.toString()} 
+          />
         </TabsContent>
         
         <TabsContent value="pdf" className="space-y-4">
-          <PDFExport data={data} profile={profile} year={selectedYear} />
+          <PDFExport 
+            key={`pdf-${selectedYear}-${JSON.stringify(data)}`}
+            data={data} 
+            profile={profile} 
+            year={selectedYear} 
+          />
         </TabsContent>
       </Tabs>
     </div>

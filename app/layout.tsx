@@ -18,6 +18,12 @@ export const metadata: Metadata = {
     apple: [
       { url: "/logo.png", type: "image/png" }
     ]
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
   }
 }
 

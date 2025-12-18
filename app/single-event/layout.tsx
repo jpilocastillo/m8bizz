@@ -44,7 +44,7 @@ export default async function SingleEventLayout({
         <main className="flex-1 overflow-y-auto px-4 sm:px-5 lg:px-6 xl:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 bg-black">
           {/* Show database status banner at the top */}
           <DatabaseStatus />
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
           </div>
         </main>

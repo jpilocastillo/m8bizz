@@ -305,89 +305,86 @@ export default function BehaviorScorecardPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
-            <Calculator className="h-8 w-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Business Behavior Scorecard</h1>
-            <p className="text-m8bs-muted mt-1">
-              Track and analyze business behaviors and performance indicators
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={periodType} onValueChange={(v) => {
-            setPeriodType(v as PeriodType)
+      {/* Header Title - Full Width */}
+      <div>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Business Behavior Scorecard</h1>
+        <p className="text-m8bs-muted mt-1">
+          Track and analyze business behaviors and performance indicators
+        </p>
+      </div>
+
+      {/* Period Selectors - Below Title */}
+      <div className="flex items-center gap-2">
+        <Select value={periodType} onValueChange={(v) => {
+          setPeriodType(v as PeriodType)
+          setTimeout(() => loadScorecard(), 100)
+        }}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="month">Month</SelectItem>
+            <SelectItem value="quarter">Quarter</SelectItem>
+            <SelectItem value="year">Year</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        {periodType === 'month' && (
+          <Select value={selectedMonth.toString()} onValueChange={(v) => {
+            setSelectedMonth(parseInt(v))
+            setTimeout(() => loadScorecard(), 100)
+          }}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map(month => (
+                <SelectItem key={month.value} value={month.value.toString()}>
+                  {month.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        
+        {periodType === 'quarter' && (
+          <Select value={selectedQuarter.toString()} onValueChange={(v) => {
+            setSelectedQuarter(parseInt(v))
             setTimeout(() => loadScorecard(), 100)
           }}>
             <SelectTrigger className="w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="month">Month</SelectItem>
-              <SelectItem value="quarter">Quarter</SelectItem>
-              <SelectItem value="year">Year</SelectItem>
+              <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
+              <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
+              <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
+              <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
             </SelectContent>
           </Select>
-          
-          {periodType === 'month' && (
-            <Select value={selectedMonth.toString()} onValueChange={(v) => {
-              setSelectedMonth(parseInt(v))
-              setTimeout(() => loadScorecard(), 100)
-            }}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map(month => (
-                  <SelectItem key={month.value} value={month.value.toString()}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          
-          {periodType === 'quarter' && (
-            <Select value={selectedQuarter.toString()} onValueChange={(v) => {
-              setSelectedQuarter(parseInt(v))
-              setTimeout(() => loadScorecard(), 100)
-            }}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
-                <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
-                <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
-                <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-          
-          <Select value={selectedYear.toString()} onValueChange={(v) => {
-            setSelectedYear(parseInt(v))
-            setTimeout(() => loadScorecard(), 100)
-          }}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map(year => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleCalculateSummary}
-            disabled={initializing}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
+        )}
+        
+        <Select value={selectedYear.toString()} onValueChange={(v) => {
+          setSelectedYear(parseInt(v))
+          setTimeout(() => loadScorecard(), 100)
+        }}>
+          <SelectTrigger className="w-[100px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {years.map(year => (
+              <SelectItem key={year} value={year.toString()}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          onClick={handleCalculateSummary}
+          disabled={initializing}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
             <RefreshCw className={`h-4 w-4 ${initializing ? 'animate-spin' : ''}`} />
             {periodType === 'month' ? 'Calculate' : 'Refresh'}
           </Button>
@@ -397,7 +394,6 @@ export default function BehaviorScorecardPage() {
               <PDFExport data={scorecardData} profile={profile} />
             </>
           )}
-        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "view" | "entry" | "settings")} className="space-y-4">

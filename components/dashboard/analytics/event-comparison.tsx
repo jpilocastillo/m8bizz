@@ -226,7 +226,7 @@ export function EventComparison({ events }: EventComparisonProps) {
   const metricOptions: MetricType[] = ["Conversion", "Revenue", "Expenses", "Profit", "Attendees", "Clients"];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Metric Selector */}
       <div className="flex flex-wrap gap-1.5">
         {metricOptions.map((metric) => {
@@ -317,51 +317,51 @@ export function EventComparison({ events }: EventComparisonProps) {
       {/* Summary Cards */}
       {summary && (
         <motion.div 
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="bg-m8bs-card p-4 rounded-lg border border-m8bs-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`p-2 rounded-lg ${getMetricIcon(activeMetric).bgColor}`}>
-                <BarChart3 className={`h-4 w-4 ${getMetricIcon(activeMetric).color}`} />
+          <div className="bg-m8bs-card p-2.5 rounded-lg border border-m8bs-border">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className={`p-1.5 rounded-lg ${getMetricIcon(activeMetric).bgColor}`}>
+                <BarChart3 className={`h-3.5 w-3.5 ${getMetricIcon(activeMetric).color}`} />
               </div>
-              <p className="text-sm text-m8bs-muted">Average {activeMetric}</p>
+              <p className="text-xs text-m8bs-muted">Average {activeMetric}</p>
             </div>
-            <p className="text-xl font-bold text-white">{formatValue(summary.avg, activeMetric)}</p>
+            <p className="text-lg font-bold text-white">{formatValue(summary.avg, activeMetric)}</p>
           </div>
           
-          <div className="bg-m8bs-card p-4 rounded-lg border border-m8bs-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 rounded-lg bg-emerald-500/20">
-                <TrendingUp className="h-4 w-4 text-emerald-400" />
+          <div className="bg-m8bs-card p-2.5 rounded-lg border border-m8bs-border">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="p-1.5 rounded-lg bg-emerald-500/20">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
               </div>
-              <p className="text-sm text-m8bs-muted">Highest {activeMetric}</p>
+              <p className="text-xs text-m8bs-muted">Highest {activeMetric}</p>
             </div>
-            <p className="text-xl font-bold text-white">{formatValue(summary.max, activeMetric)}</p>
+            <p className="text-lg font-bold text-white">{formatValue(summary.max, activeMetric)}</p>
           </div>
           
-          <div className="bg-m8bs-card p-4 rounded-lg border border-m8bs-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 rounded-lg bg-red-500/20">
-                <TrendingDown className="h-4 w-4 text-red-400" />
+          <div className="bg-m8bs-card p-2.5 rounded-lg border border-m8bs-border">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="p-1.5 rounded-lg bg-red-500/20">
+                <TrendingDown className="h-3.5 w-3.5 text-red-400" />
               </div>
-              <p className="text-sm text-m8bs-muted">Lowest {activeMetric}</p>
+              <p className="text-xs text-m8bs-muted">Lowest {activeMetric}</p>
             </div>
-            <p className="text-xl font-bold text-white">{formatValue(summary.min, activeMetric)}</p>
+            <p className="text-lg font-bold text-white">{formatValue(summary.min, activeMetric)}</p>
           </div>
         </motion.div>
       )}
 
       {/* Chart */}
       <motion.div 
-        className="bg-m8bs-card rounded-lg border border-m8bs-border p-4"
+        className="bg-m8bs-card rounded-lg border border-m8bs-border p-3"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <div className="h-[240px] w-full">
+        <div className="h-[300px] md:h-[400px] w-full">
           <svg className="w-0 h-0">
             <defs>
               <linearGradient id={`barGradient-${activeMetric}`} x1="0" y1="0" x2="1" y2="0">
@@ -374,13 +374,13 @@ export function EventComparison({ events }: EventComparisonProps) {
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ top: 20, right: 120, left: 20, bottom: 20 }}
-                barGap={12}
+              margin={{ top: 20, right: 20, left: 0, bottom: 20 }}
+              barGap={12}
             >
               <XAxis
                 type="number"
                 stroke="#888888"
-                fontSize={12}
+                fontSize={11}
                 tick={{ style: { fill: '#94a3b8' } }}
                 tickLine={false}
                 axisLine={false}
@@ -398,18 +398,21 @@ export function EventComparison({ events }: EventComparisonProps) {
                 dataKey="label"
                 type="category"
                 stroke="#888888"
-                fontSize={12}
+                fontSize={9}
                 tick={{ style: { fill: '#94a3b8' } }}
                 tickLine={false}
                 axisLine={false}
-                width={140}
+                width={120}
+                interval={0}
+                angle={0}
+                textAnchor="end"
               />
               <Bar
                 dataKey="value"
                 animationDuration={2000}
                 animationEasing="ease-out"
                 radius={[0, 8, 8, 0]}
-                barSize={28}
+                barSize={32}
                 animationBegin={0}
                 animationEnd={1}
               >
@@ -432,27 +435,34 @@ export function EventComparison({ events }: EventComparisonProps) {
                   content={({ x, y, width, height, value, index }) => {
                     if (!x || !y || !width || !height || typeof index !== 'number') return null;
                     const event = chartData[index];
+                    const barEndX = Number(x) + Number(width);
+                    const labelX = barEndX + 8;
+                    const formattedValue = formatValue(Number(value), activeMetric);
+                    const dateStr = event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date';
+                    const locationStr = event.location || 'No location';
+                    const detailStr = `${dateStr} • ${locationStr}`;
+                    
                     return (
                       <g>
                         <text
-                          x={Number(x) + Number(width) + 8}
-                          y={Number(y) + Number(height) / 2 - 10}
+                          x={labelX}
+                          y={Number(y) + Number(height) / 2 - 8}
                           fill="#fff"
-                          fontSize={12}
+                          fontSize={11}
                           fontWeight="600"
                           dominantBaseline="middle"
                         >
-                          {formatValue(Number(value), activeMetric)}
+                          {formattedValue}
                         </text>
                         <text
-                          x={Number(x) + Number(width) + 8}
-                          y={Number(y) + Number(height) / 2 + 10}
+                          x={labelX}
+                          y={Number(y) + Number(height) / 2 + 8}
                           fill="#94a3b8"
-                          fontSize={10}
+                          fontSize={9}
                           fontWeight="400"
                           dominantBaseline="middle"
                         >
-                          {event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date'} • {event.location || 'No location'}
+                          {detailStr.length > 25 ? detailStr.substring(0, 22) + '...' : detailStr}
                         </text>
                       </g>
                     );
@@ -475,11 +485,11 @@ export function EventComparison({ events }: EventComparisonProps) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-m8bs-border bg-m8bs-card-alt">
-                <th className="text-left py-3 px-4 text-sm font-medium text-m8bs-muted">Event Name</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-m8bs-muted">Date</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-m8bs-muted">Location</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-m8bs-muted">Type</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-m8bs-muted">{activeMetric}</th>
+                <th className="text-left py-2 px-2 text-xs font-medium text-m8bs-muted">Event Name</th>
+                <th className="text-left py-2 px-2 text-xs font-medium text-m8bs-muted">Date</th>
+                <th className="text-left py-2 px-2 text-xs font-medium text-m8bs-muted">Location</th>
+                <th className="text-left py-2 px-2 text-xs font-medium text-m8bs-muted">Type</th>
+                <th className="text-right py-2 px-2 text-xs font-medium text-m8bs-muted">{activeMetric}</th>
               </tr>
             </thead>
             <tbody>
@@ -491,13 +501,13 @@ export function EventComparison({ events }: EventComparisonProps) {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.5 + index * 0.1 }}
                 >
-                  <td className="py-3 px-4 text-sm text-white font-medium">{event.name}</td>
-                  <td className="py-3 px-4 text-sm text-m8bs-muted">
+                  <td className="py-1.5 px-2 text-xs text-white font-medium">{event.name}</td>
+                  <td className="py-1.5 px-2 text-xs text-m8bs-muted">
                     {event.date ? format(createLocalDate(event.date)!, "MMM d, yyyy") : 'No date'}
                   </td>
-                  <td className="py-3 px-4 text-sm text-m8bs-muted">{event.location || 'No location'}</td>
-                  <td className="py-3 px-4 text-sm text-m8bs-muted">{event.type}</td>
-                  <td className="py-3 px-4 text-sm text-white font-medium text-right">
+                  <td className="py-1.5 px-2 text-xs text-m8bs-muted">{event.location || 'No location'}</td>
+                  <td className="py-1.5 px-2 text-xs text-m8bs-muted">{event.type}</td>
+                  <td className="py-1.5 px-2 text-xs text-white font-medium text-right">
                     {formatValue(event.value, activeMetric)}
                   </td>
                 </motion.tr>
@@ -508,7 +518,7 @@ export function EventComparison({ events }: EventComparisonProps) {
       </motion.div>
 
       {/* Footer Info */}
-      <div className="text-center text-sm text-m8bs-muted">
+      <div className="text-center text-xs text-m8bs-muted">
         {selectedEvents.length > 0
           ? "Showing your selected events"
           : `Showing top ${chartData.length} events by ${activeMetric}`}

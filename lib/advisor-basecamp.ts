@@ -822,15 +822,17 @@ class AdvisorBasecampService {
       }
 
       // Handle campaigns separately since they're an array
-      if (data.campaigns && data.campaigns.length > 0) {
-        console.log('Saving campaigns...')
-        // First, delete existing campaigns
-        const existingCampaigns = await this.getMarketingCampaigns(user)
-        for (const campaign of existingCampaigns) {
-          await this.deleteMarketingCampaign(user, campaign.id!)
-        }
+      // Always delete existing campaigns first, then create new ones (even if empty array)
+      console.log('Saving campaigns...')
+      const existingCampaigns = await this.getMarketingCampaigns(user)
+      console.log('Existing campaigns to delete:', existingCampaigns.length)
+      for (const campaign of existingCampaigns) {
+        await this.deleteMarketingCampaign(user, campaign.id!)
+      }
 
-        // Then create new ones
+      // Then create new ones if provided
+      if (data.campaigns && data.campaigns.length > 0) {
+        console.log('Creating new campaigns:', data.campaigns.length)
         for (const campaign of data.campaigns) {
           const savedCampaign = await this.createMarketingCampaign(user, campaign)
           if (!savedCampaign) {
@@ -838,6 +840,8 @@ class AdvisorBasecampService {
             return false
           }
         }
+      } else {
+        console.log('No campaigns to save (empty array)')
       }
 
       console.log('All advisor basecamp data saved successfully')

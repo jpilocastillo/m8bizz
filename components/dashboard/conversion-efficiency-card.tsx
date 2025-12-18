@@ -78,16 +78,16 @@ export function ConversionEfficiencyCard({
   }
 
   return (
-    <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md h-full flex flex-col transition-all duration-300 hover:shadow-xl group">
-      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+    <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg hover:shadow-xl h-full flex flex-col transition-all duration-300 group">
+      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-5">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
-            <Activity className="mr-3 h-6 w-6 text-emerald-500" />
+          <CardTitle className="text-xl md:text-2xl font-extrabold text-white flex items-center tracking-tight">
+            <Activity className="mr-3 h-6 w-6 md:h-7 md:w-7 text-emerald-500" />
             Conversion Efficiency
           </CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="p-6 flex-1 flex flex-col justify-between">
+      <CardContent className="p-6 md:p-8 flex-1 flex flex-col justify-between">
         {/* Overall Conversion Summary */}
         <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 mb-6 transition-all duration-300 hover:bg-black/50 hover:border-emerald-500/60 hover:shadow-md">
           <div className="flex items-center justify-between mb-4">

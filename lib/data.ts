@@ -308,7 +308,8 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
           registrant_responses,
           confirmations,
           attendees,
-          clients_from_event
+          clients_from_event,
+          plate_lickers
         ),
         event_appointments (
           id,

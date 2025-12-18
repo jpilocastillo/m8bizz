@@ -24,14 +24,14 @@ export function AccumulativeIncomeCard({
   const aumFeesPercentage = totalIncome > 0 ? (aumFees / totalIncome) * 100 : 0
 
   return (
-    <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md">
-      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-        <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
-          <DollarSign className="mr-3 h-6 w-6 text-green-500" />
+    <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-5">
+        <CardTitle className="text-xl md:text-2xl font-extrabold text-white flex items-center tracking-tight">
+          <DollarSign className="mr-3 h-6 w-6 md:h-7 md:w-7 text-green-500" />
           Accumulative Income
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-6 md:p-8">
         <div className="grid gap-6">
           {/* Total Income Summary */}
           <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 transition-all duration-300 hover:bg-black/50 hover:border-green-500/60 hover:shadow-md">

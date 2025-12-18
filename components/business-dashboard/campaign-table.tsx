@@ -64,9 +64,13 @@ const campaignSchema = z.object({
 
 type CampaignFormData = z.infer<typeof campaignSchema>
 
-export function CampaignTable() {
+interface CampaignTableProps {
+  selectedYear?: number
+}
+
+export function CampaignTable({ selectedYear = new Date().getFullYear() }: CampaignTableProps = {}) {
   const { user } = useAuth()
-  const { data, addCampaign, updateCampaign, deleteCampaign, loadData } = useAdvisorBasecamp(user)
+  const { data, addCampaign, updateCampaign, deleteCampaign, loadData } = useAdvisorBasecamp(user, selectedYear)
   
   // Get campaigns from actual data, or empty array if no data
   const actualCampaigns = data.campaigns || []

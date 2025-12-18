@@ -167,9 +167,9 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Metric Selector */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {(["ROI", "Conversion", "Revenue", "Attendees", "Clients"] as MetricType[]).map((metric) => (
           <motion.div
             key={metric}
@@ -194,11 +194,11 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
       </div>
 
       {/* Grouping Controls */}
-      <div className="flex flex-wrap gap-4 items-center p-4 bg-m8bs-card rounded-lg border border-m8bs-border">
+      <div className="flex flex-wrap gap-3 items-center p-2 bg-m8bs-card rounded-lg border border-m8bs-border">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">Rows:</span>
+          <span className="text-xs font-medium text-white">Rows:</span>
           <select
-            className="bg-m8bs-card-alt border border-m8bs-border text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-m8bs-blue"
+            className="bg-m8bs-card-alt border border-m8bs-border text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-m8bs-blue"
             value={rowGroup}
             onChange={e => setRowGroup(e.target.value)}
           >
@@ -208,9 +208,9 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">Columns:</span>
+          <span className="text-xs font-medium text-white">Columns:</span>
           <select
-            className="bg-m8bs-card-alt border border-m8bs-border text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-m8bs-blue"
+            className="bg-m8bs-card-alt border border-m8bs-border text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-m8bs-blue"
             value={colGroup}
             onChange={e => setColGroup(e.target.value)}
           >
@@ -222,18 +222,18 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
       </div>
 
       {/* Heatmap Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
         {matrix.length > 0 && colValues.length > 0 ? (
-          <div className="bg-m8bs-card rounded-lg border border-m8bs-border p-4">
+          <div className="bg-m8bs-card rounded-lg border border-m8bs-border p-2">
             <table className="w-full">
-              <thead>
+              <thead className="sticky top-0 bg-m8bs-card z-10">
                 <tr>
-                  <th className="text-left p-3 text-sm font-semibold text-m8bs-muted border-b border-m8bs-border">
+                  <th className="text-left p-1.5 text-xs font-semibold text-m8bs-muted border-b border-m8bs-border">
                     {groupingOptions.find(opt => opt.value === rowGroup)?.label || "Row"}
                   </th>
                   {colValues.map((col) => (
-                    <th key={col} className="p-3 text-sm font-semibold text-m8bs-muted text-center border-b border-m8bs-border">
-                      {col}
+                    <th key={col} className="p-1.5 text-xs font-semibold text-m8bs-muted text-center border-b border-m8bs-border">
+                      {col.length > 15 ? `${col.substring(0, 15)}...` : col}
                     </th>
                   ))}
                 </tr>
@@ -244,24 +244,24 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
                     key={row.row}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: rowIndex * 0.1 }}
+                    transition={{ delay: rowIndex * 0.05 }}
                   >
-                    <td className="p-3 text-sm font-medium text-white border-b border-m8bs-border/50">
-                      {row.row}
+                    <td className="p-1.5 text-xs font-medium text-white border-b border-m8bs-border/50">
+                      {row.row.length > 15 ? `${row.row.substring(0, 15)}...` : row.row}
                     </td>
                     {row.cols.map((cell, i) => (
                       <motion.td
                         key={`${row.row}-${colValues[i]}`}
-                        className={`p-3 text-center ${getColor(cell.value, activeMetric)} rounded-lg m-1 transition-all duration-300 hover:scale-105`}
+                        className={`p-1.5 text-center ${getColor(cell.value, activeMetric)} rounded m-0.5 transition-all duration-300 hover:scale-105`}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        <div className="text-sm font-semibold text-white mb-1">
+                        <div className="text-xs font-semibold text-white mb-0.5">
                           {formatValue(cell.value, activeMetric)}
                         </div>
                         {cell.count > 0 && (
-                          <div className="text-xs text-white/70 bg-black/20 rounded-full px-2 py-1 inline-block">
-                            {cell.count} event{cell.count !== 1 ? "s" : ""}
+                          <div className="text-[10px] text-white/70 bg-black/20 rounded-full px-1 py-0.5 inline-block">
+                            {cell.count}
                           </div>
                         )}
                       </motion.td>
@@ -272,32 +272,32 @@ export function PerformanceHeatmap({ data, activeMetric, onMetricChange }: Perfo
             </table>
           </div>
         ) : (
-          <div className="text-center py-12 text-m8bs-muted bg-m8bs-card rounded-lg border border-m8bs-border">
-            <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">No data available for heatmap</p>
-            <p className="text-sm mt-2">Try adjusting your filters or grouping options</p>
+          <div className="text-center py-8 text-m8bs-muted bg-m8bs-card rounded-lg border border-m8bs-border">
+            <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm font-medium">No data available for heatmap</p>
+            <p className="text-xs mt-1">Try adjusting your filters or grouping options</p>
           </div>
         )}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 p-4 bg-m8bs-card rounded-lg border border-m8bs-border">
-        <span className="text-sm font-medium text-white">Performance Scale:</span>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gradient-to-br from-red-900/20 to-red-800/30 border border-red-800/40 rounded"></div>
-          <span className="text-xs text-m8bs-muted">Low</span>
+      <div className="flex items-center justify-center gap-2 p-2 bg-m8bs-card rounded-lg border border-m8bs-border">
+        <span className="text-xs font-medium text-white">Scale:</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-gradient-to-br from-red-900/20 to-red-800/30 border border-red-800/40 rounded"></div>
+          <span className="text-[10px] text-m8bs-muted">Low</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gradient-to-br from-orange-800/30 to-orange-700/40 border border-orange-700/50 rounded"></div>
-          <span className="text-xs text-m8bs-muted">Medium</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-gradient-to-br from-orange-800/30 to-orange-700/40 border border-orange-700/50 rounded"></div>
+          <span className="text-[10px] text-m8bs-muted">Med</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gradient-to-br from-green-600/50 to-green-500/60 border border-green-500/70 rounded"></div>
-          <span className="text-xs text-m8bs-muted">High</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-gradient-to-br from-green-600/50 to-green-500/60 border border-green-500/70 rounded"></div>
+          <span className="text-[10px] text-m8bs-muted">High</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gradient-to-br from-emerald-500/60 to-emerald-400/70 border border-emerald-400/80 rounded"></div>
-          <span className="text-xs text-m8bs-muted">Excellent</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 bg-gradient-to-br from-emerald-500/60 to-emerald-400/70 border border-emerald-400/80 rounded"></div>
+          <span className="text-[10px] text-m8bs-muted">Excel</span>
         </div>
       </div>
     </div>

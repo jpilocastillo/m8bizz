@@ -736,34 +736,36 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
           monthly_ideal_prospects: monthlyIdealProspects, // Use calculated value
           appointments_per_campaign: Number.parseFloat(values.appointmentsPerCampaign || "0"),
         },
-        campaigns: values.campaigns.map(c => {
-          const marketingCosts = Number.parseFloat(c.budget)
-          const events = Number.parseInt(c.events)
-          const leads = Number.parseInt(c.leads)
-          const foodCosts = Number.parseFloat(c.foodCosts || "0")
-          const avgCloseRatio = Number.parseFloat(values.avgCloseRatio)
-          
-          // Calculate cost per lead and cost per client
-          const costPerLead = leads > 0 ? (marketingCosts + foodCosts) / leads : 0
-          const closeRatioDecimal = avgCloseRatio / 100
-          const costPerClient = closeRatioDecimal > 0 ? costPerLead / closeRatioDecimal : 0
-          
-          // Calculate total cost of event: (Marketing Costs + Food Costs) / Number of Events
-          const totalCostOfEvent = events > 0 ? (marketingCosts + foodCosts) / events : 0
-          
-          return {
-            name: c.name,
-            budget: marketingCosts,
-            events: events,
-            leads: leads,
-            status: c.status,
-            frequency: c.frequency || "Monthly",
-            cost_per_lead: costPerLead,
-            cost_per_client: costPerClient,
-            total_cost_of_event: totalCostOfEvent,
-            food_costs: foodCosts,
-          }
-        }),
+        campaigns: values.campaigns
+          .filter(c => c.name && c.name.trim() !== "") // Filter out empty campaigns
+          .map(c => {
+            const marketingCosts = Number.parseFloat(c.budget || "0")
+            const events = Number.parseInt(c.events || "0")
+            const leads = Number.parseInt(c.leads || "0")
+            const foodCosts = Number.parseFloat(c.foodCosts || "0")
+            const avgCloseRatio = Number.parseFloat(values.avgCloseRatio || "0")
+            
+            // Calculate cost per lead and cost per client
+            const costPerLead = leads > 0 ? (marketingCosts + foodCosts) / leads : 0
+            const closeRatioDecimal = avgCloseRatio / 100
+            const costPerClient = closeRatioDecimal > 0 ? costPerLead / closeRatioDecimal : 0
+            
+            // Calculate total cost of event: (Marketing Costs + Food Costs) / Number of Events
+            const totalCostOfEvent = events > 0 ? (marketingCosts + foodCosts) / events : 0
+            
+            return {
+              name: c.name.trim(),
+              budget: marketingCosts,
+              events: events,
+              leads: leads,
+              status: c.status || "Planned",
+              frequency: c.frequency || "Monthly",
+              cost_per_lead: costPerLead,
+              cost_per_client: costPerClient,
+              total_cost_of_event: totalCostOfEvent,
+              food_costs: foodCosts,
+            }
+          }),
         commissionRates: {
           year: Number.parseInt(values.year),
           planning_fee_rate: Number.parseFloat(values.planningFeeRate),

@@ -299,16 +299,21 @@ export function useAdvisorBasecamp(user: User | null, year: number = new Date().
 
     try {
       console.log('saveAllData: Starting save process...')
+      console.log('saveAllData: Data to save:', JSON.stringify(newData, null, 2))
       const success = await advisorBasecampService.saveAllAdvisorBasecampData(user, newData)
       console.log('saveAllData: Save result:', success)
       
       if (success) {
         console.log('saveAllData: Save successful, reloading data from database...')
+        // Add a small delay to ensure database write is complete
+        await new Promise(resolve => setTimeout(resolve, 500))
         // Reload data from database to ensure we have the latest state
         await loadDataInternal(user, year)
         console.log('saveAllData: Data reloaded successfully')
+        console.log('saveAllData: Reloaded data:', data)
         return true
       }
+      console.error('saveAllData: Save failed')
       return false
     } catch (err) {
       console.error('Error saving all data:', err)

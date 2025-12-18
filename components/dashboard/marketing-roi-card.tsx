@@ -49,17 +49,17 @@ export function MarketingROICard({ roi, totalIncome, totalCost, className }: Mar
 
   return (
     <Card
-      className={`bg-m8bs-card border-m8bs-border rounded-lg text-white shadow-md h-full flex flex-col ${className}`}
+      className={`bg-m8bs-card border-m8bs-border rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col ${className}`}
     >
-      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-5">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
-            <TrendingUp className="mr-3 h-6 w-6 text-purple-500" />
+          <CardTitle className="text-xl md:text-2xl font-extrabold text-white flex items-center tracking-tight">
+            <TrendingUp className="mr-3 h-6 w-6 md:h-7 md:w-7 text-purple-500" />
             Marketing ROI
           </CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="p-6 relative">
+      <CardContent className="p-6 md:p-8 relative">
         {/* Background decorative elements */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl"></div>

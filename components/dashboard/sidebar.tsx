@@ -52,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { User as SupabaseUser, Session } from "@supabase/supabase-js"
+import { hasFullAccess, isPageVisible } from "@/lib/page-visibility"
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -119,6 +120,9 @@ export function Sidebar() {
     setFavorites(favorites.filter(fav => fav.href !== href))
   }
 
+  // Check if user has full access
+  const canSeeAllPages = hasFullAccess(user?.email || null)
+
   return (
     <div
       className={cn(
@@ -151,262 +155,290 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-2">
-          {/* Homepage - Standalone */}
-          <Link
-            href="/"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
-              pathname === "/"
-                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-              isCollapsed && "justify-center px-2",
-            )}
-          >
-            <LayoutDashboard className={cn("h-5 w-5 transition-transform duration-200", pathname === "/" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
-            {!isCollapsed && <span>Homepage</span>}
-          </Link>
-
-          {/* Advisor Basecamp Section */}
-          <Link
-            href="/business-dashboard"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
-              pathname === "/business-dashboard"
-                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-              isCollapsed && "justify-center px-2",
-            )}
-          >
-            <Building2 className={cn("h-5 w-5 transition-transform duration-200", pathname === "/business-dashboard" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
-            {!isCollapsed && <span>Advisor Basecamp</span>}
-          </Link>
-
-          {/* Current Book Opportunities */}
-          <Link
-            href="/current-book-opportunities"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
-              pathname === "/current-book-opportunities"
-                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-              isCollapsed && "justify-center px-2",
-            )}
-          >
-            <BookOpen className={cn("h-5 w-5 transition-transform duration-200", pathname === "/current-book-opportunities" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
-            {!isCollapsed && <span>Current Book Opportunities</span>}
-          </Link>
-
-          {/* Marketing Section */}
-          {!isCollapsed ? (
-            <div>
-              <button
-                onClick={() => setIsMarketingExpanded(!isMarketingExpanded)}
-                className="flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-sm font-semibold text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-3">
-                  <BarChart3 className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-colors duration-200" />
-                  <span>Marketing</span>
-                </div>
-                {isMarketingExpanded ? <ChevronDown className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-all duration-200" /> : <ChevronRight className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-all duration-200" />}
-              </button>
-
-              {isMarketingExpanded && (
-                <div className="pl-10 space-y-1 mt-1">
-                  <Link
-                    href="/single-event"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/single-event"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <span>Single Event Dashboard</span>
-                  </Link>
-                  <Link
-                    href="/analytics"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/analytics"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <span>Multi Event Dashboard</span>
-                  </Link>
-                  <Link
-                    href="/events"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/events"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <span>View All Events</span>
-                  </Link>
-                  <Link
-                    href="/events/new"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/events/new"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <PlusCircle className="h-5 w-5" />
-                    <span>New Event</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          ) : (
+          {/* Overview - Standalone */}
+          {isPageVisible("/", user?.email || null) && (
             <Link
-              href="/analytics"
+              href="/"
               className={cn(
-                "flex items-center justify-center rounded-lg px-2 py-2.5 text-sm font-semibold transition-all duration-200 group",
-                pathname.startsWith("/analytics")
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
+                pathname === "/"
                   ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
                   : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                isCollapsed && "justify-center px-2",
               )}
-              title="Marketing"
             >
-              <BarChart3 className="h-5 w-5" />
+              <LayoutDashboard className={cn("h-5 w-5 transition-transform duration-200", pathname === "/" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
+              {!isCollapsed && <span>Overview</span>}
             </Link>
           )}
 
-          {/* Tools Section */}
-          {!isCollapsed ? (
-            <div>
-              <button
-                onClick={() => setIsToolsExpanded(!isToolsExpanded)}
-                className="flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-sm font-semibold text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-3">
-                  <Wrench className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-colors duration-200" />
-                  <span>Tools</span>
-                </div>
-                {isToolsExpanded ? <ChevronDown className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-all duration-200" /> : <ChevronRight className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-all duration-200" />}
-              </button>
-
-              {isToolsExpanded && (
-                <div className="pl-10 space-y-1 mt-1">
-                  <Link
-                    href="/tools/bucket-plan"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/tools/bucket-plan"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <Calculator className="h-5 w-5" />
-                    <span>Bucket Plan</span>
-                  </Link>
-                  <Link
-                    href="/tools/annuity-analysis"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/tools/annuity-analysis"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <Target className="h-5 w-5" />
-                    <span>Annuity Analysis Program</span>
-                  </Link>
-                  <Link
-                    href="/tools/missing-money"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/tools/missing-money"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <Users className="h-5 w-5" />
-                    <span>Missing Money Report</span>
-                  </Link>
-                  <Link
-                    href="/tools/client-missing-money-report"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/tools/client-missing-money-report"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <DollarSign className="h-5 w-5" />
-                    <span>Client Missing Money Report</span>
-                  </Link>
-                  <Link
-                    href="/tools/annual-planner"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/tools/annual-planner"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <FileText className="h-5 w-5" />
-                    <span>Annual Business Planner</span>
-                  </Link>
-                  <Link
-                    href="/tools/behavior-scorecard"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/tools/behavior-scorecard"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <Calculator className="h-5 w-5" />
-                    <span>Business Behavior Scorecard</span>
-                  </Link>
-                  <Link
-                    href="/client-plans"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
-                      pathname === "/client-plans"
-                        ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                        : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-                    )}
-                  >
-                    <FileText className="h-5 w-5" />
-                    <span>Client Plans</span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          ) : (
+          {/* Advisor Basecamp Section */}
+          {isPageVisible("/business-dashboard", user?.email || null) && (
             <Link
-              href="/tools"
+              href="/business-dashboard"
               className={cn(
-                "flex items-center justify-center rounded-lg px-2 py-2.5 text-sm font-semibold transition-all duration-200 group",
-                pathname.startsWith("/tools")
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
+                pathname === "/business-dashboard"
                   ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
                   : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                isCollapsed && "justify-center px-2",
               )}
-              title="Tools"
             >
-              <Wrench className="h-5 w-5" />
+              <Building2 className={cn("h-5 w-5 transition-transform duration-200", pathname === "/business-dashboard" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
+              {!isCollapsed && <span>Advisor Basecamp</span>}
             </Link>
+          )}
+
+          {/* Current Book Opportunities - Only for full access users */}
+          {canSeeAllPages && (
+            <Link
+              href="/current-book-opportunities"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
+                pathname === "/current-book-opportunities"
+                  ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                  : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                isCollapsed && "justify-center px-2",
+              )}
+            >
+              <BookOpen className={cn("h-5 w-5 transition-transform duration-200", pathname === "/current-book-opportunities" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
+              {!isCollapsed && <span>Current Book Opportunities</span>}
+            </Link>
+          )}
+
+          {/* Marketing Section */}
+          {(canSeeAllPages || isPageVisible("/analytics", user?.email || null) || isPageVisible("/events", user?.email || null) || isPageVisible("/single-event", user?.email || null)) && (
+            !isCollapsed ? (
+              <div>
+                <button
+                  onClick={() => setIsMarketingExpanded(!isMarketingExpanded)}
+                  className="flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-sm font-semibold text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white transition-all duration-200 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <BarChart3 className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-colors duration-200" />
+                    <span>Marketing</span>
+                  </div>
+                  {isMarketingExpanded ? <ChevronDown className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-all duration-200" /> : <ChevronRight className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-all duration-200" />}
+                </button>
+
+                {isMarketingExpanded && (
+                  <div className="pl-10 space-y-1 mt-1">
+                    {isPageVisible("/single-event", user?.email || null) && (
+                      <Link
+                        href="/single-event"
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                          pathname === "/single-event"
+                            ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                            : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                        )}
+                      >
+                        <span>Single Event Dashboard</span>
+                      </Link>
+                    )}
+                    {isPageVisible("/analytics", user?.email || null) && (
+                      <Link
+                        href="/analytics"
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                          pathname === "/analytics"
+                            ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                            : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                        )}
+                      >
+                        <span>Multi Event Dashboard</span>
+                      </Link>
+                    )}
+                    {isPageVisible("/events", user?.email || null) && (
+                      <Link
+                        href="/events"
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                          pathname === "/events"
+                            ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                            : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                        )}
+                      >
+                        <span>View All Events</span>
+                      </Link>
+                    )}
+                    {isPageVisible("/events/new", user?.email || null) && (
+                      <Link
+                        href="/events/new"
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                          pathname === "/events/new"
+                            ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                            : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                        )}
+                      >
+                        <PlusCircle className="h-5 w-5" />
+                        <span>New Event</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/analytics"
+                className={cn(
+                  "flex items-center justify-center rounded-lg px-2 py-2.5 text-sm font-semibold transition-all duration-200 group",
+                  pathname.startsWith("/analytics")
+                    ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                    : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                )}
+                title="Marketing"
+              >
+                <BarChart3 className="h-5 w-5" />
+              </Link>
+            )
+          )}
+
+          {/* Tools Section - Show for full access users OR if behavior scorecard is visible */}
+          {(canSeeAllPages || isPageVisible("/tools/behavior-scorecard", user?.email || null)) && (
+            !isCollapsed ? (
+              <div>
+                <button
+                  onClick={() => setIsToolsExpanded(!isToolsExpanded)}
+                  className="flex items-center justify-between w-full rounded-lg px-3 py-2.5 text-sm font-semibold text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white transition-all duration-200 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Wrench className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-colors duration-200" />
+                    <span>Tools</span>
+                  </div>
+                  {isToolsExpanded ? <ChevronDown className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-all duration-200" /> : <ChevronRight className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-all duration-200" />}
+                </button>
+
+                {isToolsExpanded && (
+                  <div className="pl-10 space-y-1 mt-1">
+                    {/* Show all tools for full access users */}
+                    {canSeeAllPages && (
+                      <>
+                        <Link
+                          href="/tools/bucket-plan"
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                            pathname === "/tools/bucket-plan"
+                              ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                              : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                          )}
+                        >
+                          <Calculator className="h-5 w-5" />
+                          <span>Bucket Plan</span>
+                        </Link>
+                        <Link
+                          href="/tools/annuity-analysis"
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                            pathname === "/tools/annuity-analysis"
+                              ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                              : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                          )}
+                        >
+                          <Target className="h-5 w-5" />
+                          <span>Annuity Analysis Program</span>
+                        </Link>
+                        <Link
+                          href="/tools/missing-money"
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                            pathname === "/tools/missing-money"
+                              ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                              : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                          )}
+                        >
+                          <Users className="h-5 w-5" />
+                          <span>Missing Money Report</span>
+                        </Link>
+                        <Link
+                          href="/tools/client-missing-money-report"
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                            pathname === "/tools/client-missing-money-report"
+                              ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                              : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                          )}
+                        >
+                          <DollarSign className="h-5 w-5" />
+                          <span>Client Missing Money Report</span>
+                        </Link>
+                        <Link
+                          href="/tools/annual-planner"
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                            pathname === "/tools/annual-planner"
+                              ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                              : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                          )}
+                        >
+                          <FileText className="h-5 w-5" />
+                          <span>Annual Business Planner</span>
+                        </Link>
+                        <Link
+                          href="/client-plans"
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                            pathname === "/client-plans"
+                              ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                              : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                          )}
+                        >
+                          <FileText className="h-5 w-5" />
+                          <span>Client Plans</span>
+                        </Link>
+                      </>
+                    )}
+                    {/* Business Behavior Scorecard - visible to all regular users */}
+                    {isPageVisible("/tools/behavior-scorecard", user?.email || null) && (
+                      <Link
+                        href="/tools/behavior-scorecard"
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 group",
+                          pathname === "/tools/behavior-scorecard"
+                            ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                            : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                        )}
+                      >
+                        <Calculator className="h-5 w-5" />
+                        <span>Business Behavior Scorecard</span>
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href={canSeeAllPages ? "/tools" : "/tools/behavior-scorecard"}
+                className={cn(
+                  "flex items-center justify-center rounded-lg px-2 py-2.5 text-sm font-semibold transition-all duration-200 group",
+                  pathname.startsWith("/tools")
+                    ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                    : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                )}
+                title="Tools"
+              >
+                <Wrench className="h-5 w-5" />
+              </Link>
+            )
           )}
 
           {/* Settings */}
-          <Link
-            href="/settings"
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
-              pathname === "/settings"
-                ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
-                : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
-              isCollapsed && "justify-center px-2",
-            )}
-          >
-            <Settings className={cn("h-5 w-5 transition-transform duration-200", pathname === "/settings" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
-            {!isCollapsed && <span>Settings</span>}
-          </Link>
+          {isPageVisible("/settings", user?.email || null) && (
+            <Link
+              href="/settings"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
+                pathname === "/settings"
+                  ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                  : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                isCollapsed && "justify-center px-2",
+              )}
+            >
+              <Settings className={cn("h-5 w-5 transition-transform duration-200", pathname === "/settings" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
+              {!isCollapsed && <span>Settings</span>}
+            </Link>
+          )}
         </nav>
       </div>
 
@@ -444,18 +476,22 @@ export function Sidebar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-m8bs-border" />
-                  <DropdownMenuItem
-                    onClick={() => router.push("/profile")}
-                    className="hover:bg-black-alt cursor-pointer font-medium"
-                  >
-                    Edit Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => router.push("/settings")}
-                    className="hover:bg-black-alt cursor-pointer font-medium"
-                  >
-                    Settings
-                  </DropdownMenuItem>
+                  {isPageVisible("/profile", user?.email || null) && (
+                    <DropdownMenuItem
+                      onClick={() => router.push("/profile")}
+                      className="hover:bg-black-alt cursor-pointer font-medium"
+                    >
+                      Edit Profile
+                    </DropdownMenuItem>
+                  )}
+                  {isPageVisible("/settings", user?.email || null) && (
+                    <DropdownMenuItem
+                      onClick={() => router.push("/settings")}
+                      className="hover:bg-black-alt cursor-pointer font-medium"
+                    >
+                      Settings
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator className="bg-m8bs-border" />
                   <DropdownMenuItem 
                     onClick={signOut}
@@ -499,18 +535,22 @@ export function Sidebar() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-m8bs-border" />
-                <DropdownMenuItem
-                  onClick={() => router.push("/profile")}
-                  className="hover:bg-black-alt cursor-pointer font-medium"
-                >
-                  Edit Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => router.push("/settings")}
-                  className="hover:bg-black-alt cursor-pointer font-medium"
-                >
-                  Settings
-                </DropdownMenuItem>
+                {isPageVisible("/profile", user?.email || null) && (
+                  <DropdownMenuItem
+                    onClick={() => router.push("/profile")}
+                    className="hover:bg-black-alt cursor-pointer font-medium"
+                  >
+                    Edit Profile
+                  </DropdownMenuItem>
+                )}
+                {isPageVisible("/settings", user?.email || null) && (
+                  <DropdownMenuItem
+                    onClick={() => router.push("/settings")}
+                    className="hover:bg-black-alt cursor-pointer font-medium"
+                  >
+                    Settings
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator className="bg-m8bs-border" />
                 <DropdownMenuItem 
                   onClick={signOut}

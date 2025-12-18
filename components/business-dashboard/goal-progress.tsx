@@ -282,24 +282,24 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Client Metrics</CardTitle>
-            <CardDescription className="text-m8bs-muted mt-2">Key Client Performance Indicators</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-5">
+            <CardTitle className="text-xl md:text-2xl font-extrabold text-white tracking-tight">Client Metrics</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2 text-sm">Key Client Performance Indicators</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 py-5">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Metric</TableHead>
-                  <TableHead>Value</TableHead>
+                <TableRow className="border-m8bs-border hover:bg-m8bs-card-alt/50">
+                  <TableHead className="text-white/90 font-semibold text-sm py-3">Metric</TableHead>
+                  <TableHead className="text-white/90 font-semibold text-sm py-3 text-right">Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {clientMetricsData.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{item.metric}</TableCell>
-                    <TableCell>{item.value}</TableCell>
+                  <TableRow key={index} className="border-m8bs-border hover:bg-m8bs-card-alt/30">
+                    <TableCell className="font-medium text-white/90 py-3 text-sm">{item.metric}</TableCell>
+                    <TableCell className="text-white font-semibold py-3 text-sm text-right">{item.value}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -307,28 +307,28 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
           </CardContent>
         </Card>
 
-        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Appointment & Prospect Metrics</CardTitle>
-            <CardDescription className="text-m8bs-muted mt-2">Appointment And Prospect Tracking</CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-5">
+            <CardTitle className="text-xl md:text-2xl font-extrabold text-white tracking-tight">Appointment & Prospect Metrics</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2 text-sm">Appointment And Prospect Tracking</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 py-5">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Metric</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Metric</TableHead>
-                  <TableHead>Value</TableHead>
+                <TableRow className="border-m8bs-border hover:bg-m8bs-card-alt/50">
+                  <TableHead className="text-white/90 font-semibold text-sm py-3">Metric</TableHead>
+                  <TableHead className="text-white/90 font-semibold text-sm py-3 text-right">Value</TableHead>
+                  <TableHead className="text-white/90 font-semibold text-sm py-3">Metric</TableHead>
+                  <TableHead className="text-white/90 font-semibold text-sm py-3 text-right">Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {appointmentMetrics.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{item.metric}</TableCell>
-                    <TableCell>{item.value}</TableCell>
-                    <TableCell className="font-medium">{item.metric2}</TableCell>
-                    <TableCell className={item.metric2 === "Annual Total Prospects Necessary" ? "text-red-500 font-bold" : ""}>
+                  <TableRow key={index} className="border-m8bs-border hover:bg-m8bs-card-alt/30">
+                    <TableCell className="font-medium text-white/90 py-3 text-sm">{item.metric}</TableCell>
+                    <TableCell className="text-white font-semibold py-3 text-sm text-right">{item.value}</TableCell>
+                    <TableCell className="font-medium text-white/90 py-3 text-sm">{item.metric2}</TableCell>
+                    <TableCell className={`py-3 text-sm text-right font-semibold ${item.metric2 === "Annual Total Prospects Necessary" ? "text-red-400" : "text-white"}`}>
                       {item.value2}
                     </TableCell>
                   </TableRow>

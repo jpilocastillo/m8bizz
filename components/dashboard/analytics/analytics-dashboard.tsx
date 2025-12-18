@@ -297,7 +297,20 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
 
       {/* Main Content Grid */}
       <motion.div variants={item} className="space-y-4">
-        {/* Top Row - Top Performers and Conversion Funnel */}
+        {/* Conversion Funnel - Full Width */}
+        <div className="w-full">
+          <ConversionBreakdown
+            registrants={filteredData?.summary?.totalRegistrants || 0}
+            plateLickers={filteredData?.summary?.totalPlateLickers || 0}
+            attendees={filteredData?.summary?.totalAttendees || 0}
+            appointmentsSet={filteredData?.summary?.totalAppointmentsSet || 0}
+            firstAppointmentNoShows={filteredData?.summary?.totalFirstAppointmentNoShows || 0}
+            notQualified={filteredData?.summary?.totalNotQualified || 0}
+            clientsCreated={filteredData?.summary?.totalClients || 0}
+          />
+        </div>
+
+        {/* Top Performing Events and Performance Heatmap - Side by Side */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
             <CardHeader className="pb-2">
@@ -315,55 +328,73 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
             </CardContent>
           </Card>
 
-          <div className="flex-1">
-            <ConversionBreakdown
-              registrants={filteredData?.summary?.totalRegistrants || 0}
-              attendees={filteredData?.summary?.totalAttendees || 0}
-              appointmentsSet={filteredData?.summary?.totalAppointmentsSet || 0}
-              firstAppointmentNoShows={filteredData?.summary?.totalFirstAppointmentNoShows || 0}
-              notQualified={filteredData?.summary?.totalNotQualified || 0}
-              clientsCreated={filteredData?.summary?.totalClients || 0}
-            />
-          </div>
+          {/* Performance Heatmap Card */}
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Activity className="h-5 w-5 text-m8bs-blue" />
+                Performance Heatmap
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <PerformanceHeatmap
+                data={filteredData}
+                activeMetric={heatmapMetric}
+                onMetricChange={setHeatmapMetric}
+              />
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Bottom Row - Event Comparison, Monthly Summary, Performance Heatmap, and Trend Analysis */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
-          <div className="space-y-4 flex flex-col">
-            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-m8bs-blue" />
-                  Event Comparison
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <EventComparison events={filteredData?.events || []} />
-              </CardContent>
-            </Card>
+        {/* Trend Analysis - Full Width */}
+        <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-m8bs-blue" />
+              Trend Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <TrendAnalysis events={filteredData?.events || []} />
+          </CardContent>
+        </Card>
 
-            {/* Monthly Summary Card */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex-1 flex flex-col">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                  <Target className="h-5 w-5 text-m8bs-blue" />
-                  Monthly Summary
-                </CardTitle>
-                <p className="text-sm text-m8bs-muted mt-1">
-                  Track your monthly performance across all marketing events with key metrics and ROI analysis
-                </p>
-              </CardHeader>
-              <CardContent className="pt-2 flex-1 flex flex-col gap-4">
+        {/* Event Comparison and Monthly Summary - Side by Side */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Activity className="h-5 w-5 text-m8bs-blue" />
+                Event Comparison
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <EventComparison events={filteredData?.events || []} />
+            </CardContent>
+          </Card>
+
+          {/* Monthly Summary Card */}
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Target className="h-5 w-5 text-m8bs-blue" />
+                Monthly Summary
+              </CardTitle>
+              <p className="text-xs text-m8bs-muted mt-0.5">
+                Track your monthly performance across all marketing events with key metrics and ROI analysis
+              </p>
+            </CardHeader>
+            <CardContent className="pt-1 flex-1 flex flex-col gap-3">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-m8bs-border">
-                        <th className="text-left py-3 px-3 text-m8bs-muted font-medium text-sm">📅 Month</th>
-                        <th className="text-center py-3 px-3 text-m8bs-muted font-medium text-sm">📊 Events</th>
-                        <th className="text-right py-3 px-3 text-m8bs-muted font-medium text-sm">💰 Revenue</th>
-                        <th className="text-right py-3 px-3 text-m8bs-muted font-medium text-sm">👥 Attendees</th>
-                        <th className="text-right py-3 px-3 text-m8bs-muted font-medium text-sm">🎯 Clients</th>
-                        <th className="text-right py-3 px-3 text-m8bs-muted font-medium text-sm">📈 ROI</th>
+                        <th className="text-left py-2 px-2 text-m8bs-muted font-medium text-xs">📅 Month</th>
+                        <th className="text-center py-2 px-2 text-m8bs-muted font-medium text-xs">📊 Events</th>
+                        <th className="text-right py-2 px-2 text-m8bs-muted font-medium text-xs">💰 Revenue</th>
+                        <th className="text-right py-2 px-2 text-m8bs-muted font-medium text-xs">👥 Attendees</th>
+                        <th className="text-right py-2 px-2 text-m8bs-muted font-medium text-xs">🎯 Clients</th>
+                        <th className="text-right py-2 px-2 text-m8bs-muted font-medium text-xs">📈 ROI</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -407,9 +438,9 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
 
                         return processedData.map((data, index) => (
                           <tr key={index} className="border-b border-m8bs-border/50 hover:bg-m8bs-card-alt/50 transition-colors">
-                            <td className="py-3 px-3 text-white font-medium text-sm">{data.month}</td>
-                            <td className="py-3 px-3 text-center text-white text-sm">{data.events}</td>
-                            <td className="py-3 px-3 text-right text-white text-sm">
+                            <td className="py-1.5 px-2 text-white font-medium text-xs">{data.month}</td>
+                            <td className="py-1.5 px-2 text-center text-white text-xs">{data.events}</td>
+                            <td className="py-1.5 px-2 text-right text-white text-xs">
                               {data.revenue >= 1000000 
                                 ? `$${(data.revenue / 1000000).toFixed(1)}M`
                                 : data.revenue >= 1000 
@@ -417,10 +448,10 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                                 : `$${data.revenue.toFixed(0)}`
                               }
                             </td>
-                            <td className="py-3 px-3 text-right text-white text-sm">{data.attendees}</td>
-                            <td className="py-3 px-3 text-right text-white text-sm">{data.clients}</td>
-                            <td className="py-3 px-3 text-right text-sm">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            <td className="py-1.5 px-2 text-right text-white text-xs">{data.attendees}</td>
+                            <td className="py-1.5 px-2 text-right text-white text-xs">{data.clients}</td>
+                            <td className="py-1.5 px-2 text-right text-xs">
+                              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
                                 data.roi > 0 
                                   ? 'bg-green-500/20 text-green-400' 
                                   : data.roi < 0 
@@ -479,9 +510,9 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                   }
 
                   return (
-                    <div className="mt-4 pt-4 border-t border-m8bs-border">
-                      <h4 className="text-sm font-semibold text-white mb-3">Monthly Financial Trends</h4>
-                      <div className="h-[200px]">
+                    <div className="mt-2 pt-3 border-t border-m8bs-border">
+                      <h4 className="text-xs font-semibold text-white mb-2">Monthly Financial Trends</h4>
+                      <div className="h-[160px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#1f2037" />
@@ -525,38 +556,6 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
               </CardContent>
             </Card>
           </div>
-
-          <div className="space-y-4 flex flex-col">
-            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-m8bs-blue" />
-                  Trend Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <TrendAnalysis events={filteredData?.events || []} />
-              </CardContent>
-            </Card>
-
-            {/* Performance Heatmap Card */}
-            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-m8bs-blue" />
-                  Performance Heatmap
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <PerformanceHeatmap
-                  data={filteredData}
-                  activeMetric={heatmapMetric}
-                  onMetricChange={setHeatmapMetric}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       </motion.div>
     </motion.div>
   )

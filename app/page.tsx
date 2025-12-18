@@ -53,7 +53,7 @@ interface HomepageData {
   latestMonthlyEntry: any
 }
 
-export default function Homepage() {
+export default function Overview() {
   const { user } = useAuth()
   const { data: advisorData, loading: advisorLoading } = useAdvisorBasecamp(user)
   const [data, setData] = useState<HomepageData>({
@@ -81,7 +81,7 @@ export default function Homepage() {
   }
 
   useEffect(() => {
-    async function loadHomepageData() {
+    async function loadOverviewData() {
       if (!user) return
 
       try {
@@ -107,25 +107,39 @@ export default function Homepage() {
           latestMonthlyEntry
         })
       } catch (error) {
-        console.error("Error loading homepage data:", error)
+        console.error("Error loading overview data:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    loadHomepageData()
+    loadOverviewData()
   }, [user, advisorData])
 
   // Update data when advisorData changes
   useEffect(() => {
-    if (advisorData) {
-      setData(prev => ({
-        ...prev,
-        advisorData,
-        latestMonthlyEntry: getLatestMonthlyEntry(advisorData)
-      }))
+    if (advisorData && user) {
+      // Recalculate analytics when advisorData changes
+      async function updateData() {
+        try {
+          const events = await fetchAllEvents(user.id)
+          const analyticsSummary = calculateAnalyticsSummary(events)
+          const topEvents = getTopEvents(events, 3)
+          
+          setData(prev => ({
+            ...prev,
+            advisorData,
+            analyticsSummary,
+            topEvents,
+            latestMonthlyEntry: getLatestMonthlyEntry(advisorData)
+          }))
+        } catch (error) {
+          console.error("Error updating overview data:", error)
+        }
+      }
+      updateData()
     }
-  }, [advisorData])
+  }, [advisorData, user])
 
   const calculateAnalyticsSummary = (events: any[]) => {
     if (!events || events.length === 0) {
@@ -143,21 +157,35 @@ export default function Homepage() {
     }
 
     const summary = events.reduce((acc, event) => {
-      const attendance = event.attendance || {}
-      const expenses = event.marketing_expenses || {}
+      // Handle attendance - could be object or array
+      const attendance = Array.isArray(event.attendance) 
+        ? (event.attendance[0] || {}) 
+        : (event.attendance || {})
       
-      // Calculate revenue consistently with getTopEvents function
-      const totalProduction = (event.financial_production?.aum_fees || 0) + 
-                            (event.financial_production?.annuity_commission || 0) + 
-                            (event.financial_production?.life_insurance_commission || 0) + 
-                            (event.financial_production?.financial_planning || 0)
+      // Handle expenses - could be object or array
+      const expenses = Array.isArray(event.marketing_expenses) 
+        ? (event.marketing_expenses[0] || {}) 
+        : (event.marketing_expenses || {})
+      
+      // Handle financial_production - could be object or array
+      const financial = Array.isArray(event.financial_production) 
+        ? (event.financial_production[0] || {}) 
+        : (event.financial_production || {})
+      
+      // Use the total if available, otherwise calculate from components
+      const totalProduction = financial.total !== undefined 
+        ? (financial.total || 0)
+        : ((financial.aum_fees || 0) + 
+           (financial.annuity_commission || 0) + 
+           (financial.life_insurance_commission || 0) + 
+           (financial.financial_planning || 0))
 
       return {
         totalEvents: acc.totalEvents + 1,
-        totalAttendees: acc.totalAttendees + (attendance.attendees || 0),
-        totalRevenue: acc.totalRevenue + totalProduction,
-        totalExpenses: acc.totalExpenses + (expenses.total_cost || 0),
-        totalClients: acc.totalClients + (attendance.clients_from_event || 0)
+        totalAttendees: acc.totalAttendees + (Number(attendance.attendees) || 0),
+        totalRevenue: acc.totalRevenue + (Number(totalProduction) || 0),
+        totalExpenses: acc.totalExpenses + (Number(expenses.total_cost) || 0),
+        totalClients: acc.totalClients + (Number(attendance.clients_from_event) || 0)
       }
     }, {
       totalEvents: 0,
@@ -174,7 +202,9 @@ export default function Homepage() {
       : summary.totalRevenue > 0 
         ? 9999 // Show high ROI when there's revenue but no expenses
         : 0
-    summary.overallConversionRate = summary.totalAttendees > 0 ? ((summary.totalClients / summary.totalAttendees) * 100) : 0
+    summary.overallConversionRate = summary.totalAttendees > 0 
+      ? Number(((summary.totalClients / summary.totalAttendees) * 100).toFixed(1)) 
+      : 0
 
     return summary
   }
@@ -184,16 +214,42 @@ export default function Homepage() {
     
     return events
       .map(event => {
-        const totalProduction = (event.financial_production?.aum_fees || 0) + 
-                              (event.financial_production?.annuity_commission || 0) + 
-                              (event.financial_production?.life_insurance_commission || 0) + 
-                              (event.financial_production?.financial_planning || 0)
-        const expenses = event.marketing_expenses?.total_cost || 0
+        // Handle financial_production - could be object or array
+        const financial = Array.isArray(event.financial_production) 
+          ? (event.financial_production[0] || {}) 
+          : (event.financial_production || {})
+        
+        // Use the total if available, otherwise calculate from components
+        const totalProduction = financial.total !== undefined 
+          ? (Number(financial.total) || 0)
+          : ((Number(financial.aum_fees) || 0) + 
+             (Number(financial.annuity_commission) || 0) + 
+             (Number(financial.life_insurance_commission) || 0) + 
+             (Number(financial.financial_planning) || 0))
+        
+        // Handle expenses - could be object or array
+        const expenses = Array.isArray(event.marketing_expenses) 
+          ? (Number(event.marketing_expenses[0]?.total_cost) || 0)
+          : (Number(event.marketing_expenses?.total_cost) || 0)
+        
+        // Handle attendance - could be object or array
+        const attendance = Array.isArray(event.attendance) 
+          ? (event.attendance[0] || {}) 
+          : (event.attendance || {})
+        
+        const attendees = Number(attendance.attendees) || 0
+        const clients = Number(attendance.clients_from_event) || 0
+        
+        const profit = totalProduction - expenses
         const roi = expenses > 0 
-          ? ((totalProduction - expenses) / expenses) * 100 
+          ? Number(((profit / expenses) * 100).toFixed(1))
           : totalProduction > 0 
             ? 9999 // Show high ROI when there's revenue but no expenses
             : 0
+        
+        const conversionRate = attendees > 0 
+          ? Number(((clients / attendees) * 100).toFixed(1))
+          : 0
         
         return {
           id: event.id,
@@ -204,15 +260,11 @@ export default function Homepage() {
           topic: event.topic || 'N/A',
           revenue: totalProduction,
           expenses,
-          profit: totalProduction - expenses,
-          attendees: event.attendance?.attendees || 0,
-          clients: event.attendance?.clients_from_event || 0,
+          profit,
+          attendees,
+          clients,
           roi: { value: roi },
-          conversionRate: (() => {
-            const attendees = event.attendance?.attendees || 0;
-            const clients = event.attendance?.clients_from_event || 0;
-            return attendees > 0 ? (clients / attendees) * 100 : 0;
-          })(),
+          conversionRate,
         }
       })
       .sort((a, b) => (b.roi?.value || 0) - (a.roi?.value || 0))
@@ -278,7 +330,7 @@ export default function Homepage() {
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
         <main className="flex-1 overflow-y-auto px-4 sm:px-5 lg:px-6 xl:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 bg-black">
           <DatabaseStatus />
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <Suspense fallback={<div>Loading...</div>}>
               <motion.div 
                 className="space-y-4"
@@ -287,18 +339,73 @@ export default function Homepage() {
                 animate="show"
               >
       {/* Enhanced Hero Section */}
-      <motion.div variants={item} className="text-center space-y-4 py-4">
-        <div className="space-y-4">
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-m8bs-blue via-m8bs-purple to-m8bs-pink bg-clip-text text-transparent">
-            Welcome To M8 Business Suite
-          </h1>
-          <p className="text-xl md:text-2xl text-m8bs-muted max-w-3xl mx-auto leading-relaxed">
-            Transform Your Financial Advisory Practice With Comprehensive Business Management, 
-            Client Acquisition Tracking, And Performance Analytics.
-          </p>
+      <motion.div variants={item} className="space-y-6 py-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-m8bs-blue via-m8bs-purple to-m8bs-pink bg-clip-text text-transparent">
+              Welcome Back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(' ')[0]}` : ''}!
+            </h1>
+            <p className="text-lg md:text-xl text-m8bs-muted max-w-2xl leading-relaxed">
+              Your Business Overview At A Glance
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/events/new">
+              <Button className="bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark hover:from-m8bs-blue-dark hover:to-m8bs-blue text-white shadow-lg shadow-m8bs-blue/30">
+                <Plus className="h-4 w-4 mr-2" />
+                New Event
+              </Button>
+            </Link>
+            <Link href="/business-dashboard">
+              <Button variant="outline" className="border-m8bs-border hover:bg-m8bs-card-alt">
+                <Building2 className="h-4 w-4 mr-2" />
+                Basecamp
+              </Button>
+            </Link>
+          </div>
         </div>
-        
       </motion.div>
+
+      {/* Key Achievements Banner */}
+      {data.analyticsSummary && data.analyticsSummary.totalEvents > 0 && (
+        <motion.div variants={item}>
+          <Card className="bg-gradient-to-r from-m8bs-blue/10 via-m8bs-purple/10 to-m8bs-pink/10 border-m8bs-border rounded-lg overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark rounded-lg flex items-center justify-center">
+                    <Award className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">This Month's Highlights</h3>
+                    <p className="text-sm text-m8bs-muted">Your Business Performance Summary</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  {data.analyticsSummary.totalClients > 0 && (
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-white">{data.analyticsSummary.totalClients}</div>
+                      <div className="text-xs text-m8bs-muted">New Clients</div>
+                    </div>
+                  )}
+                  {data.analyticsSummary.totalRevenue > 0 && (
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-white">${(data.analyticsSummary.totalRevenue / 1000).toFixed(0)}K</div>
+                      <div className="text-xs text-m8bs-muted">Revenue</div>
+                    </div>
+                  )}
+                  {data.analyticsSummary.overallROI > 0 && (
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-white">{data.analyticsSummary.overallROI}%</div>
+                      <div className="text-xs text-m8bs-muted">ROI</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Marketing Events Metrics */}
       <motion.div 
@@ -359,7 +466,7 @@ export default function Homepage() {
         />
         <ThreeDMetricCard
           title="Overall ROI"
-          value={data.analyticsSummary?.overallROI || 0}
+          value={data.analyticsSummary?.overallROI === 9999 ? 999 : (data.analyticsSummary?.overallROI || 0)}
           format="percent"
           icon={<BarChart3 className="h-5 w-5 text-m8bs-purple" />}
           description="Return On Investment"
@@ -412,8 +519,10 @@ export default function Homepage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold text-white">{event.roi?.value?.toFixed(1)}% ROI</div>
-                          <div className="text-sm text-m8bs-muted">${event.revenue?.toLocaleString()}</div>
+                          <div className="font-bold text-white">
+                            {event.roi?.value === 9999 ? "999%+" : (event.roi?.value?.toFixed(1) || 0)}% ROI
+                          </div>
+                          <div className="text-sm text-m8bs-muted">${(event.revenue || 0).toLocaleString()}</div>
                         </div>
                       </div>
                     ))}
@@ -421,7 +530,13 @@ export default function Homepage() {
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No Events Data Available</p>
+                    <p className="mb-2">No Events Data Available</p>
+                    <Link href="/events/new">
+                      <Button variant="outline" size="sm" className="mt-2">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Event
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </CardContent>
@@ -524,8 +639,14 @@ export default function Homepage() {
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No Goals Data Available</p>
-                    <p className="text-sm mt-2">Set Up Your Business Goals In The Advisor Basecamp</p>
+                    <p className="mb-2">No Goals Data Available</p>
+                    <p className="text-sm mb-4">Set Up Your Business Goals In The Advisor Basecamp</p>
+                    <Link href="/business-dashboard">
+                      <Button variant="outline" size="sm">
+                        <Building2 className="h-4 w-4 mr-2" />
+                        Go To Basecamp
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </CardContent>
@@ -548,51 +669,84 @@ export default function Homepage() {
               <CardContent>
                 {advisorData?.currentValues ? (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-3">
-                      <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-m8bs-muted rounded-full"></div>
-                          <span className="text-m8bs-muted">Annuity Book</span>
-                        </div>
-                        <span className="text-white font-semibold">
-                          ${advisorData.currentValues.current_annuity?.toLocaleString() || 0}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-m8bs-green rounded-full"></div>
-                          <span className="text-m8bs-muted">AUM Book</span>
-                        </div>
-                        <span className="text-white font-semibold">
-                          ${advisorData.currentValues.current_aum?.toLocaleString() || 0}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-m8bs-purple rounded-full"></div>
-                          <span className="text-m8bs-muted">Life Production</span>
-                        </div>
-                        <span className="text-white font-semibold">
-                          ${advisorData.currentValues.current_life_production?.toLocaleString() || 0}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t border-m8bs-border">
-                      <div className="flex justify-between items-center">
-                        <span className="text-m8bs-muted font-medium">Total Book Value</span>
-                        <span className="text-white font-bold text-lg">
-                          ${((advisorData.currentValues.current_annuity || 0) + 
-                             (advisorData.currentValues.current_aum || 0) + 
-                             (advisorData.currentValues.current_life_production || 0)).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
+                    {(() => {
+                      const annuity = advisorData.currentValues.current_annuity || 0
+                      const aum = advisorData.currentValues.current_aum || 0
+                      const life = advisorData.currentValues.current_life_production || 0
+                      const total = annuity + aum + life
+                      const annuityPercent = total > 0 ? ((annuity / total) * 100).toFixed(1) : 0
+                      const aumPercent = total > 0 ? ((aum / total) * 100).toFixed(1) : 0
+                      const lifePercent = total > 0 ? ((life / total) * 100).toFixed(1) : 0
+                      
+                      return (
+                        <>
+                          <div className="grid grid-cols-1 gap-3">
+                            <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-m8bs-muted rounded-full"></div>
+                                <span className="text-m8bs-muted">Annuity Book</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-white font-semibold block">
+                                  ${annuity.toLocaleString()}
+                                </span>
+                                <span className="text-xs text-m8bs-muted">
+                                  {annuityPercent}%
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-m8bs-green rounded-full"></div>
+                                <span className="text-m8bs-muted">AUM Book</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-white font-semibold block">
+                                  ${aum.toLocaleString()}
+                                </span>
+                                <span className="text-xs text-m8bs-muted">
+                                  {aumPercent}%
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-m8bs-card-alt rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-m8bs-purple rounded-full"></div>
+                                <span className="text-m8bs-muted">Life Production</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-white font-semibold block">
+                                  ${life.toLocaleString()}
+                                </span>
+                                <span className="text-xs text-m8bs-muted">
+                                  {lifePercent}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t border-m8bs-border">
+                            <div className="flex justify-between items-center">
+                              <span className="text-m8bs-muted font-medium">Total Book Value</span>
+                              <span className="text-white font-bold text-lg">
+                                ${total.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No Book Data Available</p>
-                    <p className="text-sm mt-2">Set Up Your Current Values In The Advisor Basecamp</p>
+                    <p className="mb-2">No Book Data Available</p>
+                    <p className="text-sm mb-4">Set Up Your Current Values In The Advisor Basecamp</p>
+                    <Link href="/business-dashboard">
+                      <Button variant="outline" size="sm">
+                        <Building2 className="h-4 w-4 mr-2" />
+                        Set Up Book
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </CardContent>
@@ -650,13 +804,91 @@ export default function Homepage() {
                 ) : (
                   <div className="text-center py-8 text-m8bs-muted">
                     <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No Monthly Entries Yet</p>
-                    <p className="text-sm mt-2">Start Tracking Your Monthly Performance</p>
+                    <p className="mb-2">No Monthly Entries Yet</p>
+                    <p className="text-sm mb-4">Start Tracking Your Monthly Performance</p>
+                    <Link href="/business-dashboard">
+                      <Button variant="outline" size="sm">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Add Monthly Data
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Active Campaigns Section */}
+          {advisorData?.campaigns && advisorData.campaigns.length > 0 && (() => {
+            const activeCampaigns = advisorData.campaigns
+              .filter(campaign => campaign.status === 'Active' || campaign.status === 'Planned')
+              .slice(0, 3)
+            
+            if (activeCampaigns.length === 0) return null
+            
+            return (
+              <motion.div variants={item}>
+                <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+                  <CardHeader className="bg-m8bs-card px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                          <Target className="h-5 w-5 text-m8bs-muted" />
+                          Active Campaigns
+                        </CardTitle>
+                        <CardDescription className="text-m8bs-muted mt-2">
+                          Your Current Marketing Campaigns
+                        </CardDescription>
+                      </div>
+                      <Link href="/business-dashboard">
+                        <Button variant="ghost" size="sm" className="text-m8bs-muted hover:text-white">
+                          View All <ArrowRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {activeCampaigns.map((campaign) => (
+                        <Link key={campaign.id} href="/business-dashboard">
+                          <div className="flex items-center justify-between p-3 bg-m8bs-card-alt rounded-lg hover:bg-m8bs-card transition-colors cursor-pointer group">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-gradient-to-br from-m8bs-purple to-m8bs-pink rounded-lg flex flex-col items-center justify-center text-white font-bold text-xs">
+                                <span className="text-lg">{campaign.events || 0}</span>
+                                <span className="text-[10px]">Events</span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-semibold text-white group-hover:text-m8bs-blue transition-colors">{campaign.name}</div>
+                                <div className="text-sm text-m8bs-muted flex items-center gap-2">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      campaign.status === 'Active' ? 'border-m8bs-green text-m8bs-green' :
+                                      campaign.status === 'Planned' ? 'border-yellow-500 text-yellow-500' :
+                                      'border-m8bs-muted text-m8bs-muted'
+                                    }`}
+                                  >
+                                    {campaign.status}
+                                  </Badge>
+                                  {campaign.frequency && (
+                                    <span>• {campaign.frequency}</span>
+                                  )}
+                                  {campaign.budget > 0 && (
+                                    <span>• ${campaign.budget.toLocaleString()} Budget</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <ArrowRight className="h-5 w-5 text-m8bs-muted group-hover:text-m8bs-blue transition-colors" />
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )
+          })()}
 
           {/* Recent Activity and Performance Insights */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
@@ -742,7 +974,7 @@ export default function Homepage() {
                       <span className="text-sm text-m8bs-muted">Total ROI</span>
                     </div>
                     <span className="text-white font-semibold">
-                      {data.analyticsSummary?.overallROI || 0}%
+                      {data.analyticsSummary?.overallROI === 9999 ? "999%+" : (data.analyticsSummary?.overallROI || 0)}%
                     </span>
                   </div>
                 </div>
@@ -803,162 +1035,6 @@ export default function Homepage() {
             </Card>
           </div>
 
-          {/* Recommendations and Book Distribution */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            {/* Smart Recommendations */}
-            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-              <CardHeader className="bg-m8bs-card px-6 py-4">
-                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                  <Target className="h-5 w-5 text-m8bs-muted" />
-                  Smart Recommendations
-                </CardTitle>
-                <CardDescription className="text-m8bs-muted mt-2">
-                  Personalized Insights For Your Business
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {(() => {
-                    const recommendations = []
-                    
-                    // ROI-based recommendation
-                    if (data.analyticsSummary?.overallROI > 0) {
-                      if (data.analyticsSummary.overallROI < 100) {
-                        recommendations.push({
-                          type: "warning",
-                          icon: <TrendingDown className="h-4 w-4" />,
-                          title: "Improve Event ROI",
-                          description: "Consider Optimizing Your Marketing Events To Increase Return On Investment."
-                        })
-                      } else {
-                        recommendations.push({
-                          type: "success",
-                          icon: <TrendingUp className="h-4 w-4" />,
-                          title: "Great ROI Performance",
-                          description: "Your Events Are Performing Well! Consider Scaling Successful Strategies."
-                        })
-                      }
-                    }
-                    
-                    // Conversion rate recommendation
-                    if (data.analyticsSummary?.overallConversionRate < 10) {
-                      recommendations.push({
-                        type: "info",
-                        icon: <Users className="h-4 w-4" />,
-                          title: "Boost Conversion Rate",
-                          description: "Focus On Improving Attendee-To-Client Conversion Through Better Follow-Up."
-                      })
-                    }
-                    
-                    // Event frequency recommendation
-                    if (data.analyticsSummary?.totalEvents < 3) {
-                      recommendations.push({
-                        type: "info",
-                        icon: <Calendar className="h-4 w-4" />,
-                          title: "Increase Event Frequency",
-                          description: "Consider Hosting More Marketing Events To Accelerate Client Acquisition."
-                      })
-                    }
-                    
-                    if (recommendations.length === 0) {
-                      recommendations.push({
-                        type: "success",
-                        icon: <Award className="h-4 w-4" />,
-                          title: "All Systems Optimal",
-                          description: "Your Business Metrics Are Performing Well. Keep Up The Great Work!"
-                      })
-                    }
-                    
-                    return recommendations.map((rec, index) => (
-                      <div key={index} className={`flex items-start space-x-3 p-3 rounded-lg ${
-                        rec.type === 'success' ? 'bg-m8bs-green/10 border border-m8bs-green/20' :
-                        rec.type === 'warning' ? 'bg-yellow-500/10 border border-yellow-500/20' :
-                        'bg-m8bs-card-alt border border-m8bs-border'
-                      }`}>
-                        <div className={`mt-0.5 ${
-                          rec.type === 'success' ? 'text-m8bs-green' :
-                          rec.type === 'warning' ? 'text-yellow-500' :
-                          'text-m8bs-muted'
-                        }`}>
-                          {rec.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium text-white">{rec.title}</h4>
-                          <p className="text-xs text-m8bs-muted mt-1">{rec.description}</p>
-                        </div>
-                      </div>
-                    ))
-                  })()}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Book Distribution */}
-            <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-              <CardHeader className="bg-m8bs-card px-6 py-4">
-                <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                  <PieChart className="h-5 w-5 text-m8bs-muted" />
-                  Book Distribution
-                </CardTitle>
-                <CardDescription className="text-m8bs-muted mt-2">
-                  Distribution Of Your Financial Book
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {advisorData?.currentValues ? (
-                  <div className="space-y-4">
-                    {(() => {
-                      const annuity = advisorData.currentValues.current_annuity || 0
-                      const aum = advisorData.currentValues.current_aum || 0
-                      const life = advisorData.currentValues.current_life_production || 0
-                      const total = annuity + aum + life
-                      
-                      if (total === 0) {
-                        return (
-                          <div className="text-center py-8 text-m8bs-muted">
-                            <PieChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No Book Data To Display</p>
-                          </div>
-                        )
-                      }
-
-                      return (
-                        <div className="space-y-3">
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-m8bs-muted">Annuity Book</span>
-                              <span className="text-white">{((annuity / total) * 100).toFixed(1)}%</span>
-                            </div>
-                            <Progress value={(annuity / total) * 100} className="h-2" />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-m8bs-muted">AUM Book</span>
-                              <span className="text-white">{((aum / total) * 100).toFixed(1)}%</span>
-                            </div>
-                            <Progress value={(aum / total) * 100} className="h-2" />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-m8bs-muted">Life Production</span>
-                              <span className="text-white">{((life / total) * 100).toFixed(1)}%</span>
-                            </div>
-                            <Progress value={(life / total) * 100} className="h-2" />
-                          </div>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-m8bs-muted">
-                    <PieChart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No Book Data Available</p>
-                    <p className="text-sm mt-2">Set Up Your Current Values In The Advisor Basecamp</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </TooltipProvider>
       </motion.div>
             </motion.div>

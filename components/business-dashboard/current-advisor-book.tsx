@@ -64,47 +64,47 @@ export function CurrentAdvisorBook({ currentValues }: CurrentAdvisorBookProps) {
 
   return (
     <div className="grid gap-6">
-      <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-        <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
-          <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-m8bs-muted" />
+      <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+        <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-5">
+          <CardTitle className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <Briefcase className="h-5 w-5 md:h-6 md:w-6 text-m8bs-muted" />
             Current Advisor Book
           </CardTitle>
-          <CardDescription className="text-m8bs-muted mt-2">
+          <CardDescription className="text-m8bs-muted mt-2 text-sm">
             Your Current Book Of Business
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 px-6 py-5">
           {/* Total Book Value */}
-          <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-6">
-            <div className="text-center mb-4">
-              <div className="text-sm font-semibold text-white/70 tracking-wide uppercase mb-2">Total Book Value</div>
-              <div className="text-4xl font-extrabold text-white tabular-nums leading-none">
+          <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-6 md:p-8">
+            <div className="text-center">
+              <div className="text-sm md:text-base font-semibold text-white/80 tracking-wide uppercase mb-3">Total Book Value</div>
+              <div className="text-4xl md:text-5xl font-extrabold text-white tabular-nums leading-none">
                 ${totalBookValue.toLocaleString()}
               </div>
             </div>
           </div>
 
           {/* Book Breakdown */}
-          <div className="space-y-4">
+          <div className="space-y-5">
             {bookData.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+              <div key={index} className="space-y-3">
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div 
-                      className="w-3 h-3 rounded-full" 
+                      className="w-3 h-3 md:w-4 md:h-4 rounded-full flex-shrink-0" 
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-sm font-medium text-white">{item.name}</span>
+                    <span className="text-sm md:text-base font-semibold text-white truncate">{item.name}</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-white">${item.value.toLocaleString()}</div>
-                    <div className="text-xs text-m8bs-muted">{item.percentage.toFixed(1)}%</div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-lg md:text-xl font-bold text-white">${item.value.toLocaleString()}</div>
+                    <div className="text-xs md:text-sm text-m8bs-muted font-medium">{item.percentage.toFixed(1)}%</div>
                   </div>
                 </div>
                 <Progress 
                   value={item.percentage} 
-                  className="h-2"
+                  className="h-2.5 md:h-3"
                   style={{
                     // @ts-ignore - custom CSS variable for progress color
                     '--progress-background': item.color,
@@ -115,19 +115,19 @@ export function CurrentAdvisorBook({ currentValues }: CurrentAdvisorBookProps) {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-m8bs-border">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 pt-5 border-t border-m8bs-border">
             {bookData.map((item, index) => (
               <div 
                 key={index}
-                className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 text-center"
+                className="bg-black/30 border border-m8bs-border/40 rounded-lg p-5 text-center hover:bg-black/40 transition-colors"
               >
-                <div className="text-xs font-semibold text-white/70 tracking-wide uppercase mb-2">
+                <div className="text-xs md:text-sm font-semibold text-white/80 tracking-wide uppercase mb-3">
                   {item.name}
                 </div>
-                <div className="text-2xl font-extrabold text-white tabular-nums">
+                <div className="text-2xl md:text-3xl font-extrabold text-white tabular-nums mb-1">
                   ${item.value.toLocaleString()}
                 </div>
-                <div className="text-xs text-m8bs-muted mt-1">
+                <div className="text-xs md:text-sm text-m8bs-muted font-medium">
                   {item.percentage.toFixed(1)}% of total
                 </div>
               </div>
