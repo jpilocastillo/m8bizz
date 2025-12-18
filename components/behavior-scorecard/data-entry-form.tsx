@@ -24,6 +24,8 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   const { toast } = useToast()
   const [monthlyData, setMonthlyData] = useState<Record<string, number>>({})
   const [goalData, setGoalData] = useState<Record<string, number>>({})
+  const [monthlyDataInput, setMonthlyDataInput] = useState<Record<string, string>>({})
+  const [goalDataInput, setGoalDataInput] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
   const loadMonthlyData = useCallback(async () => {
@@ -47,19 +49,46 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   useEffect(() => {
     const initialData: Record<string, number> = {}
     const initialGoals: Record<string, number> = {}
+    const initialDataInput: Record<string, string> = {}
+    const initialGoalsInput: Record<string, string> = {}
     metrics.forEach(metric => {
       initialData[metric.id] = 0
       initialGoals[metric.id] = metric.goalValue
+      initialDataInput[metric.id] = ''
+      initialGoalsInput[metric.id] = metric.goalValue.toString()
     })
     setMonthlyData(initialData)
     setGoalData(initialGoals)
+    setMonthlyDataInput(initialDataInput)
+    setGoalDataInput(initialGoalsInput)
 
     // Load existing data
     loadMonthlyData()
   }, [metrics, year, month, loadMonthlyData])
 
+  // Update input values when monthly data is loaded
+  useEffect(() => {
+    setMonthlyDataInput(prev => {
+      const updated = { ...prev }
+      metrics.forEach(metric => {
+        const value = monthlyData[metric.id]
+        if (value !== undefined && value !== null) {
+          updated[metric.id] = value.toString()
+        }
+      })
+      return updated
+    })
+  }, [monthlyData, metrics])
+
   const handleMonthlyValueChange = (metricId: string, value: string) => {
-    const numValue = parseFloat(value) || 0
+    // Allow empty string for easier editing
+    setMonthlyDataInput(prev => ({
+      ...prev,
+      [metricId]: value,
+    }))
+    
+    // Update numeric value only if value is not empty
+    const numValue = value === '' ? 0 : parseFloat(value) || 0
     setMonthlyData(prev => ({
       ...prev,
       [metricId]: numValue,
@@ -67,11 +96,59 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   }
 
   const handleGoalChange = (metricId: string, value: string) => {
-    const numValue = parseFloat(value) || 0
+    // Allow empty string for easier editing
+    setGoalDataInput(prev => ({
+      ...prev,
+      [metricId]: value,
+    }))
+    
+    // Update numeric value only if value is not empty
+    const numValue = value === '' ? 0 : parseFloat(value) || 0
     setGoalData(prev => ({
       ...prev,
       [metricId]: numValue,
     }))
+  }
+
+  const handleMonthlyValueBlur = (metricId: string) => {
+    // When field loses focus, ensure we have a valid number
+    const currentInput = monthlyDataInput[metricId] || ''
+    if (currentInput === '' || isNaN(parseFloat(currentInput))) {
+      setMonthlyDataInput(prev => ({
+        ...prev,
+        [metricId]: '0',
+      }))
+      setMonthlyData(prev => ({
+        ...prev,
+        [metricId]: 0,
+      }))
+    } else {
+      // Normalize the input value
+      const numValue = parseFloat(currentInput) || 0
+      setMonthlyDataInput(prev => ({
+        ...prev,
+        [metricId]: numValue.toString(),
+      }))
+    }
+  }
+
+  const handleGoalBlur = (metricId: string) => {
+    // When field loses focus, ensure we have a valid number
+    const currentInput = goalDataInput[metricId] || ''
+    if (currentInput === '' || isNaN(parseFloat(currentInput))) {
+      const defaultValue = goalData[metricId] || 0
+      setGoalDataInput(prev => ({
+        ...prev,
+        [metricId]: defaultValue.toString(),
+      }))
+    } else {
+      // Normalize the input value
+      const numValue = parseFloat(currentInput) || 0
+      setGoalDataInput(prev => ({
+        ...prev,
+        [metricId]: numValue.toString(),
+      }))
+    }
   }
 
   const handleSave = async () => {
@@ -206,23 +283,39 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                       </TableCell>
                       <TableCell className="p-2">
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           step={getInputStep(metric.metricType)}
                           min="0"
-                          value={goalData[metric.id] ?? metric.goalValue}
-                          onChange={(e) => handleGoalChange(metric.id, e.target.value)}
+                          value={goalDataInput[metric.id] ?? (goalData[metric.id] ?? metric.goalValue).toString()}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            // Allow empty string, numbers, and single decimal point
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                              handleGoalChange(metric.id, value)
+                            }
+                          }}
+                          onBlur={() => handleGoalBlur(metric.id)}
                           className="w-full text-center bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
                           placeholder="0"
                         />
                       </TableCell>
                       <TableCell className="p-2">
                         <Input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           step={getInputStep(metric.metricType)}
                           min="0"
                           max={getInputMax(metric.metricType)}
-                          value={monthlyValue}
-                          onChange={(e) => handleMonthlyValueChange(metric.id, e.target.value)}
+                          value={monthlyDataInput[metric.id] ?? monthlyValue.toString()}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            // Allow empty string, numbers, and single decimal point
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                              handleMonthlyValueChange(metric.id, value)
+                            }
+                          }}
+                          onBlur={() => handleMonthlyValueBlur(metric.id)}
                           className="w-full text-center bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
                           placeholder="0"
                         />
