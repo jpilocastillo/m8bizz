@@ -283,39 +283,123 @@ export function CampaignTable() {
     const avgAnnuitySize = clientMetrics?.avg_annuity_size || 0
     const avgAUMSize = clientMetrics?.avg_aum_size || 0
     const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
+    const appointmentAttrition = clientMetrics?.appointment_attrition || 0
+    const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
 
-    // Group campaigns by quarter (assuming campaigns are monthly, distribute across quarters)
-    const campaignsPerQuarter = Math.ceil(campaigns.length / 4)
     const quarters = ["Q1", "Q2", "Q3", "Q4"]
     
-    return quarters.map((quarter, index) => {
-      const startIdx = index * campaignsPerQuarter
-      const endIdx = Math.min(startIdx + campaignsPerQuarter, campaigns.length)
-      const quarterCampaigns = campaigns.slice(startIdx, endIdx)
+    // Group campaigns by frequency for better distribution
+    // Normalize frequency values to handle case/whitespace variations
+    const normalizeFrequency = (freq: string | undefined): string => {
+      if (!freq) return "Monthly"
+      return freq.trim()
+    }
+    
+    const monthlyCampaigns = campaigns.filter(c => {
+      const freq = normalizeFrequency(c.frequency)
+      return freq === "Monthly"
+    })
+    const quarterlyCampaigns = campaigns.filter(c => {
+      const freq = normalizeFrequency(c.frequency)
+      return freq === "Quarterly"
+    })
+    const semiAnnualCampaigns = campaigns.filter(c => {
+      const freq = normalizeFrequency(c.frequency)
+      return freq === "Semi-Annual"
+    })
+    const annualCampaigns = campaigns.filter(c => {
+      const freq = normalizeFrequency(c.frequency)
+      return freq === "Annual"
+    })
+    
+    // Debug logging
+    console.log('Campaign frequency distribution:', {
+      total: campaigns.length,
+      monthly: monthlyCampaigns.length,
+      quarterly: quarterlyCampaigns.length,
+      semiAnnual: semiAnnualCampaigns.length,
+      annual: annualCampaigns.length,
+      campaigns: campaigns.map(c => ({ name: c.campaign, frequency: c.frequency, events: c.events }))
+    })
+    
+    // Calculate quarterly totals by summing all campaigns' quarterly contributions
+    // Each campaign contributes to quarters based on its frequency
+    return quarters.map((quarter, quarterIndex) => {
+      let quarterBudget = 0
+      let quarterLeads = 0
+      let quarterEvents = 0
       
-      const budget = quarterCampaigns.reduce((sum, c) => sum + (c.budget || 0), 0)
-      const leads = quarterCampaigns.reduce((sum, c) => sum + (c.leads || 0), 0)
+      // Monthly campaigns: 3 runs per quarter (12 per year / 4 quarters)
+      monthlyCampaigns.forEach(campaign => {
+        quarterBudget += (campaign.budget || 0) * 3
+        quarterLeads += (campaign.leads || 0) * 3
+        quarterEvents += (campaign.events || 0) * 3
+      })
       
-      // Calculate ROI: (Revenue - Cost) / Cost * 100
-      // Revenue = leads * conversion_rate * avg_client_value
-      // For simplicity, assume conversion from leads to clients based on close ratio
-      const appointmentAttrition = clientMetrics?.appointment_attrition || 0
-      const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
-      const totalEvents = quarterCampaigns.reduce((sum, c) => sum + (c.events || 0), 0)
+      // Quarterly campaigns: 1 run per quarter (4 per year / 4 quarters)
+      // Each quarterly campaign runs once in EACH quarter, so add to ALL quarters
+      quarterlyCampaigns.forEach(campaign => {
+        const budget = campaign.budget || 0
+        const leads = campaign.leads || 0
+        const events = campaign.events || 0
+        quarterBudget += budget
+        quarterLeads += leads
+        quarterEvents += events
+      })
+      
+      // Semi-Annual campaigns: 2 runs per year, distribute evenly across quarters
+      // Each campaign runs in 2 quarters (distribute based on campaign index)
+      semiAnnualCampaigns.forEach((campaign, campaignIndex) => {
+        // Distribute: campaign 0 in Q1&Q3, campaign 1 in Q2&Q4, etc.
+        const runsInThisQuarter = (campaignIndex % 2 === 0 && (quarterIndex === 0 || quarterIndex === 2)) ||
+                                  (campaignIndex % 2 === 1 && (quarterIndex === 1 || quarterIndex === 3))
+        if (runsInThisQuarter) {
+          quarterBudget += campaign.budget || 0
+          quarterLeads += campaign.leads || 0
+          quarterEvents += campaign.events || 0
+        }
+      })
+      
+      // Annual campaigns: 1 run per year, distribute evenly across quarters
+      // Each campaign runs in 1 quarter (distribute based on campaign index)
+      annualCampaigns.forEach((campaign, campaignIndex) => {
+        // Distribute evenly: campaign 0 in Q1, campaign 1 in Q2, etc.
+        if (campaignIndex % 4 === quarterIndex) {
+          quarterBudget += campaign.budget || 0
+          quarterLeads += campaign.leads || 0
+          quarterEvents += campaign.events || 0
+        }
+      })
+      
+      // Calculate ROI for this quarter
       const totalAppointments = appointmentsPerCampaign > 0 
-        ? totalEvents * appointmentsPerCampaign
-        : Math.round(leads * 0.4) // Fallback: 40% of leads become appointments
+        ? quarterEvents * appointmentsPerCampaign
+        : Math.round(quarterLeads * 0.4) // Fallback: 40% of leads become appointments
       const prospects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
       const clients = Math.round(prospects * (avgCloseRatio / 100))
       const revenue = clients * avgClientValue
-      const roi = budget > 0 ? ((revenue - budget) / budget) * 100 : 0
+      const roi = quarterBudget > 0 ? ((revenue - quarterBudget) / quarterBudget) * 100 : 0
       
-      return {
+      const result = {
         name: quarter,
-        budget: Math.round(budget),
-        leads,
+        budget: Math.round(quarterBudget),
+        leads: Math.round(quarterLeads),
         roi: Math.round(roi * 10) / 10, // Round to 1 decimal
+        events: Math.round(quarterEvents), // Include events for debugging
       }
+      
+      // Debug logging for each quarter
+      if (quarterIndex === 0) {
+        console.log(`Quarter ${quarter} calculation:`, {
+          quarterBudget,
+          quarterLeads,
+          quarterEvents,
+          quarterlyCampaignsCount: quarterlyCampaigns.length,
+          result
+        })
+      }
+      
+      return result
     })
   }, [campaigns, data.clientMetrics])
 
@@ -609,11 +693,27 @@ export function CampaignTable() {
                       return [value, name]
                     }}
                     contentStyle={{
-                      backgroundColor: "var(--popover)",
-                      borderRadius: "6px",
-                      border: "1px solid var(--border)",
-                      color: "var(--popover-foreground)",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                      backgroundColor: "rgba(0, 0, 0, 0.95)",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(59, 130, 246, 0.5)",
+                      color: "#ffffff",
+                      padding: "12px 16px",
+                      boxShadow: "0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                    labelStyle={{
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "8px",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+                      paddingBottom: "6px",
+                    }}
+                    itemStyle={{
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      padding: "4px 0",
                     }}
                   />
                   <Legend />

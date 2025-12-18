@@ -270,8 +270,29 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                       const color = props.payload?.color || '#fff';
                       return [<span style={{ color, fontWeight: 600 }}>{`$${value.toLocaleString()}`}</span>];
                     }}
-                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #333', borderRadius: '6px' }}
-                    labelStyle={{ color: '#fff' }}
+                    contentStyle={{
+                      backgroundColor: "rgba(0, 0, 0, 0.95)",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(59, 130, 246, 0.5)",
+                      color: "#ffffff",
+                      padding: "12px 16px",
+                      boxShadow: "0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                    labelStyle={{
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      marginBottom: "8px",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+                      paddingBottom: "6px",
+                    }}
+                    itemStyle={{
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      padding: "4px 0",
+                    }}
                   />
                   <Legend 
                     verticalAlign="bottom" 
@@ -343,14 +364,27 @@ export function FinancialOptions({ data }: FinancialOptionsProps) {
                       <Tooltip
                         formatter={(value) => [`$${(value as number).toLocaleString()}`, undefined]}
                         contentStyle={{
-                          backgroundColor: "hsl(var(--popover))",
-                          borderRadius: "6px",
-                          border: "1px solid hsl(var(--border))",
-                          color: "hsl(var(--foreground))",
-                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                          backgroundColor: "rgba(0, 0, 0, 0.95)",
+                          borderRadius: "8px",
+                          border: "1px solid rgba(59, 130, 246, 0.5)",
+                          color: "#ffffff",
+                          padding: "12px 16px",
+                          boxShadow: "0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)",
                           fontSize: "14px",
                           fontWeight: "500",
-                          padding: "8px 12px",
+                        }}
+                        labelStyle={{
+                          color: "#ffffff",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          marginBottom: "8px",
+                          borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+                          paddingBottom: "6px",
+                        }}
+                        itemStyle={{
+                          color: "#ffffff",
+                          fontSize: "13px",
+                          padding: "4px 0",
                         }}
                       />
                       <Legend />
