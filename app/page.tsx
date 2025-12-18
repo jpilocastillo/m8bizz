@@ -276,18 +276,18 @@ export default function Homepage() {
       <AnimatedBackground />
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <main className="flex-1 overflow-y-auto px-6 sm:px-8 lg:px-10 xl:px-12 pt-12 sm:pt-16 pb-8 sm:pb-10 bg-black">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-5 lg:px-6 xl:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 bg-black">
           <DatabaseStatus />
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <Suspense fallback={<div>Loading...</div>}>
               <motion.div 
-                className="space-y-6"
+                className="space-y-4"
                 variants={container}
                 initial="hidden"
                 animate="show"
               >
       {/* Enhanced Hero Section */}
-      <motion.div variants={item} className="text-center space-y-6 py-8">
+      <motion.div variants={item} className="text-center space-y-4 py-4">
         <div className="space-y-4">
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-m8bs-blue via-m8bs-purple to-m8bs-pink bg-clip-text text-transparent">
             Welcome To M8 Business Suite
@@ -368,7 +368,7 @@ export default function Homepage() {
       </motion.div>
 
       {/* Main Dashboard Content */}
-      <motion.div variants={item} className="space-y-6">
+      <motion.div variants={item} className="space-y-4">
         <TooltipProvider>
           {/* Top Events and Advisor Metrics Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">

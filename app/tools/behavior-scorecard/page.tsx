@@ -272,7 +272,7 @@ export default function BehaviorScorecardPage() {
   // Show loading state
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
             <Calculator className="h-8 w-8 text-white animate-pulse" />
@@ -289,7 +289,7 @@ export default function BehaviorScorecardPage() {
   // Show message if user is not authenticated
   if (!user) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
             <Calculator className="h-8 w-8 text-white" />
@@ -304,7 +304,7 @@ export default function BehaviorScorecardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
@@ -400,7 +400,7 @@ export default function BehaviorScorecardPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "view" | "entry" | "settings")} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "view" | "entry" | "settings")} className="space-y-4">
         <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid w-full grid-cols-3">
           <TabsTrigger value="view" className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all">
             <BarChart3 className="h-4 w-4" />
@@ -416,7 +416,7 @@ export default function BehaviorScorecardPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="view" className="space-y-6">
+        <TabsContent value="view" className="space-y-4">
           {scorecardData && scorecardData.companySummary && (
             <>
               <CompanySummary companySummary={scorecardData.companySummary} />
@@ -554,7 +554,7 @@ export default function BehaviorScorecardPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="entry" className="space-y-6">
+        <TabsContent value="entry" className="space-y-4">
           <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
@@ -713,7 +713,7 @@ export default function BehaviorScorecardPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-6">
+        <TabsContent value="settings" className="space-y-4">
           <RoleManagement
             roles={roles}
             onRoleChange={async () => {

@@ -195,7 +195,7 @@ export default function BusinessDashboard() {
   if (!isComplete || editMode) {
     console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode)
     return (
-      <div className="py-8 space-y-6">
+      <div className="py-4 space-y-4">
               <div>
                 <h1 className="text-3xl font-extrabold text-white tracking-tight">
                   M8 Advisor Basecamp
@@ -220,7 +220,7 @@ export default function BusinessDashboard() {
 
   // Show dashboard if all sections are filled
   return (
-      <div className="space-y-6 w-full max-w-full">
+      <div className="space-y-4 w-full max-w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">
@@ -280,7 +280,7 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      <Tabs value={activeTab} className="space-y-6" onValueChange={setActiveTab}>
+      <Tabs value={activeTab} className="space-y-4" onValueChange={setActiveTab}>
         <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid grid-cols-2 md:grid-cols-7 w-full h-auto">
           <TabsTrigger 
             value="goals" 
@@ -351,7 +351,7 @@ export default function BusinessDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="book" className="space-y-6">
+        <TabsContent value="book" className="space-y-4">
           <CurrentAdvisorBook 
             key={`book-${JSON.stringify(data)}`}
             currentValues={data.currentValues}
@@ -365,7 +365,7 @@ export default function BusinessDashboard() {
           />
         </TabsContent>
 
-        <TabsContent value="clients" className="space-y-6">
+        <TabsContent value="clients" className="space-y-4">
           <ClientAcquisition 
             data={data} 
             businessGoals={data.businessGoals}
@@ -375,7 +375,7 @@ export default function BusinessDashboard() {
           />
         </TabsContent>
 
-        <TabsContent value="income" className="space-y-6">
+        <TabsContent value="income" className="space-y-4">
           <IncomeBreakdown 
             businessGoals={data.businessGoals}
             currentValues={data.currentValues}
@@ -385,15 +385,15 @@ export default function BusinessDashboard() {
           />
         </TabsContent>
 
-        <TabsContent value="campaigns" className="space-y-6">
+        <TabsContent value="campaigns" className="space-y-4">
           <CampaignTable />
         </TabsContent>
 
-        <TabsContent value="monthly" className="space-y-6">
+        <TabsContent value="monthly" className="space-y-4">
           <MonthlyDataEntryComponent selectedYear={selectedYear.toString()} />
         </TabsContent>
         
-        <TabsContent value="pdf" className="space-y-6">
+        <TabsContent value="pdf" className="space-y-4">
           <PDFExport data={data} profile={profile} year={selectedYear} />
         </TabsContent>
       </Tabs>
