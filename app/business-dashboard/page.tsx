@@ -326,9 +326,9 @@ export default function BusinessDashboard() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="goals" className="space-y-6">
+        <TabsContent value="goals" className="space-y-4">
           {/* Goals Section */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
               <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">Business Goals</h2>
               <p className="text-m8bs-muted">Your Target Business Goals</p>
