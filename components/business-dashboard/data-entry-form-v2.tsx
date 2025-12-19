@@ -137,7 +137,26 @@ interface DataEntryFormV2Props {
 
 export function DataEntryFormV2({ user, year = new Date().getFullYear(), onComplete, onCancel, isEditMode = false }: DataEntryFormV2Props) {
   const { data, loading, saveAllData, error } = useAdvisorBasecamp(user, year)
-  const [activeTab, setActiveTab] = useState("goals")
+  
+  // Storage key based on user ID
+  const storageKey = user ? `advisor-basecamp-form-${user.id}` : null
+  const tabStorageKey = user ? `advisor-basecamp-form-tab-${user.id}` : null
+  
+  // Load active tab from localStorage on mount
+  const getInitialTab = () => {
+    if (!tabStorageKey || typeof window === 'undefined') return "goals"
+    try {
+      const savedTab = localStorage.getItem(tabStorageKey)
+      if (savedTab && ["goals", "current", "clients", "campaigns", "income"].includes(savedTab)) {
+        return savedTab
+      }
+    } catch (error) {
+      console.error('Error loading tab from localStorage:', error)
+    }
+    return "goals"
+  }
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab)
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false)
   const hasInitializedRef = useRef(false)
   const dataInitializedRef = useRef(false)
@@ -146,21 +165,6 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
   const currentTabIndex = tabs.indexOf(activeTab)
   const isFirstTab = currentTabIndex === 0
   const isLastTab = currentTabIndex === tabs.length - 1
-
-  // Storage key based on user ID
-  const storageKey = user ? `advisor-basecamp-form-${user.id}` : null
-
-  const handleNext = () => {
-    if (!isLastTab) {
-      setActiveTab(tabs[currentTabIndex + 1])
-    }
-  }
-
-  const handlePrevious = () => {
-    if (!isFirstTab) {
-      setActiveTab(tabs[currentTabIndex - 1])
-    }
-  }
 
   // Load form data from localStorage
   const loadFormDataFromStorage = (): Partial<z.infer<typeof formSchema>> | null => {
@@ -241,6 +245,66 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
     },
   })
 
+  // Save form data immediately (called on various events)
+  const saveFormDataImmediately = () => {
+    if (!storageKey || typeof window === 'undefined') return
+    try {
+      const currentFormData = form.getValues()
+      saveFormDataToStorage(currentFormData as z.infer<typeof formSchema>)
+    } catch (error) {
+      console.error('Error saving form data immediately:', error)
+    }
+  }
+
+  const handleNext = () => {
+    if (!isLastTab) {
+      // Save form data immediately when switching tabs
+      saveFormDataImmediately()
+      const nextTab = tabs[currentTabIndex + 1]
+      setActiveTab(nextTab)
+      // Save active tab to localStorage
+      if (tabStorageKey && typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(tabStorageKey, nextTab)
+        } catch (error) {
+          console.error('Error saving tab to localStorage:', error)
+        }
+      }
+    }
+  }
+
+  const handlePrevious = () => {
+    if (!isFirstTab) {
+      // Save form data immediately when switching tabs
+      saveFormDataImmediately()
+      const prevTab = tabs[currentTabIndex - 1]
+      setActiveTab(prevTab)
+      // Save active tab to localStorage
+      if (tabStorageKey && typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(tabStorageKey, prevTab)
+        } catch (error) {
+          console.error('Error saving tab to localStorage:', error)
+        }
+      }
+    }
+  }
+
+  // Handle tab change - save immediately
+  const handleTabChange = (newTab: string) => {
+    // Save form data immediately when switching tabs
+    saveFormDataImmediately()
+    setActiveTab(newTab)
+    // Save active tab to localStorage
+    if (tabStorageKey && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(tabStorageKey, newTab)
+      } catch (error) {
+        console.error('Error saving tab to localStorage:', error)
+      }
+    }
+  }
+
   // Load from localStorage on mount (prioritize localStorage over database)
   useEffect(() => {
     if (!loading && !hasLoadedFromStorage) {
@@ -261,6 +325,17 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         form.reset(storedData as z.infer<typeof formSchema>)
         setHasLoadedFromStorage(true)
         hasInitializedRef.current = true
+        // Restore active tab from localStorage
+        if (tabStorageKey && typeof window !== 'undefined') {
+          try {
+            const savedTab = localStorage.getItem(tabStorageKey)
+            if (savedTab && ["goals", "current", "clients", "campaigns", "income"].includes(savedTab)) {
+              setActiveTab(savedTab)
+            }
+          } catch (error) {
+            console.error('Error loading tab from localStorage:', error)
+          }
+        }
         return
       }
       
@@ -272,7 +347,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
       
       setHasLoadedFromStorage(true)
     }
-  }, [loading, hasLoadedFromStorage, data, isEditMode, form])
+  }, [loading, hasLoadedFromStorage, data, isEditMode, form, tabStorageKey])
 
   // Reset form when data changes (from database) - only on initial load, not on subsequent data changes
   useEffect(() => {
@@ -346,6 +421,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         // Clear storage when loading from database (only on initial load)
         clearFormDataFromStorage()
         dataInitializedRef.current = true
+        // Don't reset active tab when loading from database - keep current tab
       }
     }
   }, [data, loading, form, hasLoadedFromStorage, isEditMode])
@@ -654,12 +730,17 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
     }
   }, [form, hasLoadedFromStorage, storageKey, user.id])
 
-  // Handle page visibility - restore form from localStorage when user comes back
+  // Handle page visibility and window blur - save and restore form data
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !hasLoadedFromStorage || !storageKey) return
 
+    // Save form data when window loses focus
+    const handleWindowBlur = () => {
+      saveFormDataImmediately()
+    }
+
+    // Restore form data when page becomes visible again
     const handleVisibilityChange = () => {
-      // When page becomes visible again, check if we should restore from localStorage
       if (!document.hidden && hasLoadedFromStorage && storageKey) {
         const storedData = loadFormDataFromStorage()
         const hasStoredData = storedData && Object.values(storedData).some(value => {
@@ -673,13 +754,33 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         
         // If there's unsaved data, restore it (don't let database overwrite it)
         if (hasStoredData && dataInitializedRef.current) {
-          form.reset(storedData as z.infer<typeof formSchema>)
+          const currentData = form.getValues()
+          const storedString = JSON.stringify(storedData)
+          const currentString = JSON.stringify(currentData)
+          
+          // Only restore if stored data is different (to avoid unnecessary resets)
+          if (storedString !== currentString) {
+            form.reset(storedData as z.infer<typeof formSchema>)
+          }
         }
+      } else if (document.hidden) {
+        // Save when page becomes hidden
+        saveFormDataImmediately()
       }
     }
 
+    // Save before page unload
+    const handleBeforeUnload = () => {
+      saveFormDataImmediately()
+    }
+
+    window.addEventListener('blur', handleWindowBlur)
+    window.addEventListener('beforeunload', handleBeforeUnload)
     document.addEventListener('visibilitychange', handleVisibilityChange)
+    
     return () => {
+      window.removeEventListener('blur', handleWindowBlur)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [hasLoadedFromStorage, storageKey, form])
@@ -947,7 +1048,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
               />
             </CardContent>
           </Card>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="bg-m8bs-blue/20 p-1 border border-m8bs-blue/50 rounded-lg shadow-lg grid grid-cols-3 md:grid-cols-5 w-full">
               <TabsTrigger value="goals" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Goals</TabsTrigger>
               <TabsTrigger value="current" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Current Advisor Book</TabsTrigger>

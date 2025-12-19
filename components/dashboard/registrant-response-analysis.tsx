@@ -54,50 +54,50 @@ export function RegistrantResponseAnalysis({
 
   return (
     <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-md h-full flex flex-col transition-all duration-300 hover:shadow-xl group">
-      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-5 py-3">
-        <CardTitle className="text-lg font-extrabold text-white flex items-center tracking-tight">
-          <Users className="mr-2 h-5 w-5 text-gray-500" />
+      <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+        <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
+          <Users className="mr-3 h-6 w-6 text-gray-500" />
           Registrant Analysis
         </CardTitle>
         <p className="text-xs text-white/60 font-medium mt-1">
           Analysis of registrant rates from marketing campaigns
         </p>
       </CardHeader>
-      <CardContent className="p-4 md:p-5 flex-1 flex flex-col">
+      <CardContent className="p-4 flex-1 flex flex-col">
         {/* Summary Stats */}
         <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 mb-4">
-          <div className="grid grid-cols-5 gap-3 md:gap-4 text-center">
+          <div className="grid grid-cols-5 gap-3 text-center">
             <div className="flex flex-col items-center">
               <div className="mb-2">
                 <div className="text-[10px] font-semibold text-white/70 tracking-wide uppercase mb-1">Marketing Audience</div>
-                <div className="text-lg md:text-xl font-extrabold text-white tabular-nums leading-none">{marketingAudienceSize.toLocaleString()}</div>
+                <div className="text-lg font-extrabold text-white tabular-nums leading-none">{marketingAudienceSize.toLocaleString()}</div>
               </div>
             </div>
-            <div className="flex flex-col items-center border-l border-m8bs-border/30 pl-3 md:pl-4">
+            <div className="flex flex-col items-center border-l border-m8bs-border/30 pl-3">
               <div className="mb-2">
                 <div className="text-[10px] font-semibold text-cyan-400 tracking-wide uppercase mb-1">Registrants</div>
-                <div className="text-lg md:text-xl font-extrabold text-white tabular-nums leading-none">{registrants.toLocaleString()}</div>
+                <div className="text-lg font-extrabold text-white tabular-nums leading-none">{registrants.toLocaleString()}</div>
                 <div className="text-[10px] text-cyan-400/80 font-medium mt-1 tabular-nums">{formatPercentage((registrants / marketingAudienceSize) * 100, 2)}%</div>
               </div>
             </div>
-            <div className="flex flex-col items-center border-l border-m8bs-border/30 pl-3 md:pl-4">
+            <div className="flex flex-col items-center border-l border-m8bs-border/30 pl-3">
               <div className="mb-2">
                 <div className="text-[10px] font-semibold text-emerald-400 tracking-wide uppercase mb-1">Confirmations</div>
-                <div className="text-lg md:text-xl font-extrabold text-white tabular-nums leading-none">{confirmations.toLocaleString()}</div>
+                <div className="text-lg font-extrabold text-white tabular-nums leading-none">{confirmations.toLocaleString()}</div>
                 <div className="text-[10px] text-emerald-400/80 font-medium mt-1 tabular-nums">{registrants > 0 ? formatPercentage((confirmations / registrants) * 100, 1) : '0'}%</div>
               </div>
             </div>
-            <div className="flex flex-col items-center border-l border-m8bs-border/30 pl-3 md:pl-4">
+            <div className="flex flex-col items-center border-l border-m8bs-border/30 pl-3">
               <div className="mb-2">
                 <div className="text-[10px] font-semibold text-purple-400 tracking-wide uppercase mb-1">Attendees</div>
-                <div className="text-lg md:text-xl font-extrabold text-white tabular-nums leading-none">{attendees.toLocaleString()}</div>
+                <div className="text-lg font-extrabold text-white tabular-nums leading-none">{attendees.toLocaleString()}</div>
                 <div className="text-[10px] text-purple-400/80 font-medium mt-1 tabular-nums">{confirmations > 0 ? formatPercentage((attendees / confirmations) * 100, 1) : '0'}%</div>
               </div>
             </div>
-            <div className="flex flex-col items-center border-l border-m8bs-border/30 pl-3 md:pl-4">
+            <div className="flex flex-col items-center border-l border-m8bs-border/30 pl-3">
               <div className="mb-2">
                 <div className="text-[10px] font-semibold text-cyan-400 tracking-wide uppercase mb-1">Plate Lickers</div>
-                <div className="text-lg md:text-xl font-extrabold text-white tabular-nums leading-none">{plateLickers.toLocaleString()}</div>
+                <div className="text-lg font-extrabold text-white tabular-nums leading-none">{plateLickers.toLocaleString()}</div>
                 <div className="text-[10px] text-cyan-400/80 font-medium mt-1 tabular-nums">{registrants > 0 ? formatPercentage((plateLickers / registrants) * 100, 1) : '0'}%</div>
               </div>
             </div>
@@ -107,7 +107,7 @@ export function RegistrantResponseAnalysis({
         {/* Conversion Numbers Summary */}
         <div className="mb-4">
           <h3 className="text-xs font-semibold text-white/90 tracking-wide mb-3 uppercase">Conversion Metrics</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {/* Marketing Audience to Registrants */}
             <div className="bg-black/30 border border-cyan-500/30 rounded-lg p-3 transition-all duration-300 hover:bg-black/50 hover:border-cyan-500/60">
               <div className="mb-2">
@@ -117,13 +117,13 @@ export function RegistrantResponseAnalysis({
                 <div className="text-sm font-extrabold tracking-tight text-white tabular-nums">
                   {registrants.toLocaleString()} / {marketingAudienceSize.toLocaleString()}
                 </div>
-                <div className="text-sm font-extrabold text-cyan-400 tabular-nums">
+                <div className="text-xs font-extrabold text-cyan-400 tabular-nums">
                   {registrantRateFormatted}%
                 </div>
               </div>
-              <div className="w-full bg-m8bs-border/30 rounded-full h-2">
+              <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
                 <div
-                  className="bg-cyan-500 h-2 rounded-full transition-all duration-500"
+                  className="bg-cyan-500 h-1.5 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(registrantRate, 100)}%` }}
                 />
               </div>
@@ -138,13 +138,13 @@ export function RegistrantResponseAnalysis({
                 <div className="text-sm font-extrabold tracking-tight text-white tabular-nums">
                   {confirmations.toLocaleString()} / {registrants.toLocaleString()}
                 </div>
-                <div className="text-sm font-extrabold text-emerald-400 tabular-nums">
+                <div className="text-xs font-extrabold text-emerald-400 tabular-nums">
                   {confirmationRateFormatted}%
                 </div>
               </div>
-              <div className="w-full bg-m8bs-border/30 rounded-full h-2">
+              <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
                 <div
-                  className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+                  className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(confirmationRate, 100)}%` }}
                 />
               </div>
@@ -159,13 +159,13 @@ export function RegistrantResponseAnalysis({
                 <div className="text-sm font-extrabold tracking-tight text-white tabular-nums">
                   {attendees.toLocaleString()} / {confirmations.toLocaleString()}
                 </div>
-                <div className="text-sm font-extrabold text-purple-400 tabular-nums">
+                <div className="text-xs font-extrabold text-purple-400 tabular-nums">
                   {attendanceRateFormatted}%
                 </div>
               </div>
-              <div className="w-full bg-m8bs-border/30 rounded-full h-2">
+              <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
                 <div
-                  className="bg-purple-500 h-2 rounded-full transition-all duration-500"
+                  className="bg-purple-500 h-1.5 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(attendanceRate, 100)}%` }}
                 />
               </div>
@@ -180,13 +180,13 @@ export function RegistrantResponseAnalysis({
                 <div className="text-sm font-extrabold tracking-tight text-white tabular-nums">
                   {plateLickers.toLocaleString()} / {registrants.toLocaleString()}
                 </div>
-                <div className="text-sm font-extrabold text-cyan-400 tabular-nums">
+                <div className="text-xs font-extrabold text-cyan-400 tabular-nums">
                   {registrants > 0 ? formatPercentage((plateLickers / registrants) * 100, 1) : '0'}%
                 </div>
               </div>
-              <div className="w-full bg-m8bs-border/30 rounded-full h-2">
+              <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
                 <div
-                  className="bg-cyan-500 h-2 rounded-full transition-all duration-500"
+                  className="bg-cyan-500 h-1.5 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(registrants > 0 ? (plateLickers / registrants) * 100 : 0, 100)}%` }}
                 />
               </div>
@@ -201,13 +201,13 @@ export function RegistrantResponseAnalysis({
                 <div className="text-sm font-extrabold tracking-tight text-white tabular-nums">
                   {totalDropOff.toLocaleString()} people
                 </div>
-                <div className="text-sm font-extrabold text-red-400 tabular-nums">
+                <div className="text-xs font-extrabold text-red-400 tabular-nums">
                   {formatPercentage(100 - overallRate, 2)}%
                 </div>
               </div>
-              <div className="w-full bg-m8bs-border/30 rounded-full h-2">
+              <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
                 <div
-                  className="bg-red-500 h-2 rounded-full transition-all duration-500"
+                  className="bg-red-500 h-1.5 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(100 - overallRate, 100)}%` }}
                 />
               </div>
@@ -222,13 +222,13 @@ export function RegistrantResponseAnalysis({
                 <div className="text-sm font-extrabold tracking-tight text-white tabular-nums">
                   {attendees.toLocaleString()} / {marketingAudienceSize.toLocaleString()}
                 </div>
-                <div className="text-sm font-extrabold text-gray-400 tabular-nums">
+                <div className="text-xs font-extrabold text-gray-400 tabular-nums">
                   {overallRateFormatted}%
                 </div>
               </div>
-              <div className="w-full bg-m8bs-border/30 rounded-full h-2">
+              <div className="w-full bg-m8bs-border/30 rounded-full h-1.5">
                 <div
-                  className="bg-gray-500 h-2 rounded-full transition-all duration-500"
+                  className="bg-gray-500 h-1.5 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(overallRate, 100)}%` }}
                 />
               </div>
@@ -391,7 +391,7 @@ export function RegistrantResponseAnalysis({
         {/* REMOVE the section with the horizontal bar chart for Marketing Audience Size, Registrants, Confirmations, and Attendees */}
 
         {/* Insights */}
-        <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-3 md:p-4 mt-auto">
+        <div className="bg-black/30 border border-m8bs-border/40 rounded-lg p-4 mt-auto">
           <h4 className="text-[10px] font-semibold text-white/90 tracking-wide uppercase mb-2">Insights</h4>
           <div className="text-[10px] text-white/70 font-medium space-y-2 leading-relaxed">
             <p>

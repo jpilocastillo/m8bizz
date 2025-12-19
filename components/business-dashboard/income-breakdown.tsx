@@ -120,12 +120,12 @@ export function IncomeBreakdown({
     const totalAnnualIncome = totalIncome // This represents annual income from goals
     
     // Calculate marketing expenses from campaigns
-    // Campaigns store monthly budget, so multiply by 12 for annual
+    // Use campaign annual budget (budget * frequency multiplier)
     const totalMarketingExpenses = campaigns.reduce((sum, campaign) => {
       const frequency = (campaign as any).frequency || "Monthly"
       const multiplier = frequency === "Monthly" ? 12 : frequency === "Quarterly" ? 4 : frequency === "Semi-Annual" ? 2 : 1
-      const foodCosts = (campaign as any).food_costs || 0
-      return sum + ((campaign.budget || 0) * multiplier) + (foodCosts * multiplier)
+      // Use only the campaign annual budget, not food costs
+      return sum + ((campaign.budget || 0) * multiplier)
     }, 0)
     
     // Calculate operational expenses (if not available in data, set to 0)
@@ -177,8 +177,7 @@ export function IncomeBreakdown({
     }
   }
 
-  const { incomeData, totalIncome, totalAnnualIncome, marketingROI, totalMarketingExpenses, totalOperationalExpenses } = calculateIncomeData()
-  const totalExpenses = totalMarketingExpenses + totalOperationalExpenses
+  const { incomeData, totalIncome, totalAnnualIncome, marketingROI, totalMarketingExpenses } = calculateIncomeData()
 
   const chartData = incomeData.map((item) => ({
     name: item.source,
@@ -461,24 +460,16 @@ export function IncomeBreakdown({
                   <TableCell>${totalMarketingExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Operational Expenses</TableCell>
-                  <TableCell>${totalOperationalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Total Expenses</TableCell>
-                  <TableCell>${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                </TableRow>
-                <TableRow>
                   <TableCell className="font-medium">Net Income</TableCell>
-                  <TableCell>${(totalAnnualIncome - totalExpenses).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell>${(totalAnnualIncome - totalMarketingExpenses).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Profit Margin</TableCell>
-                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - totalExpenses) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
+                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - totalMarketingExpenses) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing ROI</TableCell>
-                  <TableCell className="text-green-500">{marketingROI}%</TableCell>
+                  <TableCell className="text-green-500">{marketingROI.toFixed(1)}%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
