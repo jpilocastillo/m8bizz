@@ -132,40 +132,21 @@ export function IncomeBreakdown({
     // This should come from business data form if needed, for now set to 0
     const totalOperationalExpenses = 0
     
-    // Calculate Marketing ROI from actual campaign data
-    // ROI = ((Revenue - Marketing Costs) / Marketing Costs) * 100
-    // Revenue is calculated from clients acquired through campaigns
-    const appointmentAttrition = clientMetrics.appointment_attrition || 0
-    const avgCloseRatio = clientMetrics.avg_close_ratio || 0
-    const appointmentsPerCampaign = clientMetrics.appointments_per_campaign || 0
-    const avgAnnuitySize = clientMetrics.avg_annuity_size || 0
-    const avgAUMSize = clientMetrics.avg_aum_size || 0
-    const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
+    // Calculate Marketing ROI using the same formula as client-acquisition
+    // Marketing ROI = ((marketingIncome - marketingExpenses) / marketingExpenses) * 100
+    // Marketing income = annuity income + AUM income + life income + planning fees
+    // Exclude trail income as it's from existing clients, not marketing
     
-    // Calculate total events, leads, and appointments from campaigns
-    let totalEvents = 0
-    let totalLeads = 0
+    // Marketing income is calculated from commission-based income (same as client-acquisition)
+    // This uses the actual income from goals and commission rates, not just client value
+    const marketingIncome = annuityIncome + aumIncome + lifeIncome + planningFeesValue
     
-    campaigns.forEach(campaign => {
-      const frequency = (campaign as any).frequency || "Monthly"
-      const multiplier = frequency === "Monthly" ? 12 : frequency === "Quarterly" ? 4 : frequency === "Semi-Annual" ? 2 : 1
-      totalEvents += (campaign.events || 0) * multiplier
-      totalLeads += (campaign.leads || 0) * multiplier
-    })
-    
-    // Calculate clients from campaigns
-    const totalAppointments = appointmentsPerCampaign > 0 
-      ? totalEvents * appointmentsPerCampaign
-      : Math.round(totalLeads * 0.4) // Fallback: 40% of leads become appointments
-    
-    const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
-    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
-    const campaignRevenue = totalClients * avgClientValue
-    
-    // Calculate ROI
+    // Calculate ROI using marketing income (from goals/commissions) vs marketing expenses (from campaigns)
     const marketingROI = totalMarketingExpenses > 0 
-      ? ((campaignRevenue - totalMarketingExpenses) / totalMarketingExpenses) * 100
-      : 0
+      ? Math.round(((marketingIncome - totalMarketingExpenses) / totalMarketingExpenses) * 100 * 10) / 10
+      : marketingIncome > 0 
+        ? 9999 // Show high ROI when there's income but no expenses
+        : 0
 
     return {
       incomeData,
