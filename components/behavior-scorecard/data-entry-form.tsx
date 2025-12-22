@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { behaviorScorecardService, type ScorecardRole, type ScorecardMetric } from '@/lib/behavior-scorecard'
-import { Save, Calendar, Calculator, Plus, Trash2 } from 'lucide-react'
+import { Save, Calendar, Calculator, Plus, Trash2, TrendingUp, TrendingDown, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 
 interface DataEntryFormProps {
   roleName: ScorecardRole
@@ -216,6 +218,40 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
     return value.toString()
   }
 
+  const calculateProgress = (metricId: string): number => {
+    const actual = monthlyData[metricId] || 0
+    const goal = goalData[metricId] || 0
+    if (goal === 0) return 0
+    const metric = metrics.find(m => m.id === metricId)
+    if (metric?.isInverted) {
+      return Math.min(100, (goal / actual) * 100)
+    }
+    return Math.min(100, (actual / goal) * 100)
+  }
+
+  const getProgressColor = (progress: number): string => {
+    if (progress >= 90) return 'bg-green-500'
+    if (progress >= 80) return 'bg-blue-500'
+    if (progress >= 70) return 'bg-yellow-500'
+    if (progress >= 60) return 'bg-orange-500'
+    return 'bg-red-500'
+  }
+
+  const getStatusIcon = (metricId: string) => {
+    const progress = calculateProgress(metricId)
+    if (progress >= 90) return <CheckCircle2 className="h-4 w-4 text-green-400" />
+    if (progress >= 70) return <TrendingUp className="h-4 w-4 text-yellow-400" />
+    return <AlertCircle className="h-4 w-4 text-red-400" />
+  }
+
+  const hasUnsavedChanges = () => {
+    return metrics.some(metric => {
+      const currentGoal = goalData[metric.id] ?? metric.goalValue
+      const currentValue = monthlyData[metric.id] ?? 0
+      return currentGoal !== metric.goalValue || currentValue !== 0
+    })
+  }
+
   const getMonthlyValue = (metricId: string) => {
     return monthlyData[metricId] || 0
   }
@@ -237,18 +273,27 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   }
 
   return (
-    <Card className="bg-black border-m8bs-border shadow-lg">
+    <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl text-white flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-m8bs-blue" />
-          {roleName} - Data Entry Form
-        </CardTitle>
-        <CardDescription className="text-m8bs-muted">
-          Enter Monthly Data For {new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-xl text-white flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-m8bs-blue" />
+              {roleName} - Data Entry Form
+            </CardTitle>
+            <CardDescription className="text-m8bs-muted">
+              Enter Monthly Data For {new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </CardDescription>
+          </div>
+          {hasUnsavedChanges() && (
+            <Badge variant="outline" className="border-yellow-500 text-yellow-400">
+              Unsaved Changes
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ScrollArea className="w-full">
+        <ScrollArea className="w-full max-h-[600px]">
           <div className="rounded-md border border-m8bs-border">
             <Table>
               <TableHeader>
@@ -262,76 +307,116 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                   <TableHead className="text-center text-white font-semibold min-w-[120px]">
                     Monthly Value
                   </TableHead>
+                  <TableHead className="text-center text-white font-semibold min-w-[150px]">
+                    Progress
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {metrics.map((metric, index) => {
-                  const monthlyValue = getMonthlyValue(metric.id)
-                  
-                  return (
-                    <TableRow 
-                      key={metric.id} 
-                      className={index % 2 === 0 ? 'bg-m8bs-card-alt/30' : 'bg-m8bs-card-alt/50'}
-                    >
-                      <TableCell className="font-medium text-white sticky left-0 bg-inherit z-10 border-r border-m8bs-border">
-                        <div>
-                          <div className="font-semibold">{metric.metricName}</div>
-                          {metric.isInverted && (
-                            <div className="text-xs text-m8bs-muted">(lower is better)</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="p-2">
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          step={getInputStep(metric.metricType)}
-                          min="0"
-                          value={goalDataInput[metric.id] ?? (goalData[metric.id] ?? metric.goalValue).toString()}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            // Allow empty string, numbers, and single decimal point
-                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                              handleGoalChange(metric.id, value)
-                            }
-                          }}
-                          onBlur={() => handleGoalBlur(metric.id)}
-                          className="w-full text-center bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
-                          placeholder="0"
-                        />
-                      </TableCell>
-                      <TableCell className="p-2">
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          step={getInputStep(metric.metricType)}
-                          min="0"
-                          max={getInputMax(metric.metricType)}
-                          value={monthlyDataInput[metric.id] ?? monthlyValue.toString()}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            // Allow empty string, numbers, and single decimal point
-                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                              handleMonthlyValueChange(metric.id, value)
-                            }
-                          }}
-                          onBlur={() => handleMonthlyValueBlur(metric.id)}
-                          className="w-full text-center bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
-                          placeholder="0"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                {metrics.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-m8bs-muted py-8">
+                      No metrics available. Add metrics in Settings.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  metrics.map((metric, index) => {
+                    const monthlyValue = getMonthlyValue(metric.id)
+                    const progress = calculateProgress(metric.id)
+                    const goalValue = goalData[metric.id] ?? metric.goalValue
+                    
+                    return (
+                      <TableRow 
+                        key={metric.id} 
+                        className={`${index % 2 === 0 ? 'bg-m8bs-card-alt/30' : 'bg-m8bs-card-alt/50'} hover:bg-m8bs-card-alt/70 transition-colors`}
+                      >
+                        <TableCell className="font-medium text-white sticky left-0 bg-inherit z-10 border-r border-m8bs-border">
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(metric.id)}
+                            <div>
+                              <div className="font-semibold">{metric.metricName}</div>
+                              <div className="text-xs text-m8bs-muted flex items-center gap-1">
+                                {metric.metricType}
+                                {metric.isInverted && (
+                                  <Badge variant="outline" className="text-xs px-1 py-0 border-orange-500/50 text-orange-400">
+                                    Inverted
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="p-2">
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            step={getInputStep(metric.metricType)}
+                            min="0"
+                            value={goalDataInput[metric.id] ?? goalValue.toString()}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                handleGoalChange(metric.id, value)
+                              }
+                            }}
+                            onBlur={() => handleGoalBlur(metric.id)}
+                            className="w-full text-center bg-m8bs-card border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
+                            placeholder="0"
+                          />
+                        </TableCell>
+                        <TableCell className="p-2">
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            step={getInputStep(metric.metricType)}
+                            min="0"
+                            max={getInputMax(metric.metricType)}
+                            value={monthlyDataInput[metric.id] ?? monthlyValue.toString()}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                handleMonthlyValueChange(metric.id, value)
+                              }
+                            }}
+                            onBlur={() => handleMonthlyValueBlur(metric.id)}
+                            className="w-full text-center bg-m8bs-card border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
+                            placeholder="0"
+                          />
+                        </TableCell>
+                        <TableCell className="p-2">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-m8bs-muted">Progress</span>
+                              <span className={`font-semibold ${
+                                progress >= 90 ? 'text-green-400' :
+                                progress >= 70 ? 'text-yellow-400' :
+                                'text-red-400'
+                              }`}>
+                                {progress.toFixed(1)}%
+                              </span>
+                            </div>
+                            <Progress value={progress} className="h-2" />
+                            <div className="text-xs text-m8bs-muted text-center">
+                              {formatValue(monthlyValue, metric.metricType)} / {formatValue(goalValue, metric.metricType)}
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
         </ScrollArea>
 
-        <CardFooter className="flex justify-end gap-2 pt-4">
+        <CardFooter className="flex justify-between items-center pt-4 border-t border-m8bs-border">
+          <div className="text-sm text-m8bs-muted">
+            {metrics.length} {metrics.length === 1 ? 'metric' : 'metrics'} available
+          </div>
           <Button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || metrics.length === 0}
             className="flex items-center gap-2 bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
           >
             <Save className="h-4 w-4" />

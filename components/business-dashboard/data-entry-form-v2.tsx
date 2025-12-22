@@ -1803,7 +1803,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                           <FormItem>
                             <FormLabel className="text-white">Life Commission (%)</FormLabel>
                             <FormControl>
-                              <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.01" {...field} />
+                              <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" step="0.01" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { Calculator, Calendar, BarChart3, Settings, Download, RefreshCw, Users, Plus, CheckCircle2, ArrowRight } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { behaviorScorecardService, type MonthlyScorecardData, type ScorecardRole, type ScorecardMetric, type PeriodType } from "@/lib/behavior-scorecard"
@@ -15,7 +16,7 @@ import { CompanySummary } from "@/components/behavior-scorecard/company-summary"
 import { CSVExport } from "@/components/behavior-scorecard/csv-export"
 import { PDFExport } from "@/components/behavior-scorecard/pdf-export"
 import { MetricVisibilitySettings } from "@/components/behavior-scorecard/metric-visibility-settings"
-import { RoleManagement } from "@/components/behavior-scorecard/role-management"
+import { EnhancedRoleManagement } from "@/components/behavior-scorecard/enhanced-role-management"
 import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 
@@ -34,6 +35,7 @@ export default function BehaviorScorecardPage() {
   const [roles, setRoles] = useState<Array<{ id: string; name: ScorecardRole; metrics: ScorecardMetric[] }>>([])
   const [selectedRole, setSelectedRole] = useState<ScorecardRole | null>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Fetch user profile
   useEffect(() => {
@@ -66,25 +68,10 @@ export default function BehaviorScorecardPage() {
     }
   }, [periodType, selectedMonth, selectedQuarter, selectedYear])
 
-  const initializeAndLoad = async () => {
+  const initializeAndLoad = async (skipInitialization = false) => {
     setLoading(true)
     try {
-      // Initialize scorecard if needed
-      const initResult = await behaviorScorecardService.initializeScorecard()
-      if (!initResult.success) {
-        console.error('Initialize scorecard error:', initResult.error)
-        // Don't show error toast for missing column - it's expected if migration hasn't run
-        if (!initResult.error?.includes('is_visible')) {
-          toast({
-            title: "Error initializing scorecard",
-            description: initResult.error || "Failed to initialize scorecard",
-            variant: "destructive",
-          })
-        }
-        // Continue anyway - we can still load existing data
-      }
-
-      // Load roles and metrics
+      // Load roles and metrics first
       const supabase = createClient()
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
       if (!authUser) {
@@ -98,30 +85,108 @@ export default function BehaviorScorecardPage() {
         return
       }
 
-      const { data: rolesData } = await supabase
+      console.log('[initializeAndLoad] Fetching roles from database...')
+      const { data: rolesData, error: rolesError } = await supabase
         .from('scorecard_roles')
         .select('id, role_name')
         .eq('user_id', authUser.id)
         .order('role_name', { ascending: true })
 
-      if (rolesData) {
-        const rolesWithMetrics: Array<{ id: string; name: ScorecardRole; metrics: ScorecardMetric[] }> = []
-        
-        for (const role of rolesData) {
-          const metricsResult = await behaviorScorecardService.getRoleMetrics(role.id)
-          if (metricsResult.success && metricsResult.data) {
-            rolesWithMetrics.push({
-              id: role.id,
-              name: role.role_name as ScorecardRole,
-              metrics: metricsResult.data,
+      if (rolesError) {
+        console.error('[initializeAndLoad] Error fetching roles:', rolesError)
+        toast({
+          title: "Error",
+          description: "Failed to load roles",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
+      }
+
+      console.log('[initializeAndLoad] Fetched roles from database:', rolesData?.length || 0, rolesData?.map((r: { id: string; role_name: string }) => r.role_name) || [])
+
+      // Only initialize default roles if user has NO roles at all (first time setup)
+      // This prevents recreating roles that were intentionally deleted
+      let finalRolesData = rolesData
+      if (!skipInitialization && (!rolesData || rolesData.length === 0) && !isInitialized) {
+        console.log('[initializeAndLoad] No roles found, initializing default roles...')
+        const initResult = await behaviorScorecardService.initializeScorecard()
+        if (!initResult.success) {
+          console.error('Initialize scorecard error:', initResult.error)
+          // Don't show error toast for missing column - it's expected if migration hasn't run
+          if (!initResult.error?.includes('is_visible')) {
+            toast({
+              title: "Error initializing scorecard",
+              description: initResult.error || "Failed to initialize scorecard",
+              variant: "destructive",
             })
           }
+          // Continue anyway - we can still load existing data
+        } else {
+          setIsInitialized(true)
+          // Reload roles after initialization
+          const { data: newRolesData } = await supabase
+            .from('scorecard_roles')
+            .select('id, role_name')
+            .eq('user_id', authUser.id)
+            .order('role_name', { ascending: true })
+          
+          if (newRolesData) {
+            finalRolesData = newRolesData
+            console.log('[initializeAndLoad] Reloaded roles after initialization:', finalRolesData.length)
+          }
         }
+      }
 
+      if (finalRolesData && finalRolesData.length > 0) {
+        // Load all metrics in a single batch query for better performance
+        const validRoleIds = rolesData
+          .filter((role: { id: string; role_name: string }) => role && role.id)
+          .map((role: { id: string; role_name: string }) => role.id)
+        
+        const metricsMap = await behaviorScorecardService.getAllRoleMetrics(validRoleIds)
+        
+        const rolesWithMetrics: Array<{ id: string; name: ScorecardRole; metrics: ScorecardMetric[] }> = []
+        
+        rolesData.forEach((role: { id: string; role_name: string }) => {
+          // Skip if role is null or undefined
+          if (!role || !role.id) {
+            console.warn('Skipping invalid role:', role)
+            return
+          }
+          
+          const metrics = metricsMap.get(role.id) || []
+          rolesWithMetrics.push({
+            id: role.id,
+            name: role.role_name as ScorecardRole,
+            metrics: metrics,
+          })
+        })
+
+        console.log('[initializeAndLoad] Setting roles state with:', rolesWithMetrics.length, 'roles')
+        console.log('[initializeAndLoad] Role details:', rolesWithMetrics.map((r: { id: string; name: ScorecardRole; metrics: ScorecardMetric[] }) => ({ id: r.id, name: r.name, metricsCount: r.metrics.length })))
         setRoles(rolesWithMetrics)
-        if (rolesWithMetrics.length > 0 && !selectedRole) {
-          setSelectedRole(rolesWithMetrics[0].name)
+        console.log('[initializeAndLoad] Roles state updated')
+        
+        // Update selectedRole: if current selection doesn't exist, select first role or clear
+        if (rolesWithMetrics.length > 0) {
+          const currentRoleExists = rolesWithMetrics.some(r => r.name === selectedRole)
+          if (!currentRoleExists || !selectedRole) {
+            console.log('[initializeAndLoad] Setting selected role to:', rolesWithMetrics[0].name)
+            setSelectedRole(rolesWithMetrics[0].name)
+          } else {
+            console.log('[initializeAndLoad] Keeping current selected role:', selectedRole)
+          }
+        } else {
+          // No roles left, clear selection
+          console.log('[initializeAndLoad] No roles left, clearing selection')
+          setSelectedRole(null)
         }
+      } else {
+        // No roles data, clear everything
+        console.log('[initializeAndLoad] No roles data, clearing everything')
+        setRoles([])
+        setSelectedRole(null)
       }
 
       // Load scorecard
@@ -279,8 +344,18 @@ export default function BehaviorScorecardPage() {
           </div>
           <div>
             <h1 className="text-3xl font-extrabold text-white tracking-tight">Business Behavior Scorecard</h1>
-            <p className="text-m8bs-muted mt-1">Loading...</p>
+            <p className="text-m8bs-muted mt-1">Loading scorecard data...</p>
           </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="bg-m8bs-card border-m8bs-card-alt animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-m8bs-card-alt rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-m8bs-card-alt rounded w-1/2"></div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     )
@@ -417,11 +492,56 @@ export default function BehaviorScorecardPage() {
             <>
               <CompanySummary companySummary={scorecardData.companySummary} />
               
-              <div className="grid gap-6 md:grid-cols-2">
-                {scorecardData.roleScorecards.map((roleScorecard) => (
-                  <ScorecardDisplay key={roleScorecard.roleId} roleScorecard={roleScorecard} />
-                ))}
-              </div>
+              {scorecardData.roleScorecards.length > 0 ? (
+                <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+                  <CardContent className="p-0">
+                    <Tabs defaultValue={scorecardData.roleScorecards[0]?.roleId || ""} className="w-full">
+                      <TabsList className="w-full bg-m8bs-card-alt p-1 border-b border-m8bs-border rounded-t-lg rounded-b-none grid grid-cols-2 lg:grid-cols-4 gap-1">
+                        {scorecardData.roleScorecards.map((roleScorecard) => (
+                          <TabsTrigger
+                            key={roleScorecard.roleId}
+                            value={roleScorecard.roleId}
+                            className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+                          >
+                            <Users className="h-4 w-4" />
+                            <span className="truncate">{roleScorecard.roleName}</span>
+                            <Badge 
+                              variant="outline" 
+                              className={`ml-auto text-xs ${
+                                roleScorecard.averageGrade === 'A' ? 'border-green-500/50 text-green-400' :
+                                roleScorecard.averageGrade === 'B' ? 'border-blue-500/50 text-blue-400' :
+                                roleScorecard.averageGrade === 'C' ? 'border-yellow-500/50 text-yellow-400' :
+                                roleScorecard.averageGrade === 'D' ? 'border-orange-500/50 text-orange-400' :
+                                'border-red-500/50 text-red-400'
+                              }`}
+                            >
+                              {roleScorecard.averageGrade}
+                            </Badge>
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      {scorecardData.roleScorecards.map((roleScorecard) => (
+                        <TabsContent
+                          key={roleScorecard.roleId}
+                          value={roleScorecard.roleId}
+                          className="p-6 mt-0"
+                        >
+                          <ScorecardDisplay roleScorecard={roleScorecard} />
+                        </TabsContent>
+                      ))}
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+                  <CardContent className="p-8">
+                    <div className="text-center text-m8bs-muted">
+                      <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No role data available</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
 
@@ -588,8 +708,8 @@ export default function BehaviorScorecardPage() {
               year={selectedYear}
               month={selectedMonth}
               onSave={async () => {
-                // Reload roles and metrics to get updated goal values
-                await initializeAndLoad()
+                // Reload roles and metrics to get updated goal values (skip initialization)
+                await initializeAndLoad(true)
                 await loadScorecard()
                 toast({
                   title: "Data saved",
@@ -710,68 +830,19 @@ export default function BehaviorScorecardPage() {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
-          <RoleManagement
+          <EnhancedRoleManagement
             roles={roles}
             onRoleChange={async () => {
-              await initializeAndLoad()
+              // Clear selected roles temporarily to force refresh
+              setSelectedRole(null)
+              setSettingsRoleId(null)
+              // Clear roles state first to show loading
+              setRoles([])
+              // Reload everything but skip initialization to prevent recreating deleted roles
+              await initializeAndLoad(true)
+              // The initializeAndLoad will set a new selectedRole if roles exist
             }}
           />
-
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                <Settings className="h-5 w-5 text-m8bs-blue" />
-                Customize Monthly Statistics Display
-              </CardTitle>
-              <CardDescription className="text-m8bs-muted">
-                Select which metrics to display for each role in the monthly statistics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {roles.map((role) => (
-                  <Button
-                    key={role.id}
-                    variant={settingsRoleId === role.id ? "default" : "outline"}
-                    onClick={() => setSettingsRoleId(role.id)}
-                    className="h-auto p-4 flex flex-col items-start gap-2"
-                  >
-                    <span className="font-semibold">{role.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {role.metrics.length} metrics
-                    </span>
-                  </Button>
-                ))}
-              </div>
-
-              {settingsRoleId && (
-                <MetricVisibilitySettings
-                  roleId={settingsRoleId}
-                  roleName={roles.find(r => r.id === settingsRoleId)?.name || 'Marketing Position'}
-                  onSave={async () => {
-                    // Reload scorecard data to reflect visibility changes
-                    await loadScorecard()
-                    toast({
-                      title: "Settings updated",
-                      description: "The scorecard display has been updated with your new visibility settings.",
-                    })
-                  }}
-                />
-              )}
-
-              {!settingsRoleId && (
-                <Card className="bg-m8bs-card-alt border-m8bs-border shadow-lg">
-                  <CardContent className="p-12 text-center">
-                    <Settings className="h-16 w-16 text-m8bs-muted mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2 text-white">Select a Role</h3>
-                    <p className="text-m8bs-muted">
-                      Please select a role above to customize its monthly statistics display.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

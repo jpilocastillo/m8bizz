@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,11 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
   const [adding, setAdding] = useState(false)
   const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  // Log when roles prop changes
+  useEffect(() => {
+    console.log('[RoleManagement] Roles prop updated:', roles.length, roles.map(r => ({ id: r.id, name: r.name })))
+  }, [roles])
 
   const handleAddRole = async () => {
     if (!newRoleName.trim()) {
@@ -78,17 +83,42 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
     setDeleting(true)
     try {
       const roleToDelete = roles.find(r => r.id === deleteRoleId)
-      const result = await behaviorScorecardService.deleteRole(deleteRoleId)
-      if (result.success) {
+      if (!roleToDelete) {
         toast({
-          title: "Role deleted",
-          description: `Role "${roleToDelete?.name}" and all its metrics have been deleted.`,
+          title: "Error",
+          description: "Role not found",
+          variant: "destructive",
         })
         setDeleteRoleId(null)
+        return
+      }
+
+      console.log('Attempting to delete role:', roleToDelete.name, 'with ID:', deleteRoleId)
+      const result = await behaviorScorecardService.deleteRole(deleteRoleId)
+      
+      console.log('Delete result:', result)
+      
+      if (result.success) {
+        console.log('[handleDeleteRole] Deletion successful, refreshing UI...')
+        toast({
+          title: "Role deleted",
+          description: `Role "${roleToDelete.name}" and all its metrics have been deleted.`,
+        })
+        setDeleteRoleId(null)
+        
+        // Remove the role from local state immediately to prevent UI issues
+        // The refresh will happen next, but this prevents race conditions
         if (onRoleChange) {
-          onRoleChange()
+          console.log('[handleDeleteRole] Calling onRoleChange callback...')
+          // Small delay to ensure database transaction is complete
+          await new Promise(resolve => setTimeout(resolve, 100))
+          await onRoleChange()
+          console.log('[handleDeleteRole] onRoleChange callback completed')
+        } else {
+          console.warn('[handleDeleteRole] No onRoleChange callback provided')
         }
       } else {
+        console.error('Delete failed:', result.error)
         toast({
           title: "Error deleting role",
           description: result.error || "Failed to delete role",
@@ -97,9 +127,10 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
       }
     } catch (error) {
       console.error('Error deleting role:', error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete role"
       toast({
         title: "Error",
-        description: "Failed to delete role",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
@@ -212,6 +243,8 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
     </Card>
   )
 }
+
+
 
 
 

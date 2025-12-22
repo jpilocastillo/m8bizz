@@ -118,18 +118,37 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
   })
 
   // Calculate totals - account for frequency multipliers
-  const totalEvents = campaigns.reduce((sum, item) => {
-    const multiplier = item.multiplier || getAnnualMultiplier(item.frequency)
-    return sum + ((item.events || 0) * multiplier)
-  }, 0)
-  const totalLeads = campaigns.reduce((sum, item) => {
-    const multiplier = item.multiplier || getAnnualMultiplier(item.frequency)
-    return sum + ((item.leads || 0) * multiplier)
-  }, 0)
-  const totalBudget = campaigns.reduce((sum, item) => {
-    const multiplier = item.multiplier || getAnnualMultiplier(item.frequency)
-    return sum + ((item.budget || 0) * multiplier)
-  }, 0)
+  // Campaigns store leads/events/budget per their frequency period
+  // We need to multiply by the annual multiplier to get annual totals
+  const totalEvents = useMemo(() => {
+    return campaigns.reduce((sum, item) => {
+      const frequency = item.frequency || "Monthly"
+      const multiplier = getAnnualMultiplier(frequency)
+      const eventsPerPeriod = item.events || 0
+      const annualEvents = eventsPerPeriod * multiplier
+      return sum + annualEvents
+    }, 0)
+  }, [campaigns])
+
+  const totalLeads = useMemo(() => {
+    return campaigns.reduce((sum, item) => {
+      const frequency = item.frequency || "Monthly"
+      const multiplier = getAnnualMultiplier(frequency)
+      const leadsPerPeriod = item.leads || 0
+      const annualLeads = leadsPerPeriod * multiplier
+      return sum + annualLeads
+    }, 0)
+  }, [campaigns])
+
+  const totalBudget = useMemo(() => {
+    return campaigns.reduce((sum, item) => {
+      const frequency = item.frequency || "Monthly"
+      const multiplier = getAnnualMultiplier(frequency)
+      const budgetPerPeriod = item.budget || 0
+      const annualBudget = budgetPerPeriod * multiplier
+      return sum + annualBudget
+    }, 0)
+  }, [campaigns])
 
   // Calculate accurate ROI metrics
   const roiMetrics = useMemo(() => {
@@ -550,8 +569,18 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Leads</TableCell>
-                  <TableCell className="text-white font-semibold">{Math.round(totalLeads).toLocaleString()}</TableCell>
-                  <TableCell className="text-white/70">Annual total across all campaigns</TableCell>
+                  <TableCell className="text-white font-semibold text-lg">{Math.round(totalLeads).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">
+                    <div className="space-y-1">
+                      <div>{Math.round(totalLeads / 12).toLocaleString()} leads/month avg</div>
+                      {campaigns.length > 0 && (
+                        <div className="text-xs text-white/50 mt-1">
+                          Calculated from {campaigns.length} {campaigns.length === 1 ? 'campaign' : 'campaigns'} 
+                          {campaigns.some(c => c.frequency && c.frequency !== "Monthly") && ' (accounting for frequency)'}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Budget</TableCell>
@@ -620,13 +649,23 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
                           {item.events} {frequencyLabel.toLowerCase()}
                         </TableCell>
                         <TableCell className="text-white">
-                          {item.leads} {frequencyLabel.toLowerCase()}
+                          <div>
+                            <div>{item.leads.toLocaleString()} {frequencyLabel.toLowerCase()}</div>
+                            <div className="text-xs text-white/60">
+                              ({((item.leads || 0) * multiplier).toLocaleString()} annual)
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell className="text-white">
-                          ${item.budget.toLocaleString()} {frequencyLabel.toLowerCase()}
+                          <div>
+                            <div>${item.budget.toLocaleString()} {frequencyLabel.toLowerCase()}</div>
+                            <div className="text-xs text-white/60">
+                              (${(item.budget * multiplier).toLocaleString()} annual)
+                            </div>
+                          </div>
                         </TableCell>
-                        <TableCell className="text-white">
-                          ${(item.budget * multiplier).toLocaleString()} annual
+                        <TableCell className="text-white font-semibold">
+                          ${(item.budget * multiplier).toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <Badge variant={item.status === "Active" ? "default" : "outline"}>{item.status}</Badge>

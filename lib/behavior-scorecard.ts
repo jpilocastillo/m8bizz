@@ -492,25 +492,48 @@ export class BehaviorScorecardService {
       const roleScorecards: RoleScorecard[] = []
       const roleAverages: number[] = []
 
-      // Get scorecard for each role
+      // Batch load all summaries and metrics in parallel
+      const roleIds = roles.map(r => r.id)
+      
+      // Load all summaries for this month/year in one query
+      const { data: allSummaries } = await this.supabase
+        .from('scorecard_monthly_summaries')
+        .select('id, role_id, average_grade_percentage, average_grade_letter')
+        .in('role_id', roleIds)
+        .eq('month', month)
+        .eq('year', year)
+
+      // Create a map of summaries by role_id
+      const summariesMap = new Map<string, typeof allSummaries[0]>()
+      allSummaries?.forEach(summary => {
+        summariesMap.set(summary.role_id, summary)
+      })
+
+      // Load all metrics for all roles in one query
+      const { data: allMetrics } = await this.supabase
+        .from('scorecard_metrics')
+        .select('*')
+        .in('role_id', roleIds)
+        .order('role_id, display_order', { ascending: true })
+
+      // Group metrics by role_id
+      const metricsByRole = new Map<string, typeof allMetrics>()
+      allMetrics?.forEach(metric => {
+        if (!metricsByRole.has(metric.role_id)) {
+          metricsByRole.set(metric.role_id, [])
+        }
+        metricsByRole.get(metric.role_id)!.push(metric)
+      })
+
+      // Process each role
       for (const role of roles) {
-        const { data: summary } = await this.supabase
-          .from('scorecard_monthly_summaries')
-          .select('id, average_grade_percentage, average_grade_letter')
-          .eq('role_id', role.id)
-          .eq('month', month)
-          .eq('year', year)
-          .maybeSingle()
+        const summary = summariesMap.get(role.id)
 
         if (!summary) {
           // No summary exists, create empty scorecard
-          const { data: metrics } = await this.supabase
-            .from('scorecard_metrics')
-            .select('*')
-            .eq('role_id', role.id)
-            .order('display_order', { ascending: true })
+          const metrics = metricsByRole.get(role.id) || []
 
-          const metricScores: MetricScore[] = (metrics || [])
+          const metricScores: MetricScore[] = metrics
             .filter(metric => metric.is_visible !== false) // Filter out hidden metrics
             .map(metric => ({
               metricId: metric.id,
@@ -538,7 +561,7 @@ export class BehaviorScorecardService {
           continue
         }
 
-        // Get metric scores - try with is_visible, fallback if column doesn't exist
+        // Get metric scores for this summary - try with is_visible, fallback if column doesn't exist
         let { data: metricScores, error: scoresError } = await this.supabase
           .from('scorecard_metric_scores')
           .select(`
@@ -636,7 +659,7 @@ export class BehaviorScorecardService {
     }
   }
 
-  // Get all metrics for a role
+  // Get all metrics for a role (optimized - removed redundant role check)
   async getRoleMetrics(roleId: string): Promise<{ success: boolean; data?: ScorecardMetric[]; error?: string }> {
     try {
       const { data, error } = await this.supabase
@@ -646,6 +669,10 @@ export class BehaviorScorecardService {
         .order('display_order', { ascending: true })
 
       if (error) {
+        // If error is about role not existing or foreign key violation, return empty array
+        if (error.message?.includes('foreign key') || error.message?.includes('does not exist')) {
+          return { success: true, data: [] }
+        }
         return { success: false, error: error.message }
       }
 
@@ -664,7 +691,52 @@ export class BehaviorScorecardService {
       }
     } catch (error) {
       console.error('Error fetching role metrics:', error)
-      return { success: false, error: 'Failed to fetch role metrics' }
+      // Return empty array instead of error to gracefully handle deleted roles
+      return { success: true, data: [] }
+    }
+  }
+
+  // Get all metrics for multiple roles in parallel (batch optimization)
+  async getAllRoleMetrics(roleIds: string[]): Promise<Map<string, ScorecardMetric[]>> {
+    try {
+      if (roleIds.length === 0) {
+        return new Map()
+      }
+
+      const { data, error } = await this.supabase
+        .from('scorecard_metrics')
+        .select('*')
+        .in('role_id', roleIds)
+        .order('role_id, display_order', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching all role metrics:', error)
+        return new Map()
+      }
+
+      // Group metrics by role_id
+      const metricsMap = new Map<string, ScorecardMetric[]>()
+      data?.forEach(m => {
+        const roleId = m.role_id
+        if (!metricsMap.has(roleId)) {
+          metricsMap.set(roleId, [])
+        }
+        metricsMap.get(roleId)!.push({
+          id: m.id,
+          roleId: m.role_id,
+          metricName: m.metric_name,
+          metricType: m.metric_type as MetricType,
+          goalValue: Number(m.goal_value),
+          isInverted: m.is_inverted,
+          displayOrder: m.display_order,
+          isVisible: (m as any).is_visible ?? true,
+        })
+      })
+
+      return metricsMap
+    } catch (error) {
+      console.error('Error fetching all role metrics:', error)
+      return new Map()
     }
   }
 
@@ -1089,6 +1161,134 @@ export class BehaviorScorecardService {
     }
   }
 
+  // Update a metric
+  async updateMetric(metricId: string, data: {
+    metricName?: string
+    metricType?: MetricType
+    goalValue?: number
+    isInverted?: boolean
+    displayOrder?: number
+    isVisible?: boolean
+  }): Promise<{ success: boolean; data?: ScorecardMetric; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Build update object with only provided fields
+      const updateData: any = {}
+      if (data.metricName !== undefined) updateData.metric_name = data.metricName.trim()
+      if (data.metricType !== undefined) updateData.metric_type = data.metricType
+      if (data.goalValue !== undefined) updateData.goal_value = data.goalValue
+      if (data.isInverted !== undefined) updateData.is_inverted = data.isInverted
+      if (data.displayOrder !== undefined) updateData.display_order = data.displayOrder
+      if (data.isVisible !== undefined) updateData.is_visible = data.isVisible
+
+      if (Object.keys(updateData).length === 0) {
+        return { success: false, error: 'No fields to update' }
+      }
+
+      // Verify the metric belongs to a role owned by the user
+      const { data: metric } = await this.supabase
+        .from('scorecard_metrics')
+        .select(`
+          *,
+          scorecard_roles!inner(user_id)
+        `)
+        .eq('id', metricId)
+        .single()
+
+      if (!metric) {
+        return { success: false, error: 'Metric not found' }
+      }
+
+      if ((metric.scorecard_roles as any).user_id !== user.id) {
+        return { success: false, error: 'Unauthorized to update this metric' }
+      }
+
+      // Update the metric
+      const { data: updatedMetric, error } = await this.supabase
+        .from('scorecard_metrics')
+        .update(updateData)
+        .eq('id', metricId)
+        .select()
+        .single()
+
+      if (error) {
+        return { success: false, error: error.message || 'Failed to update metric' }
+      }
+
+      return {
+        success: true,
+        data: {
+          id: updatedMetric.id,
+          roleId: updatedMetric.role_id,
+          metricName: updatedMetric.metric_name,
+          metricType: updatedMetric.metric_type as MetricType,
+          goalValue: Number(updatedMetric.goal_value),
+          isInverted: updatedMetric.is_inverted,
+          displayOrder: updatedMetric.display_order,
+          isVisible: updatedMetric.is_visible ?? true,
+        },
+      }
+    } catch (error) {
+      console.error('Error updating metric:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update metric'
+      return { success: false, error: errorMessage }
+    }
+  }
+
+  // Update metric display order
+  async updateMetricDisplayOrder(metricId: string, displayOrder: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      const { error } = await this.supabase
+        .from('scorecard_metrics')
+        .update({ display_order: displayOrder })
+        .eq('id', metricId)
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating metric display order:', error)
+      return { success: false, error: 'Failed to update metric display order' }
+    }
+  }
+
+  // Update multiple metrics display order
+  async updateMetricsDisplayOrder(updates: Array<{ metricId: string; displayOrder: number }>): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Update each metric's display order
+      for (const update of updates) {
+        const result = await this.updateMetricDisplayOrder(update.metricId, update.displayOrder)
+        if (!result.success) {
+          return result
+        }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating metrics display order:', error)
+      return { success: false, error: 'Failed to update metrics display order' }
+    }
+  }
+
   // Delete a metric
   async deleteMetric(metricId: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -1167,13 +1367,17 @@ export class BehaviorScorecardService {
     }
   }
 
-  // Delete a role (will cascade delete all metrics and related data)
-  async deleteRole(roleId: string): Promise<{ success: boolean; error?: string }> {
+  // Update a role name
+  async updateRole(roleId: string, newRoleName: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser()
       
       if (!user) {
         return { success: false, error: 'User not authenticated' }
+      }
+
+      if (!newRoleName || newRoleName.trim().length === 0) {
+        return { success: false, error: 'Role name is required' }
       }
 
       // Verify the role belongs to the user
@@ -1188,23 +1392,98 @@ export class BehaviorScorecardService {
       }
 
       if (role.user_id !== user.id) {
-        return { success: false, error: 'Unauthorized to delete this role' }
+        return { success: false, error: 'Unauthorized to update this role' }
       }
 
-      // Delete the role (cascade will handle metrics, weekly data, etc.)
+      // Check if another role with this name already exists
+      const { data: existing } = await this.supabase
+        .from('scorecard_roles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role_name', newRoleName.trim())
+        .neq('id', roleId)
+        .maybeSingle()
+
+      if (existing) {
+        return { success: false, error: 'A role with this name already exists' }
+      }
+
+      // Update the role
       const { error } = await this.supabase
         .from('scorecard_roles')
-        .delete()
+        .update({ role_name: newRoleName.trim() })
         .eq('id', roleId)
+        .eq('user_id', user.id)
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: error.message || 'Failed to update role' }
       }
 
       return { success: true }
     } catch (error) {
-      console.error('Error deleting role:', error)
-      return { success: false, error: 'Failed to delete role' }
+      console.error('Error updating role:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update role'
+      return { success: false, error: errorMessage }
+    }
+  }
+
+  // Delete a role (will cascade delete all metrics and related data)
+  async deleteRole(roleId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: { user }, error: userError } = await this.supabase.auth.getUser()
+      
+      if (userError || !user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Verify the role belongs to the user
+      const { data: role, error: fetchError } = await this.supabase
+        .from('scorecard_roles')
+        .select('id, user_id')
+        .eq('id', roleId)
+        .maybeSingle()
+
+      if (fetchError) {
+        return { success: false, error: fetchError.message || 'Failed to fetch role' }
+      }
+
+      if (!role) {
+        return { success: false, error: 'Role not found' }
+      }
+      
+      if (role.user_id !== user.id) {
+        return { success: false, error: 'Unauthorized to delete this role' }
+      }
+
+      // Delete the role (cascade will handle metrics, weekly data, etc.)
+      const { error, count } = await this.supabase
+        .from('scorecard_roles')
+        .delete()
+        .eq('id', roleId)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Error deleting role:', error)
+        // Check for specific error types
+        if (error.code === '23503') {
+          return { success: false, error: 'Cannot delete role: it has associated data that prevents deletion' }
+        }
+        if (error.code === 'PGRST301') {
+          return { success: false, error: 'Permission denied: check your database policies' }
+        }
+        return { success: false, error: error.message || 'Failed to delete role' }
+      }
+
+      // Verify that a row was actually deleted
+      if (count !== null && count === 0) {
+        return { success: false, error: 'No role was deleted. The role may not exist or you may not have permission.' }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Exception deleting role:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete role'
+      return { success: false, error: errorMessage }
     }
   }
 }

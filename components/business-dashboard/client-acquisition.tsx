@@ -21,18 +21,49 @@ export function ClientAcquisition({ data, businessGoals, commissionRates, monthl
   const clientMetrics = data?.clientMetrics
   const currentYear = selectedYear || new Date().getFullYear().toString()
 
-  // Calculate metrics from campaign data (campaigns represent annual goals directly)
+  // Helper function to get annual multiplier based on frequency
+  const getAnnualMultiplier = (frequency?: string) => {
+    switch (frequency) {
+      case 'Monthly': return 12
+      case 'Quarterly': return 4
+      case 'Semi-Annual': return 2
+      case 'Annual': return 1
+      default: return 12 // Default to monthly if not specified
+    }
+  }
+
+  // Calculate metrics from campaign data (campaigns store leads/events/budget per their frequency period)
   const calculatedMetrics = useMemo(() => {
     // Get client metrics values
     const appointmentAttrition = clientMetrics?.appointment_attrition || 0
     const avgCloseRatio = clientMetrics?.avg_close_ratio || 0
     const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
 
-    // Campaigns store monthly values - need to convert to annual for totals
-    const totalLeads = campaigns.reduce((sum, campaign) => sum + (campaign.leads || 0), 0) * 12
-    const totalEvents = campaigns.reduce((sum, campaign) => sum + (campaign.events || 0), 0) * 12
-    const monthlyBudget = campaigns.reduce((sum, campaign) => sum + (campaign.budget || 0), 0)
-    const totalBudget = monthlyBudget * 12 // Annual budget
+    // Calculate annual totals accounting for each campaign's frequency
+    // Campaigns store leads/events/budget per their frequency period, so multiply by frequency multiplier
+    const totalLeads = campaigns.reduce((sum, campaign) => {
+      const frequency = campaign.frequency || 'Monthly'
+      const multiplier = getAnnualMultiplier(frequency)
+      const leadsPerPeriod = campaign.leads || 0
+      const annualLeads = leadsPerPeriod * multiplier
+      return sum + annualLeads
+    }, 0)
+    
+    const totalEvents = campaigns.reduce((sum, campaign) => {
+      const frequency = campaign.frequency || 'Monthly'
+      const multiplier = getAnnualMultiplier(frequency)
+      const eventsPerPeriod = campaign.events || 0
+      const annualEvents = eventsPerPeriod * multiplier
+      return sum + annualEvents
+    }, 0)
+    
+    const totalBudget = campaigns.reduce((sum, campaign) => {
+      const frequency = campaign.frequency || 'Monthly'
+      const multiplier = getAnnualMultiplier(frequency)
+      const budgetPerPeriod = campaign.budget || 0
+      const annualBudget = budgetPerPeriod * multiplier
+      return sum + annualBudget
+    }, 0)
     
     // Calculate appointments from campaigns (annual)
     const totalAppointments = appointmentsPerCampaign > 0 
@@ -110,7 +141,7 @@ export function ClientAcquisition({ data, businessGoals, commissionRates, monthl
       appointmentAttrition,
       avgCloseRatio,
     }
-  }, [campaigns, clientMetrics])
+  }, [campaigns, clientMetrics, businessGoals, commissionRates])
 
   // Annual client acquisition goals data - using same calculations as DashboardMetrics
   const annualGoalsData = useMemo(() => {
@@ -163,20 +194,30 @@ export function ClientAcquisition({ data, businessGoals, commissionRates, monthl
     ]
   }, [data?.currentValues, data?.clientMetrics])
 
-  // Lead source data from campaigns (campaigns represent annual goals directly)
+  // Lead source data from campaigns (campaigns store leads per their frequency)
   const leadSourceData = useMemo(() => {
     if (campaigns.length === 0) {
       return [
-        { name: "No Campaigns", value: 1, color: "#64748b" },
+        { name: "No Campaigns", value: 1, color: "#64748b", monthlyValue: 0, annualValue: 0 },
       ]
     }
 
-    return campaigns.map((campaign, index) => ({
-      name: campaign.name || `Campaign ${index + 1}`,
-      value: campaign.leads || 0, // Annual leads goal (campaigns are annual)
-      monthlyValue: Math.round((campaign.leads || 0) / 12), // Monthly average
-      color: colors[index % colors.length],
-    }))
+    return campaigns.map((campaign, index) => {
+      const frequency = campaign.frequency || 'Monthly'
+      const multiplier = getAnnualMultiplier(frequency)
+      const leadsPerPeriod = campaign.leads || 0
+      const annualLeads = leadsPerPeriod * multiplier
+      const monthlyLeads = Math.round(annualLeads / 12)
+      
+      return {
+        name: campaign.name || `Campaign ${index + 1}`,
+        value: annualLeads, // Annual leads for display
+        monthlyValue: monthlyLeads, // Monthly average
+        annualValue: annualLeads, // Store annual for total calculation
+        frequency: frequency, // Store frequency for description
+        color: colors[index % colors.length],
+      }
+    })
   }, [campaigns])
   
   // Campaign performance data for bar chart (campaigns represent annual goals directly)
@@ -300,11 +341,31 @@ export function ClientAcquisition({ data, businessGoals, commissionRates, monthl
           <CardDescription className="text-m8bs-muted mt-2">Campaign Lead Generation Goals</CardDescription>
         </CardHeader>
         <CardContent className="p-6">
+          {/* Total Leads Section */}
+          <div className="mb-6 p-4 rounded-lg border-2 border-m8bs-blue/50 bg-m8bs-card-alt/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-white/70 mb-1">Total Annual Leads</h3>
+                <p className="text-2xl font-extrabold text-m8bs-blue">
+                  {leadSourceData.reduce((sum, s) => sum + (s.annualValue || s.value || 0), 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="text-right">
+                <h3 className="text-sm font-semibold text-white/70 mb-1">Total Monthly Average</h3>
+                <p className="text-2xl font-extrabold text-white">
+                  {Math.round(leadSourceData.reduce((sum, s) => sum + (s.annualValue || s.value || 0), 0) / 12).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {leadSourceData.map((source, index) => {
-              const totalLeads = leadSourceData.reduce((sum, s) => sum + s.value, 0)
-              const percentage = totalLeads > 0 ? (source.value / totalLeads) * 100 : 0
-              const monthlyValue = 'monthlyValue' in source ? source.monthlyValue : Math.round(source.value / 12)
+              const totalAnnualLeads = leadSourceData.reduce((sum, s) => sum + (s.annualValue || s.value || 0), 0)
+              const percentage = totalAnnualLeads > 0 ? ((source.annualValue || source.value) / totalAnnualLeads) * 100 : 0
+              const monthlyValue = source.monthlyValue || Math.round((source.annualValue || source.value) / 12)
+              const frequency = 'frequency' in source ? source.frequency : 'Monthly'
+              
               return (
                 <div
                   key={index}
@@ -323,14 +384,17 @@ export function ClientAcquisition({ data, businessGoals, commissionRates, monthl
                         className="text-2xl font-extrabold"
                         style={{ color: source.color }}
                       >
-                        {source.value.toLocaleString()}
+                        {(source.annualValue || source.value).toLocaleString()}
                       </span>
-                      <span className="text-sm text-white/60">leads</span>
+                      <span className="text-sm text-white/60">leads/year</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-white/50">
-                      <span>{monthlyValue.toLocaleString()}/month</span>
+                      <span>{monthlyValue.toLocaleString()} leads/month avg</span>
                       <span>•</span>
                       <span>{percentage.toFixed(1)}% of total</span>
+                    </div>
+                    <div className="text-xs text-white/40 mt-1">
+                      {frequency} frequency
                     </div>
                   </div>
                 </div>

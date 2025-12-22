@@ -2,8 +2,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { type RoleScorecard, type MetricScore, calculateGrade } from '@/lib/behavior-scorecard'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, Target, Award, AlertCircle } from 'lucide-react'
 
 interface ScorecardDisplayProps {
   roleScorecard: RoleScorecard
@@ -48,87 +49,143 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
     return <TrendingDown className="h-4 w-4 text-red-400" />
   }
 
+  const getProgressColor = (percentage: number): string => {
+    if (percentage >= 90) return 'bg-green-500'
+    if (percentage >= 80) return 'bg-blue-500'
+    if (percentage >= 70) return 'bg-yellow-500'
+    if (percentage >= 60) return 'bg-orange-500'
+    return 'bg-red-500'
+  }
+
+  const getMetricStatus = (percentage: number) => {
+    if (percentage >= 90) return { icon: <Award className="h-4 w-4 text-green-400" />, label: 'Excellent' }
+    if (percentage >= 80) return { icon: <TrendingUp className="h-4 w-4 text-blue-400" />, label: 'Good' }
+    if (percentage >= 70) return { icon: <Minus className="h-4 w-4 text-yellow-400" />, label: 'Average' }
+    if (percentage >= 60) return { icon: <AlertCircle className="h-4 w-4 text-orange-400" />, label: 'Needs Improvement' }
+    return { icon: <AlertCircle className="h-4 w-4 text-red-400" />, label: 'Critical' }
+  }
+
   return (
-    <Card className="bg-black border-gray-800 shadow-lg">
-      <CardHeader className="pb-2">
+    <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg hover:shadow-xl transition-shadow">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl font-bold text-white">{roleScorecard.roleName}</CardTitle>
-            <CardDescription className="text-m8bs-muted mt-1">
-              Performance Scorecard
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="bg-m8bs-card-alt p-2 rounded-lg">
+              <Target className="h-5 w-5 text-m8bs-blue" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold text-white">{roleScorecard.roleName}</CardTitle>
+              <CardDescription className="text-m8bs-muted mt-1">
+                Performance Scorecard
+              </CardDescription>
+            </div>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-2 mb-1">
-              <Badge className={`${getGradeColor(roleScorecard.averageGrade)} border px-3 py-1 text-lg font-bold`}>
+              <Badge className={`${getGradeColor(roleScorecard.averageGrade)} border px-4 py-2 text-xl font-bold`}>
                 {roleScorecard.averageGrade}
               </Badge>
             </div>
-            <p className="text-sm text-m8bs-muted">
-              {roleScorecard.averageGradePercentage.toFixed(1)}% of Goal
-            </p>
+            <div className="flex items-center gap-2">
+              <Progress 
+                value={roleScorecard.averageGradePercentage} 
+                className="w-24 h-2"
+              />
+              <p className="text-sm text-m8bs-muted font-medium">
+                {roleScorecard.averageGradePercentage.toFixed(1)}%
+              </p>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="grid gap-4">
-            <div className="grid grid-cols-6 gap-4 p-3 bg-m8bs-card-alt rounded-lg border border-m8bs-border font-semibold text-sm text-white">
-              <div className="col-span-2">Monthly Statistics</div>
-              <div className="text-right">Goal</div>
-              <div className="text-right">Actual</div>
-              <div className="text-right">% of Goal</div>
-              <div className="text-right">Grade</div>
+        <div className="space-y-3">
+          {roleScorecard.metrics.length === 0 ? (
+            <div className="text-center py-8 text-m8bs-muted">
+              <Target className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No metrics available for this role</p>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-7 gap-3 p-3 bg-m8bs-card-alt rounded-lg border border-m8bs-border font-semibold text-xs text-white">
+                <div className="col-span-2">Metric</div>
+                <div className="text-right">Goal</div>
+                <div className="text-right">Actual</div>
+                <div className="text-right">Progress</div>
+                <div className="text-right">% Goal</div>
+                <div className="text-right">Grade</div>
+              </div>
 
-            {roleScorecard.metrics.map((metric, index) => (
-              <div
-                key={metric.metricId}
-                className="grid grid-cols-6 gap-4 p-3 bg-m8bs-card-alt rounded-lg border border-m8bs-border hover:bg-m8bs-card transition-colors"
-              >
-                <div className="col-span-2 flex items-center gap-2">
-                  {getTrendIcon(metric.percentageOfGoal)}
-                  <span className="text-white font-medium">{metric.metricName}</span>
+              {roleScorecard.metrics.map((metric, index) => {
+                const status = getMetricStatus(metric.percentageOfGoal)
+                return (
+                  <div
+                    key={metric.metricId}
+                    className="grid grid-cols-7 gap-3 p-3 bg-m8bs-card-alt rounded-lg border border-m8bs-border hover:bg-m8bs-card hover:border-m8bs-blue/50 transition-all"
+                  >
+                    <div className="col-span-2 flex items-center gap-2">
+                      {status.icon}
+                      <div>
+                        <span className="text-white font-medium text-sm">{metric.metricName}</span>
+                        <div className="text-xs text-m8bs-muted">{status.label}</div>
+                      </div>
+                    </div>
+                    <div className="text-right text-m8bs-muted text-sm">
+                      {formatValue(metric.goalValue, metric.metricType)}
+                    </div>
+                    <div className="text-right text-white font-semibold text-sm">
+                      {formatValue(metric.actualValue, metric.metricType)}
+                    </div>
+                    <div className="text-right">
+                      <Progress 
+                        value={Math.min(100, metric.percentageOfGoal)} 
+                        className="h-2 w-full"
+                      />
+                    </div>
+                    <div className="text-right">
+                      <span className={`font-semibold text-sm ${
+                        metric.percentageOfGoal >= 90 ? 'text-green-400' :
+                        metric.percentageOfGoal >= 80 ? 'text-blue-400' :
+                        metric.percentageOfGoal >= 70 ? 'text-yellow-400' :
+                        metric.percentageOfGoal >= 60 ? 'text-orange-400' :
+                        'text-red-400'
+                      }`}>
+                        {metric.percentageOfGoal.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <Badge className={`${getGradeColor(metric.grade)} border text-xs`}>
+                        {metric.grade}
+                      </Badge>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Average Row */}
+              <div className="grid grid-cols-7 gap-3 p-4 bg-m8bs-card-alt rounded-lg border-2 border-m8bs-border font-bold mt-4">
+                <div className="col-span-2 text-white flex items-center gap-2">
+                  <Award className="h-5 w-5 text-m8bs-blue" />
+                  <span>Overall Average</span>
                 </div>
-                <div className="text-right text-m8bs-muted">
-                  {formatValue(metric.goalValue, metric.metricType)}
+                <div className="col-span-2"></div>
+                <div className="text-right">
+                  <Progress 
+                    value={roleScorecard.averageGradePercentage} 
+                    className="h-2 w-full"
+                  />
                 </div>
-                <div className="text-right text-white font-semibold">
-                  {formatValue(metric.actualValue, metric.metricType)}
+                <div className="text-right text-white">
+                  {roleScorecard.averageGradePercentage.toFixed(1)}%
                 </div>
                 <div className="text-right">
-                  <span className={`font-semibold ${
-                    metric.percentageOfGoal >= 90 ? 'text-green-400' :
-                    metric.percentageOfGoal >= 80 ? 'text-blue-400' :
-                    metric.percentageOfGoal >= 70 ? 'text-yellow-400' :
-                    metric.percentageOfGoal >= 60 ? 'text-orange-400' :
-                    'text-red-400'
-                  }`}>
-                    {metric.percentageOfGoal.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="text-right">
-                  <Badge className={`${getGradeColor(metric.grade)} border`}>
-                    {metric.grade}
+                  <Badge className={`${getGradeColor(roleScorecard.averageGrade)} border px-3 py-1 text-sm`}>
+                    {roleScorecard.averageGrade}
                   </Badge>
                 </div>
               </div>
-            ))}
-
-            {/* Average Row */}
-            <div className="grid grid-cols-6 gap-4 p-4 bg-m8bs-card-alt rounded-lg border-2 border-m8bs-border font-bold">
-              <div className="col-span-2 text-white">Average Grade</div>
-              <div className="col-span-2"></div>
-              <div className="text-right text-white">
-                {roleScorecard.averageGradePercentage.toFixed(1)}%
-              </div>
-              <div className="text-right">
-                <Badge className={`${getGradeColor(roleScorecard.averageGrade)} border px-3 py-1 text-base`}>
-                  {roleScorecard.averageGrade}
-                </Badge>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
