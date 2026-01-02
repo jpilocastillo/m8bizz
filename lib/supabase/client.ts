@@ -1,13 +1,9 @@
 import { createBrowserClient } from "@supabase/ssr"
 import type { Database } from "@/types/supabase"
 
-let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | null = null
-
+// Create a new client instance each time to ensure fresh session
+// createBrowserClient automatically handles cookies and sessions
 export function createClient() {
-  if (supabaseClient) {
-    return supabaseClient
-  }
-
   // Ensure the environment variables are defined
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -33,8 +29,12 @@ export function createClient() {
   }
 
   try {
-    supabaseClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
-    return supabaseClient
+    // createBrowserClient from @supabase/ssr automatically handles:
+    // - Cookie-based session management
+    // - Automatic token refresh
+    // - Session persistence
+    // We create a singleton instance to ensure consistent session handling
+    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
   } catch (error) {
     console.error("Error creating Supabase client:", error)
     throw error

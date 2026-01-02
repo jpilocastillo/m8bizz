@@ -26,10 +26,15 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
 }: ConversionBreakdownProps) {
   // Calculate conversion rates
   const registrantsToPlateLickers = registrants > 0 ? (plateLickers / registrants) * 100 : 0
+  // Percentage of attendees from registrants
   const registrantsToAttendees = registrants > 0 ? (attendees / registrants) * 100 : 0
+  // Appointments set from attendees
   const attendeesToAppointments = attendees > 0 ? (appointmentsSet / attendees) * 100 : 0
+  // 1st appointment no shows from appointments set
   const appointmentsToNoShows = appointmentsSet > 0 ? (firstAppointmentNoShows / appointmentsSet) * 100 : 0
+  // Not qualified from appointments set
   const appointmentsToNotQualified = appointmentsSet > 0 ? (notQualified / appointmentsSet) * 100 : 0
+  // Clients from appointments set
   const appointmentsToClients = appointmentsSet > 0 ? (clientsCreated / appointmentsSet) * 100 : 0
   const overallConversion = registrants > 0 ? (clientsCreated / registrants) * 100 : 0
 
@@ -160,14 +165,17 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
     show: { opacity: 1, y: 0 },
   }
 
-  // Calculate funnel visualization data - smaller for side-by-side layout
+  // Calculate funnel visualization data - proportional to actual numbers
   const funnelHeight = 300
   const maxWidth = 300
-  const minWidth = 80
+  const minWidth = 20 // Reduced minimum to allow true proportionality
   const calculateFunnelWidth = (value: number, maxValue: number) => {
     if (maxValue === 0) return minWidth
     const ratio = value / maxValue
-    return Math.max(minWidth, ratio * maxWidth)
+    // Calculate proportional width, but ensure it's at least visible
+    const proportionalWidth = ratio * maxWidth
+    // Only use minWidth if the value is 0, otherwise use proportional width
+    return value === 0 ? minWidth : Math.max(minWidth, proportionalWidth)
   }
   
   // Get color details for each step with enhanced styling
@@ -273,7 +281,7 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
                   const width = calculateFunnelWidth(step.value, registrants)
                   const nextWidth = index < steps.length - 1 
                     ? calculateFunnelWidth(steps[index + 1].value, registrants)
-                    : Math.max(minWidth, width * 0.88)
+                    : Math.max(minWidth, width * 0.95) // Last segment tapers slightly but stays proportional
                   
                   const segmentHeight = funnelHeight / steps.length
                   const y = index * segmentHeight

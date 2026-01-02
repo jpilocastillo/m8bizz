@@ -193,19 +193,27 @@ async function ensureAttendanceRecords(supabase: any, events: any[]) {
 }
 
 // Fetch user events using admin client to bypass RLS
-export async function fetchUserEvents(userId: string) {
+export async function fetchUserEvents(userId: string, year?: number) {
   try {
     // Use the admin client to bypass RLS policies
     const supabase = await createAdminClient()
 
-    console.log(`Fetching events for user: ${userId}`)
+    console.log(`Fetching events for user: ${userId}${year ? ` for year ${year}` : ''}`)
 
     // First try the marketing_events table (new schema)
-    const { data: marketingEvents, error: marketingError } = await supabase
+    let marketingQuery = supabase
       .from("marketing_events")
       .select("*")
       .eq("user_id", userId)
-      .order("date", { ascending: false })
+
+    // Filter by year if provided
+    if (year) {
+      const yearStart = `${year}-01-01`;
+      const yearEnd = `${year}-12-31`;
+      marketingQuery = marketingQuery.gte('date', yearStart).lte('date', yearEnd);
+    }
+
+    const { data: marketingEvents, error: marketingError } = await marketingQuery.order("date", { ascending: false })
 
     if (marketingError) {
       console.error("Error querying marketing_events:", marketingError)
@@ -219,11 +227,19 @@ export async function fetchUserEvents(userId: string) {
 
     // If no marketing_events, try the events table (old schema)
     console.log("No marketing_events found, trying events table")
-    const { data: events, error: eventsError } = await supabase
+    let eventsQuery = supabase
       .from("events")
       .select("*")
       .eq("user_id", userId)
-      .order("date", { ascending: false })
+
+    // Filter by year if provided
+    if (year) {
+      const yearStart = `${year}-01-01`;
+      const yearEnd = `${year}-12-31`;
+      eventsQuery = eventsQuery.gte('date', yearStart).lte('date', yearEnd);
+    }
+
+    const { data: events, error: eventsError } = await eventsQuery.order("date", { ascending: false })
 
     if (eventsError) {
       console.error("Error fetching events:", eventsError)
@@ -271,15 +287,53 @@ export type EventWithRelations = {
   };
 }
 
-// Update the function signature
-export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> {
+// Helper function to get available years from events
+export async function getAvailableYears(userId: string): Promise<number[]> {
   try {
-    console.log("[fetchAllEvents] Starting fetch for user:", userId);
+    const supabase = await createAdminClient();
+    const { data: events, error } = await supabase
+      .from('marketing_events')
+      .select('date')
+      .eq('user_id', userId);
+
+    if (error || !events) {
+      return [new Date().getFullYear()];
+    }
+
+    const years = new Set<number>();
+    events.forEach(event => {
+      if (event.date) {
+        try {
+          const [year] = event.date.split('-').map(Number);
+          if (!isNaN(year)) {
+            years.add(year);
+          }
+        } catch {
+          // Skip invalid dates
+        }
+      }
+    });
+
+    // Always include current year and 2025
+    years.add(new Date().getFullYear());
+    years.add(2025);
+
+    return Array.from(years).sort((a, b) => b - a);
+  } catch (error) {
+    console.error('Error getting available years:', error);
+    return [new Date().getFullYear(), 2025];
+  }
+}
+
+// Update the function signature
+export async function fetchAllEvents(userId: string, year?: number): Promise<MarketingEvent[]> {
+  try {
+    console.log("[fetchAllEvents] Starting fetch for user:", userId, year ? `for year ${year}` : '');
     const supabase = await createAdminClient();
     console.log("[fetchAllEvents] Admin client created");
 
     console.log("[fetchAllEvents] Querying marketing_events table");
-    const { data: events, error } = await supabase
+    let query = supabase
       .from('marketing_events')
       .select(`
         id,
@@ -336,8 +390,16 @@ export async function fetchAllEvents(userId: string): Promise<MarketingEvent[]> 
           total
         )
       `)
-      .eq('user_id', userId)
-      .order('date', { ascending: false });
+      .eq('user_id', userId);
+
+    // Filter by year if provided
+    if (year) {
+      const yearStart = `${year}-01-01`;
+      const yearEnd = `${year}-12-31`;
+      query = query.gte('date', yearStart).lte('date', yearEnd);
+    }
+
+    const { data: events, error } = await query.order('date', { ascending: false });
 
     if (error) {
       console.error('[fetchAllEvents] Error fetching events:', error);

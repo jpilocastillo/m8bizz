@@ -11,10 +11,11 @@ import { TrendAnalysis } from "@/components/dashboard/analytics/trend-analysis"
 import { ConversionBreakdown } from "@/components/dashboard/analytics/conversion-breakdown"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { motion } from "framer-motion"
-import { BarChart3, TrendingUp, Activity, AlertCircle, RefreshCw, DollarSign, Users, Target } from "lucide-react"
+import { BarChart3, TrendingUp, Activity, AlertCircle, RefreshCw, DollarSign, Users, Target, Calendar } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Sample data structure with defaults
 const defaultData = {
@@ -63,6 +64,8 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   const [filteredData, setFilteredData] = useState(() => analyticsData || defaultData)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+  const [availableYears, setAvailableYears] = useState<number[]>([new Date().getFullYear(), 2025])
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     dateRange: { from: undefined, to: undefined },
@@ -75,6 +78,29 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   // Separate metric states for each component
   const [topPerformersMetric, setTopPerformersMetric] = useState<"ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients">("ROI")
   const [heatmapMetric, setHeatmapMetric] = useState<"ROI" | "Conversion" | "Revenue" | "Attendees" | "Clients">("ROI")
+
+  // Extract available years from analytics data
+  useEffect(() => {
+    if (analyticsData?.events && analyticsData.events.length > 0) {
+      const years = new Set<number>()
+      analyticsData.events.forEach((event: any) => {
+        if (event.date) {
+          try {
+            const [year] = event.date.split('-').map(Number)
+            if (!isNaN(year)) {
+              years.add(year)
+            }
+          } catch {
+            // Skip invalid dates
+          }
+        }
+      })
+      // Always include current year and 2025
+      years.add(new Date().getFullYear())
+      years.add(2025)
+      setAvailableYears(Array.from(years).sort((a, b) => b - a))
+    }
+  }, [analyticsData])
 
   // Data validation
   const validateData = useCallback((data: any) => {
@@ -115,11 +141,23 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
     }
   }, [analyticsData, validateData])
 
-  // Filter events based on current filters
+  // Filter events based on current filters and year
   const filteredEvents = useMemo(() => {
     if (!analyticsData?.events) return []
     
     return analyticsData.events.filter((event: any) => {
+      // Year filter
+      if (event.date) {
+        try {
+          const [year] = event.date.split('-').map(Number)
+          if (!isNaN(year) && year !== selectedYear) {
+            return false
+          }
+        } catch {
+          // Skip invalid dates
+        }
+      }
+
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase()
@@ -160,7 +198,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
 
       return true
     })
-  }, [analyticsData?.events, filters])
+  }, [analyticsData?.events, filters, selectedYear])
 
   // Update filtered data when filters change
   useEffect(() => {
@@ -263,6 +301,24 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
           </h2>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-m8bs-card border border-m8bs-border rounded-lg px-3 py-2">
+            <Calendar className="h-4 w-4 text-m8bs-muted" />
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(value) => setSelectedYear(Number.parseInt(value))}
+            >
+              <SelectTrigger className="w-[120px] border-none bg-transparent text-white focus:ring-0 focus:ring-offset-0 h-auto p-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-m8bs-card border-m8bs-border">
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()} className="text-white">
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button 
             variant="outline" 
             onClick={handleRefresh}
@@ -310,16 +366,16 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
           />
         </div>
 
-        {/* Top Performing Events and Performance Heatmap - Side by Side */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+        {/* Top Performing Events and Event Comparison - Side by Side */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-m8bs-blue" />
                 Top Performing Events
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent className="pt-2 flex-1 flex flex-col">
               <TopPerformers
                 data={filteredData?.events || []}
                 activeMetric={topPerformersMetric}
@@ -328,20 +384,15 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
             </CardContent>
           </Card>
 
-          {/* Performance Heatmap Card */}
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
                 <Activity className="h-5 w-5 text-m8bs-blue" />
-                Performance Heatmap
+                Event Comparison
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-2">
-              <PerformanceHeatmap
-                data={filteredData}
-                activeMetric={heatmapMetric}
-                onMetricChange={setHeatmapMetric}
-              />
+            <CardContent className="pt-2 flex-1 flex flex-col">
+              <EventComparison events={filteredData?.events || []} />
             </CardContent>
           </Card>
         </div>
@@ -359,22 +410,11 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
           </CardContent>
         </Card>
 
-        {/* Event Comparison and Monthly Summary - Side by Side */}
+        {/* Monthly Summary and Performance Heatmap - Side by Side */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                <Activity className="h-5 w-5 text-m8bs-blue" />
-                Event Comparison
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <EventComparison events={filteredData?.events || []} />
-            </CardContent>
-          </Card>
 
           {/* Monthly Summary Card */}
-          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col">
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
                 <Target className="h-5 w-5 text-m8bs-blue" />
@@ -555,7 +595,24 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                 })()}
               </CardContent>
             </Card>
-          </div>
+
+          {/* Performance Heatmap Card */}
+          <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <Activity className="h-5 w-5 text-m8bs-blue" />
+                Performance Heatmap
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2 flex-1 flex flex-col">
+              <PerformanceHeatmap
+                data={filteredData}
+                activeMetric={heatmapMetric}
+                onMetricChange={setHeatmapMetric}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </motion.div>
     </motion.div>
   )

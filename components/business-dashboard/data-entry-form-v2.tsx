@@ -130,7 +130,7 @@ const formSchema = z.object({
 interface DataEntryFormV2Props {
   user: User
   year?: number
-  onComplete?: () => void
+  onComplete?: (savedYear?: number) => void
   onCancel?: () => void
   isEditMode?: boolean
 }
@@ -924,8 +924,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         })
         
         if (onComplete) {
-          console.log('Calling onComplete callback')
-          onComplete()
+          const savedYear = Number.parseInt(values.year)
+          console.log('Calling onComplete callback with saved year:', savedYear)
+          onComplete(savedYear)
         } else {
           console.log('No onComplete callback provided')
         }
@@ -962,12 +963,21 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
     })
   }
 
-  if (loading) {
+  // In edit mode, ALWAYS show the form (never show loading spinner)
+  // Only show loading spinner if not in edit mode and we don't have any data yet
+  if (loading && !isEditMode && !data?.businessGoals && !data?.currentValues && !data?.clientMetrics) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+        <p className="ml-4 text-white">Loading form data...</p>
       </div>
     )
+  }
+  
+  // In edit mode, always render the form - data will populate when ready
+  // Log for debugging
+  if (loading && isEditMode) {
+    console.log('Form is loading in edit mode - rendering form anyway, data will populate when ready')
   }
 
   return (

@@ -20,38 +20,6 @@ import { MarketingCampaign } from "@/lib/advisor-basecamp"
 import { useMemo } from "react"
 import { toast } from "@/components/ui/use-toast"
 
-// Helper function to get annual multiplier based on frequency
-const getAnnualMultiplier = (frequency: string | undefined): number => {
-  switch (frequency) {
-    case "Monthly":
-      return 12
-    case "Quarterly":
-      return 4
-    case "Semi-Annual":
-      return 2
-    case "Annual":
-      return 1
-    default:
-      return 12 // Default to monthly
-  }
-}
-
-// Helper function to get frequency label
-const getFrequencyLabel = (frequency: string | undefined): string => {
-  switch (frequency) {
-    case "Monthly":
-      return "Monthly"
-    case "Quarterly":
-      return "Quarterly"
-    case "Semi-Annual":
-      return "Semi-Annual"
-    case "Annual":
-      return "Annual"
-    default:
-      return "Monthly"
-  }
-}
-
 // Campaign form schema
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign Name Is Required"),
@@ -64,13 +32,9 @@ const campaignSchema = z.object({
 
 type CampaignFormData = z.infer<typeof campaignSchema>
 
-interface CampaignTableProps {
-  selectedYear?: number
-}
-
-export function CampaignTable({ selectedYear = new Date().getFullYear() }: CampaignTableProps = {}) {
+export function CampaignTable() {
   const { user } = useAuth()
-  const { data, addCampaign, updateCampaign, deleteCampaign, loadData } = useAdvisorBasecamp(user, selectedYear)
+  const { data, addCampaign, updateCampaign, deleteCampaign, loadData } = useAdvisorBasecamp(user)
   
   // Get campaigns from actual data, or empty array if no data
   const actualCampaigns = data.campaigns || []
@@ -80,22 +44,16 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
   // Update campaigns when actual data changes
   useEffect(() => {
     if (actualCampaigns.length > 0) {
-      const mappedCampaigns = actualCampaigns.map((campaign, index) => {
-        const frequency = (campaign as any).frequency || "Monthly"
-        const multiplier = getAnnualMultiplier(frequency)
-        return {
-          id: campaign.id || `temp-${index}`,
-          campaignId: campaign.id, // Store the actual database ID
-          campaign: campaign.name,
-          price: campaign.events > 0 ? campaign.budget / campaign.events : 0, // Calculate price per event
-          events: campaign.events,
-          leads: campaign.leads,
-          budget: campaign.budget,
-          status: campaign.status as "Active" | "Planned" | "Completed" | "Paused",
-          frequency: frequency,
-          multiplier: multiplier,
-        }
-      })
+      const mappedCampaigns = actualCampaigns.map((campaign, index) => ({
+        id: campaign.id || `temp-${index}`,
+        campaignId: campaign.id, // Store the actual database ID
+        campaign: campaign.name,
+        price: campaign.events > 0 ? campaign.budget / campaign.events : 0, // Calculate price per event
+        events: campaign.events,
+        leads: campaign.leads,
+        budget: campaign.budget,
+        status: campaign.status as "Active" | "Planned" | "Completed" | "Paused",
+      }))
       setCampaigns(mappedCampaigns)
     } else {
       setCampaigns([])
@@ -117,38 +75,10 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
     },
   })
 
-  // Calculate totals - account for frequency multipliers
-  // Campaigns store leads/events/budget per their frequency period
-  // We need to multiply by the annual multiplier to get annual totals
-  const totalEvents = useMemo(() => {
-    return campaigns.reduce((sum, item) => {
-      const frequency = item.frequency || "Monthly"
-      const multiplier = getAnnualMultiplier(frequency)
-      const eventsPerPeriod = item.events || 0
-      const annualEvents = eventsPerPeriod * multiplier
-      return sum + annualEvents
-    }, 0)
-  }, [campaigns])
-
-  const totalLeads = useMemo(() => {
-    return campaigns.reduce((sum, item) => {
-      const frequency = item.frequency || "Monthly"
-      const multiplier = getAnnualMultiplier(frequency)
-      const leadsPerPeriod = item.leads || 0
-      const annualLeads = leadsPerPeriod * multiplier
-      return sum + annualLeads
-    }, 0)
-  }, [campaigns])
-
-  const totalBudget = useMemo(() => {
-    return campaigns.reduce((sum, item) => {
-      const frequency = item.frequency || "Monthly"
-      const multiplier = getAnnualMultiplier(frequency)
-      const budgetPerPeriod = item.budget || 0
-      const annualBudget = budgetPerPeriod * multiplier
-      return sum + annualBudget
-    }, 0)
-  }, [campaigns])
+  // Calculate totals
+  const totalEvents = campaigns.reduce((sum, item) => sum + (item.events || 0), 0)
+  const totalLeads = campaigns.reduce((sum, item) => sum + (item.leads || 0), 0)
+  const totalBudget = campaigns.reduce((sum, item) => sum + (item.budget || 0), 0)
 
   // Calculate accurate ROI metrics
   const roiMetrics = useMemo(() => {
@@ -306,123 +236,39 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
     const avgAnnuitySize = clientMetrics?.avg_annuity_size || 0
     const avgAUMSize = clientMetrics?.avg_aum_size || 0
     const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
-    const appointmentAttrition = clientMetrics?.appointment_attrition || 0
-    const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
 
+    // Group campaigns by quarter (assuming campaigns are monthly, distribute across quarters)
+    const campaignsPerQuarter = Math.ceil(campaigns.length / 4)
     const quarters = ["Q1", "Q2", "Q3", "Q4"]
     
-    // Group campaigns by frequency for better distribution
-    // Normalize frequency values to handle case/whitespace variations
-    const normalizeFrequency = (freq: string | undefined): string => {
-      if (!freq) return "Monthly"
-      return freq.trim()
-    }
-    
-    const monthlyCampaigns = campaigns.filter(c => {
-      const freq = normalizeFrequency(c.frequency)
-      return freq === "Monthly"
-    })
-    const quarterlyCampaigns = campaigns.filter(c => {
-      const freq = normalizeFrequency(c.frequency)
-      return freq === "Quarterly"
-    })
-    const semiAnnualCampaigns = campaigns.filter(c => {
-      const freq = normalizeFrequency(c.frequency)
-      return freq === "Semi-Annual"
-    })
-    const annualCampaigns = campaigns.filter(c => {
-      const freq = normalizeFrequency(c.frequency)
-      return freq === "Annual"
-    })
-    
-    // Debug logging
-    console.log('Campaign frequency distribution:', {
-      total: campaigns.length,
-      monthly: monthlyCampaigns.length,
-      quarterly: quarterlyCampaigns.length,
-      semiAnnual: semiAnnualCampaigns.length,
-      annual: annualCampaigns.length,
-      campaigns: campaigns.map(c => ({ name: c.campaign, frequency: c.frequency, events: c.events }))
-    })
-    
-    // Calculate quarterly totals by summing all campaigns' quarterly contributions
-    // Each campaign contributes to quarters based on its frequency
-    return quarters.map((quarter, quarterIndex) => {
-      let quarterBudget = 0
-      let quarterLeads = 0
-      let quarterEvents = 0
+    return quarters.map((quarter, index) => {
+      const startIdx = index * campaignsPerQuarter
+      const endIdx = Math.min(startIdx + campaignsPerQuarter, campaigns.length)
+      const quarterCampaigns = campaigns.slice(startIdx, endIdx)
       
-      // Monthly campaigns: 3 runs per quarter (12 per year / 4 quarters)
-      monthlyCampaigns.forEach(campaign => {
-        quarterBudget += (campaign.budget || 0) * 3
-        quarterLeads += (campaign.leads || 0) * 3
-        quarterEvents += (campaign.events || 0) * 3
-      })
+      const budget = quarterCampaigns.reduce((sum, c) => sum + (c.budget || 0), 0)
+      const leads = quarterCampaigns.reduce((sum, c) => sum + (c.leads || 0), 0)
       
-      // Quarterly campaigns: 1 run per quarter (4 per year / 4 quarters)
-      // Each quarterly campaign runs once in EACH quarter, so add to ALL quarters
-      quarterlyCampaigns.forEach(campaign => {
-        const budget = campaign.budget || 0
-        const leads = campaign.leads || 0
-        const events = campaign.events || 0
-        quarterBudget += budget
-        quarterLeads += leads
-        quarterEvents += events
-      })
-      
-      // Semi-Annual campaigns: 2 runs per year, distribute evenly across quarters
-      // Each campaign runs in 2 quarters (distribute based on campaign index)
-      semiAnnualCampaigns.forEach((campaign, campaignIndex) => {
-        // Distribute: campaign 0 in Q1&Q3, campaign 1 in Q2&Q4, etc.
-        const runsInThisQuarter = (campaignIndex % 2 === 0 && (quarterIndex === 0 || quarterIndex === 2)) ||
-                                  (campaignIndex % 2 === 1 && (quarterIndex === 1 || quarterIndex === 3))
-        if (runsInThisQuarter) {
-          quarterBudget += campaign.budget || 0
-          quarterLeads += campaign.leads || 0
-          quarterEvents += campaign.events || 0
-        }
-      })
-      
-      // Annual campaigns: 1 run per year, distribute evenly across quarters
-      // Each campaign runs in 1 quarter (distribute based on campaign index)
-      annualCampaigns.forEach((campaign, campaignIndex) => {
-        // Distribute evenly: campaign 0 in Q1, campaign 1 in Q2, etc.
-        if (campaignIndex % 4 === quarterIndex) {
-          quarterBudget += campaign.budget || 0
-          quarterLeads += campaign.leads || 0
-          quarterEvents += campaign.events || 0
-        }
-      })
-      
-      // Calculate ROI for this quarter
+      // Calculate ROI: (Revenue - Cost) / Cost * 100
+      // Revenue = leads * conversion_rate * avg_client_value
+      // For simplicity, assume conversion from leads to clients based on close ratio
+      const appointmentAttrition = clientMetrics?.appointment_attrition || 0
+      const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
+      const totalEvents = quarterCampaigns.reduce((sum, c) => sum + (c.events || 0), 0)
       const totalAppointments = appointmentsPerCampaign > 0 
-        ? quarterEvents * appointmentsPerCampaign
-        : Math.round(quarterLeads * 0.4) // Fallback: 40% of leads become appointments
+        ? totalEvents * appointmentsPerCampaign
+        : Math.round(leads * 0.4) // Fallback: 40% of leads become appointments
       const prospects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
       const clients = Math.round(prospects * (avgCloseRatio / 100))
       const revenue = clients * avgClientValue
-      const roi = quarterBudget > 0 ? ((revenue - quarterBudget) / quarterBudget) * 100 : 0
+      const roi = budget > 0 ? ((revenue - budget) / budget) * 100 : 0
       
-      const result = {
+      return {
         name: quarter,
-        budget: Math.round(quarterBudget),
-        leads: Math.round(quarterLeads),
+        budget: Math.round(budget),
+        leads,
         roi: Math.round(roi * 10) / 10, // Round to 1 decimal
-        events: Math.round(quarterEvents), // Include events for debugging
       }
-      
-      // Debug logging for each quarter
-      if (quarterIndex === 0) {
-        console.log(`Quarter ${quarter} calculation:`, {
-          quarterBudget,
-          quarterLeads,
-          quarterEvents,
-          quarterlyCampaignsCount: quarterlyCampaigns.length,
-          result
-        })
-      }
-      
-      return result
     })
   }, [campaigns, data.clientMetrics])
 
@@ -564,28 +410,18 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Events</TableCell>
-                  <TableCell className="text-white font-semibold">{Math.round(totalEvents).toLocaleString()}</TableCell>
-                  <TableCell className="text-white/70">Annual total across all campaigns</TableCell>
+                  <TableCell className="text-white font-semibold">{totalEvents * 12}</TableCell>
+                  <TableCell className="text-white/70">{totalEvents} events/month</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Leads</TableCell>
-                  <TableCell className="text-white font-semibold text-lg">{Math.round(totalLeads).toLocaleString()}</TableCell>
-                  <TableCell className="text-white/70">
-                    <div className="space-y-1">
-                      <div>{Math.round(totalLeads / 12).toLocaleString()} leads/month avg</div>
-                      {campaigns.length > 0 && (
-                        <div className="text-xs text-white/50 mt-1">
-                          Calculated from {campaigns.length} {campaigns.length === 1 ? 'campaign' : 'campaigns'} 
-                          {campaigns.some(c => c.frequency && c.frequency !== "Monthly") && ' (accounting for frequency)'}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
+                  <TableCell className="text-white font-semibold">{totalLeads * 12}</TableCell>
+                  <TableCell className="text-white/70">{totalLeads} leads/month</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Total Annual Budget</TableCell>
-                  <TableCell className="text-white font-semibold">${Math.round(totalBudget).toLocaleString()}</TableCell>
-                  <TableCell className="text-white/70">Annual total across all campaigns</TableCell>
+                  <TableCell className="text-white font-semibold">${(totalBudget * 12).toLocaleString()}</TableCell>
+                  <TableCell className="text-white/70">${totalBudget.toLocaleString()}/month</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium text-white">Annual Appointments Goal</TableCell>
@@ -595,14 +431,14 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
                       const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
                       const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
                       const goalAppointments = monthlyIdealProspects * 3 // Monthly new appointments needed
-                      return Math.round(goalAppointments * 12).toLocaleString()
+                      return (goalAppointments * 12).toLocaleString()
                     })()}
                   </TableCell>
                   <TableCell className="text-white/70">
                     {(() => {
                       const clientMetrics = data.clientMetrics
                       const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
-                      return Math.round(monthlyIdealProspects * 3).toLocaleString()
+                      return (monthlyIdealProspects * 3).toLocaleString()
                     })()} appointments/month
                   </TableCell>
                 </TableRow>
@@ -623,76 +459,47 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-white">Campaign Name</TableHead>
-                    <TableHead className="text-white">Frequency</TableHead>
-                    <TableHead className="text-white">Events</TableHead>
-                    <TableHead className="text-white">Leads</TableHead>
-                    <TableHead className="text-white">Budget</TableHead>
+                    <TableHead className="text-white">Monthly Events</TableHead>
+                    <TableHead className="text-white">Monthly Leads</TableHead>
+                    <TableHead className="text-white">Monthly Budget</TableHead>
                     <TableHead className="text-white">Annual Budget</TableHead>
                     <TableHead className="text-white">Status</TableHead>
                     <TableHead className="text-white">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {campaigns.map((item, index) => {
-                    const frequency = item.frequency || "Monthly"
-                    const frequencyLabel = getFrequencyLabel(frequency)
-                    const multiplier = item.multiplier || getAnnualMultiplier(frequency)
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium text-white">{item.campaign}</TableCell>
-                        <TableCell className="text-white">
-                          <Badge variant="outline" className="text-white border-m8bs-border">
-                            {frequencyLabel}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-white">
-                          {item.events} {frequencyLabel.toLowerCase()}
-                        </TableCell>
-                        <TableCell className="text-white">
-                          <div>
-                            <div>{item.leads.toLocaleString()} {frequencyLabel.toLowerCase()}</div>
-                            <div className="text-xs text-white/60">
-                              ({((item.leads || 0) * multiplier).toLocaleString()} annual)
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-white">
-                          <div>
-                            <div>${item.budget.toLocaleString()} {frequencyLabel.toLowerCase()}</div>
-                            <div className="text-xs text-white/60">
-                              (${(item.budget * multiplier).toLocaleString()} annual)
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-white font-semibold">
-                          ${(item.budget * multiplier).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={item.status === "Active" ? "default" : "outline"}>{item.status}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(item)}
-                              className="text-white hover:text-white hover:bg-m8bs-card-alt"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(item)}
-                              className="text-white hover:text-white hover:bg-m8bs-card-alt"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                  {campaigns.map((item, index) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-white">{item.campaign}</TableCell>
+                      <TableCell className="text-white">{item.events}</TableCell>
+                      <TableCell className="text-white">{item.leads}</TableCell>
+                      <TableCell className="text-white">${item.budget.toLocaleString()}</TableCell>
+                      <TableCell className="text-white">${(item.budget * 12).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={item.status === "Active" ? "default" : "outline"}>{item.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(item)}
+                            className="text-white hover:text-white hover:bg-m8bs-card-alt"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(item)}
+                            className="text-white hover:text-white hover:bg-m8bs-card-alt"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
@@ -736,27 +543,11 @@ export function CampaignTable({ selectedYear = new Date().getFullYear() }: Campa
                       return [value, name]
                     }}
                     contentStyle={{
-                      backgroundColor: "rgba(0, 0, 0, 0.95)",
-                      borderRadius: "8px",
-                      border: "1px solid rgba(59, 130, 246, 0.5)",
-                      color: "#ffffff",
-                      padding: "12px 16px",
-                      boxShadow: "0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                    }}
-                    labelStyle={{
-                      color: "#ffffff",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      marginBottom: "8px",
-                      borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
-                      paddingBottom: "6px",
-                    }}
-                    itemStyle={{
-                      color: "#ffffff",
-                      fontSize: "13px",
-                      padding: "4px 0",
+                      backgroundColor: "var(--popover)",
+                      borderRadius: "6px",
+                      border: "1px solid var(--border)",
+                      color: "var(--popover-foreground)",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     }}
                   />
                   <Legend />

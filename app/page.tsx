@@ -55,7 +55,8 @@ interface HomepageData {
 
 export default function Overview() {
   const { user } = useAuth()
-  const { data: advisorData, loading: advisorLoading } = useAdvisorBasecamp(user)
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+  const { data: advisorData, loading: advisorLoading } = useAdvisorBasecamp(user, selectedYear)
   const [data, setData] = useState<HomepageData>({
     events: [],
     advisorData: null,
@@ -64,6 +65,19 @@ export default function Overview() {
     latestMonthlyEntry: null
   })
   const [loading, setLoading] = useState(true)
+
+  // Load saved year from localStorage (same as business dashboard)
+  useEffect(() => {
+    if (user && typeof window !== 'undefined') {
+      const savedYear = localStorage.getItem(`advisor-basecamp-year-${user.id}`)
+      if (savedYear) {
+        const yearNum = Number.parseInt(savedYear)
+        if (!isNaN(yearNum)) {
+          setSelectedYear(yearNum)
+        }
+      }
+    }
+  }, [user])
 
   // Redirect to login if not authenticated
   if (!user) {
@@ -120,9 +134,10 @@ export default function Overview() {
   useEffect(() => {
     if (advisorData && user) {
       // Recalculate analytics when advisorData changes
+      const currentUser = user
       async function updateData() {
         try {
-          const events = await fetchAllEvents(user.id)
+          const events = await fetchAllEvents(currentUser.id)
           const analyticsSummary = calculateAnalyticsSummary(events)
           const topEvents = getTopEvents(events, 3)
           
@@ -566,13 +581,12 @@ export default function Overview() {
                         <span className="text-m8bs-muted">Business Goal</span>
                         <span className="text-white">
                           {(() => {
-                            // Calculate total sales from monthly entries for current year
-                            const currentYear = new Date().getFullYear().toString()
-                            const currentYearEntries = advisorData.monthlyDataEntries?.filter(entry => 
-                              entry.month_year.startsWith(currentYear)
+                            // Calculate YTD total sales from monthly entries for selected year
+                            const yearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                              entry.month_year.startsWith(selectedYear.toString())
                             ) || []
-                            const totalSales = currentYearEntries.reduce((sum, entry) => 
-                              sum + entry.annuity_sales + entry.aum_sales + entry.life_sales, 0
+                            const totalSales = yearEntries.reduce((sum, entry) => 
+                              sum + (entry.annuity_sales || 0) + (entry.aum_sales || 0) + (entry.life_sales || 0), 0
                             )
                             return `$${totalSales.toLocaleString()} / $${advisorData.businessGoals.business_goal?.toLocaleString()}`
                           })()}
@@ -580,13 +594,12 @@ export default function Overview() {
                       </div>
                       <Progress 
                         value={(() => {
-                          // Calculate total sales from monthly entries for current year
-                          const currentYear = new Date().getFullYear().toString()
-                          const currentYearEntries = advisorData.monthlyDataEntries?.filter(entry => 
-                            entry.month_year.startsWith(currentYear)
+                          // Calculate YTD total sales from monthly entries for selected year
+                          const yearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                            entry.month_year.startsWith(selectedYear.toString())
                           ) || []
-                          const totalSales = currentYearEntries.reduce((sum, entry) => 
-                            sum + entry.annuity_sales + entry.aum_sales + entry.life_sales, 0
+                          const totalSales = yearEntries.reduce((sum, entry) => 
+                            sum + (entry.annuity_sales || 0) + (entry.aum_sales || 0) + (entry.life_sales || 0), 0
                           )
                           return calculateGoalProgress(totalSales, advisorData.businessGoals.business_goal || 0)
                         })()} 
@@ -599,11 +612,29 @@ export default function Overview() {
                       <div className="flex justify-between text-sm">
                         <span className="text-m8bs-muted">AUM Goal</span>
                         <span className="text-white">
-                          ${data.latestMonthlyEntry?.aum_sales?.toLocaleString() || 0} / ${advisorData.businessGoals.aum_goal?.toLocaleString()}
+                          {(() => {
+                            // Calculate YTD AUM sales from monthly entries for selected year
+                            const yearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                              entry.month_year.startsWith(selectedYear.toString())
+                            ) || []
+                            const ytdAumSales = yearEntries.reduce((sum, entry) => 
+                              sum + (entry.aum_sales || 0), 0
+                            )
+                            return `$${ytdAumSales.toLocaleString()} / $${advisorData.businessGoals.aum_goal?.toLocaleString()}`
+                          })()}
                         </span>
                       </div>
                       <Progress 
-                        value={calculateGoalProgress(data.latestMonthlyEntry?.aum_sales || 0, advisorData.businessGoals.aum_goal || 0)} 
+                        value={(() => {
+                          // Calculate YTD AUM sales from monthly entries for selected year
+                          const yearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                            entry.month_year.startsWith(selectedYear.toString())
+                          ) || []
+                          const ytdAumSales = yearEntries.reduce((sum, entry) => 
+                            sum + (entry.aum_sales || 0), 0
+                          )
+                          return calculateGoalProgress(ytdAumSales, advisorData.businessGoals.aum_goal || 0)
+                        })()} 
                         className="h-2" 
                       />
                     </div>
@@ -613,11 +644,29 @@ export default function Overview() {
                       <div className="flex justify-between text-sm">
                         <span className="text-m8bs-muted">Annuity Goal</span>
                         <span className="text-white">
-                          ${data.latestMonthlyEntry?.annuity_sales?.toLocaleString() || 0} / ${advisorData.businessGoals.annuity_goal?.toLocaleString()}
+                          {(() => {
+                            // Calculate YTD Annuity sales from monthly entries for selected year
+                            const yearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                              entry.month_year.startsWith(selectedYear.toString())
+                            ) || []
+                            const ytdAnnuitySales = yearEntries.reduce((sum, entry) => 
+                              sum + (entry.annuity_sales || 0), 0
+                            )
+                            return `$${ytdAnnuitySales.toLocaleString()} / $${advisorData.businessGoals.annuity_goal?.toLocaleString()}`
+                          })()}
                         </span>
                       </div>
                       <Progress 
-                        value={calculateGoalProgress(data.latestMonthlyEntry?.annuity_sales || 0, advisorData.businessGoals.annuity_goal || 0)} 
+                        value={(() => {
+                          // Calculate YTD Annuity sales from monthly entries for selected year
+                          const yearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                            entry.month_year.startsWith(selectedYear.toString())
+                          ) || []
+                          const ytdAnnuitySales = yearEntries.reduce((sum, entry) => 
+                            sum + (entry.annuity_sales || 0), 0
+                          )
+                          return calculateGoalProgress(ytdAnnuitySales, advisorData.businessGoals.annuity_goal || 0)
+                        })()} 
                         className="h-2" 
                       />
                     </div>
@@ -627,11 +676,29 @@ export default function Overview() {
                       <div className="flex justify-between text-sm">
                         <span className="text-m8bs-muted">Life Goal</span>
                         <span className="text-white">
-                          ${data.latestMonthlyEntry?.life_sales?.toLocaleString() || 0} / ${advisorData.businessGoals.life_target_goal?.toLocaleString()}
+                          {(() => {
+                            // Calculate YTD Life sales from monthly entries for selected year
+                            const yearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                              entry.month_year.startsWith(selectedYear.toString())
+                            ) || []
+                            const ytdLifeSales = yearEntries.reduce((sum, entry) => 
+                              sum + (entry.life_sales || 0), 0
+                            )
+                            return `$${ytdLifeSales.toLocaleString()} / $${advisorData.businessGoals.life_target_goal?.toLocaleString()}`
+                          })()}
                         </span>
                       </div>
                       <Progress 
-                        value={calculateGoalProgress(data.latestMonthlyEntry?.life_sales || 0, advisorData.businessGoals.life_target_goal || 0)} 
+                        value={(() => {
+                          // Calculate YTD Life sales from monthly entries for selected year
+                          const yearEntries = advisorData.monthlyDataEntries?.filter(entry => 
+                            entry.month_year.startsWith(selectedYear.toString())
+                          ) || []
+                          const ytdLifeSales = yearEntries.reduce((sum, entry) => 
+                            sum + (entry.life_sales || 0), 0
+                          )
+                          return calculateGoalProgress(ytdLifeSales, advisorData.businessGoals.life_target_goal || 0)
+                        })()} 
                         className="h-2" 
                       />
                     </div>

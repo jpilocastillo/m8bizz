@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Calculator, Calendar, BarChart3, Settings, Download, RefreshCw, Users, Plus, CheckCircle2, ArrowRight } from "lucide-react"
+import { Calculator, Calendar, BarChart3, Settings, Download, RefreshCw, Users, Plus, CheckCircle2, ArrowRight, Loader2 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { behaviorScorecardService, type MonthlyScorecardData, type ScorecardRole, type ScorecardMetric, type PeriodType } from "@/lib/behavior-scorecard"
 import { WeeklyDataEntry } from "@/components/behavior-scorecard/weekly-data-entry"
@@ -14,7 +14,6 @@ import { DataEntryForm } from "@/components/behavior-scorecard/data-entry-form"
 import { ScorecardDisplay } from "@/components/behavior-scorecard/scorecard-display"
 import { CompanySummary } from "@/components/behavior-scorecard/company-summary"
 import { CSVExport } from "@/components/behavior-scorecard/csv-export"
-import { PDFExport } from "@/components/behavior-scorecard/pdf-export"
 import { MetricVisibilitySettings } from "@/components/behavior-scorecard/metric-visibility-settings"
 import { EnhancedRoleManagement } from "@/components/behavior-scorecard/enhanced-role-management"
 import { useToast } from "@/hooks/use-toast"
@@ -24,7 +23,7 @@ export default function BehaviorScorecardPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
-  const [initializing, setInitializing] = useState(false)
+  const [loadingFilters, setLoadingFilters] = useState(false)
   const [activeTab, setActiveTab] = useState<"view" | "entry" | "settings">("view")
   const [settingsRoleId, setSettingsRoleId] = useState<string | null>(null)
   const [scorecardData, setScorecardData] = useState<MonthlyScorecardData | null>(null)
@@ -37,22 +36,7 @@ export default function BehaviorScorecardPage() {
   const [profile, setProfile] = useState<any>(null)
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Fetch user profile
-  useEffect(() => {
-    async function fetchProfile() {
-      if (!user) return
-      const supabase = createClient()
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single()
-      setProfile(profileData)
-    }
-    fetchProfile()
-  }, [user])
-
-  // Initialize scorecard and load data
+  // Initialize scorecard and load data - optimized to fetch profile in parallel
   useEffect(() => {
     if (user) {
       initializeAndLoad()
@@ -61,17 +45,22 @@ export default function BehaviorScorecardPage() {
     }
   }, [user])
 
-  // Reload scorecard when period changes
+  // Reload scorecard when period changes (debounced to avoid excessive calls)
+  // Note: This is for automatic changes, so we don't show loading indicator
   useEffect(() => {
     if (user && roles.length > 0) {
-      loadScorecard()
+      // Use a small timeout to debounce rapid changes
+      const timeoutId = setTimeout(() => {
+        loadScorecard(false) // false = don't show loading indicator
+      }, 100)
+      return () => clearTimeout(timeoutId)
     }
-  }, [periodType, selectedMonth, selectedQuarter, selectedYear])
+  }, [periodType, selectedMonth, selectedQuarter, selectedYear, user, roles.length])
 
   const initializeAndLoad = async (skipInitialization = false) => {
     setLoading(true)
     try {
-      // Load roles and metrics first
+      // Load roles, metrics, and profile in parallel for better performance
       const supabase = createClient()
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
       if (!authUser) {
@@ -84,6 +73,18 @@ export default function BehaviorScorecardPage() {
         setLoading(false)
         return
       }
+
+      // Fetch profile in parallel with roles (non-blocking)
+      const profilePromise = supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", authUser.id)
+        .single()
+        .then(({ data }) => {
+          setProfile(data)
+          return data
+        })
+        .catch(() => null) // Don't block on profile fetch
 
       console.log('[initializeAndLoad] Fetching roles from database...')
       const { data: rolesData, error: rolesError } = await supabase
@@ -104,6 +105,9 @@ export default function BehaviorScorecardPage() {
       }
 
       console.log('[initializeAndLoad] Fetched roles from database:', rolesData?.length || 0, rolesData?.map((r: { id: string; role_name: string }) => r.role_name) || [])
+
+      // Wait for profile to finish (non-blocking, but ensure it completes)
+      await profilePromise
 
       // Only initialize default roles if user has NO roles at all (first time setup)
       // This prevents recreating roles that were intentionally deleted
@@ -136,19 +140,45 @@ export default function BehaviorScorecardPage() {
             console.log('[initializeAndLoad] Reloaded roles after initialization:', finalRolesData.length)
           }
         }
+      } else if (!skipInitialization && rolesData && rolesData.length > 0 && !isInitialized) {
+        // Ensure all default metrics exist for existing roles (adds missing metrics)
+        // Only run once to avoid duplicate inserts
+        console.log('[initializeAndLoad] Ensuring default metrics exist for all roles...')
+        const ensureResult = await behaviorScorecardService.ensureDefaultMetrics()
+        if (ensureResult.success) {
+          setIsInitialized(true)
+        }
       }
 
       if (finalRolesData && finalRolesData.length > 0) {
         // Load all metrics in a single batch query for better performance
-        const validRoleIds = rolesData
+        const validRoleIds = finalRolesData
           .filter((role: { id: string; role_name: string }) => role && role.id)
           .map((role: { id: string; role_name: string }) => role.id)
         
-        const metricsMap = await behaviorScorecardService.getAllRoleMetrics(validRoleIds)
+        // Load metrics and scorecard data in parallel for faster initial load
+        const [metricsMap, scorecardResult] = await Promise.all([
+          behaviorScorecardService.getAllRoleMetrics(validRoleIds),
+          // Pre-load scorecard data while processing roles
+          (async () => {
+            try {
+              if (periodType === 'month') {
+                return await behaviorScorecardService.getScorecardData('month', selectedMonth, selectedYear)
+              } else if (periodType === 'quarter') {
+                return await behaviorScorecardService.getScorecardData('quarter', selectedQuarter, selectedYear)
+              } else {
+                return await behaviorScorecardService.getScorecardData('year', 0, selectedYear)
+              }
+            } catch (error) {
+              console.error('Error pre-loading scorecard:', error)
+              return { success: false, data: null }
+            }
+          })()
+        ])
         
         const rolesWithMetrics: Array<{ id: string; name: ScorecardRole; metrics: ScorecardMetric[] }> = []
         
-        rolesData.forEach((role: { id: string; role_name: string }) => {
+        finalRolesData.forEach((role: { id: string; role_name: string }) => {
           // Skip if role is null or undefined
           if (!role || !role.id) {
             console.warn('Skipping invalid role:', role)
@@ -182,15 +212,22 @@ export default function BehaviorScorecardPage() {
           console.log('[initializeAndLoad] No roles left, clearing selection')
           setSelectedRole(null)
         }
+
+        // Set scorecard data if it was successfully pre-loaded
+        if (scorecardResult.success && scorecardResult.data) {
+          setScorecardData(scorecardResult.data)
+        } else {
+          // Fallback: load scorecard normally
+          await loadScorecard()
+        }
       } else {
         // No roles data, clear everything
         console.log('[initializeAndLoad] No roles data, clearing everything')
         setRoles([])
         setSelectedRole(null)
+        // Still try to load scorecard (might have data from deleted roles)
+        await loadScorecard()
       }
-
-      // Load scorecard
-      await loadScorecard()
     } catch (error) {
       console.error('Error initializing:', error)
       toast({
@@ -203,7 +240,10 @@ export default function BehaviorScorecardPage() {
     }
   }
 
-  const loadScorecard = async () => {
+  const loadScorecard = async (showLoading = false) => {
+    if (showLoading) {
+      setLoadingFilters(true)
+    }
     try {
       let result
       if (periodType === 'month') {
@@ -253,47 +293,13 @@ export default function BehaviorScorecardPage() {
         description: "Failed to load scorecard data",
         variant: "destructive",
       })
+    } finally {
+      if (showLoading) {
+        setLoadingFilters(false)
+      }
     }
   }
 
-  const handleCalculateSummary = async () => {
-    setInitializing(true)
-    try {
-      // For month view, calculate monthly summary
-      if (periodType === 'month') {
-        const result = await behaviorScorecardService.calculateMonthlySummary(selectedMonth, selectedYear)
-        if (result.success) {
-          await loadScorecard()
-          toast({
-            title: "Summary calculated",
-            description: "Monthly summary has been calculated successfully.",
-          })
-        } else {
-          toast({
-            title: "Error calculating summary",
-            description: result.error || "Failed to calculate summary",
-            variant: "destructive",
-          })
-        }
-      } else {
-        // For quarter/year, just reload the aggregated data
-        await loadScorecard()
-        toast({
-          title: "Data loaded",
-          description: `${periodType === 'quarter' ? 'Quarterly' : 'Yearly'} data has been loaded.`,
-        })
-      }
-    } catch (error) {
-      console.error('Error calculating summary:', error)
-      toast({
-        title: "Error",
-        description: "Failed to calculate summary",
-        variant: "destructive",
-      })
-    } finally {
-      setInitializing(false)
-    }
-  }
 
   const selectedRoleData = roles.find(r => r.name === selectedRole)
 
@@ -334,32 +340,8 @@ export default function BehaviorScorecardPage() {
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i)
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl">
-            <Calculator className="h-8 w-8 text-white animate-pulse" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">Business Behavior Scorecard</h1>
-            <p className="text-m8bs-muted mt-1">Loading scorecard data...</p>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="bg-m8bs-card border-m8bs-card-alt animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 bg-m8bs-card-alt rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-m8bs-card-alt rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  // Show skeleton loading state (non-blocking, allows UI to render)
+  const isLoading = loading && roles.length === 0
 
   // Show message if user is not authenticated
   if (!user) {
@@ -381,97 +363,170 @@ export default function BehaviorScorecardPage() {
   return (
     <div className="space-y-4">
       {/* Header Title - Full Width */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Business Behavior Scorecard</h1>
-        <p className="text-m8bs-muted mt-1">
-          Track and analyze business behaviors and performance indicators
-        </p>
-      </div>
-
-      {/* Period Selectors - Below Title */}
-      <div className="flex items-center gap-2">
-        <Select value={periodType} onValueChange={(v) => {
-          setPeriodType(v as PeriodType)
-          setTimeout(() => loadScorecard(), 100)
-        }}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="month">Month</SelectItem>
-            <SelectItem value="quarter">Quarter</SelectItem>
-            <SelectItem value="year">Year</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        {periodType === 'month' && (
-          <Select value={selectedMonth.toString()} onValueChange={(v) => {
-            setSelectedMonth(parseInt(v))
-            setTimeout(() => loadScorecard(), 100)
-          }}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map(month => (
-                <SelectItem key={month.value} value={month.value.toString()}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        
-        {periodType === 'quarter' && (
-          <Select value={selectedQuarter.toString()} onValueChange={(v) => {
-            setSelectedQuarter(parseInt(v))
-            setTimeout(() => loadScorecard(), 100)
-          }}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
-              <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
-              <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
-              <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-        
-        <Select value={selectedYear.toString()} onValueChange={(v) => {
-          setSelectedYear(parseInt(v))
-          setTimeout(() => loadScorecard(), 100)
-        }}>
-          <SelectTrigger className="w-[100px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map(year => (
-              <SelectItem key={year} value={year.toString()}>
-                {year}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          onClick={handleCalculateSummary}
-          disabled={initializing}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-            <RefreshCw className={`h-4 w-4 ${initializing ? 'animate-spin' : ''}`} />
-            {periodType === 'month' ? 'Calculate' : 'Refresh'}
-          </Button>
-          {scorecardData && (
-            <>
-              <CSVExport data={scorecardData} profile={profile} />
-              <PDFExport data={scorecardData} profile={profile} />
-            </>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Business Behavior Scorecard</h1>
+          <p className="text-m8bs-muted mt-1">
+            {isLoading ? "Loading scorecard data..." : "Track and analyze business behaviors and performance indicators"}
+          </p>
+        </div>
+        {/* Quick Actions - Lazy load export buttons */}
+        <div className="flex items-center gap-2">
+          {!isLoading && scorecardData && profile && (
+            <CSVExport data={scorecardData} profile={profile} />
           )}
+          {!isLoading && (
+            <Button
+              onClick={() => {
+                setActiveTab("entry")
+                if (roles.length > 0 && !selectedRole) {
+                  setSelectedRole(roles[0].name)
+                }
+              }}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Quick Entry
+            </Button>
+          )}
+        </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "view" | "entry" | "settings")} className="space-y-4">
+      {/* Show skeleton loader only during initial load */}
+      {isLoading ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="bg-m8bs-card border-m8bs-card-alt animate-pulse">
+                <CardContent className="p-6">
+                  <div className="h-4 bg-m8bs-card-alt rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-m8bs-card-alt rounded w-1/2"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card className="bg-m8bs-card border-m8bs-card-alt animate-pulse">
+            <CardContent className="p-6">
+              <div className="h-8 bg-m8bs-card-alt rounded w-1/3 mb-4"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-m8bs-card-alt rounded w-full"></div>
+                <div className="h-4 bg-m8bs-card-alt rounded w-5/6"></div>
+                <div className="h-4 bg-m8bs-card-alt rounded w-4/6"></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <>
+          {/* Period Selectors - Below Title */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Select 
+                value={periodType} 
+                onValueChange={(v) => {
+                  setPeriodType(v as PeriodType)
+                  loadScorecard(true)
+                }}
+                disabled={loadingFilters}
+              >
+                <SelectTrigger className={`w-[120px] ${loadingFilters ? 'opacity-50' : ''}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="month">Month</SelectItem>
+                  <SelectItem value="quarter">Quarter</SelectItem>
+                  <SelectItem value="year">Year</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {periodType === 'month' && (
+                <Select 
+                  value={selectedMonth.toString()} 
+                  onValueChange={(v) => {
+                    setSelectedMonth(parseInt(v))
+                    loadScorecard(true)
+                  }}
+                  disabled={loadingFilters}
+                >
+                  <SelectTrigger className={`w-[140px] ${loadingFilters ? 'opacity-50' : ''}`}>
+                    <SelectValue placeholder="Select month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map(month => (
+                      <SelectItem key={month.value} value={month.value.toString()}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {periodType === 'quarter' && (
+                <Select 
+                  value={selectedQuarter.toString()} 
+                  onValueChange={(v) => {
+                    setSelectedQuarter(parseInt(v))
+                    loadScorecard(true)
+                  }}
+                  disabled={loadingFilters}
+                >
+                  <SelectTrigger className={`w-[120px] ${loadingFilters ? 'opacity-50' : ''}`}>
+                    <SelectValue placeholder="Select quarter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Q1 (Jan-Mar)</SelectItem>
+                    <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
+                    <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
+                    <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              
+              <Select 
+                value={selectedYear.toString()} 
+                onValueChange={(v) => {
+                  setSelectedYear(parseInt(v))
+                  loadScorecard(true)
+                }}
+                disabled={loadingFilters}
+              >
+                <SelectTrigger className={`w-[100px] ${loadingFilters ? 'opacity-50' : ''}`}>
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(year => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Loading indicator and current period display */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-m8bs-card-alt rounded-lg border border-m8bs-border">
+              {loadingFilters ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin text-m8bs-blue" />
+                  <span className="text-xs text-m8bs-muted">Loading...</span>
+                </>
+              ) : (
+                <>
+                  <Calendar className="h-3 w-3 text-m8bs-muted" />
+                  <span className="text-xs text-white font-medium">
+                    {periodType === 'month' 
+                      ? `${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+                      : periodType === 'quarter'
+                      ? `Q${selectedQuarter} ${selectedYear}`
+                      : `${selectedYear}`}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "view" | "entry" | "settings")} className="space-y-4">
         <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid w-full grid-cols-3">
           <TabsTrigger value="view" className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all">
             <BarChart3 className="h-4 w-4" />
@@ -673,34 +728,71 @@ export default function BehaviorScorecardPage() {
         <TabsContent value="entry" className="space-y-4">
           <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                <Settings className="h-5 w-5 text-m8bs-blue" />
-                Select Role for Data Entry
-              </CardTitle>
-              <CardDescription className="text-m8bs-muted">
-                Choose a role to enter monthly data for {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-m8bs-blue" />
+                    Data Entry
+                  </CardTitle>
+                  <CardDescription className="text-m8bs-muted mt-1">
+                    Select a role to enter monthly data for {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => setActiveTab("settings")}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  Manage Roles & Metrics
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {roles.map((role) => (
+              {roles.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {roles.map((role) => (
+                    <Button
+                      key={role.id}
+                      variant={selectedRole === role.name ? "default" : "outline"}
+                      onClick={() => setSelectedRole(role.name)}
+                      className={`h-auto p-4 flex flex-col items-start gap-2 transition-all ${
+                        selectedRole === role.name 
+                          ? 'bg-m8bs-blue hover:bg-m8bs-blue-dark border-m8bs-blue' 
+                          : 'hover:border-m8bs-blue/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-semibold text-left">{role.name}</span>
+                        {selectedRole === role.name && (
+                          <CheckCircle2 className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3" />
+                        <span>{role.metrics.length} {role.metrics.length === 1 ? 'metric' : 'metrics'}</span>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-m8bs-muted mx-auto mb-4 opacity-50" />
+                  <p className="text-m8bs-muted mb-4">No roles available. Add roles in Settings first.</p>
                   <Button
-                    key={role.id}
-                    variant={selectedRole === role.name ? "default" : "outline"}
-                    onClick={() => setSelectedRole(role.name)}
-                    className="h-auto p-4 flex flex-col items-start gap-2"
+                    onClick={() => setActiveTab("settings")}
+                    className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white"
                   >
-                    <span className="font-semibold">{role.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {role.metrics.length} metrics
-                    </span>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Go to Settings
                   </Button>
-                ))}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {selectedRoleData && (
+          {selectedRoleData && selectedRoleData.metrics.length > 0 && (
             <DataEntryForm
               roleName={selectedRoleData.name}
               roleId={selectedRoleData.id}
@@ -717,6 +809,25 @@ export default function BehaviorScorecardPage() {
                 })
               }}
             />
+          )}
+
+          {selectedRoleData && selectedRoleData.metrics.length === 0 && (
+            <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+              <CardContent className="p-8 text-center">
+                <Settings className="h-16 w-16 text-m8bs-muted mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2 text-white">No Metrics for {selectedRoleData.name}</h3>
+                <p className="text-m8bs-muted mb-6">
+                  This role doesn't have any metrics yet. Add metrics in Settings to start tracking data.
+                </p>
+                <Button
+                  onClick={() => setActiveTab("settings")}
+                  className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Metrics
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {!selectedRoleData && roles.length === 0 && (
@@ -845,6 +956,8 @@ export default function BehaviorScorecardPage() {
           />
         </TabsContent>
       </Tabs>
+        </>
+      )}
     </div>
   )
 }

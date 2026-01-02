@@ -24,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function BusinessDashboard() {
   const { user } = useAuth()
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
-  const { data, loading, loadData } = useAdvisorBasecamp(user, selectedYear)
+  const { data, loading, loadData, error: dataError } = useAdvisorBasecamp(user, selectedYear)
   const [editMode, setEditMode] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState("goals")
@@ -107,15 +107,27 @@ export default function BusinessDashboard() {
         setProfileLoading(false)
         return
       }
-      setProfileLoading(true)
-      const supabase = createClient()
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single()
-      setProfile(profileData)
-      setProfileLoading(false)
+      try {
+        setProfileLoading(true)
+        const supabase = createClient()
+        const { data: profileData, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single()
+        
+        if (error) {
+          console.error('Error fetching profile:', error)
+          setProfile(null)
+        } else {
+          setProfile(profileData)
+        }
+      } catch (error) {
+        console.error('Error in fetchProfile:', error)
+        setProfile(null)
+      } finally {
+        setProfileLoading(false)
+      }
     }
     fetchProfile()
   }, [user])
@@ -131,17 +143,27 @@ export default function BusinessDashboard() {
     setRefreshing(false)
   }
 
-  const handleDataSubmitted = async () => {
-    console.log('handleDataSubmitted called - refreshing data...')
+  const handleDataSubmitted = async (savedYear?: number) => {
+    console.log('handleDataSubmitted called - refreshing data for year:', savedYear || selectedYear)
     setEditMode(false)
     
     // Add a delay to ensure the database has been updated
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 500))
     
-    // Force reload data from database - this will update the data state
+    // If a year was saved and it's different from selectedYear, update it
+    // This will trigger the hook to automatically reload data for the correct year
+    // The hook's useEffect will reload when selectedYear changes, so we don't need to call loadData()
+    if (savedYear && savedYear !== selectedYear) {
+      console.log('Updating selectedYear from', selectedYear, 'to', savedYear)
+      setSelectedYear(savedYear)
+      // Don't call loadData() here - the hook will automatically reload when selectedYear changes
+      return // Exit early - let the hook handle the reload
+    }
+    
+    // If year didn't change, explicitly reload data for the current year
+    console.log('Year unchanged, explicitly reloading data')
     await loadData()
-    
-    console.log('Data refresh completed - all components should update with new data')
+    console.log('Data refresh completed - component will re-render and check isComplete')
   }
 
   // Helper: check if all sections are filled
@@ -154,17 +176,22 @@ export default function BusinessDashboard() {
     data.financialBook
   )
 
-  // Debug completion check
-  console.log('Completion check details:', {
-    businessGoals: data.businessGoals,
-    currentValues: data.currentValues,
-    clientMetrics: data.clientMetrics,
-    campaigns: data.campaigns,
-    campaignsLength: data.campaigns?.length,
-    commissionRates: data.commissionRates,
-    financialBook: data.financialBook,
-    isComplete
-  })
+  // Debug completion check - log when data changes
+  useEffect(() => {
+    const completionStatus = {
+      businessGoals: !!data.businessGoals,
+      currentValues: !!data.currentValues,
+      clientMetrics: !!data.clientMetrics,
+      campaigns: data.campaigns,
+      campaignsLength: data.campaigns?.length,
+      commissionRates: !!data.commissionRates,
+      financialBook: !!data.financialBook,
+      isComplete,
+      loading
+    }
+    console.log('Completion check details:', completionStatus)
+    // Note: We don't automatically exit edit mode - user must click cancel or submit
+  }, [data, isComplete, loading])
 
   if (!user) {
     return (
@@ -172,6 +199,27 @@ export default function BusinessDashboard() {
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
           <p className="text-muted-foreground">Please Log In To Access The Advisor Basecamp.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error if data loading failed
+  if (dataError && !loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-semibold text-white">Error Loading Data</h3>
+          <p className="text-gray-300 mb-4">{dataError}</p>
+          <Button 
+            onClick={handleRefresh} 
+            className="bg-m8bs-blue hover:bg-m8bs-blue-dark"
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Try Again
+          </Button>
         </div>
       </div>
     )
@@ -195,7 +243,7 @@ export default function BusinessDashboard() {
 
   // Show data entry form if not complete or in edit mode
   if (!isComplete || editMode) {
-    console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode)
+    console.log('Showing data entry form - isComplete:', isComplete, 'editMode:', editMode, 'loading:', loading)
     return (
       <div className="py-4 space-y-4">
               <div>
@@ -203,7 +251,9 @@ export default function BusinessDashboard() {
                   M8 Advisor Basecamp
                 </h1>
                 <p className="text-m8bs-muted mt-1">
-                  Complete Your Profile To Unlock All Dashboard Features
+                  {editMode 
+                    ? "Edit Your Business Data" 
+                    : "Complete Your Profile To Unlock All Dashboard Features"}
                 </p>
               </div>
               
@@ -276,7 +326,10 @@ export default function BusinessDashboard() {
             Refresh
           </Button>
           <CSVExport data={data} profile={profile} />
-          <Button variant="outline" onClick={() => setEditMode(true)}>
+          <Button variant="outline" onClick={() => {
+            console.log('Edit Business Data button clicked - setting editMode to true')
+            setEditMode(true)
+          }}>
             Edit Business Data
           </Button>
         </div>

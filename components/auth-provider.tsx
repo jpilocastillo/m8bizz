@@ -31,6 +31,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let refreshInterval: NodeJS.Timeout | null = null
+    let keepAliveInterval: NodeJS.Timeout | null = null
+
+    // Set up session keep-alive: refresh session every 45 minutes (before 1 hour expiration)
+    const setupKeepAlive = () => {
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval)
+      }
+      
+      keepAliveInterval = setInterval(async () => {
+        if (!mounted) return
+        
+        try {
+          const { data: { session: currentSession } } = await supabase.auth.getSession()
+          if (currentSession) {
+            // Refresh the session proactively before it expires
+            const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
+            if (error) {
+              console.error("Error refreshing session in keep-alive:", error)
+            } else if (refreshedSession) {
+              setSession(refreshedSession)
+              setUser(refreshedSession.user ?? null)
+              console.log("Session refreshed via keep-alive")
+            }
+          }
+        } catch (error) {
+          console.error("Error in keep-alive refresh:", error)
+        }
+      }, 45 * 60 * 1000) // 45 minutes
+    }
+
+    // Set up automatic token refresh check every 5 minutes
+    const setupTokenRefresh = () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval)
+      }
+      
+      refreshInterval = setInterval(async () => {
+        if (!mounted) return
+        
+        try {
+          const { data: { session: currentSession } } = await supabase.auth.getSession()
+          if (currentSession) {
+            // Check if token is about to expire (within 10 minutes)
+            const expiresAt = currentSession.expires_at
+            if (expiresAt) {
+              const expiresIn = expiresAt * 1000 - Date.now()
+              const tenMinutes = 10 * 60 * 1000
+              
+              if (expiresIn < tenMinutes && expiresIn > 0) {
+                // Refresh token proactively
+                const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
+                if (error) {
+                  console.error("Error refreshing token:", error)
+                } else if (refreshedSession) {
+                  setSession(refreshedSession)
+                  setUser(refreshedSession.user ?? null)
+                  console.log("Token refreshed proactively")
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error in token refresh check:", error)
+        }
+      }, 5 * 60 * 1000) // Check every 5 minutes
+    }
 
     const getSession = async () => {
       try {
@@ -43,6 +110,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error("Error getting session:", error)
+          // Try to refresh the session if it's expired
+          if (error.message?.includes('expired') || error.message?.includes('invalid')) {
+            try {
+              const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
+              if (refreshedSession) {
+                setSession(refreshedSession)
+                setUser(refreshedSession.user ?? null)
+                setIsLoading(false)
+                // Set up keep-alive after successful refresh
+                setupKeepAlive()
+                setupTokenRefresh()
+                return
+              }
+            } catch (refreshError) {
+              console.error("Error refreshing session:", refreshError)
+            }
+          }
           // Clear any invalid session state
           setSession(null)
           setUser(null)
@@ -53,6 +137,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session)
         setUser(session?.user ?? null)
         setIsLoading(false)
+        
+        // Set up keep-alive if we have a session
+        if (session) {
+          setupKeepAlive()
+          setupTokenRefresh()
+        }
       } catch (error) {
         if (!mounted) return
         console.error("Exception getting session:", error)
@@ -62,20 +152,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    getSession()
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (!mounted) return
-      setSession(session)
-      setUser(session?.user ?? null)
-      setIsLoading(false)
+      
+      if (event === 'TOKEN_REFRESHED' && session) {
+        console.log("Session token refreshed via auth state change")
+        setSession(session)
+        setUser(session.user ?? null)
+        setIsLoading(false)
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null)
+        setUser(null)
+        setIsLoading(false)
+        if (keepAliveInterval) clearInterval(keepAliveInterval)
+        if (refreshInterval) clearInterval(refreshInterval)
+      } else {
+        setSession(session)
+        setUser(session?.user ?? null)
+        setIsLoading(false)
+        
+        // Set up keep-alive when session is established
+        if (session) {
+          setupKeepAlive()
+          setupTokenRefresh()
+        } else {
+          // Clear intervals if session is lost
+          if (keepAliveInterval) clearInterval(keepAliveInterval)
+          if (refreshInterval) clearInterval(refreshInterval)
+        }
+      }
     })
+
+    // Initialize session
+    getSession()
 
     return () => {
       mounted = false
       subscription.unsubscribe()
+      if (keepAliveInterval) clearInterval(keepAliveInterval)
+      if (refreshInterval) clearInterval(refreshInterval)
     }
   }, [])
 

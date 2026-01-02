@@ -25,6 +25,8 @@ import { PlateLickerCard } from "@/components/dashboard/plate-licker-card"
 import { SingleEventExport } from "@/components/dashboard/single-event-export"
 import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { fetchUserEvents, getAvailableYears } from "@/lib/data"
 
 interface DashboardContentProps {
   initialData: any
@@ -110,6 +112,68 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(initialData || null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+  const [availableYears, setAvailableYears] = useState<number[]>([new Date().getFullYear(), 2025])
+  const [filteredEvents, setFilteredEvents] = useState<any[]>(events)
+
+  // Load available years on mount
+  useEffect(() => {
+    async function loadYears() {
+      try {
+        const years = await getAvailableYears(userId)
+        setAvailableYears(years)
+        // Determine initial year from initial data if available
+        if (initialData?.eventDetails?.date) {
+          try {
+            const [year] = initialData.eventDetails.date.split('-').map(Number)
+            if (!isNaN(year) && years.includes(year)) {
+              setSelectedYear(year)
+              return
+            }
+          } catch {
+            // Fall through to default
+          }
+        }
+        // Default to current year or most recent year
+        const currentYear = new Date().getFullYear()
+        if (years.includes(currentYear)) {
+          setSelectedYear(currentYear)
+        } else if (years.length > 0) {
+          setSelectedYear(years[0])
+        }
+      } catch (error) {
+        console.error('Error loading available years:', error)
+      }
+    }
+    loadYears()
+  }, [userId, initialData])
+
+  // Filter events by year and reload when year changes
+  useEffect(() => {
+    async function loadEventsForYear() {
+      try {
+        const yearEvents = await fetchUserEvents(userId, selectedYear)
+        setFilteredEvents(yearEvents)
+        
+        // If current selected event is not in the filtered list, select the first event
+        if (yearEvents.length > 0) {
+          const eventExists = yearEvents.some(e => e.id === selectedEventId)
+          if (!eventExists) {
+            setSelectedEventId(yearEvents[0].id)
+          }
+        } else {
+          setSelectedEventId('')
+          setDashboardData(null)
+        }
+      } catch (error) {
+        console.error('Error loading events for year:', error)
+      }
+    }
+    // Only load if we have a valid year selected
+    if (selectedYear) {
+      loadEventsForYear()
+    }
+  }, [selectedYear, userId])
 
   useEffect(() => {
     if (selectedEventId) {
@@ -329,8 +393,26 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           <span className="ml-2 font-bold">{formattedDate}</span>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-m8bs-card border border-m8bs-border rounded-lg px-3 py-2">
+            <Calendar className="h-4 w-4 text-m8bs-muted" />
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(value) => setSelectedYear(Number.parseInt(value))}
+            >
+              <SelectTrigger className="w-[120px] border-none bg-transparent text-white focus:ring-0 focus:ring-offset-0 h-auto p-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-m8bs-card border-m8bs-border">
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()} className="text-white">
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <EventSelector
-            events={events}
+            events={filteredEvents}
             selectedEventId={selectedEventId}
             onSelect={setSelectedEventId}
           />

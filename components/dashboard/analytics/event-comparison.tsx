@@ -374,7 +374,7 @@ export function EventComparison({ events }: EventComparisonProps) {
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ top: 20, right: 20, left: 0, bottom: 20 }}
+              margin={{ top: 20, right: 100, left: 50, bottom: 20 }}
               barGap={12}
             >
               <XAxis
@@ -402,7 +402,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                 tick={{ style: { fill: '#94a3b8' } }}
                 tickLine={false}
                 axisLine={false}
-                width={120}
+                width={45}
                 interval={0}
                 angle={0}
                 textAnchor="end"
@@ -412,7 +412,7 @@ export function EventComparison({ events }: EventComparisonProps) {
                 animationDuration={2000}
                 animationEasing="ease-out"
                 radius={[0, 8, 8, 0]}
-                barSize={32}
+                barSize={40}
                 animationBegin={0}
                 animationEnd={1}
               >

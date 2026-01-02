@@ -120,33 +120,52 @@ export function IncomeBreakdown({
     const totalAnnualIncome = totalIncome // This represents annual income from goals
     
     // Calculate marketing expenses from campaigns
-    // Use campaign annual budget (budget * frequency multiplier)
+    // Campaigns store monthly budget, so multiply by 12 for annual
     const totalMarketingExpenses = campaigns.reduce((sum, campaign) => {
       const frequency = (campaign as any).frequency || "Monthly"
       const multiplier = frequency === "Monthly" ? 12 : frequency === "Quarterly" ? 4 : frequency === "Semi-Annual" ? 2 : 1
-      // Use only the campaign annual budget, not food costs
-      return sum + ((campaign.budget || 0) * multiplier)
+      const foodCosts = (campaign as any).food_costs || 0
+      return sum + ((campaign.budget || 0) * multiplier) + (foodCosts * multiplier)
     }, 0)
     
     // Calculate operational expenses (if not available in data, set to 0)
     // This should come from business data form if needed, for now set to 0
     const totalOperationalExpenses = 0
     
-    // Calculate Marketing ROI using the same formula as client-acquisition
-    // Marketing ROI = ((marketingIncome - marketingExpenses) / marketingExpenses) * 100
-    // Marketing income = annuity income + AUM income + life income + planning fees
-    // Exclude trail income as it's from existing clients, not marketing
+    // Calculate Marketing ROI from actual campaign data
+    // ROI = ((Revenue - Marketing Costs) / Marketing Costs) * 100
+    // Revenue is calculated from clients acquired through campaigns
+    const appointmentAttrition = clientMetrics.appointment_attrition || 0
+    const avgCloseRatio = clientMetrics.avg_close_ratio || 0
+    const appointmentsPerCampaign = clientMetrics.appointments_per_campaign || 0
+    const avgAnnuitySize = clientMetrics.avg_annuity_size || 0
+    const avgAUMSize = clientMetrics.avg_aum_size || 0
+    const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
     
-    // Marketing income is calculated from commission-based income (same as client-acquisition)
-    // This uses the actual income from goals and commission rates, not just client value
-    const marketingIncome = annuityIncome + aumIncome + lifeIncome + planningFeesValue
+    // Calculate total events, leads, and appointments from campaigns
+    let totalEvents = 0
+    let totalLeads = 0
     
-    // Calculate ROI using marketing income (from goals/commissions) vs marketing expenses (from campaigns)
+    campaigns.forEach(campaign => {
+      const frequency = (campaign as any).frequency || "Monthly"
+      const multiplier = frequency === "Monthly" ? 12 : frequency === "Quarterly" ? 4 : frequency === "Semi-Annual" ? 2 : 1
+      totalEvents += (campaign.events || 0) * multiplier
+      totalLeads += (campaign.leads || 0) * multiplier
+    })
+    
+    // Calculate clients from campaigns
+    const totalAppointments = appointmentsPerCampaign > 0 
+      ? totalEvents * appointmentsPerCampaign
+      : Math.round(totalLeads * 0.4) // Fallback: 40% of leads become appointments
+    
+    const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
+    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
+    const campaignRevenue = totalClients * avgClientValue
+    
+    // Calculate ROI
     const marketingROI = totalMarketingExpenses > 0 
-      ? Math.round(((marketingIncome - totalMarketingExpenses) / totalMarketingExpenses) * 100 * 10) / 10
-      : marketingIncome > 0 
-        ? 9999 // Show high ROI when there's income but no expenses
-        : 0
+      ? ((campaignRevenue - totalMarketingExpenses) / totalMarketingExpenses) * 100
+      : 0
 
     return {
       incomeData,
@@ -158,7 +177,8 @@ export function IncomeBreakdown({
     }
   }
 
-  const { incomeData, totalIncome, totalAnnualIncome, marketingROI, totalMarketingExpenses } = calculateIncomeData()
+  const { incomeData, totalIncome, totalAnnualIncome, marketingROI, totalMarketingExpenses, totalOperationalExpenses } = calculateIncomeData()
+  const totalExpenses = totalMarketingExpenses + totalOperationalExpenses
 
   const chartData = incomeData.map((item) => ({
     name: item.source,
@@ -441,16 +461,24 @@ export function IncomeBreakdown({
                   <TableCell>${totalMarketingExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
                 <TableRow>
+                  <TableCell className="font-medium">Operational Expenses</TableCell>
+                  <TableCell>${totalOperationalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Total Expenses</TableCell>
+                  <TableCell>${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                </TableRow>
+                <TableRow>
                   <TableCell className="font-medium">Net Income</TableCell>
-                  <TableCell>${(totalAnnualIncome - totalMarketingExpenses).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell>${(totalAnnualIncome - totalExpenses).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Profit Margin</TableCell>
-                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - totalMarketingExpenses) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
+                  <TableCell>{totalAnnualIncome > 0 ? ((totalAnnualIncome - totalExpenses) / totalAnnualIncome * 100).toFixed(1) : 0}%</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Marketing ROI</TableCell>
-                  <TableCell className="text-green-500">{marketingROI.toFixed(1)}%</TableCell>
+                  <TableCell className="text-green-500">{marketingROI}%</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

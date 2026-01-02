@@ -1,16 +1,24 @@
 "use client"
 
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { type CompanySummary } from '@/lib/behavior-scorecard'
-import { TrendingUp, Award, TrendingDown, Minus, Target, BarChart3 } from 'lucide-react'
+import { TrendingUp, Award, BarChart3, ArrowUpDown, ArrowUp, ArrowDown, Target, Users, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface CompanySummaryProps {
   companySummary: CompanySummary
 }
 
+type SortOption = 'grade' | 'percentage' | 'name'
+
 export function CompanySummary({ companySummary }: CompanySummaryProps) {
+  const [sortBy, setSortBy] = useState<SortOption>('percentage')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [isExpanded, setIsExpanded] = useState(false)
+
   const getGradeColor = (grade: string) => {
     switch (grade) {
       case 'A': return 'bg-green-500/20 text-green-400 border-green-500/50'
@@ -22,106 +30,190 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
     }
   }
 
-  const getTrendIcon = (percentage: number) => {
-    if (percentage >= 90) return <TrendingUp className="h-4 w-4 text-green-400" />
-    if (percentage >= 70) return <Minus className="h-4 w-4 text-yellow-400" />
-    return <TrendingDown className="h-4 w-4 text-red-400" />
+  const getGradeOrder = (grade: string): number => {
+    const order: Record<string, number> = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'F': 5 }
+    return order[grade] || 6
   }
 
-  const getProgressColor = (percentage: number): string => {
+  const getProgressColor = (percentage: number) => {
     if (percentage >= 90) return 'bg-green-500'
-    if (percentage >= 80) return 'bg-blue-500'
-    if (percentage >= 70) return 'bg-yellow-500'
-    if (percentage >= 60) return 'bg-orange-500'
+    if (percentage >= 70) return 'bg-blue-500'
+    if (percentage >= 50) return 'bg-yellow-500'
+    if (percentage >= 30) return 'bg-orange-500'
     return 'bg-red-500'
   }
 
+  // Organize roles by grade tier
+  const organizedRoles = useMemo(() => {
+    const sorted = [...companySummary.roleScorecards].sort((a, b) => {
+      if (sortBy === 'percentage') {
+        return sortDirection === 'desc' 
+          ? b.averageGradePercentage - a.averageGradePercentage
+          : a.averageGradePercentage - b.averageGradePercentage
+      } else if (sortBy === 'grade') {
+        const aOrder = getGradeOrder(a.averageGrade)
+        const bOrder = getGradeOrder(b.averageGrade)
+        return sortDirection === 'desc' ? aOrder - bOrder : bOrder - aOrder
+      } else {
+        return sortDirection === 'desc'
+          ? b.roleName.localeCompare(a.roleName)
+          : a.roleName.localeCompare(b.roleName)
+      }
+    })
+
+    // Group by grade
+    const grouped: Record<string, typeof sorted> = {
+      'A': [],
+      'B': [],
+      'C': [],
+      'D': [],
+      'F': []
+    }
+
+    sorted.forEach(role => {
+      const grade = role.averageGrade
+      if (grouped[grade]) {
+        grouped[grade].push(role)
+      }
+    })
+
+    return { sorted, grouped }
+  }, [companySummary.roleScorecards, sortBy, sortDirection])
+
+  const handleSort = (option: SortOption) => {
+    if (sortBy === option) {
+      setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc')
+    } else {
+      setSortBy(option)
+      setSortDirection('desc')
+    }
+  }
+
   return (
-    <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-m8bs-card-alt p-3 rounded-lg">
-              <Award className="h-6 w-6 text-m8bs-blue" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl font-bold text-white">Company Summary</CardTitle>
-              <CardDescription className="text-m8bs-muted mt-1">
-                Overall Business Performance Overview
-              </CardDescription>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="flex items-center gap-3 mb-2">
-              <Badge className={`${getGradeColor(companySummary.companyGrade)} border px-5 py-3 text-3xl font-bold`}>
-                {companySummary.companyGrade}
-              </Badge>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Progress 
-                  value={companySummary.companyAverage} 
-                  className="w-32 h-3"
-                />
-                <span className="text-sm font-semibold text-white">
-                  {companySummary.companyAverage.toFixed(1)}%
-                </span>
-              </div>
-              <p className="text-xs text-m8bs-muted">
-                Company Average Performance
-              </p>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {companySummary.roleScorecards.length === 0 ? (
-          <div className="text-center py-8 text-m8bs-muted">
-            <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>No role data available</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {companySummary.roleScorecards.map((roleScorecard) => (
-              <Card
-                key={roleScorecard.roleId}
-                className="bg-m8bs-card-alt border-m8bs-border p-4 shadow-md hover:shadow-lg hover:border-m8bs-blue/50 transition-all"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-m8bs-blue" />
-                    <h4 className="font-semibold text-white text-sm">{roleScorecard.roleName}</h4>
+    <div className="space-y-2">
+      {/* Compact Company Summary Card - Collapsible */}
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+        <Card className="bg-m8bs-card border-m8bs-border shadow-md">
+          <CollapsibleTrigger asChild>
+            <CardHeader className="pb-2 cursor-pointer hover:bg-m8bs-card-alt/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="bg-m8bs-blue/20 p-1.5 rounded-lg">
+                    <Award className="h-4 w-4 text-m8bs-blue" />
                   </div>
-                  <Badge className={`${getGradeColor(roleScorecard.averageGrade)} border text-xs`}>
-                    {roleScorecard.averageGrade}
+                  <div>
+                    <CardTitle className="text-base font-bold text-white">Company Summary</CardTitle>
+                    <CardDescription className="text-m8bs-muted text-xs">
+                      {companySummary.companyAverage.toFixed(1)}% Average
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge className={`${getGradeColor(companySummary.companyGrade)} border px-3 py-1 text-lg font-bold`}>
+                    {companySummary.companyGrade}
                   </Badge>
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-m8bs-muted" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-m8bs-muted" />
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-m8bs-muted">Performance</span>
-                    <span className={`font-semibold ${
-                      roleScorecard.averageGradePercentage >= 90 ? 'text-green-400' :
-                      roleScorecard.averageGradePercentage >= 70 ? 'text-yellow-400' :
-                      'text-red-400'
-                    }`}>
-                      {roleScorecard.averageGradePercentage.toFixed(1)}%
-                    </span>
-                  </div>
-                  <Progress 
-                    value={roleScorecard.averageGradePercentage} 
-                    className="h-2"
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent>
+            <CardContent className="pt-2 pb-3">
+              {/* Compact Progress Bar */}
+              <div className="mb-3 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-m8bs-muted">Overall Performance</span>
+                  <span className="text-white font-semibold">{companySummary.companyAverage.toFixed(1)}%</span>
+                </div>
+                <div className="h-2 bg-m8bs-card-alt rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getProgressColor(companySummary.companyAverage)} transition-all duration-500 rounded-full`}
+                    style={{ width: `${Math.min(companySummary.companyAverage, 100)}%` }}
                   />
-                  <div className="flex items-center gap-2 text-xs text-m8bs-muted">
-                    {getTrendIcon(roleScorecard.averageGradePercentage)}
-                    <span>{roleScorecard.metrics.length} {roleScorecard.metrics.length === 1 ? 'metric' : 'metrics'}</span>
-                  </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+
+              {/* Compact Sort Controls */}
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-m8bs-border">
+                <span className="text-xs text-m8bs-muted">Sort:</span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('percentage')}
+                    className={`h-6 px-2 text-xs ${sortBy === 'percentage' ? 'bg-m8bs-blue/20' : ''}`}
+                  >
+                    Perf{sortBy === 'percentage' && (sortDirection === 'desc' ? <ArrowDown className="h-2 w-2 ml-1" /> : <ArrowUp className="h-2 w-2 ml-1" />)}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('grade')}
+                    className={`h-6 px-2 text-xs ${sortBy === 'grade' ? 'bg-m8bs-blue/20' : ''}`}
+                  >
+                    Grade{sortBy === 'grade' && (sortDirection === 'desc' ? <ArrowDown className="h-2 w-2 ml-1" /> : <ArrowUp className="h-2 w-2 ml-1" />)}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('name')}
+                    className={`h-6 px-2 text-xs ${sortBy === 'name' ? 'bg-m8bs-blue/20' : ''}`}
+                  >
+                    Name{sortBy === 'name' && (sortDirection === 'desc' ? <ArrowDown className="h-2 w-2 ml-1" /> : <ArrowUp className="h-2 w-2 ml-1" />)}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Compact Role Scorecards - Single Row */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {organizedRoles.sorted.map((roleScorecard) => (
+                  <RoleCard key={roleScorecard.roleId} roleScorecard={roleScorecard} getGradeColor={getGradeColor} getProgressColor={getProgressColor} />
+                ))}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+    </div>
+  )
+}
+
+// Compact role card component
+function RoleCard({ 
+  roleScorecard, 
+  getGradeColor, 
+  getProgressColor 
+}: { 
+  roleScorecard: any
+  getGradeColor: (grade: string) => string
+  getProgressColor: (percentage: number) => string
+}) {
+  return (
+    <div className="bg-m8bs-card-alt border border-m8bs-border rounded-lg p-2 hover:border-m8bs-blue/50 transition-colors">
+      <div className="flex items-center justify-between mb-1.5">
+        <h4 className="font-semibold text-white text-xs truncate pr-1">{roleScorecard.roleName}</h4>
+        <Badge className={`${getGradeColor(roleScorecard.averageGrade)} border px-1.5 py-0.5 text-xs font-bold flex-shrink-0`}>
+          {roleScorecard.averageGrade}
+        </Badge>
+      </div>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-m8bs-muted">Perf</span>
+          <span className="text-white font-semibold">{roleScorecard.averageGradePercentage.toFixed(0)}%</span>
+        </div>
+        <div className="h-1.5 bg-m8bs-card rounded-full overflow-hidden">
+          <div
+            className={`h-full ${getProgressColor(roleScorecard.averageGradePercentage)} transition-all duration-300 rounded-full`}
+            style={{ width: `${Math.min(roleScorecard.averageGradePercentage, 100)}%` }}
+          />
+        </div>
+      </div>
+    </div>
   )
 }
 

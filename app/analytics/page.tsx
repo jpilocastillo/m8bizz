@@ -21,7 +21,7 @@ export default async function AnalyticsPage() {
       redirect("/login")
     }
 
-    // Fetch all events with their related data
+    // Fetch all events with their related data (no year filter - let client-side handle it)
     const events = await fetchAllEvents(user.id)
     
     // DEBUG: Show all fetched events
