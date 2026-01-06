@@ -402,6 +402,7 @@ export default function BusinessDashboard() {
               businessGoals={data.businessGoals}
               currentValues={data.currentValues}
               clientMetrics={data.clientMetrics}
+              campaigns={data.campaigns}
             />
           </div>
         </TabsContent>

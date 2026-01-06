@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BusinessGoals, CurrentValues, ClientMetrics } from "@/lib/advisor-basecamp"
+import { BusinessGoals, CurrentValues, ClientMetrics, MarketingCampaign } from "@/lib/advisor-basecamp"
 import { Target, TrendingUp, DollarSign, Building2, Heart, Sparkles } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -13,9 +13,10 @@ interface GoalProgressProps {
   businessGoals?: BusinessGoals | null
   currentValues?: CurrentValues | null
   clientMetrics?: ClientMetrics | null
+  campaigns?: MarketingCampaign[]
 }
 
-export function GoalProgress({ businessGoals, currentValues, clientMetrics }: GoalProgressProps) {
+export function GoalProgress({ businessGoals, currentValues, clientMetrics, campaigns = [] }: GoalProgressProps) {
   // Calculate goal data - only display goals, no progress calculations
   const businessGoal = businessGoals?.business_goal || 0
   const aumGoal = businessGoals?.aum_goal || 0
@@ -76,7 +77,34 @@ export function GoalProgress({ businessGoals, currentValues, clientMetrics }: Go
   const annuityClosed = clientMetrics?.annuity_closed || 0
   const aumAccounts = clientMetrics?.aum_accounts || 0
   const monthlyIdealProspects = clientMetrics?.monthly_ideal_prospects || 0
-  const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
+  
+  // Calculate appointments per campaign from clientMetrics, or calculate from campaigns if not set
+  let appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
+  
+  // If appointments_per_campaign is 0 or not set, try to calculate from actual campaign data
+  if (appointmentsPerCampaign === 0 && campaigns && campaigns.length > 0) {
+    // Calculate average appointments per campaign from actual campaign data
+    // Account for campaign frequency (Monthly, Quarterly, etc.)
+    let totalEvents = 0
+    let totalLeads = 0
+    
+    campaigns.forEach(campaign => {
+      const frequency = (campaign as any).frequency || "Monthly"
+      const multiplier = frequency === "Monthly" ? 12 : frequency === "Quarterly" ? 4 : frequency === "Semi-Annual" ? 2 : 1
+      totalEvents += (campaign.events || 0) * multiplier
+      totalLeads += (campaign.leads || 0) * multiplier
+    })
+    
+    // If we have events, calculate appointments per event (assuming 40% of leads become appointments)
+    if (totalEvents > 0 && totalLeads > 0) {
+      const estimatedTotalAppointments = Math.round(totalLeads * 0.4) // 40% conversion rate
+      appointmentsPerCampaign = Math.round(estimatedTotalAppointments / totalEvents)
+    } else if (totalEvents > 0) {
+      // Fallback: if we only have events, calculate average per event
+      // Use a reasonable default based on typical campaign performance
+      appointmentsPerCampaign = Math.max(1, Math.round(totalLeads / totalEvents * 0.4)) || 12
+    }
+  }
 
   // Calculate clients needed using formulas
   const currentAUM = currentValues?.current_aum || 0
