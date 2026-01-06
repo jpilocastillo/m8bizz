@@ -24,10 +24,17 @@ import {
   Trash2,
   Key,
   AlertTriangle,
-  Settings
+  Settings,
+  MapPin,
+  Clock,
+  Tag,
+  FileText,
+  BarChart3,
+  Wallet
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { UserManagementModal } from "@/components/admin/user-management-modal"
+import { getAdminUsers, getUserDetails } from "@/app/admin/actions"
 
 interface UserProfile {
   id: string
@@ -357,10 +364,10 @@ export default function AdminDashboard() {
                   {filteredUsers.map((userData) => (
                     <div
                       key={userData.profile.id}
-                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
                         selectedUser?.profile.id === userData.profile.id
-                          ? "bg-blue-50 border-blue-200"
-                          : "bg-white border-gray-200 hover:bg-gray-50"
+                          ? "bg-blue-50 border-blue-500 border-2 shadow-md"
+                          : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                       }`}
                       onClick={() => handleUserSelect(userData)}
                     >
@@ -421,10 +428,19 @@ export default function AdminDashboard() {
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
-                      <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
-                        <span>{userData.events_count} events</span>
-                        <span>{userData.total_clients} clients</span>
-                        <span>${userData.total_revenue.toLocaleString()}</span>
+                      <div className="mt-2 flex items-center space-x-4 text-xs">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-gray-400" />
+                          <span className="text-gray-600 font-medium">{userData.events_count} events</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3 text-gray-400" />
+                          <span className="text-gray-600 font-medium">{userData.total_clients} clients</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3 text-green-600" />
+                          <span className="text-green-600 font-semibold">${userData.total_revenue.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -469,6 +485,9 @@ export default function AdminDashboard() {
                             </CardHeader>
                             <CardContent>
                               <div className="text-2xl font-bold">{selectedUser.events_count}</div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Marketing events created
+                              </p>
                             </CardContent>
                           </Card>
                           <Card>
@@ -478,6 +497,9 @@ export default function AdminDashboard() {
                             </CardHeader>
                             <CardContent>
                               <div className="text-2xl font-bold">{selectedUser.total_clients}</div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Clients acquired from events
+                              </p>
                             </CardContent>
                           </Card>
                           <Card>
@@ -486,12 +508,50 @@ export default function AdminDashboard() {
                               <DollarSign className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                              <div className="text-2xl font-bold">
+                              <div className="text-2xl font-bold text-green-600">
                                 ${selectedUser.total_revenue.toLocaleString()}
                               </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                From all events
+                              </p>
                             </CardContent>
                           </Card>
                         </div>
+
+                        {/* User Profile Info */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Profile Information</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs text-gray-500">User ID</Label>
+                                <p className="text-sm font-mono">{selectedUser.profile.id}</p>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-gray-500">Role</Label>
+                                <div className="mt-1">
+                                  <Badge variant={selectedUser.profile.role === "admin" ? "destructive" : "secondary"}>
+                                    {selectedUser.profile.role}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-gray-500">Created</Label>
+                                <p className="text-sm">
+                                  {new Date(selectedUser.profile.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-gray-500">Last Updated</Label>
+                                <p className="text-sm">
+                                  {new Date(selectedUser.profile.updated_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </TabsContent>
 
                       <TabsContent value="advisor" className="space-y-4">
@@ -571,15 +631,354 @@ export default function AdminDashboard() {
                       </TabsContent>
 
                       <TabsContent value="events" className="space-y-4">
-                        <div className="text-center py-8 text-gray-500">
-                          Event details will be displayed here.
-                        </div>
+                        {userDetails?.events && userDetails.events.length > 0 ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-lg font-semibold">Marketing Events ({userDetails.events.length})</h3>
+                            </div>
+                            <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                              {userDetails.events.map((event: any) => (
+                                <Card key={event.id} className="border-l-4 border-l-blue-500">
+                                  <CardHeader>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <CardTitle className="text-lg">{event.name}</CardTitle>
+                                        <CardDescription className="mt-1">
+                                          <div className="flex flex-wrap items-center gap-4 mt-2">
+                                            <div className="flex items-center gap-1 text-sm">
+                                              <Calendar className="h-4 w-4" />
+                                              {new Date(event.date).toLocaleDateString()}
+                                            </div>
+                                            {event.time && (
+                                              <div className="flex items-center gap-1 text-sm">
+                                                <Clock className="h-4 w-4" />
+                                                {event.time}
+                                              </div>
+                                            )}
+                                            <div className="flex items-center gap-1 text-sm">
+                                              <MapPin className="h-4 w-4" />
+                                              {event.location}
+                                            </div>
+                                            <div className="flex items-center gap-1 text-sm">
+                                              <Tag className="h-4 w-4" />
+                                              {event.marketing_type}
+                                            </div>
+                                          </div>
+                                        </CardDescription>
+                                      </div>
+                                      <Badge variant={event.status === 'active' ? 'default' : 'secondary'}>
+                                        {event.status}
+                                      </Badge>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent className="space-y-4">
+                                    {event.topic && (
+                                      <div>
+                                        <Label className="text-xs text-gray-500">Topic</Label>
+                                        <p className="text-sm font-medium">{event.topic}</p>
+                                      </div>
+                                    )}
+                                    
+                                    {event.event_attendance && event.event_attendance.length > 0 && (
+                                      <Card>
+                                        <CardHeader className="pb-3">
+                                          <CardTitle className="text-sm">Attendance</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Registrants</Label>
+                                              <p className="text-lg font-semibold">{event.event_attendance[0]?.registrant_responses || 0}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Confirmations</Label>
+                                              <p className="text-lg font-semibold">{event.event_attendance[0]?.confirmations || 0}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Attendees</Label>
+                                              <p className="text-lg font-semibold">{event.event_attendance[0]?.attendees || 0}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Clients</Label>
+                                              <p className="text-lg font-semibold text-green-600">{event.event_attendance[0]?.clients_from_event || 0}</p>
+                                            </div>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {event.event_appointments && event.event_appointments.length > 0 && (
+                                      <Card>
+                                        <CardHeader className="pb-3">
+                                          <CardTitle className="text-sm">Appointments</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Set at Event</Label>
+                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.set_at_event || 0}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Set After</Label>
+                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.set_after_event || 0}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">1st Attended</Label>
+                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.first_appointment_attended || 0}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">1st No Shows</Label>
+                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.first_appointment_no_shows || 0}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">2nd Attended</Label>
+                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.second_appointment_attended || 0}</p>
+                                            </div>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {event.marketing_expenses && event.marketing_expenses.length > 0 && (
+                                      <Card>
+                                        <CardHeader className="pb-3">
+                                          <CardTitle className="text-sm">Expenses</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Advertising</Label>
+                                              <p className="text-lg font-semibold">${Number(event.marketing_expenses[0]?.advertising_cost || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Food/Venue</Label>
+                                              <p className="text-lg font-semibold">${Number(event.marketing_expenses[0]?.food_venue_cost || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Other</Label>
+                                              <p className="text-lg font-semibold">${Number(event.marketing_expenses[0]?.other_costs || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Total</Label>
+                                              <p className="text-lg font-semibold text-red-600">${Number(event.marketing_expenses[0]?.total_cost || 0).toLocaleString()}</p>
+                                            </div>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {event.financial_production && event.financial_production.length > 0 && (
+                                      <Card>
+                                        <CardHeader className="pb-3">
+                                          <CardTitle className="text-sm">Financial Production</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Annuity Premium</Label>
+                                              <p className="text-lg font-semibold">${Number(event.financial_production[0]?.annuity_premium || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Life Premium</Label>
+                                              <p className="text-lg font-semibold">${Number(event.financial_production[0]?.life_insurance_premium || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">AUM</Label>
+                                              <p className="text-lg font-semibold">${Number(event.financial_production[0]?.aum || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs text-gray-500">Total</Label>
+                                              <p className="text-lg font-semibold text-green-600">${Number(event.financial_production[0]?.total || 0).toLocaleString()}</p>
+                                            </div>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            No events found for this user.
+                          </div>
+                        )}
                       </TabsContent>
 
                       <TabsContent value="financial" className="space-y-4">
-                        <div className="text-center py-8 text-gray-500">
-                          Financial details will be displayed here.
-                        </div>
+                        {userDetails ? (
+                          <div className="space-y-4">
+                            {userDetails.financialBook && (
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <Wallet className="h-5 w-5" />
+                                    Financial Book Values
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                      <Label className="text-xs text-gray-500">Annuity Book Value</Label>
+                                      <div className="text-2xl font-bold">
+                                        ${Number(userDetails.financialBook.annuity_book_value || 0).toLocaleString()}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500">AUM Book Value</Label>
+                                      <div className="text-2xl font-bold">
+                                        ${Number(userDetails.financialBook.aum_book_value || 0).toLocaleString()}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500">Qualified Money Value</Label>
+                                      <div className="text-2xl font-bold">
+                                        ${Number(userDetails.financialBook.qualified_money_value || 0).toLocaleString()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {userDetails.commissionRates && (
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <BarChart3 className="h-5 w-5" />
+                                    Commission Rates
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div>
+                                      <Label className="text-xs text-gray-500">Planning Fee Rate</Label>
+                                      <div className="text-lg font-semibold">
+                                        ${Number(userDetails.commissionRates.planning_fee_rate || 0).toLocaleString()}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500">Planning Fees Count</Label>
+                                      <div className="text-lg font-semibold">
+                                        {userDetails.commissionRates.planning_fees_count || 0}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500">Annuity Commission</Label>
+                                      <div className="text-lg font-semibold">
+                                        {userDetails.commissionRates.annuity_commission || 0}%
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500">AUM Commission</Label>
+                                      <div className="text-lg font-semibold">
+                                        {userDetails.commissionRates.aum_commission || 0}%
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500">Life Commission</Label>
+                                      <div className="text-lg font-semibold">
+                                        {userDetails.commissionRates.life_commission || 0}%
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-500">Trail Income %</Label>
+                                      <div className="text-lg font-semibold">
+                                        {userDetails.commissionRates.trail_income_percentage || 0}%
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {userDetails.events && userDetails.events.length > 0 && (
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <DollarSign className="h-5 w-5" />
+                                    Total Financial Production from Events
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-2">
+                                    {userDetails.events
+                                      .filter((e: any) => e.financial_production && e.financial_production.length > 0)
+                                      .map((event: any) => {
+                                        const fp = event.financial_production[0]
+                                        return (
+                                          <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                            <div>
+                                              <p className="font-medium">{event.name}</p>
+                                              <p className="text-sm text-gray-500">{new Date(event.date).toLocaleDateString()}</p>
+                                            </div>
+                                            <div className="text-right">
+                                              <p className="text-lg font-bold text-green-600">
+                                                ${Number(fp?.total || 0).toLocaleString()}
+                                              </p>
+                                              <div className="text-xs text-gray-500 space-x-2">
+                                                <span>Annuity: ${Number(fp?.annuity_premium || 0).toLocaleString()}</span>
+                                                <span>Life: ${Number(fp?.life_insurance_premium || 0).toLocaleString()}</span>
+                                                <span>AUM: ${Number(fp?.aum || 0).toLocaleString()}</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )
+                                      })}
+                                    {userDetails.events.filter((e: any) => e.financial_production && e.financial_production.length > 0).length === 0 && (
+                                      <p className="text-sm text-gray-500">No financial production data available</p>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
+
+                            {userDetails.monthlyData && userDetails.monthlyData.length > 0 && (
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <FileText className="h-5 w-5" />
+                                    Monthly Data Entries
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                                    {userDetails.monthlyData.map((month: any) => (
+                                      <div key={month.id} className="p-3 border rounded-lg">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <h4 className="font-semibold">{month.month_year}</h4>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                          <div>
+                                            <Label className="text-xs text-gray-500">Current AUM</Label>
+                                            <p className="font-medium">${Number(month.current_aum || 0).toLocaleString()}</p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-xs text-gray-500">Current Annuity</Label>
+                                            <p className="font-medium">${Number(month.current_annuity || 0).toLocaleString()}</p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-xs text-gray-500">New Clients</Label>
+                                            <p className="font-medium">{month.new_clients || 0}</p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-xs text-gray-500">Marketing Expenses</Label>
+                                            <p className="font-medium">${Number(month.marketing_expenses || 0).toLocaleString()}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            No financial data available for this user.
+                          </div>
+                        )}
                       </TabsContent>
                     </Tabs>
                   )}

@@ -91,6 +91,11 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Allow public access to landing page
+  if (req.nextUrl.pathname === '/landing') {
+    return res
+  }
+
   // Handle root page - redirect to login if not authenticated
   if (req.nextUrl.pathname === '/') {
     if (!session) {
@@ -104,6 +109,7 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/',
+    '/landing',
     '/business-dashboard/:path*',
     '/admin/:path*',
     '/login',

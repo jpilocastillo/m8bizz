@@ -137,10 +137,13 @@ export function LoginForm() {
             </Button>
           </form>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-2">
             <p className="text-m8bs-muted text-sm">
               Contact Your Administrator To Get Access
             </p>
+            <Link href="/landing" className="text-m8bs-blue hover:text-m8bs-blue-dark text-sm underline">
+              Learn More About M8 Business Suite
+            </Link>
           </div>
         </div>
       </div>

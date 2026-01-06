@@ -29,13 +29,67 @@ export async function getAdminUsers() {
       throw profilesError
     }
 
-    // Add basic stats for each user
-    const usersWithData = profiles.map((profile: any) => ({
-      profile,
-      events_count: 0, // Will be implemented later
-      total_revenue: 0, // Will be implemented later
-      total_clients: 0, // Will be implemented later
-    }))
+    // Calculate real stats for each user
+    const usersWithData = await Promise.all(
+      profiles.map(async (profile: any) => {
+        try {
+          // Get events count
+          const { count: eventsCount } = await adminClient
+            .from("marketing_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", profile.id)
+
+          // Get user's events first
+          const { data: userEvents } = await adminClient
+            .from("marketing_events")
+            .select("id")
+            .eq("user_id", profile.id)
+
+          const eventIds = userEvents?.map((e: any) => e.id) || []
+
+          // Get total clients from event attendance
+          let totalClients = 0
+          if (eventIds.length > 0) {
+            const { data: attendanceData } = await adminClient
+              .from("event_attendance")
+              .select("clients_from_event")
+              .in("event_id", eventIds)
+
+            totalClients = attendanceData?.reduce((sum: number, att: any) => {
+              return sum + (Number(att.clients_from_event) || 0)
+            }, 0) || 0
+          }
+
+          // Get total revenue from financial production
+          let totalRevenue = 0
+          if (eventIds.length > 0) {
+            const { data: financialData } = await adminClient
+              .from("financial_production")
+              .select("total")
+              .in("event_id", eventIds)
+
+            totalRevenue = financialData?.reduce((sum: number, fin: any) => {
+              return sum + (Number(fin.total) || 0)
+            }, 0) || 0
+          }
+
+          return {
+            profile,
+            events_count: eventsCount || 0,
+            total_revenue: totalRevenue,
+            total_clients: totalClients,
+          }
+        } catch (error) {
+          console.error(`Error calculating stats for user ${profile.id}:`, error)
+          return {
+            profile,
+            events_count: 0,
+            total_revenue: 0,
+            total_clients: 0,
+          }
+        }
+      })
+    )
 
     return { success: true, data: usersWithData }
   } catch (error) {
@@ -96,6 +150,26 @@ export async function getUserDetails(userId: string) {
       .eq("user_id", userId)
       .maybeSingle()
 
+    // Get all events with related data
+    const { data: events, error: eventsError } = await adminClient
+      .from("marketing_events")
+      .select(`
+        *,
+        event_attendance (*),
+        event_appointments (*),
+        marketing_expenses (*),
+        financial_production (*)
+      `)
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+
+    // Get monthly data entries
+    const { data: monthlyData, error: monthlyError } = await adminClient
+      .from("monthly_data_entries")
+      .select("*")
+      .eq("user_id", userId)
+      .order("month_year", { ascending: false })
+
     return {
       success: true,
       data: {
@@ -105,6 +179,8 @@ export async function getUserDetails(userId: string) {
         campaigns: campaigns || [],
         commissionRates,
         financialBook,
+        events: events || [],
+        monthlyData: monthlyData || [],
       }
     }
   } catch (error) {
