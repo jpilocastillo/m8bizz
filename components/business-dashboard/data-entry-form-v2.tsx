@@ -568,6 +568,62 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
     'trailIncomePercentage',
   ])
   
+  // Helper function to check if a field value is valid (not empty and not zero)
+  const isFieldValid = (value: any): boolean => {
+    if (!value || value.toString().trim().length === 0) {
+      return false
+    }
+    const numValue = Number.parseFloat(value.toString().replace(/[$,]/g, ''))
+    return !isNaN(numValue) && numValue !== 0
+  }
+
+  // Helper function to check if campaigns section is complete
+  const isCampaignsComplete = (campaigns: any[]): boolean => {
+    return campaigns && campaigns.length > 0 && campaigns.some((c: any) => {
+      if (!c.name || !c.budget || !c.events || !c.leads) return false
+      const budget = Number.parseFloat(c.budget.toString().replace(/[$,]/g, ''))
+      const events = Number.parseInt(c.events.toString())
+      const leads = Number.parseInt(c.leads.toString())
+      return !isNaN(budget) && budget !== 0 && !isNaN(events) && events !== 0 && !isNaN(leads) && leads !== 0
+    })
+  }
+
+  // Check if each section is complete
+  const sectionCompletion = useMemo(() => {
+    const [
+      businessGoal,
+      aumGoalPercentage,
+      annuityGoalPercentage,
+      lifeTargetGoalPercentage,
+      currentAUM,
+      currentAnnuity,
+      currentLifeProduction,
+      avgAnnuitySize,
+      avgAUMSize,
+      appointmentAttrition,
+      avgCloseRatio,
+      campaigns,
+      planningFeeRate,
+      annuityCommission,
+      aumCommission,
+      lifeCommission,
+      trailIncomePercentage,
+    ] = watchedProgressFields
+
+    return {
+      businessGoals: isFieldValid(businessGoal) && isFieldValid(aumGoalPercentage) && 
+                     isFieldValid(annuityGoalPercentage) && isFieldValid(lifeTargetGoalPercentage),
+      currentValues: isFieldValid(currentAUM) && isFieldValid(currentAnnuity) && 
+                     isFieldValid(currentLifeProduction),
+      clientMetrics: isFieldValid(avgAnnuitySize) && isFieldValid(avgAUMSize) && 
+                     isFieldValid(appointmentAttrition) && isFieldValid(avgCloseRatio),
+      campaigns: isCampaignsComplete(campaigns),
+      commissionRates: isFieldValid(planningFeeRate) && isFieldValid(annuityCommission) && 
+                       isFieldValid(aumCommission) && isFieldValid(lifeCommission) && 
+                       isFieldValid(trailIncomePercentage),
+    }
+  }, [watchedProgressFields])
+
   const formProgress = useMemo(() => {
     const [
       businessGoal,
@@ -1071,7 +1127,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
             <TabsContent value="goals">
               <Card className="bg-black border-m8bs-border shadow-lg">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl text-white flex items-center gap-2">
+                  <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.businessGoals ? 'text-white' : 'text-red-500'}`}>
                     Business Goals
                   </CardTitle>
                   <CardDescription className="text-m8bs-muted">Set Your Business Goals For The Year</CardDescription>
@@ -1167,7 +1223,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
             <TabsContent value="current">
               <Card className="bg-black border-m8bs-border shadow-lg">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl text-white flex items-center gap-2">
+                  <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.currentValues ? 'text-white' : 'text-red-500'}`}>
                     Current Advisor Book
                   </CardTitle>
                   <CardDescription className="text-m8bs-muted">Your Current Advisor Book Metrics</CardDescription>
@@ -1254,7 +1310,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
             <TabsContent value="clients">
               <Card className="bg-black border-m8bs-border shadow-lg">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl text-white flex items-center gap-2">
+                  <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.clientMetrics ? 'text-white' : 'text-red-500'}`}>
                     Client Metrics
                   </CardTitle>
                   <CardDescription className="text-m8bs-muted">Key Performance Indicators For Your Client Base</CardDescription>
@@ -1397,7 +1453,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
             <TabsContent value="campaigns">
               <Card className="bg-black border-m8bs-border shadow-lg">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl text-white flex items-center gap-2">
+                  <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.campaigns ? 'text-white' : 'text-red-500'}`}>
                     Annual Campaign Goals
                   </CardTitle>
                   <CardDescription className="text-m8bs-muted">Set Your Annual Campaign Goals For The Year (Monthly values are used to calculate annual totals)</CardDescription>
@@ -1745,7 +1801,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
               <div className="space-y-6">
                 <Card className="bg-black border-m8bs-border shadow-lg">
                   <CardHeader className="pb-4">
-                    <CardTitle className="text-xl text-white flex items-center gap-2">
+                    <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.commissionRates ? 'text-white' : 'text-red-500'}`}>
                       Commission Rates
                     </CardTitle>
                     <CardDescription className="text-m8bs-muted">Set Your Commission Percentages And Rates</CardDescription>
