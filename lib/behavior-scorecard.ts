@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 
-export type ScorecardRole = 'Marketing Position' | 'Client Coordinator' | 'Office Manager' | 'Business Owner'
+export type ScorecardRole = string
 
 export type MetricType = 'count' | 'currency' | 'percentage' | 'time' | 'rating_1_5' | 'rating_scale'
 
@@ -152,6 +152,21 @@ export function calculateGrade(percentageOfGoal: number): Grade {
 
 // Default metric names that should be scored separately
 export const DEFAULT_METRIC_NAMES = ['Effort', 'Attitude', 'Teamwork', 'Innovation', 'Results'] as const
+
+// Core behaviors that should be added to ALL roles (including custom roles)
+export const CORE_BEHAVIOR_METRICS: Array<{
+  metricName: string
+  metricType: MetricType
+  goalValue: number
+  isInverted: boolean
+  displayOrder: number
+}> = [
+  { metricName: 'Effort', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 999 },
+  { metricName: 'Attitude', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 1000 },
+  { metricName: 'Teamwork', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 1001 },
+  { metricName: 'Innovation', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 1002 },
+  { metricName: 'Results', metricType: 'rating_1_5', goalValue: 5, isInverted: false, displayOrder: 1003 },
+]
 
 // Check if a metric is a default metric
 export function isDefaultMetric(metricName: string): boolean {
@@ -348,37 +363,63 @@ export class BehaviorScorecardService {
         const roleName = role.role_name as ScorecardRole
         const defaultMetrics = DEFAULT_METRICS[roleName]
 
-        if (!defaultMetrics) {
-          // Skip if role name doesn't match a default role (custom role)
-          continue
-        }
-
         // Get existing metrics for this role
         const { data: existingMetrics } = await supabase
           .from('scorecard_metrics')
-          .select('id, metric_name')
+          .select('id, metric_name, display_order')
           .eq('role_id', role.id)
 
         const existingMetricNames = new Set(existingMetrics?.map(m => m.metric_name) || [])
+        
+        // Calculate max display order for core behaviors
+        const maxDisplayOrder = existingMetrics && existingMetrics.length > 0
+          ? Math.max(...existingMetrics.map(m => m.display_order || 0))
+          : 998
 
-        // Add any missing default metrics
-        for (const metric of defaultMetrics) {
-          if (!existingMetricNames.has(metric.metricName)) {
+        // Add default metrics for predefined roles
+        if (defaultMetrics) {
+          // Add any missing default metrics
+          for (const metric of defaultMetrics) {
+            if (!existingMetricNames.has(metric.metricName)) {
+              const { error: metricError } = await supabase
+                .from('scorecard_metrics')
+                .insert({
+                  role_id: role.id,
+                  metric_name: metric.metricName,
+                  metric_type: metric.metricType,
+                  goal_value: metric.goalValue,
+                  is_inverted: metric.isInverted,
+                  display_order: metric.displayOrder,
+                })
+
+              if (metricError) {
+                console.error(`Error adding metric ${metric.metricName} to role ${roleName}:`, metricError)
+              } else {
+                console.log(`Added missing metric ${metric.metricName} to role ${roleName}`)
+              }
+            }
+          }
+        }
+
+        // ALWAYS add core behaviors to ALL roles (including custom roles)
+        for (let i = 0; i < CORE_BEHAVIOR_METRICS.length; i++) {
+          const coreMetric = CORE_BEHAVIOR_METRICS[i]
+          if (!existingMetricNames.has(coreMetric.metricName)) {
             const { error: metricError } = await supabase
               .from('scorecard_metrics')
               .insert({
                 role_id: role.id,
-                metric_name: metric.metricName,
-                metric_type: metric.metricType,
-                goal_value: metric.goalValue,
-                is_inverted: metric.isInverted,
-                display_order: metric.displayOrder,
+                metric_name: coreMetric.metricName,
+                metric_type: coreMetric.metricType,
+                goal_value: coreMetric.goalValue,
+                is_inverted: coreMetric.isInverted,
+                display_order: maxDisplayOrder + 1 + i,
               })
 
             if (metricError) {
-              console.error(`Error adding metric ${metric.metricName} to role ${roleName}:`, metricError)
+              console.error(`Error adding core behavior ${coreMetric.metricName} to role ${roleName}:`, metricError)
             } else {
-              console.log(`Added missing metric ${metric.metricName} to role ${roleName}`)
+              console.log(`Added core behavior ${coreMetric.metricName} to role ${roleName}`)
             }
           }
         }
@@ -467,12 +508,101 @@ export class BehaviorScorecardService {
         return { success: false, error: 'Role was created but ID was not returned' }
       }
 
+      // Add core behaviors to the new role
+      // Since this is a new role, we can use the standard display order starting from 999
+      for (let i = 0; i < CORE_BEHAVIOR_METRICS.length; i++) {
+        const coreMetric = CORE_BEHAVIOR_METRICS[i]
+        const { error: metricError } = await supabase
+          .from('scorecard_metrics')
+          .insert({
+            role_id: newRole.id,
+            metric_name: coreMetric.metricName,
+            metric_type: coreMetric.metricType,
+            goal_value: coreMetric.goalValue,
+            is_inverted: coreMetric.isInverted,
+            display_order: 999 + i, // Start at 999 for core behaviors
+          })
+
+        if (metricError) {
+          console.error(`Error adding core behavior ${coreMetric.metricName} to new role:`, metricError)
+        }
+      }
+
       console.log('Role created successfully:', { roleId: newRole.id, roleName: trimmedRoleName })
       return { success: true, roleId: newRole.id }
     } catch (error) {
       console.error('Error creating role:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create role'
       return { success: false, error: errorMessage }
+    }
+  }
+
+  // Update a role name
+  async updateRole(roleId: string, newRoleName: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const supabase = this.getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      if (!newRoleName || !newRoleName.trim()) {
+        return { success: false, error: 'Role name is required' }
+      }
+
+      const trimmedRoleName = newRoleName.trim()
+
+      // Verify the role belongs to the user
+      const { data: role, error: roleError } = await supabase
+        .from('scorecard_roles')
+        .select('id, role_name')
+        .eq('id', roleId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (roleError || !role) {
+        return { success: false, error: 'Role not found or access denied' }
+      }
+
+      // Check if the new name is the same as the current name
+      if (role.role_name === trimmedRoleName) {
+        return { success: true } // No change needed
+      }
+
+      // Check if another role with the same name already exists
+      const { data: existing, error: checkError } = await supabase
+        .from('scorecard_roles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role_name', trimmedRoleName)
+        .neq('id', roleId)
+        .maybeSingle()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking for existing role:', checkError)
+        return { success: false, error: checkError.message || 'Failed to check for existing role' }
+      }
+
+      if (existing) {
+        return { success: false, error: 'A role with this name already exists' }
+      }
+
+      // Update the role name
+      const { error: updateError } = await supabase
+        .from('scorecard_roles')
+        .update({ role_name: trimmedRoleName })
+        .eq('id', roleId)
+
+      if (updateError) {
+        console.error('Error updating role:', updateError)
+        return { success: false, error: updateError.message || 'Failed to update role' }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating role:', error)
+      return { success: false, error: 'Failed to update role' }
     }
   }
 
@@ -604,6 +734,59 @@ export class BehaviorScorecardService {
     } catch (error) {
       console.error('Error fetching weekly data:', error)
       return { success: false, error: 'Failed to fetch weekly data' }
+    }
+  }
+
+  // Get weekly data for multiple metrics (batch query for performance)
+  async getBatchWeeklyData(
+    metricIds: string[],
+    year: number
+  ): Promise<{ success: boolean; data?: Map<string, WeeklyData[]>; error?: string }> {
+    try {
+      if (!metricIds || metricIds.length === 0) {
+        return { success: true, data: new Map() }
+      }
+
+      const supabase = this.getSupabase()
+      const { data, error } = await supabase
+        .from('scorecard_weekly_data')
+        .select('*')
+        .in('metric_id', metricIds)
+        .eq('year', year)
+        .order('metric_id, week_number', { ascending: true })
+
+      if (error) {
+        return { success: false, error: error.message }
+      }
+
+      // Group by metric_id
+      const dataMap = new Map<string, WeeklyData[]>()
+      data?.forEach(d => {
+        const weeklyData: WeeklyData = {
+          id: d.id,
+          metricId: d.metric_id,
+          weekNumber: d.week_number,
+          year: d.year,
+          actualValue: Number(d.actual_value),
+        }
+        
+        if (!dataMap.has(d.metric_id)) {
+          dataMap.set(d.metric_id, [])
+        }
+        dataMap.get(d.metric_id)!.push(weeklyData)
+      })
+
+      // Ensure all metricIds have an entry (even if empty)
+      metricIds.forEach(metricId => {
+        if (!dataMap.has(metricId)) {
+          dataMap.set(metricId, [])
+        }
+      })
+
+      return { success: true, data: dataMap }
+    } catch (error) {
+      console.error('Error fetching batch weekly data:', error)
+      return { success: false, error: 'Failed to fetch batch weekly data' }
     }
   }
 
@@ -1021,18 +1204,65 @@ export class BehaviorScorecardService {
         return { success: false, error: error.message }
       }
 
+      const metrics: ScorecardMetric[] = data?.map(m => ({
+        id: m.id,
+        roleId: m.role_id,
+        metricName: m.metric_name,
+        metricType: m.metric_type as MetricType,
+        goalValue: Number(m.goal_value),
+        isInverted: m.is_inverted,
+        displayOrder: m.display_order,
+        isVisible: m.is_visible ?? true,
+      })) || []
+
+      // Ensure core behaviors are present
+      const existingMetricNames = new Set(metrics.map(m => m.metricName))
+      const missingCoreBehaviors = CORE_BEHAVIOR_METRICS.filter(
+        core => !existingMetricNames.has(core.metricName)
+      )
+
+      if (missingCoreBehaviors.length > 0) {
+        // Add missing core behaviors
+        const maxDisplayOrder = metrics.length > 0
+          ? Math.max(...metrics.map(m => m.displayOrder || 0))
+          : 998
+
+        for (let i = 0; i < missingCoreBehaviors.length; i++) {
+          const coreMetric = missingCoreBehaviors[i]
+          const { data: newMetric, error: insertError } = await supabase
+            .from('scorecard_metrics')
+            .insert({
+              role_id: roleId,
+              metric_name: coreMetric.metricName,
+              metric_type: coreMetric.metricType,
+              goal_value: coreMetric.goalValue,
+              is_inverted: coreMetric.isInverted,
+              display_order: maxDisplayOrder + 1 + i,
+            })
+            .select('id')
+            .single()
+
+          if (!insertError && newMetric) {
+            metrics.push({
+              id: newMetric.id,
+              roleId: roleId,
+              metricName: coreMetric.metricName,
+              metricType: coreMetric.metricType,
+              goalValue: coreMetric.goalValue,
+              isInverted: coreMetric.isInverted,
+              displayOrder: maxDisplayOrder + 1 + i,
+              isVisible: true,
+            })
+          }
+        }
+
+        // Sort by display order
+        metrics.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+      }
+
       return {
         success: true,
-        data: data?.map(m => ({
-          id: m.id,
-          roleId: m.role_id,
-          metricName: m.metric_name,
-          metricType: m.metric_type as MetricType,
-          goalValue: Number(m.goal_value),
-          isInverted: m.is_inverted,
-          displayOrder: m.display_order,
-          isVisible: m.is_visible ?? true,
-        })) || [],
+        data: metrics,
       }
     } catch (error) {
       console.error('Error fetching role metrics:', error)
@@ -1089,10 +1319,114 @@ export class BehaviorScorecardService {
         }
       })
 
+      // Ensure core behaviors are present for all roles
+      // This is a safety check - they should already be in the database
+      // If missing, add them immediately to the database and include them in the result
+      for (const roleId of roleIds) {
+        const roleMetrics = metricsMap.get(roleId) || []
+        const existingMetricNames = new Set(roleMetrics.map(m => m.metricName))
+        
+        // Check if any core behaviors are missing
+        const missingCoreBehaviors = CORE_BEHAVIOR_METRICS.filter(
+          core => !existingMetricNames.has(core.metricName)
+        )
+        
+        if (missingCoreBehaviors.length > 0) {
+          // Find max display order to place core behaviors after existing metrics
+          const maxDisplayOrder = roleMetrics.length > 0
+            ? Math.max(...roleMetrics.map(m => m.displayOrder || 0))
+            : 998
+          
+          // Add missing core behaviors to database immediately (synchronously)
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            // Add missing core behaviors to database
+            for (let i = 0; i < missingCoreBehaviors.length; i++) {
+              const coreMetric = missingCoreBehaviors[i]
+              const { data: newMetric, error } = await supabase
+                .from('scorecard_metrics')
+                .insert({
+                  role_id: roleId,
+                  metric_name: coreMetric.metricName,
+                  metric_type: coreMetric.metricType,
+                  goal_value: coreMetric.goalValue,
+                  is_inverted: coreMetric.isInverted,
+                  display_order: maxDisplayOrder + 1 + i,
+                })
+                .select('id')
+                .single()
+
+              if (!error && newMetric) {
+                // Add to metrics map immediately
+                const newScorecardMetric: ScorecardMetric = {
+                  id: newMetric.id,
+                  roleId: roleId,
+                  metricName: coreMetric.metricName,
+                  metricType: coreMetric.metricType,
+                  goalValue: coreMetric.goalValue,
+                  isInverted: coreMetric.isInverted,
+                  displayOrder: maxDisplayOrder + 1 + i,
+                  isVisible: true,
+                }
+                roleMetrics.push(newScorecardMetric)
+              }
+            }
+            
+            // Sort by display order and update map
+            roleMetrics.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+            metricsMap.set(roleId, roleMetrics)
+          }
+        }
+      }
+
       return metricsMap
     } catch (error) {
       console.error('Error fetching all role metrics:', error)
       return metricsMap
+    }
+  }
+
+  // Helper method to ensure core behaviors exist for a specific role
+  private async ensureCoreBehaviorsForRole(roleId: string): Promise<void> {
+    try {
+      const supabase = this.getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) return
+
+      // Get existing metrics for this role
+      const { data: existingMetrics } = await supabase
+        .from('scorecard_metrics')
+        .select('metric_name, display_order')
+        .eq('role_id', roleId)
+
+      const existingMetricNames = new Set(existingMetrics?.map(m => m.metric_name) || [])
+      const maxDisplayOrder = existingMetrics && existingMetrics.length > 0
+        ? Math.max(...existingMetrics.map(m => m.display_order || 0))
+        : 998
+
+      // Add missing core behaviors
+      for (let i = 0; i < CORE_BEHAVIOR_METRICS.length; i++) {
+        const coreMetric = CORE_BEHAVIOR_METRICS[i]
+        if (!existingMetricNames.has(coreMetric.metricName)) {
+          const { error } = await supabase
+            .from('scorecard_metrics')
+            .insert({
+              role_id: roleId,
+              metric_name: coreMetric.metricName,
+              metric_type: coreMetric.metricType,
+              goal_value: coreMetric.goalValue,
+              is_inverted: coreMetric.isInverted,
+              display_order: maxDisplayOrder + 1 + i,
+            })
+
+          if (error) {
+            console.error(`Error adding core behavior ${coreMetric.metricName} to role:`, error)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring core behaviors for role:', error)
     }
   }
 
@@ -1114,7 +1448,7 @@ export class BehaviorScorecardService {
       const roleAverages: number[] = []
 
       // Get all roles
-      const { data: roles } = await this.supabase
+      const { data: roles } = await supabase
         .from('scorecard_roles')
         .select('id, role_name')
         .eq('user_id', user.id)

@@ -44,6 +44,9 @@ import { TopPerformers } from "@/components/dashboard/analytics/top-performers"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 interface HomepageData {
   events: any[]
@@ -55,7 +58,17 @@ interface HomepageData {
 
 export default function Overview() {
   const { user } = useAuth()
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+  const [selectedYear, setSelectedYear] = useState<number>(2026)
+  const [availableYears, setAvailableYears] = useState<number[]>([])
+  const [dataAvailability, setDataAvailability] = useState<{
+    hasEvents: boolean
+    hasBusinessData: boolean
+    hasScorecardData: boolean
+  }>({
+    hasEvents: false,
+    hasBusinessData: false,
+    hasScorecardData: false
+  })
   const { data: advisorData, loading: advisorLoading } = useAdvisorBasecamp(user, selectedYear)
   const [data, setData] = useState<HomepageData>({
     events: [],
@@ -66,10 +79,10 @@ export default function Overview() {
   })
   const [loading, setLoading] = useState(true)
 
-  // Load saved year from localStorage (same as business dashboard)
+  // Load saved year from localStorage
   useEffect(() => {
     if (user && typeof window !== 'undefined') {
-      const savedYear = localStorage.getItem(`advisor-basecamp-year-${user.id}`)
+      const savedYear = localStorage.getItem(`overview-year-${user.id}`)
       if (savedYear) {
         const yearNum = Number.parseInt(savedYear)
         if (!isNaN(yearNum)) {
@@ -94,6 +107,50 @@ export default function Overview() {
     )
   }
 
+  // Load available years from events
+  useEffect(() => {
+    async function loadAvailableYears() {
+      if (!user) return
+      
+      try {
+        const allEvents = await fetchAllEvents(user.id)
+        const years = new Set<number>()
+        const currentYear = 2026 // Always include current year
+        
+        // Always add current year (2026)
+        years.add(currentYear)
+        
+        allEvents.forEach(event => {
+          if (event.date) {
+            try {
+              const [year] = event.date.split('-').map(Number)
+              if (!isNaN(year)) {
+                years.add(year)
+              }
+            } catch {
+              // Skip invalid dates
+            }
+          }
+        })
+        
+        const sortedYears = Array.from(years).sort((a, b) => b - a)
+        setAvailableYears(sortedYears)
+        
+        // Set selected year to current year (2026) if not already set or if selected year is not in list
+        if (!sortedYears.includes(selectedYear)) {
+          setSelectedYear(currentYear)
+        }
+      } catch (error) {
+        console.error("Error loading available years:", error)
+        // Fallback to just current year
+        setAvailableYears([2026])
+        setSelectedYear(2026)
+      }
+    }
+    
+    loadAvailableYears()
+  }, [user])
+
   useEffect(() => {
     async function loadOverviewData() {
       if (!user) return
@@ -101,20 +158,67 @@ export default function Overview() {
       try {
         setLoading(true)
         
-        // Load events
-        const events = await fetchAllEvents(user.id)
+        // Load events filtered by selected year
+        const allEvents = await fetchAllEvents(user.id)
+        const yearEvents = allEvents.filter(event => {
+          if (!event.date) return false
+          try {
+            const [year] = event.date.split('-').map(Number)
+            return !isNaN(year) && year === selectedYear
+          } catch {
+            return false
+          }
+        })
         
-        // Calculate analytics summary from events
-        const analyticsSummary = calculateAnalyticsSummary(events)
+        // Calculate analytics summary from filtered events
+        const analyticsSummary = calculateAnalyticsSummary(yearEvents)
         
-        // Get top 3 events by ROI
-        const topEvents = getTopEvents(events, 3)
+        // Get top 3 events by ROI (already sorted by year)
+        const topEvents = getTopEvents(yearEvents, 3)
         
-        // Get latest monthly entry
+        // Get latest monthly entry for selected year
         const latestMonthlyEntry = getLatestMonthlyEntry(advisorData)
         
+        // Check data availability for other pages
+        const hasEvents = yearEvents.length > 0
+        const hasBusinessData = advisorData?.monthlyDataEntries?.some((entry: any) => 
+          entry.month_year?.startsWith(selectedYear.toString())
+        ) || false
+        
+        // Check scorecard data
+        let hasScorecardData = false
+        try {
+          const supabase = createClient()
+          const { data: { user: authUser } } = await supabase.auth.getUser()
+          if (authUser) {
+            const { data: scorecardRoles } = await supabase
+              .from('scorecard_roles')
+              .select('id')
+              .eq('user_id', authUser.id)
+              .limit(1)
+            
+            if (scorecardRoles && scorecardRoles.length > 0) {
+              const { data: summaries } = await supabase
+                .from('scorecard_monthly_summaries')
+                .select('id')
+                .eq('year', selectedYear)
+                .limit(1)
+              
+              hasScorecardData = (summaries && summaries.length > 0) || false
+            }
+          }
+        } catch (error) {
+          // Ignore errors checking scorecard
+        }
+        
+        setDataAvailability({
+          hasEvents,
+          hasBusinessData,
+          hasScorecardData
+        })
+        
         setData({
-          events,
+          events: yearEvents,
           advisorData,
           analyticsSummary,
           topEvents,
@@ -128,33 +232,14 @@ export default function Overview() {
     }
 
     loadOverviewData()
-  }, [user, advisorData])
+  }, [user, advisorData, selectedYear])
 
-  // Update data when advisorData changes
+  // Save selected year to localStorage
   useEffect(() => {
-    if (advisorData && user) {
-      // Recalculate analytics when advisorData changes
-      const currentUser = user
-      async function updateData() {
-        try {
-          const events = await fetchAllEvents(currentUser.id)
-          const analyticsSummary = calculateAnalyticsSummary(events)
-          const topEvents = getTopEvents(events, 3)
-          
-          setData(prev => ({
-            ...prev,
-            advisorData,
-            analyticsSummary,
-            topEvents,
-            latestMonthlyEntry: getLatestMonthlyEntry(advisorData)
-          }))
-        } catch (error) {
-          console.error("Error updating overview data:", error)
-        }
-      }
-      updateData()
+    if (user && typeof window !== 'undefined' && selectedYear) {
+      localStorage.setItem(`overview-year-${user.id}`, selectedYear.toString())
     }
-  }, [advisorData, user])
+  }, [selectedYear, user])
 
   const calculateAnalyticsSummary = (events: any[]) => {
     if (!events || events.length === 0) {
@@ -266,6 +351,17 @@ export default function Overview() {
           ? Number(((clients / attendees) * 100).toFixed(1))
           : 0
         
+        // Extract year from date for sorting
+        const getYear = (dateString: string | null | undefined): number => {
+          if (!dateString) return 0
+          try {
+            const [year] = dateString.split('-').map(Number)
+            return year || 0
+          } catch {
+            return 0
+          }
+        }
+        
         return {
           id: event.id,
           name: event.name,
@@ -280,9 +376,17 @@ export default function Overview() {
           clients,
           roi: { value: roi },
           conversionRate,
+          year: getYear(event.date),
         }
       })
-      .sort((a, b) => (b.roi?.value || 0) - (a.roi?.value || 0))
+      .sort((a, b) => {
+        // First sort by year (descending - newest years first)
+        if (b.year !== a.year) {
+          return b.year - a.year
+        }
+        // Then sort by ROI (descending - highest ROI first)
+        return (b.roi?.value || 0) - (a.roi?.value || 0)
+      })
       .slice(0, count)
   }
 
@@ -365,6 +469,30 @@ export default function Overview() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-m8bs-card border border-m8bs-border rounded-lg px-3 py-2">
+              <Calendar className="h-4 w-4 text-m8bs-muted" />
+              <Select 
+                value={selectedYear.toString()} 
+                onValueChange={(value) => {
+                  const year = Number.parseInt(value)
+                  setSelectedYear(year)
+                  if (user && typeof window !== 'undefined') {
+                    localStorage.setItem(`overview-year-${user.id}`, year.toString())
+                  }
+                }}
+              >
+                <SelectTrigger className="w-[120px] border-none bg-transparent text-white focus:ring-0 focus:ring-offset-0 h-auto p-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-m8bs-card border-m8bs-border">
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={year.toString()} className="text-white">
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Link href="/events/new">
               <Button className="bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark hover:from-m8bs-blue-dark hover:to-m8bs-blue text-white shadow-lg shadow-m8bs-blue/30">
                 <Plus className="h-4 w-4 mr-2" />
@@ -380,6 +508,34 @@ export default function Overview() {
           </div>
         </div>
       </motion.div>
+
+      {/* Data Availability Alert */}
+      {selectedYear !== 2026 && (
+        <motion.div variants={item}>
+          <Alert className="bg-yellow-500/10 border-yellow-500/50">
+            <AlertCircle className="h-4 w-4 text-yellow-400" />
+            <AlertTitle className="text-yellow-400">Viewing {selectedYear} Data</AlertTitle>
+            <AlertDescription className="text-yellow-300/80">
+              {!dataAvailability.hasEvents && !dataAvailability.hasBusinessData && !dataAvailability.hasScorecardData && (
+                <span>No data found for {selectedYear}. Consider switching to the current year or adding data for this year.</span>
+              )}
+              {(!dataAvailability.hasEvents || !dataAvailability.hasBusinessData || !dataAvailability.hasScorecardData) && (
+                <div className="mt-2 space-y-1">
+                  {!dataAvailability.hasEvents && (
+                    <div>• No events found for {selectedYear}. <Link href="/events/new" className="underline">Create an event</Link></div>
+                  )}
+                  {!dataAvailability.hasBusinessData && (
+                    <div>• No business dashboard data for {selectedYear}. <Link href="/business-dashboard" className="underline">Add monthly data</Link></div>
+                  )}
+                  {!dataAvailability.hasScorecardData && (
+                    <div>• No behavior scorecard data for {selectedYear}. <Link href="/tools/behavior-scorecard" className="underline">Set up scorecard</Link></div>
+                  )}
+                </div>
+              )}
+            </AlertDescription>
+          </Alert>
+        </motion.div>
+      )}
 
       {/* Key Achievements Banner */}
       {data.analyticsSummary && data.analyticsSummary.totalEvents > 0 && (

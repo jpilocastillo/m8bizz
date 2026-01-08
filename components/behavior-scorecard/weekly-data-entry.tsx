@@ -40,18 +40,23 @@ export function WeeklyDataEntry({ roleName, roleId, metrics, year, month, onSave
   }, [metrics, year])
 
   const loadWeeklyData = async () => {
-    for (const metric of metrics) {
-      const result = await behaviorScorecardService.getWeeklyData(metric.id, year)
-      if (result.success && result.data) {
-        setWeekData(prev => {
-          const updated = { ...prev }
-          updated[metric.id] = {}
-          result.data!.forEach(wd => {
-            updated[metric.id][wd.weekNumber] = wd.actualValue
+    if (metrics.length === 0) return
+    
+    // Batch load all weekly data at once for better performance
+    const metricIds = metrics.map(m => m.id)
+    const result = await behaviorScorecardService.getBatchWeeklyData(metricIds, year)
+    
+    if (result.success && result.data) {
+      setWeekData(prev => {
+        const updated = { ...prev }
+        result.data!.forEach((weeklyDataArray, metricId) => {
+          updated[metricId] = {}
+          weeklyDataArray.forEach(wd => {
+            updated[metricId][wd.weekNumber] = wd.actualValue
           })
-          return updated
         })
-      }
+        return updated
+      })
     }
   }
 

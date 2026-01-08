@@ -86,7 +86,6 @@ export default function BehaviorScorecardPage() {
         })
         .catch(() => null) // Don't block on profile fetch
 
-      console.log('[initializeAndLoad] Fetching roles from database...')
       const { data: rolesData, error: rolesError } = await supabase
         .from('scorecard_roles')
         .select('id, role_name')
@@ -104,8 +103,6 @@ export default function BehaviorScorecardPage() {
         return
       }
 
-      console.log('[initializeAndLoad] Fetched roles from database:', rolesData?.length || 0, rolesData?.map((r: { id: string; role_name: string }) => r.role_name) || [])
-
       // Wait for profile to finish (non-blocking, but ensure it completes)
       await profilePromise
 
@@ -113,7 +110,6 @@ export default function BehaviorScorecardPage() {
       // This prevents recreating roles that were intentionally deleted
       let finalRolesData = rolesData
       if (!skipInitialization && (!rolesData || rolesData.length === 0) && !isInitialized) {
-        console.log('[initializeAndLoad] No roles found, initializing default roles...')
         const initResult = await behaviorScorecardService.initializeScorecard()
         if (!initResult.success) {
           console.error('Initialize scorecard error:', initResult.error)
@@ -137,17 +133,13 @@ export default function BehaviorScorecardPage() {
           
           if (newRolesData) {
             finalRolesData = newRolesData
-            console.log('[initializeAndLoad] Reloaded roles after initialization:', finalRolesData.length)
           }
         }
       } else if (!skipInitialization && rolesData && rolesData.length > 0 && !isInitialized) {
         // Ensure all default metrics exist for existing roles (adds missing metrics)
-        // Only run once to avoid duplicate inserts
-        console.log('[initializeAndLoad] Ensuring default metrics exist for all roles...')
-        const ensureResult = await behaviorScorecardService.ensureDefaultMetrics()
-        if (ensureResult.success) {
-          setIsInitialized(true)
-        }
+        // Run synchronously to ensure core behaviors are added before loading metrics
+        setIsInitialized(true) // Set immediately to prevent re-running
+        await behaviorScorecardService.ensureDefaultMetrics()
       }
 
       if (finalRolesData && finalRolesData.length > 0) {
@@ -193,23 +185,16 @@ export default function BehaviorScorecardPage() {
           })
         })
 
-        console.log('[initializeAndLoad] Setting roles state with:', rolesWithMetrics.length, 'roles')
-        console.log('[initializeAndLoad] Role details:', rolesWithMetrics.map((r: { id: string; name: ScorecardRole; metrics: ScorecardMetric[] }) => ({ id: r.id, name: r.name, metricsCount: r.metrics.length })))
         setRoles(rolesWithMetrics)
-        console.log('[initializeAndLoad] Roles state updated')
         
         // Update selectedRole: if current selection doesn't exist, select first role or clear
         if (rolesWithMetrics.length > 0) {
           const currentRoleExists = rolesWithMetrics.some(r => r.name === selectedRole)
           if (!currentRoleExists || !selectedRole) {
-            console.log('[initializeAndLoad] Setting selected role to:', rolesWithMetrics[0].name)
             setSelectedRole(rolesWithMetrics[0].name)
-          } else {
-            console.log('[initializeAndLoad] Keeping current selected role:', selectedRole)
           }
         } else {
           // No roles left, clear selection
-          console.log('[initializeAndLoad] No roles left, clearing selection')
           setSelectedRole(null)
         }
 
@@ -222,7 +207,6 @@ export default function BehaviorScorecardPage() {
         }
       } else {
         // No roles data, clear everything
-        console.log('[initializeAndLoad] No roles data, clearing everything')
         setRoles([])
         setSelectedRole(null)
         // Still try to load scorecard (might have data from deleted roles)

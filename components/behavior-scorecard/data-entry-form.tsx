@@ -30,19 +30,22 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   const [hasChanges, setHasChanges] = useState(false)
 
   const loadMonthlyData = useCallback(async () => {
-    for (const metric of metrics) {
-      // Load monthly data from week 1 (where we store monthly values)
-      const result = await behaviorScorecardService.getWeeklyData(metric.id, year)
-      if (result.success && result.data) {
+    if (metrics.length === 0) return
+    
+    // Batch load all weekly data at once for better performance
+    const metricIds = metrics.map(m => m.id)
+    const result = await behaviorScorecardService.getBatchWeeklyData(metricIds, year)
+    
+    if (result.success && result.data) {
+      const newMonthlyData: Record<string, number> = {}
+      result.data.forEach((weeklyDataArray, metricId) => {
         // Find week 1 data for this month (we use week 1 to store monthly value)
-        const week1Data = result.data.find(wd => wd.weekNumber === 1)
+        const week1Data = weeklyDataArray.find(wd => wd.weekNumber === 1)
         if (week1Data) {
-          setMonthlyData(prev => ({
-            ...prev,
-            [metric.id]: week1Data.actualValue,
-          }))
+          newMonthlyData[metricId] = week1Data.actualValue
         }
-      }
+      })
+      setMonthlyData(prev => ({ ...prev, ...newMonthlyData }))
     }
   }, [metrics, year])
 

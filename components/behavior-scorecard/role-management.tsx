@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { behaviorScorecardService, type ScorecardRole } from '@/lib/behavior-scorecard'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Trash2, Users } from 'lucide-react'
+import { Plus, Trash2, Users, Edit2, Check, X } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,11 +30,10 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
   const [adding, setAdding] = useState(false)
   const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
+  const [editingRoleName, setEditingRoleName] = useState('')
+  const [updating, setUpdating] = useState(false)
 
-  // Log when roles prop changes
-  useEffect(() => {
-    console.log('[RoleManagement] Roles prop updated:', roles.length, roles.map(r => ({ id: r.id, name: r.name })))
-  }, [roles])
 
   const handleAddRole = async () => {
     if (!newRoleName.trim()) {
@@ -77,6 +76,58 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
     }
   }
 
+  const handleEditRole = (role: { id: string; name: ScorecardRole }) => {
+    setEditingRoleId(role.id)
+    setEditingRoleName(role.name)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingRoleId(null)
+    setEditingRoleName('')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingRoleId || !editingRoleName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a role name",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setUpdating(true)
+    try {
+      const result = await behaviorScorecardService.updateRole(editingRoleId, editingRoleName.trim())
+      if (result.success) {
+        toast({
+          title: "Role updated",
+          description: `Role name has been updated successfully.`,
+        })
+        setEditingRoleId(null)
+        setEditingRoleName('')
+        if (onRoleChange) {
+          onRoleChange()
+        }
+      } else {
+        toast({
+          title: "Error updating role",
+          description: result.error || "Failed to update role",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error updating role:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update role",
+        variant: "destructive",
+      })
+    } finally {
+      setUpdating(false)
+    }
+  }
+
   const handleDeleteRole = async () => {
     if (!deleteRoleId) return
 
@@ -93,13 +144,9 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
         return
       }
 
-      console.log('Attempting to delete role:', roleToDelete.name, 'with ID:', deleteRoleId)
       const result = await behaviorScorecardService.deleteRole(deleteRoleId)
       
-      console.log('Delete result:', result)
-      
       if (result.success) {
-        console.log('[handleDeleteRole] Deletion successful, refreshing UI...')
         toast({
           title: "Role deleted",
           description: `Role "${roleToDelete.name}" and all its metrics have been deleted.`,
@@ -109,13 +156,9 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
         // Remove the role from local state immediately to prevent UI issues
         // The refresh will happen next, but this prevents race conditions
         if (onRoleChange) {
-          console.log('[handleDeleteRole] Calling onRoleChange callback...')
           // Small delay to ensure database transaction is complete
           await new Promise(resolve => setTimeout(resolve, 100))
           await onRoleChange()
-          console.log('[handleDeleteRole] onRoleChange callback completed')
-        } else {
-          console.warn('[handleDeleteRole] No onRoleChange callback provided')
         }
       } else {
         console.error('Delete failed:', result.error)
@@ -146,7 +189,7 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
           Manage Roles
         </CardTitle>
         <CardDescription className="text-m8bs-muted">
-          Add or remove roles for your business behavior scorecard
+          Add, edit, or remove roles for your business behavior scorecard
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -191,23 +234,71 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
                   key={role.id}
                   className="flex items-center justify-between p-3 bg-m8bs-card-alt border border-m8bs-border rounded-lg"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     <Users className="h-4 w-4 text-m8bs-muted" />
-                    <div>
-                      <p className="font-semibold text-white">{role.name}</p>
-                      <p className="text-xs text-m8bs-muted">
-                        {role.metrics.length} {role.metrics.length === 1 ? 'metric' : 'metrics'}
-                      </p>
-                    </div>
+                    {editingRoleId === role.id ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Input
+                          value={editingRoleName}
+                          onChange={(e) => setEditingRoleName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !updating) {
+                              handleSaveEdit()
+                            } else if (e.key === 'Escape') {
+                              handleCancelEdit()
+                            }
+                          }}
+                          className="bg-m8bs-card border-m8bs-border text-white flex-1"
+                          autoFocus
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleSaveEdit}
+                          disabled={updating}
+                          className="text-green-400 hover:text-green-300 hover:bg-green-950/20"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCancelEdit}
+                          disabled={updating}
+                          className="text-m8bs-muted hover:text-white hover:bg-m8bs-card"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex-1">
+                        <p className="font-semibold text-white">{role.name}</p>
+                        <p className="text-xs text-m8bs-muted">
+                          {role.metrics.length} {role.metrics.length === 1 ? 'metric' : 'metrics'}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteRoleId(role.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-950/20"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {editingRoleId !== role.id && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditRole(role)}
+                        className="text-m8bs-blue hover:text-m8bs-blue-dark hover:bg-m8bs-blue/10"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteRoleId(role.id)}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-950/20"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))
             )}
