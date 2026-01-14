@@ -13,6 +13,7 @@
     "create-test-users": "ts-node scripts/create-test-users.ts",
     "update-test-users": "ts-node scripts/update-test-users.ts",
     "check-users": "ts-node scripts/check-users.ts",
+    "copy-user-data": "ts-node scripts/copy-user-data.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:multi-user": "ts-node scripts/test-multi-user.ts",

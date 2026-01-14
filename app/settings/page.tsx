@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { DashboardError } from "@/components/dashboard/dashboard-error"
 import { PasswordChangeForm } from "@/components/dashboard/settings/password-change-form"
+import { EmailChangeForm } from "@/components/dashboard/settings/email-change-form"
 
 export const dynamic = "force-dynamic"
 
@@ -30,6 +31,10 @@ export default async function SettingsPage() {
         </div>
 
         <div className="grid gap-6">
+          <div className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border border-m8bs-border rounded-lg p-6 shadow-md">
+            <h2 className="text-xl font-semibold text-white mb-4">Change Email Address</h2>
+            <EmailChangeForm />
+          </div>
           <div className="bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border border-m8bs-border rounded-lg p-6 shadow-md">
             <h2 className="text-xl font-semibold text-white mb-4">Change Password</h2>
             <PasswordChangeForm />

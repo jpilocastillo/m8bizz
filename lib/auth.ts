@@ -90,6 +90,38 @@ export async function registerUser(name: string, email: string, password: string
   }
 }
 
+export async function updateUserEmail(newEmail: string) {
+  try {
+    const supabase = await createClient()
+    
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      return { success: false, error: "User not authenticated" }
+    }
+
+    // Use admin client to update profiles table
+    const adminClient = await createAdminClient()
+    
+    // Update the profiles table email
+    const { error: profileError } = await adminClient
+      .from("profiles")
+      .update({ email: newEmail })
+      .eq("id", user.id)
+
+    if (profileError) {
+      console.error("Error updating profile email:", profileError)
+      return { success: false, error: profileError.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error in updateUserEmail:", error)
+    return { success: false, error: error instanceof Error ? error.message : "An unexpected error occurred." }
+  }
+}
+
 export async function loginUser(email: string, password: string) {
   try {
     const supabase = await createClient()
@@ -453,5 +485,6 @@ export async function checkUserManagerRole(userId: string) {
          c o n s o l e . e r r o r ( " E r r o r   i n   g e t A l l U s e r s F o r M a n a g e r : " ,   e r r o r ) 
          r e t u r n   {   s u c c e s s :   f a l s e ,   e r r o r :   " A n   u n e x p e c t e d   e r r o r   o c c u r r e d . "   } 
      } 
- }  
+ } 
+ 
  

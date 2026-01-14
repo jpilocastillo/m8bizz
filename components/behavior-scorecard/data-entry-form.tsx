@@ -38,16 +38,19 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
     
     if (result.success && result.data) {
       const newMonthlyData: Record<string, number> = {}
+      // Calculate the week number for the start of this month
+      // Month 1 (Jan) uses weeks 1-4, Month 2 (Feb) uses weeks 5-8, etc.
+      const monthStartWeek = (month - 1) * 4 + 1
       result.data.forEach((weeklyDataArray, metricId) => {
-        // Find week 1 data for this month (we use week 1 to store monthly value)
-        const week1Data = weeklyDataArray.find(wd => wd.weekNumber === 1)
-        if (week1Data) {
-          newMonthlyData[metricId] = week1Data.actualValue
+        // Find week 1 data for this month (we use week 1 of the month to store monthly value)
+        const monthWeek1Data = weeklyDataArray.find(wd => wd.weekNumber === monthStartWeek)
+        if (monthWeek1Data) {
+          newMonthlyData[metricId] = monthWeek1Data.actualValue
         }
       })
       setMonthlyData(prev => ({ ...prev, ...newMonthlyData }))
     }
-  }, [metrics, year])
+  }, [metrics, year, month])
 
   // Initialize monthly data structure and goals
   useEffect(() => {
@@ -94,26 +97,52 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
     const metric = metrics.find(m => m.id === metricId)
     if (!metric) return
 
-    const newGoal = goalData[metricId] ?? metric.goalValue
-    if (newGoal !== metric.goalValue) {
-      const result = await behaviorScorecardService.updateMetricGoal(metricId, newGoal)
-      if (result.success) {
-        toast({
-          title: "Goal updated",
-          description: `Goal for ${metric.metricName} has been updated.`,
-        })
+    try {
+      const newGoal = goalData[metricId] ?? metric.goalValue
+      if (newGoal !== metric.goalValue) {
+        const result = await behaviorScorecardService.updateMetricGoal(metricId, newGoal)
+        if (result.success) {
+          toast({
+            title: "Goal updated",
+            description: `Goal for ${metric.metricName} has been updated.`,
+          })
+        } else {
+          console.error(`Failed to update goal for ${metric.metricName}:`, result.error)
+        }
       }
-    }
 
-    const monthlyValue = monthlyData[metricId] || 0
-    await behaviorScorecardService.saveWeeklyData(metricId, 1, year, monthlyValue)
-    for (let week = 2; week <= 4; week++) {
-      await behaviorScorecardService.saveWeeklyData(metricId, week, year, 0)
-    }
+      const monthlyValue = monthlyData[metricId] || 0
+      // Calculate the week number for the start of this month
+      const monthStartWeek = (month - 1) * 4 + 1
+      const saveResult1 = await behaviorScorecardService.saveWeeklyData(metricId, monthStartWeek, year, monthlyValue)
+      if (!saveResult1.success) {
+        console.error(`Failed to save weekly data:`, saveResult1.error)
+      }
+      
+      for (let weekOffset = 1; weekOffset <= 3; weekOffset++) {
+        const saveResult = await behaviorScorecardService.saveWeeklyData(metricId, monthStartWeek + weekOffset, year, 0)
+        if (!saveResult.success) {
+          console.error(`Failed to save weekly data:`, saveResult.error)
+        }
+      }
 
-    setEditingMetric(null)
-    if (onSave) {
-      await onSave()
+      // Recalculate monthly summary after saving
+      const summaryResult = await behaviorScorecardService.calculateMonthlySummary(month, year)
+      if (!summaryResult.success) {
+        console.error('Failed to calculate monthly summary:', summaryResult.error)
+      }
+
+      setEditingMetric(null)
+      if (onSave) {
+        await onSave()
+      }
+    } catch (error) {
+      console.error('Error in handleSaveEdit:', error)
+      toast({
+        title: "Error",
+        description: "Failed to save changes. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -132,42 +161,93 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
 
   const handleSave = async () => {
     setSaving(true)
+    let saveSuccess = false
+    let summarySuccess = false
+    
     try {
       // Save goal values
+      let goalSaveErrors = 0
       for (const metric of metrics) {
         const newGoalValue = goalData[metric.id] ?? metric.goalValue
         if (newGoalValue !== metric.goalValue) {
-          await behaviorScorecardService.updateMetricGoal(metric.id, newGoalValue)
+          const result = await behaviorScorecardService.updateMetricGoal(metric.id, newGoalValue)
+          if (!result.success) {
+            console.error(`Failed to update goal for ${metric.metricName}:`, result.error)
+            goalSaveErrors++
+          }
         }
       }
 
-      // Save monthly data (store in week 1, set weeks 2-4 to 0)
+      // Save monthly data (store in month-specific week numbers)
+      // Month 1 (Jan) uses weeks 1-4, Month 2 (Feb) uses weeks 5-8, etc.
+      const monthStartWeek = (month - 1) * 4 + 1
+      console.log(`[DataEntryForm] Saving data for month ${month}, year ${year}, using week range ${monthStartWeek}-${monthStartWeek + 3}`)
+      
+      let dataSaveErrors = 0
       for (const metric of metrics) {
         const monthlyValue = monthlyData[metric.id] || 0
-        // Save monthly value in week 1
-        await behaviorScorecardService.saveWeeklyData(metric.id, 1, year, monthlyValue)
-        // Clear weeks 2-4 to indicate this is monthly data
-        for (let week = 2; week <= 4; week++) {
-          await behaviorScorecardService.saveWeeklyData(metric.id, week, year, 0)
+        console.log(`[DataEntryForm] Saving metric ${metric.metricName} (${metric.id}): value=${monthlyValue} to week ${monthStartWeek}`)
+        
+        // Save monthly value in week 1 of the month
+        const saveResult1 = await behaviorScorecardService.saveWeeklyData(metric.id, monthStartWeek, year, monthlyValue)
+        if (!saveResult1.success) {
+          console.error(`Failed to save weekly data for ${metric.metricName} week ${monthStartWeek}:`, saveResult1.error)
+          dataSaveErrors++
+        } else {
+          console.log(`[DataEntryForm] Successfully saved ${metric.metricName} week ${monthStartWeek} = ${monthlyValue}`)
+        }
+        
+        // Clear weeks 2-4 of the month to indicate this is monthly data
+        for (let weekOffset = 1; weekOffset <= 3; weekOffset++) {
+          const saveResult = await behaviorScorecardService.saveWeeklyData(metric.id, monthStartWeek + weekOffset, year, 0)
+          if (!saveResult.success) {
+            console.error(`Failed to save weekly data for ${metric.metricName} week ${monthStartWeek + weekOffset}:`, saveResult.error)
+            dataSaveErrors++
+          }
         }
       }
 
+      saveSuccess = goalSaveErrors === 0 && dataSaveErrors === 0
+
       // Calculate monthly summary
-      await behaviorScorecardService.calculateMonthlySummary(month, year)
+      const summaryResult = await behaviorScorecardService.calculateMonthlySummary(month, year)
+      summarySuccess = summaryResult.success
+      
+      if (!summaryResult.success) {
+        console.error('Failed to calculate monthly summary:', summaryResult.error)
+      }
 
       setHasChanges(false)
-      toast({
-        title: "Data saved successfully",
-        description: `Goals and monthly data for ${roleName} have been saved.`,
-      })
+      
+      // Show appropriate toast message
+      if (!saveSuccess) {
+        toast({
+          title: "Partial save",
+          description: `Some data may not have been saved. Please check the console for details.`,
+          variant: "destructive",
+        })
+      } else if (!summarySuccess) {
+        toast({
+          title: "Data saved with warning",
+          description: "Data was saved but summary calculation had issues. The scorecard may need a refresh.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Data saved successfully",
+          description: `Goals and monthly data for ${roleName} have been saved and calculated.`,
+        })
+      }
 
+      // Refresh scorecard after save
       if (onSave) {
-        onSave()
+        await onSave()
       }
     } catch (error) {
+      console.error('Error in handleSave:', error)
       toast({
         title: "Error saving data",
-        description: "Failed to save data. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save data. Please try again.",
         variant: "destructive",
       })
     } finally {

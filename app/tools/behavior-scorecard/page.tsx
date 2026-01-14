@@ -784,13 +784,10 @@ export default function BehaviorScorecardPage() {
               year={selectedYear}
               month={selectedMonth}
               onSave={async () => {
-                // Reload roles and metrics to get updated goal values (skip initialization)
-                await initializeAndLoad(true)
-                await loadScorecard()
-                toast({
-                  title: "Data saved",
-                  description: "Goals and monthly data have been saved and summary calculated.",
-                })
+                // Just refresh the scorecard data - no need to reload all roles/metrics
+                // The calculateMonthlySummary already updates the summaries
+                // Note: Toast notification is handled in the DataEntryForm component
+                await loadScorecard(true) // Show loading indicator
               }}
             />
           )}

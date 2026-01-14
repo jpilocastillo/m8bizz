@@ -178,6 +178,7 @@ export function calculatePercentageOfGoal(actual: number, goal: number, isInvert
   if (goal === 0) return 0
   if (isInverted) {
     // For inverted metrics (lower is better), calculate as goal/actual * 100
+    if (actual === 0) return 0 // Avoid division by zero
     return (goal / actual) * 100
   }
   // For normal metrics (higher is better), calculate as actual/goal * 100
@@ -815,47 +816,114 @@ export class BehaviorScorecardService {
 
       const roleAverages: number[] = []
 
+      // Get all metrics for all roles at once (batch query for performance)
+      const roleIds = roles.map(r => r.id)
+      const { data: allMetrics } = await supabase
+        .from('scorecard_metrics')
+        .select('*')
+        .in('role_id', roleIds)
+        .order('role_id, display_order', { ascending: true })
+
+      // Group metrics by role_id
+      const metricsByRole = new Map<string, typeof allMetrics>()
+      if (allMetrics) {
+        allMetrics.forEach(metric => {
+          if (!metricsByRole.has(metric.role_id)) {
+            metricsByRole.set(metric.role_id, [])
+          }
+          metricsByRole.get(metric.role_id)!.push(metric)
+        })
+      }
+
+      // Calculate month-specific week range
+      const monthStartWeek = (month - 1) * 4 + 1
+      const monthEndWeek = monthStartWeek + 3
+
+      // Batch fetch ALL weekly data for all metrics in one query (major performance improvement)
+      const metricIds = allMetrics?.map(m => m.id) || []
+      let allWeeklyData: any[] = []
+      if (metricIds.length > 0) {
+        const { data: weeklyData, error: weeklyDataError } = await supabase
+          .from('scorecard_weekly_data')
+          .select('metric_id, week_number, actual_value')
+          .in('metric_id', metricIds)
+          .gte('week_number', monthStartWeek)
+          .lte('week_number', monthEndWeek)
+          .eq('year', year)
+        
+        if (weeklyDataError) {
+          console.error('[calculateMonthlySummary] Error fetching weekly data:', weeklyDataError)
+        }
+        
+        allWeeklyData = weeklyData || []
+        console.log(`[calculateMonthlySummary] Fetched ${allWeeklyData.length} weekly data records for month ${month}, year ${year}, week range ${monthStartWeek}-${monthEndWeek}`)
+      }
+
+      // Create a map: metricId -> weekNumber -> actualValue for fast lookup
+      const weeklyDataMap = new Map<string, Map<number, number>>()
+      allWeeklyData.forEach(wd => {
+        if (!weeklyDataMap.has(wd.metric_id)) {
+          weeklyDataMap.set(wd.metric_id, new Map())
+        }
+        weeklyDataMap.get(wd.metric_id)!.set(wd.week_number, Number(wd.actual_value))
+      })
+
       // Calculate summary for each role
       for (const role of roles) {
-        // Get all metrics for this role
-        const { data: metrics } = await supabase
-          .from('scorecard_metrics')
-          .select('*')
-          .eq('role_id', role.id)
-          .order('display_order', { ascending: true })
-
-        if (!metrics || metrics.length === 0) continue
+        const metrics = metricsByRole.get(role.id) || []
+        if (metrics.length === 0) continue
 
         const metricScores: MetricScore[] = []
         const percentages: number[] = []
 
-        // Calculate scores for each metric
+        // Calculate scores for each metric using the batched weekly data
         for (const metric of metrics) {
-          // Get weekly data for this metric for the month
-          // For now, we'll sum all weeks in the month (assuming 4 weeks per month)
-          const weeksInMonth = 4
-          let totalActual = 0
-          let weekCount = 0
+          const metricWeeklyData = weeklyDataMap.get(metric.id) || new Map()
+          
+          const week1Value = metricWeeklyData.get(monthStartWeek) ?? 0
+          const week2Value = metricWeeklyData.get(monthStartWeek + 1) ?? 0
+          const week3Value = metricWeeklyData.get(monthStartWeek + 2) ?? 0
+          const week4Value = metricWeeklyData.get(monthStartWeek + 3) ?? 0
 
-          for (let week = 1; week <= weeksInMonth; week++) {
-            const { data: weeklyData } = await supabase
-              .from('scorecard_weekly_data')
-              .select('actual_value')
-              .eq('metric_id', metric.id)
-              .eq('week_number', week)
-              .eq('year', year)
-              .maybeSingle()
-
-            if (weeklyData) {
-              totalActual += Number(weeklyData.actual_value)
-              weekCount++
-            }
+          let actualValue = 0
+          
+          // Check if we have any data for this month (including 0 values that were explicitly saved)
+          const hasWeek1Data = metricWeeklyData.has(monthStartWeek)
+          const hasWeek2Data = metricWeeklyData.has(monthStartWeek + 1)
+          const hasWeek3Data = metricWeeklyData.has(monthStartWeek + 2)
+          const hasWeek4Data = metricWeeklyData.has(monthStartWeek + 3)
+          
+          // Debug logging
+          if (hasWeek1Data || hasWeek2Data || hasWeek3Data || hasWeek4Data) {
+            console.log(`[calculateMonthlySummary] Metric ${metric.metric_name} (${metric.id}):`, {
+              monthStartWeek,
+              week1Value,
+              week2Value,
+              week3Value,
+              week4Value,
+              hasWeek1Data,
+              hasWeek2Data,
+              hasWeek3Data,
+              hasWeek4Data
+            })
           }
-
-          // For some metrics, we want the average (like ratings), for others the sum (like counts)
-          const actualValue = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
-            ? (weekCount > 0 ? totalActual / weekCount : 0)
-            : totalActual
+          
+          // If week 1 has data (even if 0) and weeks 2-4 are explicitly 0 or don't exist, this is monthly data entry
+          if (hasWeek1Data && (!hasWeek2Data || week2Value === 0) && (!hasWeek3Data || week3Value === 0) && (!hasWeek4Data || week4Value === 0)) {
+            // Monthly data entry - use week 1 value directly
+            actualValue = week1Value
+            console.log(`[calculateMonthlySummary] Using monthly data for ${metric.metric_name}: ${actualValue}`)
+          } else if (hasWeek1Data || hasWeek2Data || hasWeek3Data || hasWeek4Data) {
+            // This is actual weekly data - sum all weeks
+            const totalActual = week1Value + week2Value + week3Value + week4Value
+            // For ratings, average; for others, use sum
+            actualValue = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
+              ? totalActual / 4
+              : totalActual
+            console.log(`[calculateMonthlySummary] Using weekly data for ${metric.metric_name}: ${actualValue} (sum: ${totalActual})`)
+          } else {
+            console.log(`[calculateMonthlySummary] No data found for ${metric.metric_name} (${metric.id}) for month ${month}`)
+          }
 
           const goalValue = Number(metric.goal_value)
           const percentageOfGoal = calculatePercentageOfGoal(actualValue, goalValue, metric.is_inverted)
@@ -875,21 +943,27 @@ export class BehaviorScorecardService {
         }
 
         // Calculate average grade percentage for role
-        const averageGradePercentage = percentages.length > 0
-          ? percentages.reduce((sum, p) => sum + p, 0) / percentages.length
+        // Filter out Infinity and NaN values
+        const validPercentages = percentages.filter(p => isFinite(p) && !isNaN(p))
+        const averageGradePercentage = validPercentages.length > 0
+          ? validPercentages.reduce((sum, p) => sum + p, 0) / validPercentages.length
           : 0
         const averageGrade = calculateGrade(averageGradePercentage)
 
         roleAverages.push(averageGradePercentage)
 
         // Save or update monthly summary
-        const { data: existingSummary } = await supabase
+        const { data: existingSummary, error: existingSummaryError } = await supabase
           .from('scorecard_monthly_summaries')
           .select('id')
           .eq('role_id', role.id)
           .eq('month', month)
           .eq('year', year)
           .maybeSingle()
+
+        if (existingSummaryError) {
+          console.error(`[calculateMonthlySummary] Error checking existing summary for role ${role.role_name}:`, existingSummaryError)
+        }
 
         const summaryData = {
           role_id: role.id,
@@ -899,36 +973,51 @@ export class BehaviorScorecardService {
           average_grade_letter: averageGrade,
         }
 
+        let savedSummaryId: string | null = null
+
         if (existingSummary) {
-          await supabase
+          const { data: updatedSummary, error: updateError } = await supabase
             .from('scorecard_monthly_summaries')
             .update(summaryData)
             .eq('id', existingSummary.id)
+            .select('id')
+            .single()
+
+          if (updateError) {
+            console.error(`[calculateMonthlySummary] Error updating summary for role ${role.role_name}:`, updateError)
+          } else {
+            savedSummaryId = updatedSummary?.id || null
+          }
         } else {
-          await supabase
+          const { data: insertedSummary, error: insertError } = await supabase
             .from('scorecard_monthly_summaries')
             .insert(summaryData)
+            .select('id')
+            .single()
+
+          if (insertError) {
+            console.error(`[calculateMonthlySummary] Error inserting summary for role ${role.role_name}:`, insertError)
+            console.error(`[calculateMonthlySummary] Summary data:`, summaryData)
+          } else {
+            savedSummaryId = insertedSummary?.id || null
+          }
         }
 
-        // Save metric scores
-        const { data: savedSummary } = await supabase
-          .from('scorecard_monthly_summaries')
-          .select('id')
-          .eq('role_id', role.id)
-          .eq('month', month)
-          .eq('year', year)
-          .single()
-
-        if (savedSummary) {
+        // Save metric scores if we have a summary ID
+        if (savedSummaryId) {
           // Delete existing metric scores
-          await supabase
+          const { error: deleteError } = await supabase
             .from('scorecard_metric_scores')
             .delete()
-            .eq('monthly_summary_id', savedSummary.id)
+            .eq('monthly_summary_id', savedSummaryId)
+
+          if (deleteError) {
+            console.error(`[calculateMonthlySummary] Error deleting metric scores:`, deleteError)
+          }
 
           // Insert new metric scores
           const scoresToInsert = metricScores.map(score => ({
-            monthly_summary_id: savedSummary.id,
+            monthly_summary_id: savedSummaryId,
             metric_id: score.metricId,
             actual_value: score.actualValue,
             goal_value: score.goalValue,
@@ -936,26 +1025,39 @@ export class BehaviorScorecardService {
             grade_letter: score.grade,
           }))
 
-          await supabase
+          const { error: insertScoresError } = await supabase
             .from('scorecard_metric_scores')
             .insert(scoresToInsert)
+
+          if (insertScoresError) {
+            console.error(`[calculateMonthlySummary] Error inserting metric scores for role ${role.role_name}:`, insertScoresError)
+            console.error(`[calculateMonthlySummary] Scores to insert:`, scoresToInsert)
+          }
+        } else {
+          console.warn(`[calculateMonthlySummary] Could not save summary for role ${role.role_name} - no summary ID available`)
         }
       }
 
       // Calculate company summary
-      const companyAverage = roleAverages.length > 0
-        ? roleAverages.reduce((sum, avg) => sum + avg, 0) / roleAverages.length
+      // Filter out Infinity and NaN values
+      const validRoleAverages = roleAverages.filter(avg => isFinite(avg) && !isNaN(avg))
+      const companyAverage = validRoleAverages.length > 0
+        ? validRoleAverages.reduce((sum, avg) => sum + avg, 0) / validRoleAverages.length
         : 0
       const companyGrade = calculateGrade(companyAverage)
 
       // Save or update company summary
-      const { data: existingCompanySummary } = await supabase
+      const { data: existingCompanySummary, error: existingCompanyError } = await supabase
         .from('company_summaries')
         .select('id')
         .eq('user_id', user.id)
         .eq('month', month)
         .eq('year', year)
         .maybeSingle()
+
+      if (existingCompanyError) {
+        console.error(`[calculateMonthlySummary] Error checking existing company summary:`, existingCompanyError)
+      }
 
       const companySummaryData = {
         user_id: user.id,
@@ -966,14 +1068,24 @@ export class BehaviorScorecardService {
       }
 
       if (existingCompanySummary) {
-        await supabase
+        const { error: updateCompanyError } = await supabase
           .from('company_summaries')
           .update(companySummaryData)
           .eq('id', existingCompanySummary.id)
+
+        if (updateCompanyError) {
+          console.error(`[calculateMonthlySummary] Error updating company summary:`, updateCompanyError)
+          console.error(`[calculateMonthlySummary] Company summary data:`, companySummaryData)
+        }
       } else {
-        await supabase
+        const { error: insertCompanyError } = await supabase
           .from('company_summaries')
           .insert(companySummaryData)
+
+        if (insertCompanyError) {
+          console.error(`[calculateMonthlySummary] Error inserting company summary:`, insertCompanyError)
+          console.error(`[calculateMonthlySummary] Company summary data:`, companySummaryData)
+        }
       }
 
       return { success: true }
@@ -1074,11 +1186,11 @@ export class BehaviorScorecardService {
       const summaryIds = allSummaries?.map(s => s.id) || []
       let allMetricScores: any[] = []
       if (summaryIds.length > 0) {
-        const { data: metricScoresData } = await supabase
+        const { data: metricScoresData, error: metricScoresError } = await supabase
           .from('scorecard_metric_scores')
           .select(`
             *,
-            scorecard_metrics (
+            scorecard_metrics!inner (
               metric_name,
               metric_type,
               display_order
@@ -1086,7 +1198,38 @@ export class BehaviorScorecardService {
           `)
           .in('monthly_summary_id', summaryIds)
           .order('scorecard_metrics(display_order)', { ascending: true })
+        
+        if (metricScoresError) {
+          console.error('Error fetching metric scores:', metricScoresError)
+        }
         allMetricScores = metricScoresData || []
+      }
+
+      // Fetch weekly data for on-the-fly calculation when summaries don't exist
+      const monthStartWeek = (month - 1) * 4 + 1
+      const monthEndWeek = monthStartWeek + 3
+      const metricIds = allMetrics?.map(m => m.id) || []
+      let weeklyDataMap = new Map<string, Map<number, number>>()
+      
+      if (metricIds.length > 0) {
+        const { data: weeklyData, error: weeklyDataError } = await supabase
+          .from('scorecard_weekly_data')
+          .select('metric_id, week_number, actual_value')
+          .in('metric_id', metricIds)
+          .gte('week_number', monthStartWeek)
+          .lte('week_number', monthEndWeek)
+          .eq('year', year)
+        
+        if (weeklyDataError) {
+          console.error('Error fetching weekly data in getMonthlyScorecard:', weeklyDataError)
+        } else if (weeklyData) {
+          weeklyData.forEach(wd => {
+            if (!weeklyDataMap.has(wd.metric_id)) {
+              weeklyDataMap.set(wd.metric_id, new Map())
+            }
+            weeklyDataMap.get(wd.metric_id)!.set(wd.week_number, Number(wd.actual_value))
+          })
+        }
       }
 
       // Group metric scores by summary_id
@@ -1104,25 +1247,66 @@ export class BehaviorScorecardService {
         const summary = summaryMap.get(role.id)
 
         if (!summary) {
-          // No summary exists, create empty scorecard from metrics
+          // No summary exists - calculate on-the-fly from weekly data
           const metrics = metricsByRole.get(role.id) || []
-          const metricScores: MetricScore[] = metrics.map(metric => ({
-            metricId: metric.id,
-            metricName: metric.metric_name,
-            metricType: metric.metric_type as MetricType,
-            goalValue: Number(metric.goal_value),
-            actualValue: 0,
-            percentageOfGoal: 0,
-            grade: 'F',
-          }))
+          const monthStartWeek = (month - 1) * 4 + 1
+          const metricScores: MetricScore[] = []
+          const percentages: number[] = []
+
+          for (const metric of metrics) {
+            // Get weekly data for this metric
+            const metricWeeklyData = weeklyDataMap.get(metric.id) || new Map()
+            
+            const week1Value = metricWeeklyData.get(monthStartWeek) ?? 0
+            const week2Value = metricWeeklyData.get(monthStartWeek + 1) ?? 0
+            const week3Value = metricWeeklyData.get(monthStartWeek + 2) ?? 0
+            const week4Value = metricWeeklyData.get(monthStartWeek + 3) ?? 0
+
+            let actualValue = 0
+            
+            const hasWeek1Data = metricWeeklyData.has(monthStartWeek)
+            const hasWeek2Data = metricWeeklyData.has(monthStartWeek + 1)
+            const hasWeek3Data = metricWeeklyData.has(monthStartWeek + 2)
+            const hasWeek4Data = metricWeeklyData.has(monthStartWeek + 3)
+            
+            if (hasWeek1Data && (!hasWeek2Data || week2Value === 0) && (!hasWeek3Data || week3Value === 0) && (!hasWeek4Data || week4Value === 0)) {
+              actualValue = week1Value
+            } else if (hasWeek1Data || hasWeek2Data || hasWeek3Data || hasWeek4Data) {
+              const totalActual = week1Value + week2Value + week3Value + week4Value
+              actualValue = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
+                ? totalActual / 4
+                : totalActual
+            }
+
+            const goalValue = Number(metric.goal_value)
+            const percentageOfGoal = calculatePercentageOfGoal(actualValue, goalValue, metric.is_inverted)
+            const grade = calculateGrade(percentageOfGoal)
+
+            metricScores.push({
+              metricId: metric.id,
+              metricName: metric.metric_name,
+              metricType: metric.metric_type as MetricType,
+              goalValue,
+              actualValue,
+              percentageOfGoal,
+              grade,
+            })
+
+            percentages.push(percentageOfGoal)
+          }
+
+          const averageGradePercentage = percentages.length > 0
+            ? percentages.reduce((sum, p) => sum + p, 0) / percentages.length
+            : 0
+          const averageGrade = calculateGrade(averageGradePercentage)
 
           const separatedScores = calculateSeparateScores(metricScores)
           roleScorecards.push({
             roleId: role.id,
             roleName: role.role_name as ScorecardRole,
             metrics: metricScores,
-            averageGradePercentage: 0,
-            averageGrade: 'F',
+            averageGradePercentage,
+            averageGrade,
             ...separatedScores,
           })
           continue
@@ -1130,20 +1314,51 @@ export class BehaviorScorecardService {
 
         // Get metric scores from batched data
         const metricScores = metricScoresBySummary.get(summary.id) || []
-        const scores: MetricScore[] = metricScores.map(ms => ({
-          metricId: ms.metric_id,
-          metricName: (ms.scorecard_metrics as any)?.metric_name || '',
-          metricType: (ms.scorecard_metrics as any)?.metric_type as MetricType || 'count',
-          goalValue: Number(ms.goal_value),
-          actualValue: Number(ms.actual_value),
-          percentageOfGoal: Number(ms.percentage_of_goal),
-          grade: ms.grade_letter as Grade,
-        }))
+        const scores: MetricScore[] = []
+        
+        for (const ms of metricScores) {
+          // Get metric name from join or fallback to looking it up from metricsByRole
+          let metricName = ''
+          let metricType: MetricType = 'count'
+          
+          // Try to get from join first
+          if (ms.scorecard_metrics) {
+            const metricData = Array.isArray(ms.scorecard_metrics) ? ms.scorecard_metrics[0] : ms.scorecard_metrics
+            metricName = metricData?.metric_name || ''
+            metricType = (metricData?.metric_type as MetricType) || 'count'
+          }
+          
+          // Fallback: look up from metricsByRole if join didn't work
+          if (!metricName) {
+            const roleMetrics = metricsByRole.get(role.id) || []
+            const metric = roleMetrics.find(m => m.id === ms.metric_id)
+            if (metric) {
+              metricName = metric.metric_name
+              metricType = metric.metric_type
+            }
+          }
+          
+          scores.push({
+            metricId: ms.metric_id,
+            metricName: metricName || 'Unknown Metric',
+            metricType: metricType,
+            goalValue: Number(ms.goal_value),
+            actualValue: Number(ms.actual_value),
+            percentageOfGoal: Number(ms.percentage_of_goal),
+            grade: ms.grade_letter as Grade,
+          })
+        }
 
         const avgPercentage = Number(summary.average_grade_percentage) || 0
         roleAverages.push(avgPercentage)
 
         const separatedScores = calculateSeparateScores(scores)
+        
+        // Debug: Log to help identify issues with core behaviors
+        if (separatedScores.defaultMetrics.length === 0 && scores.length > 0) {
+          console.warn(`No core behaviors found for role ${role.role_name}. Metric names:`, scores.map(s => s.metricName))
+        }
+        
         roleScorecards.push({
           roleId: role.id,
           roleName: role.role_name as ScorecardRole,

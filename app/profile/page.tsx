@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
-import { Camera, Save, User as UserIcon } from "lucide-react"
+import { Camera, Save, User as UserIcon, Mail } from "lucide-react"
+import { updateUserEmail } from "@/lib/auth"
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
@@ -20,6 +21,9 @@ export default function ProfilePage() {
     avatar_url: "",
     email: ""
   })
+  const [newEmail, setNewEmail] = useState("")
+  const [passwordForEmailChange, setPasswordForEmailChange] = useState("")
+  const [isChangingEmail, setIsChangingEmail] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string>("")
   const { toast } = useToast()
@@ -187,6 +191,76 @@ export default function ProfilePage() {
     }
   }
 
+  const handleEmailChange = async () => {
+    if (!user) return
+
+    if (!newEmail || !passwordForEmailChange) {
+      toast({
+        title: "Error",
+        description: "Please Enter Both New Email And Current Password",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (newEmail.toLowerCase() === profile.email.toLowerCase()) {
+      toast({
+        title: "Error",
+        description: "New Email Must Be Different From Current Email",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsChangingEmail(true)
+    try {
+      // Verify current password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password: passwordForEmailChange,
+      })
+
+      if (signInError) {
+        throw new Error("Current Password Is Incorrect")
+      }
+
+      // Update email - Supabase will send a confirmation email
+      const { error: updateError } = await supabase.auth.updateUser({
+        email: newEmail,
+      })
+
+      if (updateError) {
+        throw updateError
+      }
+
+      // Update the profiles table in the database
+      const profileUpdateResult = await updateUserEmail(newEmail)
+      if (!profileUpdateResult.success) {
+        console.error("Failed to update profile email:", profileUpdateResult.error)
+        // Don't throw error here - auth email was updated, just log the profile update failure
+        // The user can still confirm their email and we can sync later if needed
+      }
+
+      toast({
+        title: "Email Update Initiated",
+        description: "A Confirmation Email Has Been Sent To Your New Email Address. Please Check Your Inbox And Click The Confirmation Link To Complete The Change.",
+      })
+
+      // Reset email change fields
+      setNewEmail("")
+      setPasswordForEmailChange("")
+    } catch (error) {
+      console.error("Error changing email:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed To Update Email. Please Try Again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsChangingEmail(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -257,18 +331,69 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Email Field (Read-only) */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">Email Address</Label>
-              <Input
-                id="email"
-                value={profile.email}
-                disabled
-                className="bg-muted border-m8bs-border text-muted-foreground"
-              />
-              <p className="text-xs text-muted-foreground">
-                Email Address Cannot Be Changed
-              </p>
+            {/* Email Field */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-white">Current Email Address</Label>
+                <Input
+                  id="email"
+                  value={profile.email}
+                  disabled
+                  className="bg-muted border-m8bs-border text-muted-foreground"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="newEmail" className="text-white">New Email Address</Label>
+                <Input
+                  id="newEmail"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="Enter New Email Address"
+                  className="bg-m8bs-card-alt border-m8bs-border text-white placeholder:text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground">
+                  A Confirmation Email Will Be Sent To This Address
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="passwordForEmailChange" className="text-white">Current Password</Label>
+                <Input
+                  id="passwordForEmailChange"
+                  type="password"
+                  value={passwordForEmailChange}
+                  onChange={(e) => setPasswordForEmailChange(e.target.value)}
+                  placeholder="Enter Your Current Password"
+                  className="bg-m8bs-card-alt border-m8bs-border text-white placeholder:text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Required To Verify Your Identity
+                </p>
+              </div>
+
+              {newEmail && (
+                <Button
+                  type="button"
+                  onClick={handleEmailChange}
+                  disabled={isChangingEmail || !passwordForEmailChange}
+                  variant="outline"
+                  className="w-full border-m8bs-border hover:bg-m8bs-card-alt"
+                >
+                  {isChangingEmail ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Updating Email...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Update Email Address
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* Save Button */}
