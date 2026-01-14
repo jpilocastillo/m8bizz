@@ -33,3 +33,4 @@ CREATE POLICY "Users can insert their own company summaries" ON public.company_s
 CREATE POLICY "Users can update their own company summaries" ON public.company_summaries
   FOR UPDATE USING (auth.uid() = user_id);
 
+

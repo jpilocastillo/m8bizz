@@ -30,3 +30,4 @@ CREATE POLICY "Users can delete their own scorecard roles" ON public.scorecard_r
 
 
 
+
