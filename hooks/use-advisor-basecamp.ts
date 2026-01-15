@@ -235,41 +235,53 @@ export function useAdvisorBasecamp(user: User | null, year: number = new Date().
   }
 
   const addMonthlyDataEntry = async (entry: Omit<MonthlyDataEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return false
+    if (!user) {
+      setError('User not authenticated')
+      return false
+    }
 
     try {
-      const newEntry = await advisorBasecampService.createMonthlyDataEntry(user, entry)
-      if (newEntry) {
+      const result = await advisorBasecampService.createMonthlyDataEntry(user, entry)
+      if (result.data) {
         setData(prev => ({ 
           ...prev, 
-          monthlyDataEntries: [newEntry, ...(prev.monthlyDataEntries || [])] 
+          monthlyDataEntries: [result.data!, ...(prev.monthlyDataEntries || [])] 
         }))
         return true
+      } else {
+        setError(result.error || 'Failed to add monthly data entry')
+        return false
       }
-      return false
     } catch (err) {
       console.error('Error adding monthly data entry:', err)
-      setError('Failed to add monthly data entry')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add monthly data entry'
+      setError(errorMessage)
       return false
     }
   }
 
   const updateMonthlyDataEntry = async (id: string, entry: Partial<MonthlyDataEntry>) => {
-    if (!user) return false
+    if (!user) {
+      setError('User not authenticated')
+      return false
+    }
 
     try {
-      const updated = await advisorBasecampService.updateMonthlyDataEntry(user, id, entry)
-      if (updated) {
+      const result = await advisorBasecampService.updateMonthlyDataEntry(user, id, entry)
+      if (result.data) {
         setData(prev => ({ 
           ...prev, 
-          monthlyDataEntries: prev.monthlyDataEntries?.map(e => e.id === id ? updated : e) || []
+          monthlyDataEntries: prev.monthlyDataEntries?.map(e => e.id === id ? result.data! : e) || []
         }))
         return true
+      } else {
+        setError(result.error || 'Failed to update monthly data entry')
+        return false
       }
-      return false
     } catch (err) {
       console.error('Error updating monthly data entry:', err)
-      setError('Failed to update monthly data entry')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update monthly data entry'
+      setError(errorMessage)
       return false
     }
   }

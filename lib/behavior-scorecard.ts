@@ -647,7 +647,7 @@ export class BehaviorScorecardService {
     }
   }
 
-  // Save weekly data for a metric
+  // Save weekly data for a metric (optimized with upsert)
   async saveWeeklyData(
     metricId: string,
     weekNumber: number,
@@ -662,45 +662,83 @@ export class BehaviorScorecardService {
         return { success: false, error: 'User not authenticated' }
       }
 
-      // Check if data already exists
-      const { data: existing } = await supabase
+      // Use upsert for better performance (single query instead of check-then-insert/update)
+      const { error } = await supabase
         .from('scorecard_weekly_data')
-        .select('id')
-        .eq('metric_id', metricId)
-        .eq('week_number', weekNumber)
-        .eq('year', year)
-        .maybeSingle()
+        .upsert({
+          metric_id: metricId,
+          week_number: weekNumber,
+          year,
+          actual_value: actualValue,
+        }, {
+          onConflict: 'metric_id,week_number,year'
+        })
 
-      if (existing) {
-        // Update existing
-        const { error } = await supabase
-          .from('scorecard_weekly_data')
-          .update({ actual_value: actualValue })
-          .eq('id', existing.id)
-
-        if (error) {
-          return { success: false, error: error.message }
-        }
-      } else {
-        // Insert new
-        const { error } = await supabase
-          .from('scorecard_weekly_data')
-          .insert({
-            metric_id: metricId,
-            week_number: weekNumber,
-            year,
-            actual_value: actualValue,
-          })
-
-        if (error) {
-          return { success: false, error: error.message }
-        }
+      if (error) {
+        return { success: false, error: error.message }
       }
 
       return { success: true }
     } catch (error) {
       console.error('Error saving weekly data:', error)
       return { success: false, error: 'Failed to save weekly data' }
+    }
+  }
+
+  // Batch save weekly data for multiple metrics (much faster than individual saves)
+  async batchSaveWeeklyData(
+    weeklyDataEntries: Array<{
+      metricId: string
+      weekNumber: number
+      year: number
+      actualValue: number
+    }>
+  ): Promise<{ success: boolean; errors?: Array<{ entry: typeof weeklyDataEntries[0]; error: string }> }> {
+    try {
+      if (!weeklyDataEntries || weeklyDataEntries.length === 0) {
+        return { success: true }
+      }
+
+      const supabase = this.getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, errors: weeklyDataEntries.map(entry => ({ entry, error: 'User not authenticated' })) }
+      }
+
+      // Prepare data for upsert
+      const dataToUpsert = weeklyDataEntries.map(entry => ({
+        metric_id: entry.metricId,
+        week_number: entry.weekNumber,
+        year: entry.year,
+        actual_value: entry.actualValue,
+      }))
+
+      // Batch upsert all entries at once
+      const { error } = await supabase
+        .from('scorecard_weekly_data')
+        .upsert(dataToUpsert, {
+          onConflict: 'metric_id,week_number,year'
+        })
+
+      if (error) {
+        // If batch fails, return error for all entries
+        return { 
+          success: false, 
+          errors: weeklyDataEntries.map(entry => ({ entry, error: error.message })) 
+        }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error batch saving weekly data:', error)
+      return { 
+        success: false, 
+        errors: weeklyDataEntries.map(entry => ({ 
+          entry, 
+          error: error instanceof Error ? error.message : 'Failed to save weekly data' 
+        })) 
+      }
     }
   }
 
@@ -1979,6 +2017,114 @@ export class BehaviorScorecardService {
     } catch (error) {
       console.error('Error updating metric goal:', error)
       return { success: false, error: 'Failed to update metric goal' }
+    }
+  }
+
+  // Batch update metric goals (much faster than individual updates)
+  async batchUpdateMetricGoals(
+    goalUpdates: Array<{ metricId: string; goalValue: number }>
+  ): Promise<{ success: boolean; errors?: Array<{ metricId: string; error: string }> }> {
+    try {
+      if (!goalUpdates || goalUpdates.length === 0) {
+        return { success: true }
+      }
+
+      const supabase = this.getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        return { 
+          success: false, 
+          errors: goalUpdates.map(update => ({ metricId: update.metricId, error: 'User not authenticated' })) 
+        }
+      }
+
+      // Validate all goal values
+      const invalidUpdates = goalUpdates.filter(update => isNaN(update.goalValue) || update.goalValue < 0)
+      if (invalidUpdates.length > 0) {
+        return {
+          success: false,
+          errors: invalidUpdates.map(update => ({ 
+            metricId: update.metricId, 
+            error: 'Goal value must be a positive number' 
+          }))
+        }
+      }
+
+      // Get all metric IDs to verify they belong to user's roles
+      const metricIds = goalUpdates.map(update => update.metricId)
+      const { data: metrics, error: metricsError } = await supabase
+        .from('scorecard_metrics')
+        .select('id, role_id')
+        .in('id', metricIds)
+
+      if (metricsError || !metrics) {
+        return {
+          success: false,
+          errors: goalUpdates.map(update => ({ metricId: update.metricId, error: 'Failed to verify metrics' }))
+        }
+      }
+
+      // Get all role IDs for the user
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('scorecard_roles')
+        .select('id')
+        .eq('user_id', user.id)
+
+      if (rolesError || !userRoles) {
+        return {
+          success: false,
+          errors: goalUpdates.map(update => ({ metricId: update.metricId, error: 'Failed to verify access' }))
+        }
+      }
+
+      const userRoleIds = new Set(userRoles.map((r: { id: string }) => r.id))
+      const validMetrics = metrics.filter((m: { role_id: string }) => userRoleIds.has(m.role_id))
+      const validMetricIds = new Set(validMetrics.map((m: { id: string }) => m.id))
+
+      // Filter out invalid updates
+      const invalidAccess = goalUpdates.filter(update => !validMetricIds.has(update.metricId))
+      if (invalidAccess.length > 0) {
+        return {
+          success: false,
+          errors: invalidAccess.map(update => ({ 
+            metricId: update.metricId, 
+            error: 'Access denied. You can only update metrics for your own roles.' 
+          }))
+        }
+      }
+
+      // Batch update all goals using a single query per metric (Supabase doesn't support bulk update with different values)
+      // But we can use Promise.all to run them in parallel
+      const updatePromises = goalUpdates.map(async (update) => {
+        const { error } = await supabase
+          .from('scorecard_metrics')
+          .update({ goal_value: update.goalValue })
+          .eq('id', update.metricId)
+
+        if (error) {
+          return { metricId: update.metricId, error: error.message || 'Failed to update goal' }
+        }
+        return null
+      })
+
+      const results = await Promise.all(updatePromises)
+      const errors = results.filter((r): r is { metricId: string; error: string } => r !== null)
+
+      if (errors.length > 0) {
+        return { success: false, errors }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error batch updating metric goals:', error)
+      return {
+        success: false,
+        errors: goalUpdates.map(update => ({ 
+          metricId: update.metricId, 
+          error: error instanceof Error ? error.message : 'Failed to update metric goal' 
+        }))
+      }
     }
   }
 

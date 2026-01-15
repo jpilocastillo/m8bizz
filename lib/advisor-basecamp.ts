@@ -642,37 +642,149 @@ class AdvisorBasecampService {
     return data || []
   }
 
-  async createMonthlyDataEntry(user: User, entry: Omit<MonthlyDataEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<MonthlyDataEntry | null> {
+  async createMonthlyDataEntry(user: User, entry: Omit<MonthlyDataEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<{ data: MonthlyDataEntry | null; error: string | null }> {
     try {
+      // Validate required fields
+      if (!entry.month_year) {
+        return { data: null, error: 'Month and year are required' }
+      }
+      if (entry.new_clients === undefined || entry.new_clients < 0 || isNaN(entry.new_clients)) {
+        return { data: null, error: 'Invalid new_clients value: must be a valid non-negative number' }
+      }
+      if (entry.new_appointments === undefined || entry.new_appointments < 0 || isNaN(entry.new_appointments)) {
+        return { data: null, error: 'Invalid new_appointments value: must be a valid non-negative number' }
+      }
+      if (entry.new_leads === undefined || entry.new_leads < 0 || isNaN(entry.new_leads)) {
+        return { data: null, error: 'Invalid new_leads value: must be a valid non-negative number' }
+      }
+      if (entry.annuity_sales === undefined || entry.annuity_sales < 0 || isNaN(entry.annuity_sales)) {
+        return { data: null, error: 'Invalid annuity_sales value: must be a valid non-negative number' }
+      }
+      if (entry.aum_sales === undefined || entry.aum_sales < 0 || isNaN(entry.aum_sales)) {
+        return { data: null, error: 'Invalid aum_sales value: must be a valid non-negative number' }
+      }
+      if (entry.life_sales === undefined || entry.life_sales < 0 || isNaN(entry.life_sales)) {
+        return { data: null, error: 'Invalid life_sales value: must be a valid non-negative number' }
+      }
+      if (entry.marketing_expenses === undefined || entry.marketing_expenses < 0 || isNaN(entry.marketing_expenses)) {
+        return { data: null, error: 'Invalid marketing_expenses value: must be a valid non-negative number' }
+      }
+
+      // Check if an entry already exists for this month_year
+      const { data: existingEntry } = await this.supabase
+        .from('monthly_data_entries')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('month_year', entry.month_year)
+        .single()
+
+      // If entry exists, update it instead of creating a new one
+      if (existingEntry) {
+        console.log('Entry already exists for this month, updating instead:', existingEntry.id)
+        return await this.updateMonthlyDataEntry(user, existingEntry.id, entry)
+      }
+
       const { data, error } = await this.supabase
         .from('monthly_data_entries')
         .insert({
           user_id: user.id,
-          ...entry
+          month_year: entry.month_year,
+          new_clients: entry.new_clients,
+          new_appointments: entry.new_appointments,
+          new_leads: entry.new_leads,
+          annuity_sales: entry.annuity_sales,
+          aum_sales: entry.aum_sales,
+          life_sales: entry.life_sales,
+          marketing_expenses: entry.marketing_expenses,
+          notes: entry.notes || null
         })
         .select()
         .single()
 
       if (error) {
         console.error('Error creating monthly data entry:', error)
-        return null
+        // Handle 409 conflict specifically
+        if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
+          // Try to find and update the existing entry
+          const { data: existing } = await this.supabase
+            .from('monthly_data_entries')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('month_year', entry.month_year)
+            .single()
+          
+          if (existing) {
+            console.log('Found existing entry, updating instead:', existing.id)
+            return await this.updateMonthlyDataEntry(user, existing.id, entry)
+          }
+          return { data: null, error: `An entry for ${entry.month_year} already exists. Please edit the existing entry instead.` }
+        }
+        return { data: null, error: error.message || 'Failed to create monthly data entry' }
       }
 
-      return data
+      return { data, error: null }
     } catch (error) {
       console.error('Error in createMonthlyDataEntry:', error)
-      return null
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      return { data: null, error: errorMessage }
     }
   }
 
-  async updateMonthlyDataEntry(user: User, id: string, entry: Partial<MonthlyDataEntry>): Promise<MonthlyDataEntry | null> {
+  async updateMonthlyDataEntry(user: User, id: string, entry: Partial<MonthlyDataEntry>): Promise<{ data: MonthlyDataEntry | null; error: string | null }> {
     try {
+      // Build update object with only provided fields
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      }
+
+      if (entry.month_year !== undefined) updateData.month_year = entry.month_year
+      if (entry.new_clients !== undefined) {
+        if (entry.new_clients < 0) {
+          return { data: null, error: 'Invalid new_clients value: must be non-negative' }
+        }
+        updateData.new_clients = entry.new_clients
+      }
+      if (entry.new_appointments !== undefined) {
+        if (entry.new_appointments < 0) {
+          return { data: null, error: 'Invalid new_appointments value: must be non-negative' }
+        }
+        updateData.new_appointments = entry.new_appointments
+      }
+      if (entry.new_leads !== undefined) {
+        if (entry.new_leads < 0) {
+          return { data: null, error: 'Invalid new_leads value: must be non-negative' }
+        }
+        updateData.new_leads = entry.new_leads
+      }
+      if (entry.annuity_sales !== undefined) {
+        if (entry.annuity_sales < 0) {
+          return { data: null, error: 'Invalid annuity_sales value: must be non-negative' }
+        }
+        updateData.annuity_sales = entry.annuity_sales
+      }
+      if (entry.aum_sales !== undefined) {
+        if (entry.aum_sales < 0) {
+          return { data: null, error: 'Invalid aum_sales value: must be non-negative' }
+        }
+        updateData.aum_sales = entry.aum_sales
+      }
+      if (entry.life_sales !== undefined) {
+        if (entry.life_sales < 0) {
+          return { data: null, error: 'Invalid life_sales value: must be non-negative' }
+        }
+        updateData.life_sales = entry.life_sales
+      }
+      if (entry.marketing_expenses !== undefined) {
+        if (entry.marketing_expenses < 0) {
+          return { data: null, error: 'Invalid marketing_expenses value: must be non-negative' }
+        }
+        updateData.marketing_expenses = entry.marketing_expenses
+      }
+      if (entry.notes !== undefined) updateData.notes = entry.notes || null
+
       const { data, error } = await this.supabase
         .from('monthly_data_entries')
-        .update({
-          ...entry,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
@@ -680,13 +792,14 @@ class AdvisorBasecampService {
 
       if (error) {
         console.error('Error updating monthly data entry:', error)
-        return null
+        return { data: null, error: error.message || 'Failed to update monthly data entry' }
       }
 
-      return data
+      return { data, error: null }
     } catch (error) {
       console.error('Error in updateMonthlyDataEntry:', error)
-      return null
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      return { data: null, error: errorMessage }
     }
   }
 

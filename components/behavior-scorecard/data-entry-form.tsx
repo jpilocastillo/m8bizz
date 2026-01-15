@@ -1,16 +1,17 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { behaviorScorecardService, type ScorecardRole, type ScorecardMetric, calculatePercentageOfGoal, calculateGrade, isDefaultMetric } from '@/lib/behavior-scorecard'
-import { Save, Calendar, Calculator, Plus, Trash2, Edit2, Check, X, AlertCircle } from 'lucide-react'
+import { Save, Calendar, Calculator, Plus, Trash2, Edit2, Check, X, AlertCircle, Loader2, CheckCircle2, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 
 interface DataEntryFormProps {
   roleName: ScorecardRole
@@ -28,6 +29,60 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   const [saving, setSaving] = useState(false)
   const [editingMetric, setEditingMetric] = useState<string | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
+  const [saveProgress, setSaveProgress] = useState(0)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
+  const [saveStats, setSaveStats] = useState({ goalsUpdated: 0, metricsSaved: 0, errors: 0 })
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null)
+  const handleSaveRef = useRef<() => Promise<void>>()
+  const isInitializingRef = useRef(true)
+  const localStorageSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Generate localStorage key based on role, year, and month
+  const getStorageKey = useCallback(() => {
+    return `behavior-scorecard-${roleId}-${year}-${month}`
+  }, [roleId, year, month])
+
+  // Load data from localStorage
+  const loadFromLocalStorage = useCallback(() => {
+    try {
+      const storageKey = getStorageKey()
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        return {
+          monthlyData: parsed.monthlyData || {},
+          goalData: parsed.goalData || {},
+        }
+      }
+    } catch (error) {
+      console.error('Error loading from localStorage:', error)
+    }
+    return null
+  }, [getStorageKey])
+
+  // Save data to localStorage
+  const saveToLocalStorage = useCallback((monthly: Record<string, number>, goals: Record<string, number>) => {
+    try {
+      const storageKey = getStorageKey()
+      localStorage.setItem(storageKey, JSON.stringify({
+        monthlyData: monthly,
+        goalData: goals,
+        timestamp: new Date().toISOString(),
+      }))
+    } catch (error) {
+      console.error('Error saving to localStorage:', error)
+    }
+  }, [getStorageKey])
+
+  // Clear localStorage for this form
+  const clearLocalStorage = useCallback(() => {
+    try {
+      const storageKey = getStorageKey()
+      localStorage.removeItem(storageKey)
+    } catch (error) {
+      console.error('Error clearing localStorage:', error)
+    }
+  }, [getStorageKey])
 
   const loadMonthlyData = useCallback(async () => {
     if (metrics.length === 0) return
@@ -48,24 +103,82 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
           newMonthlyData[metricId] = monthWeek1Data.actualValue
         }
       })
+      
+      // Merge with localStorage data (localStorage takes precedence for unsaved changes)
+      const stored = loadFromLocalStorage()
+      if (stored) {
+        Object.keys(stored.monthlyData).forEach(metricId => {
+          if (stored.monthlyData[metricId] !== undefined) {
+            newMonthlyData[metricId] = stored.monthlyData[metricId]
+          }
+        })
+      }
+      
       setMonthlyData(prev => ({ ...prev, ...newMonthlyData }))
     }
-  }, [metrics, year, month])
+  }, [metrics, year, month, loadFromLocalStorage])
 
   // Initialize monthly data structure and goals
   useEffect(() => {
+    // Reset initialization flag when parameters change
+    isInitializingRef.current = true
+    
     const initialData: Record<string, number> = {}
     const initialGoals: Record<string, number> = {}
     metrics.forEach(metric => {
       initialData[metric.id] = 0
       initialGoals[metric.id] = metric.goalValue
     })
+    
+    // Try to load from localStorage first
+    const stored = loadFromLocalStorage()
+    if (stored) {
+      // Merge stored data with initial structure
+      Object.keys(stored.monthlyData).forEach(metricId => {
+        if (metrics.find(m => m.id === metricId)) {
+          initialData[metricId] = stored.monthlyData[metricId]
+        }
+      })
+      Object.keys(stored.goalData).forEach(metricId => {
+        if (metrics.find(m => m.id === metricId)) {
+          initialGoals[metricId] = stored.goalData[metricId]
+        }
+      })
+      // Restore hasChanges state if there's stored data
+      setHasChanges(true)
+    }
+    
     setMonthlyData(initialData)
     setGoalData(initialGoals)
 
-    // Load existing data
-    loadMonthlyData()
-  }, [metrics, year, month, loadMonthlyData])
+    // Load existing data from database (will merge with localStorage data)
+    loadMonthlyData().then(() => {
+      // Mark initialization as complete after data is loaded
+      isInitializingRef.current = false
+    })
+  }, [metrics, year, month, loadMonthlyData, loadFromLocalStorage])
+
+  // Sync data to localStorage whenever it changes (debounced to reduce overhead)
+  useEffect(() => {
+    if (!isInitializingRef.current && hasChanges && Object.keys(monthlyData).length > 0 && Object.keys(goalData).length > 0) {
+      // Clear existing timeout
+      if (localStorageSaveTimeoutRef.current) {
+        clearTimeout(localStorageSaveTimeoutRef.current)
+      }
+      
+      // Debounce localStorage saves (wait 300ms after last change)
+      localStorageSaveTimeoutRef.current = setTimeout(() => {
+        saveToLocalStorage(monthlyData, goalData)
+      }, 300)
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (localStorageSaveTimeoutRef.current) {
+        clearTimeout(localStorageSaveTimeoutRef.current)
+      }
+    }
+  }, [monthlyData, goalData, hasChanges, saveToLocalStorage])
 
   const handleMonthlyValueChange = (metricId: string, value: string) => {
     const numValue = parseFloat(value) || 0
@@ -99,40 +212,50 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
 
     try {
       const newGoal = goalData[metricId] ?? metric.goalValue
-      if (newGoal !== metric.goalValue) {
-        const result = await behaviorScorecardService.updateMetricGoal(metricId, newGoal)
-        if (result.success) {
-          toast({
-            title: "Goal updated",
-            description: `Goal for ${metric.metricName} has been updated.`,
-          })
-        } else {
-          console.error(`Failed to update goal for ${metric.metricName}:`, result.error)
-        }
-      }
-
       const monthlyValue = monthlyData[metricId] || 0
-      // Calculate the week number for the start of this month
       const monthStartWeek = (month - 1) * 4 + 1
-      const saveResult1 = await behaviorScorecardService.saveWeeklyData(metricId, monthStartWeek, year, monthlyValue)
-      if (!saveResult1.success) {
-        console.error(`Failed to save weekly data:`, saveResult1.error)
-      }
+
+      // Prepare batch operations
+      const weeklyDataEntries = [
+        { metricId, weekNumber: monthStartWeek, year, actualValue: monthlyValue },
+        { metricId, weekNumber: monthStartWeek + 1, year, actualValue: 0 },
+        { metricId, weekNumber: monthStartWeek + 2, year, actualValue: 0 },
+        { metricId, weekNumber: monthStartWeek + 3, year, actualValue: 0 },
+      ]
+
+      // Execute goal update and weekly data save in parallel
+      const goalUpdatePromise = newGoal !== metric.goalValue 
+        ? behaviorScorecardService.updateMetricGoal(metricId, newGoal)
+        : Promise.resolve({ success: true as const })
       
-      for (let weekOffset = 1; weekOffset <= 3; weekOffset++) {
-        const saveResult = await behaviorScorecardService.saveWeeklyData(metricId, monthStartWeek + weekOffset, year, 0)
-        if (!saveResult.success) {
-          console.error(`Failed to save weekly data:`, saveResult.error)
-        }
+      const [goalResult, weeklyDataResult] = await Promise.all([
+        goalUpdatePromise,
+        behaviorScorecardService.batchSaveWeeklyData(weeklyDataEntries)
+      ])
+
+      if (goalResult.success && newGoal !== metric.goalValue) {
+        toast({
+          title: "Goal updated",
+          description: `Goal for ${metric.metricName} has been updated.`,
+        })
       }
 
-      // Recalculate monthly summary after saving
-      const summaryResult = await behaviorScorecardService.calculateMonthlySummary(month, year)
-      if (!summaryResult.success) {
-        console.error('Failed to calculate monthly summary:', summaryResult.error)
+      if (!weeklyDataResult.success && weeklyDataResult.errors) {
+        console.error(`Failed to save weekly data:`, weeklyDataResult.errors)
+        toast({
+          title: "Warning",
+          description: "Some data may not have been saved correctly.",
+          variant: "destructive",
+        })
       }
+
+      // Recalculate monthly summary after saving (don't wait for it)
+      behaviorScorecardService.calculateMonthlySummary(month, year).catch(error => {
+        console.error('Failed to calculate monthly summary:', error)
+      })
 
       setEditingMetric(null)
+      
       if (onSave) {
         await onSave()
       }
@@ -159,84 +282,143 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
     return calculateGrade(percentage)
   }
 
-  const handleSave = async () => {
+  const handleSave = async (retryCount = 0) => {
+    if (saving) return
+    
     setSaving(true)
-    let saveSuccess = false
-    let summarySuccess = false
+    setSaveStatus('saving')
+    setSaveProgress(0)
+    setSaveStats({ goalsUpdated: 0, metricsSaved: 0, errors: 0 })
     
     try {
-      // Save goal values
-      let goalSaveErrors = 0
-      for (const metric of metrics) {
-        const newGoalValue = goalData[metric.id] ?? metric.goalValue
-        if (newGoalValue !== metric.goalValue) {
-          const result = await behaviorScorecardService.updateMetricGoal(metric.id, newGoalValue)
-          if (!result.success) {
-            console.error(`Failed to update goal for ${metric.metricName}:`, result.error)
-            goalSaveErrors++
-          }
-        }
-      }
-
-      // Save monthly data (store in month-specific week numbers)
-      // Month 1 (Jan) uses weeks 1-4, Month 2 (Feb) uses weeks 5-8, etc.
+      // Prepare batch operations
       const monthStartWeek = (month - 1) * 4 + 1
-      console.log(`[DataEntryForm] Saving data for month ${month}, year ${year}, using week range ${monthStartWeek}-${monthStartWeek + 3}`)
       
-      let dataSaveErrors = 0
-      for (const metric of metrics) {
+      // Prepare goal updates
+      const goalsToUpdate = metrics
+        .filter(m => {
+          const newGoalValue = goalData[m.id] ?? m.goalValue
+          return newGoalValue !== m.goalValue
+        })
+        .map(m => ({
+          metricId: m.id,
+          goalValue: goalData[m.id] ?? m.goalValue
+        }))
+
+      // Prepare all weekly data entries
+      const weeklyDataEntries: Array<{
+        metricId: string
+        weekNumber: number
+        year: number
+        actualValue: number
+      }> = []
+      
+      metrics.forEach(metric => {
         const monthlyValue = monthlyData[metric.id] || 0
-        console.log(`[DataEntryForm] Saving metric ${metric.metricName} (${metric.id}): value=${monthlyValue} to week ${monthStartWeek}`)
-        
-        // Save monthly value in week 1 of the month
-        const saveResult1 = await behaviorScorecardService.saveWeeklyData(metric.id, monthStartWeek, year, monthlyValue)
-        if (!saveResult1.success) {
-          console.error(`Failed to save weekly data for ${metric.metricName} week ${monthStartWeek}:`, saveResult1.error)
-          dataSaveErrors++
-        } else {
-          console.log(`[DataEntryForm] Successfully saved ${metric.metricName} week ${monthStartWeek} = ${monthlyValue}`)
-        }
-        
-        // Clear weeks 2-4 of the month to indicate this is monthly data
-        for (let weekOffset = 1; weekOffset <= 3; weekOffset++) {
-          const saveResult = await behaviorScorecardService.saveWeeklyData(metric.id, monthStartWeek + weekOffset, year, 0)
-          if (!saveResult.success) {
-            console.error(`Failed to save weekly data for ${metric.metricName} week ${monthStartWeek + weekOffset}:`, saveResult.error)
-            dataSaveErrors++
-          }
+        // Save monthly value in week 1, clear weeks 2-4
+        weeklyDataEntries.push(
+          { metricId: metric.id, weekNumber: monthStartWeek, year, actualValue: monthlyValue },
+          { metricId: metric.id, weekNumber: monthStartWeek + 1, year, actualValue: 0 },
+          { metricId: metric.id, weekNumber: monthStartWeek + 2, year, actualValue: 0 },
+          { metricId: metric.id, weekNumber: monthStartWeek + 3, year, actualValue: 0 }
+        )
+      })
+
+      setSaveProgress(20)
+
+      // Execute batch operations in parallel for maximum speed
+      const [goalResult, weeklyDataResult] = await Promise.all([
+        goalsToUpdate.length > 0
+          ? behaviorScorecardService.batchUpdateMetricGoals(goalsToUpdate)
+          : Promise.resolve({ success: true }),
+        behaviorScorecardService.batchSaveWeeklyData(weeklyDataEntries)
+      ])
+
+      setSaveProgress(80)
+
+      // Process results
+      let goalSaveErrors = 0
+      let goalsUpdated = goalsToUpdate.length
+      if (!goalResult.success && 'errors' in goalResult) {
+        const errors = goalResult.errors
+        if (errors && Array.isArray(errors)) {
+          goalSaveErrors = errors.length
+          goalsUpdated = goalsToUpdate.length - goalSaveErrors
+          errors.forEach((err: { metricId: string; error: string }) => {
+            console.error(`Failed to update goal for metric ${err.metricId}:`, err.error)
+          })
         }
       }
 
-      saveSuccess = goalSaveErrors === 0 && dataSaveErrors === 0
+      let dataSaveErrors = 0
+      let metricsSaved = metrics.length
+      if (!weeklyDataResult.success && 'errors' in weeklyDataResult) {
+        const errors = weeklyDataResult.errors
+        if (errors && Array.isArray(errors)) {
+          // Count unique metrics that failed
+          const failedMetrics = new Set(errors.map((e: { entry: { metricId: string }; error: string }) => e.entry.metricId))
+          dataSaveErrors = failedMetrics.size
+          metricsSaved = metrics.length - dataSaveErrors
+          errors.forEach((err: { entry: { metricId: string; weekNumber: number }; error: string }) => {
+            console.error(`Failed to save weekly data for metric ${err.entry.metricId} week ${err.entry.weekNumber}:`, err.error)
+          })
+        }
+      }
 
-      // Calculate monthly summary
-      const summaryResult = await behaviorScorecardService.calculateMonthlySummary(month, year)
-      summarySuccess = summaryResult.success
+      const saveSuccess = goalSaveErrors === 0 && dataSaveErrors === 0
+      setSaveStats({ goalsUpdated, metricsSaved, errors: goalSaveErrors + dataSaveErrors })
+
+      // Calculate monthly summary (don't block on this)
+      setSaveProgress(90)
+      const summaryPromise = behaviorScorecardService.calculateMonthlySummary(month, year)
+      const summaryResult = await summaryPromise
+      setSaveProgress(100)
+      
+      const summarySuccess = summaryResult.success
       
       if (!summaryResult.success) {
         console.error('Failed to calculate monthly summary:', summaryResult.error)
       }
 
       setHasChanges(false)
+      setLastSaveTime(new Date())
       
-      // Show appropriate toast message
+      // Clear localStorage after successful save
+      if (saveSuccess && summarySuccess) {
+        clearLocalStorage()
+      }
+      
+      // Show appropriate toast message with statistics
       if (!saveSuccess) {
+        setSaveStatus('error')
         toast({
-          title: "Partial save",
-          description: `Some data may not have been saved. Please check the console for details.`,
+          title: "Partial save completed",
+          description: `Saved ${metricsSaved} metrics and ${goalsUpdated} goals. ${goalSaveErrors + dataSaveErrors} errors occurred.`,
           variant: "destructive",
+          duration: 5000,
         })
       } else if (!summarySuccess) {
+        setSaveStatus('error')
         toast({
           title: "Data saved with warning",
-          description: "Data was saved but summary calculation had issues. The scorecard may need a refresh.",
+          description: `All data saved successfully, but summary calculation had issues. The scorecard may need a refresh.`,
           variant: "destructive",
+          duration: 5000,
         })
       } else {
+        setSaveStatus('success')
         toast({
           title: "Data saved successfully",
-          description: `Goals and monthly data for ${roleName} have been saved and calculated.`,
+          description: `Saved ${metricsSaved} metrics${goalsUpdated > 0 ? ` and updated ${goalsUpdated} goals` : ''} for ${roleName}.`,
+          duration: 3000,
         })
+        
+        // Reset success status after animation
+        setTimeout(() => {
+          if (saveStatus === 'success') {
+            setSaveStatus('idle')
+          }
+        }, 2000)
       }
 
       // Refresh scorecard after save
@@ -245,15 +427,55 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
       }
     } catch (error) {
       console.error('Error in handleSave:', error)
+      setSaveStatus('error')
+      setSaveProgress(0)
+      
+      // Retry logic (max 2 retries)
+      if (retryCount < 2) {
+        toast({
+          title: "Save failed, retrying...",
+          description: `Attempt ${retryCount + 1} of 3. ${error instanceof Error ? error.message : 'Network error'}`,
+          variant: "destructive",
+          duration: 3000,
+        })
+        
+        // Wait 1 second before retry
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        return handleSave(retryCount + 1)
+      }
+      
       toast({
         title: "Error saving data",
-        description: error instanceof Error ? error.message : "Failed to save data. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save data after multiple attempts. Please check your connection and try again.",
         variant: "destructive",
+        duration: 5000,
       })
     } finally {
       setSaving(false)
+      if (saveStatus === 'saving') {
+        setSaveStatus('idle')
+      }
     }
   }
+
+  // Keyboard shortcut for saving (Ctrl+S or Cmd+S)
+  useEffect(() => {
+    handleSaveRef.current = handleSave
+  }, [handleSave])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (hasChanges && !saving && handleSaveRef.current) {
+          handleSaveRef.current()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [hasChanges, saving])
 
   const formatValue = (value: number, metricType: string) => {
     if (metricType === 'currency') {
@@ -457,25 +679,112 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
           </div>
         </ScrollArea>
 
-        <CardFooter className="flex justify-between items-center pt-4 border-t border-m8bs-border">
-          <div className="flex items-center gap-2 text-sm text-m8bs-muted">
-            {hasChanges && (
-              <>
-                <AlertCircle className="h-4 w-4 text-yellow-400" />
-                <span>You have unsaved changes</span>
-              </>
-            )}
+        <CardFooter className="flex flex-col gap-3 pt-4 border-t border-m8bs-border">
+          {/* Progress bar */}
+          {saving && (
+            <div className="w-full space-y-2">
+              <div className="flex justify-between items-center text-xs text-m8bs-muted">
+                <span>Saving data...</span>
+                <span>{Math.round(saveProgress)}%</span>
+              </div>
+              <Progress value={saveProgress} className="h-2 bg-m8bs-card-alt" />
+            </div>
+          )}
+          
+          {/* Status and action row */}
+          <div className="flex justify-between items-center w-full">
+            <div className="flex items-center gap-3 text-sm">
+              {hasChanges && !saving && (
+                <>
+                  <AlertCircle className="h-4 w-4 text-yellow-400 animate-pulse" />
+                  <span className="text-yellow-400">You have unsaved changes</span>
+                </>
+              )}
+              {saving && (
+                <>
+                  <Loader2 className="h-4 w-4 text-m8bs-blue animate-spin" />
+                  <span className="text-m8bs-muted">Saving your data...</span>
+                </>
+              )}
+              {saveStatus === 'success' && !hasChanges && (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-green-400" />
+                  <span className="text-green-400">All changes saved</span>
+                  {lastSaveTime && (
+                    <span className="text-xs text-m8bs-muted">
+                      {lastSaveTime.toLocaleTimeString()}
+                    </span>
+                  )}
+                </>
+              )}
+              {saveStatus === 'error' && !saving && (
+                <>
+                  <AlertCircle className="h-4 w-4 text-red-400" />
+                  <span className="text-red-400">Some errors occurred</span>
+                </>
+              )}
+              {!hasChanges && !saving && saveStatus === 'idle' && lastSaveTime && (
+                <span className="text-xs text-m8bs-muted">
+                  Last saved: {lastSaveTime.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              {saveStatus === 'error' && !saving && (
+                <Button
+                  onClick={() => handleSave()}
+                  variant="outline"
+                  className="flex items-center gap-2 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Retry Save
+                </Button>
+              )}
+              <Button
+                onClick={() => handleSave()}
+                disabled={saving || !hasChanges}
+                className={`flex items-center gap-2 transition-all duration-200 ${
+                  saveStatus === 'success' && !hasChanges
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-m8bs-blue hover:bg-m8bs-blue-dark text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed ${
+                  saving ? 'animate-pulse' : ''
+                }`}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : saveStatus === 'success' && !hasChanges ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Saved
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save All Data
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSave}
-              disabled={saving || !hasChanges}
-              className="flex items-center gap-2 bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? 'Saving...' : 'Save All Data'}
-            </Button>
-          </div>
+          
+          {/* Save statistics */}
+          {saveStats.metricsSaved > 0 && !saving && (
+            <div className="flex items-center gap-4 text-xs text-m8bs-muted pt-1 border-t border-m8bs-border/50">
+              <span>Metrics saved: {saveStats.metricsSaved}</span>
+              {saveStats.goalsUpdated > 0 && (
+                <span>Goals updated: {saveStats.goalsUpdated}</span>
+              )}
+              {saveStats.errors > 0 && (
+                <span className="text-red-400">Errors: {saveStats.errors}</span>
+              )}
+              <span className="ml-auto text-xs opacity-70">Press Ctrl+S to save</span>
+            </div>
+          )}
         </CardFooter>
       </CardContent>
     </Card>

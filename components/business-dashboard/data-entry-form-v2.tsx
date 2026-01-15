@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/components/ui/use-toast"
-import { Plus, Trash2, CheckCircle, ChevronRight, ChevronLeft, RotateCcw } from "lucide-react"
+import { Plus, Trash2, CheckCircle, ChevronRight, ChevronLeft, RotateCcw, Loader2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -136,7 +136,35 @@ interface DataEntryFormV2Props {
 }
 
 export function DataEntryFormV2({ user, year = new Date().getFullYear(), onComplete, onCancel, isEditMode = false }: DataEntryFormV2Props) {
-  const { data, loading, saveAllData, error } = useAdvisorBasecamp(user, year)
+  // Use local state for selected year so we can change it when dropdown changes
+  const [selectedYear, setSelectedYear] = useState<number>(year)
+  const { data, loading, saveAllData, error, loadData } = useAdvisorBasecamp(user, selectedYear)
+  const [availableYears, setAvailableYears] = useState<number[]>([new Date().getFullYear()])
+  const [loadingYears, setLoadingYears] = useState<boolean>(true)
+  
+  // Note: Form initialization happens later, so we'll handle year prop updates after form is created
+  
+  // Load available years
+  useEffect(() => {
+    async function loadAvailableYears() {
+      if (!user) return
+      setLoadingYears(true)
+      try {
+        const { advisorBasecampService } = await import('@/lib/advisor-basecamp')
+        const years = await advisorBasecampService.getAvailableYears(user)
+        // Always include current year if not already in the list
+        const currentYear = new Date().getFullYear()
+        const allYears = [...new Set([...years, currentYear])].sort((a, b) => b - a)
+        setAvailableYears(allYears)
+      } catch (error) {
+        console.error('Error loading available years:', error)
+        setAvailableYears([new Date().getFullYear()])
+      } finally {
+        setLoadingYears(false)
+      }
+    }
+    loadAvailableYears()
+  }, [user])
   
   // Storage key based on user ID
   const storageKey = user ? `advisor-basecamp-form-${user.id}` : null
@@ -212,7 +240,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
       lifeTargetGoalPercentage: "",
       currentAUM: "",
       currentAnnuity: "",
-      year: year.toString(),
+      year: selectedYear.toString(),
       currentLifeProduction: "",
       avgAnnuitySize: "",
       avgAUMSize: "",
@@ -349,14 +377,60 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
     }
   }, [loading, hasLoadedFromStorage, data, isEditMode, form, tabStorageKey])
 
-  // Reset form when data changes (from database) - only on initial load, not on subsequent data changes
+  // Track the last year we loaded data for, to detect year changes
+  const lastLoadedYearRef = useRef<number>(selectedYear)
+  
+  // Reset form when data changes (from database) - on initial load OR when year changes
   useEffect(() => {
     // Only reset from database if:
     // 1. We have data and it's loaded
-    // 2. We haven't initialized yet
-    // 3. We're in edit mode
-    // 4. There's no unsaved localStorage data
-    if (data && !loading && hasLoadedFromStorage && isEditMode && !dataInitializedRef.current) {
+    // 2. We're in edit mode OR we're setting up for the first time
+    // 3. Either we haven't initialized yet OR the year has changed
+    const yearChanged = lastLoadedYearRef.current !== selectedYear
+    const shouldLoad = data && !loading && hasLoadedFromStorage && 
+                      (isEditMode || !dataInitializedRef.current) &&
+                      (yearChanged || !dataInitializedRef.current)
+    
+    if (shouldLoad) {
+      // Validate that loaded data matches the selected year
+      const dataYearMismatch = 
+        (data.businessGoals && data.businessGoals.year !== selectedYear) ||
+        (data.currentValues && data.currentValues.year !== selectedYear) ||
+        (data.clientMetrics && data.clientMetrics.year !== selectedYear) ||
+        (data.commissionRates && data.commissionRates.year !== selectedYear)
+      
+      if (dataYearMismatch) {
+        console.warn('Data year mismatch detected:', {
+          selectedYear,
+          businessGoalsYear: data.businessGoals?.year,
+          currentValuesYear: data.currentValues?.year,
+          clientMetricsYear: data.clientMetrics?.year,
+          commissionRatesYear: data.commissionRates?.year
+        })
+        // Show warning toast but continue with reset
+        toast({
+          title: "Data Warning",
+          description: `Some data may not match the selected year ${selectedYear}. Please verify your entries.`,
+          variant: "destructive",
+          duration: 5000,
+        })
+      }
+      
+      console.log('Resetting form with data for year:', selectedYear, {
+        yearChanged,
+        isEditMode,
+        dataInitialized: dataInitializedRef.current,
+        businessGoalsYear: data.businessGoals?.year,
+        currentValuesYear: data.currentValues?.year,
+        clientMetricsYear: data.clientMetrics?.year,
+        commissionRatesYear: data.commissionRates?.year,
+        hasBusinessGoals: !!data.businessGoals,
+        hasCurrentValues: !!data.currentValues,
+        hasClientMetrics: !!data.clientMetrics,
+        hasCommissionRates: !!data.commissionRates,
+        campaignsCount: data.campaigns?.length || 0
+      })
+      
       const storedData = loadFormDataFromStorage()
       const hasStoredData = storedData && Object.values(storedData).some(value => {
         if (Array.isArray(value)) {
@@ -367,64 +441,207 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         return value && value.toString().trim() !== ''
       })
       
-      // Only load from database if there's no unsaved localStorage data
-      if (!hasStoredData) {
-        form.reset({
-        year: data.businessGoals?.year?.toString() || year.toString(),
-        businessGoal: data.businessGoals?.business_goal?.toString() || "",
-        aumGoalPercentage: data.businessGoals?.aum_goal_percentage?.toString() || "",
-        annuityGoalPercentage: data.businessGoals?.annuity_goal_percentage?.toString() || "",
-        lifeTargetGoalPercentage: data.businessGoals?.life_target_goal_percentage?.toString() || "",
-        currentAUM: data.currentValues?.current_aum?.toString() || "",
-        currentAnnuity: data.currentValues?.current_annuity?.toString() || "",
-        currentLifeProduction: data.currentValues?.current_life_production?.toString() || "",
-        avgAnnuitySize: data.clientMetrics?.avg_annuity_size?.toString() || "",
-        avgAUMSize: data.clientMetrics?.avg_aum_size?.toString() || "",
-        avgNetWorthNeeded: data.clientMetrics?.avg_net_worth_needed?.toString() || "",
-        appointmentAttrition: data.clientMetrics?.appointment_attrition?.toString() || "",
-        avgCloseRatio: data.clientMetrics?.avg_close_ratio?.toString() || "",
-        annuityClosed: data.clientMetrics?.annuity_closed?.toString() || "",
-        aumAccounts: data.clientMetrics?.aum_accounts?.toString() || "",
-        monthlyIdealProspects: data.clientMetrics?.monthly_ideal_prospects?.toString() || "",
-        appointmentsPerCampaign: data.clientMetrics?.appointments_per_campaign?.toString() || "",
-        campaigns: data.campaigns.length > 0 ? data.campaigns.map(c => ({
-          name: c.name,
-          budget: c.budget.toString(),
-          events: c.events.toString(),
-          leads: c.leads.toString(),
-          status: c.status,
-          frequency: (c as any).frequency || "Monthly",
-          costPerLead: c.cost_per_lead?.toString() || "",
-          costPerClient: c.cost_per_client?.toString() || "",
-          totalCostOfEvent: (c as any).total_cost_of_event?.toString() || "",
-          foodCosts: c.food_costs?.toString() || "",
-        })) : [
-          {
-            name: "",
-            budget: "",
-            events: "",
-            leads: "",
-            status: "Active" as const,
-            frequency: "Monthly" as const,
-            costPerLead: "",
-            costPerClient: "",
-            totalCostOfEvent: "",
-            foodCosts: "",
-          },
-        ],
-        planningFeeRate: data.commissionRates?.planning_fee_rate?.toString() || "",
-        annuityCommission: data.commissionRates?.annuity_commission?.toString() || "",
-        aumCommission: data.commissionRates?.aum_commission?.toString() || "",
-        lifeCommission: data.commissionRates?.life_commission?.toString() || "",
-        trailIncomePercentage: data.commissionRates?.trail_income_percentage?.toString() || "",
-        })
-        // Clear storage when loading from database (only on initial load)
-        clearFormDataFromStorage()
-        dataInitializedRef.current = true
-        // Don't reset active tab when loading from database - keep current tab
+      // Only load from database if there's no unsaved localStorage data OR year changed
+      if (!hasStoredData || yearChanged) {
+        try {
+          // Update the ref to track that we've loaded for this year
+          lastLoadedYearRef.current = selectedYear
+          
+          // Prepare form data with proper null/undefined handling
+          // CRITICAL: Ensure year is set to selectedYear first
+          const formData: z.infer<typeof formSchema> = {
+            year: selectedYear.toString(), // Always use selectedYear to ensure it matches the dropdown - MUST be first
+            businessGoal: data.businessGoals?.business_goal?.toString() || "",
+            aumGoalPercentage: data.businessGoals?.aum_goal_percentage?.toString() || "",
+            annuityGoalPercentage: data.businessGoals?.annuity_goal_percentage?.toString() || "",
+            lifeTargetGoalPercentage: data.businessGoals?.life_target_goal_percentage?.toString() || "",
+            currentAUM: data.currentValues?.current_aum?.toString() || "",
+            currentAnnuity: data.currentValues?.current_annuity?.toString() || "",
+            currentLifeProduction: data.currentValues?.current_life_production?.toString() || "",
+            avgAnnuitySize: data.clientMetrics?.avg_annuity_size?.toString() || "",
+            avgAUMSize: data.clientMetrics?.avg_aum_size?.toString() || "",
+            avgNetWorthNeeded: data.clientMetrics?.avg_net_worth_needed?.toString() || "",
+            appointmentAttrition: data.clientMetrics?.appointment_attrition?.toString() || "",
+            avgCloseRatio: data.clientMetrics?.avg_close_ratio?.toString() || "",
+            annuityClosed: data.clientMetrics?.annuity_closed?.toString() || "",
+            aumAccounts: data.clientMetrics?.aum_accounts?.toString() || "",
+            monthlyIdealProspects: data.clientMetrics?.monthly_ideal_prospects?.toString() || "",
+            appointmentsPerCampaign: data.clientMetrics?.appointments_per_campaign?.toString() || "",
+            campaigns: data.campaigns && data.campaigns.length > 0 ? data.campaigns.map(c => ({
+              name: c.name || "",
+              budget: c.budget?.toString() || "",
+              events: c.events?.toString() || "",
+              leads: c.leads?.toString() || "",
+              status: c.status || "Active",
+              frequency: (c as any).frequency || "Monthly",
+              costPerLead: c.cost_per_lead?.toString() || "",
+              costPerClient: c.cost_per_client?.toString() || "",
+              totalCostOfEvent: (c as any).total_cost_of_event?.toString() || "",
+              foodCosts: c.food_costs?.toString() || "",
+            })) : [
+              {
+                name: "",
+                budget: "",
+                events: "",
+                leads: "",
+                status: "Active" as const,
+                frequency: "Monthly" as const,
+                costPerLead: "",
+                costPerClient: "",
+                totalCostOfEvent: "",
+                foodCosts: "",
+              },
+            ],
+            planningFeeRate: data.commissionRates?.planning_fee_rate?.toString() || "",
+            annuityCommission: data.commissionRates?.annuity_commission?.toString() || "",
+            aumCommission: data.commissionRates?.aum_commission?.toString() || "",
+            lifeCommission: data.commissionRates?.life_commission?.toString() || "",
+            trailIncomePercentage: data.commissionRates?.trail_income_percentage?.toString() || "",
+          }
+          
+          // Reset form with prepared data - ensure year is explicitly set
+          form.reset(formData, {
+            keepDefaultValues: false,
+            keepValues: false,
+            keepDirty: false,
+            keepIsSubmitted: false,
+            keepTouched: false,
+            keepIsValid: false,
+            keepSubmitCount: false
+          })
+          
+          // CRITICAL: Immediately set year field after reset to ensure it's correct
+          // This must happen synchronously to prevent the Select from showing wrong value
+          form.setValue('year', selectedYear.toString(), { 
+            shouldValidate: false,
+            shouldDirty: false,
+            shouldTouch: false
+          })
+          
+          // Force a synchronous update by calling setValue again immediately
+          // This ensures React Hook Form's internal state is updated
+          const currentYear = form.getValues('year')
+          if (currentYear !== selectedYear.toString()) {
+            console.warn('Form year field mismatch after reset, correcting immediately...', {
+              expected: selectedYear.toString(),
+              actual: currentYear
+            })
+            // Force update by directly setting the value again
+            form.setValue('year', selectedYear.toString(), { 
+              shouldValidate: false, 
+              shouldDirty: false,
+              shouldTouch: false
+            })
+          }
+          
+          // Use a small delay to verify again (in case of async rendering issues)
+          setTimeout(() => {
+            const verifyYear = form.getValues('year')
+            if (verifyYear !== selectedYear.toString()) {
+              console.warn('Form year field still incorrect after delay, forcing final update...', {
+                expected: selectedYear.toString(),
+                actual: verifyYear
+              })
+              form.setValue('year', selectedYear.toString(), { 
+                shouldValidate: false, 
+                shouldDirty: false,
+                shouldTouch: false
+              })
+            } else {
+              console.log('Year field verified correctly after delay:', verifyYear)
+            }
+          }, 100)
+          
+          console.log('Form reset completed for year:', selectedYear, {
+            formYearValue: form.getValues('year'),
+            businessGoal: form.getValues('businessGoal'),
+            currentAUM: form.getValues('currentAUM'),
+            avgAnnuitySize: form.getValues('avgAnnuitySize'),
+            planningFeeRate: form.getValues('planningFeeRate'),
+            campaignsCount: form.getValues('campaigns').length
+          })
+          
+          // Show success message when year changes
+          if (yearChanged) {
+            toast({
+              title: "Data Loaded",
+              description: `Business data for ${selectedYear} has been loaded.`,
+              duration: 3000,
+            })
+          }
+          
+          // Clear storage when loading from database (only on initial load, not on year change)
+          if (!yearChanged) {
+            clearFormDataFromStorage()
+          }
+          dataInitializedRef.current = true
+          // Don't reset active tab when loading from database - keep current tab
+        } catch (error) {
+          console.error('Error resetting form with data:', error)
+          toast({
+            title: "Error Loading Data",
+            description: `Failed to load data for ${selectedYear}. Please try again.`,
+            variant: "destructive",
+            duration: 5000,
+          })
+        }
+      } else {
+        console.log('Skipping form reset - unsaved localStorage data exists')
       }
     }
-  }, [data, loading, form, hasLoadedFromStorage, isEditMode])
+  }, [data, loading, form, hasLoadedFromStorage, isEditMode, selectedYear])
+
+  // Update selectedYear and form field when prop changes (after form is initialized)
+  useEffect(() => {
+    if (year !== selectedYear) {
+      setSelectedYear(year)
+      // Also update the form field value to keep it in sync
+      form.setValue('year', year.toString(), { shouldValidate: false })
+    }
+  }, [year, selectedYear, form])
+
+  // Keep form year field in sync with selectedYear state - CRITICAL for dropdown display
+  // This ensures the Select component always shows the correct year
+  useEffect(() => {
+    if (!form) return
+    
+    const currentYearValue = form.getValues('year')
+    const expectedYearValue = selectedYear.toString()
+    
+    // Always ensure form year field matches selectedYear
+    // This is critical for the Select component to display the correct value
+    if (currentYearValue !== expectedYearValue) {
+      console.log('Syncing form year field with selectedYear:', { 
+        currentYearValue, 
+        expectedYearValue, 
+        selectedYear,
+        hasLoadedFromStorage
+      })
+      form.setValue('year', expectedYearValue, { 
+        shouldValidate: false,
+        shouldDirty: false,
+        shouldTouch: false
+      })
+    }
+    
+    // Use a small delay to verify and correct again (in case form.reset() overrides it)
+    const timeoutId = setTimeout(() => {
+      const verifyValue = form.getValues('year')
+      if (verifyValue !== expectedYearValue) {
+        console.warn('Year field still incorrect after sync, forcing update:', {
+          expected: expectedYearValue,
+          actual: verifyValue
+        })
+        form.setValue('year', expectedYearValue, { 
+          shouldValidate: false,
+          shouldDirty: false,
+          shouldTouch: false
+        })
+      }
+    }, 200) // Delay to ensure it runs after form.reset() completes
+    
+    return () => clearTimeout(timeoutId)
+  }, [selectedYear, form, hasLoadedFromStorage])
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -1098,14 +1315,88 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                   <FormItem>
                     <FormLabel className="text-white font-medium text-lg">Year</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="2020"
-                        max="2100"
-                        placeholder={year.toString()}
-                        {...field}
-                        className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors max-w-xs"
-                      />
+                      <Select
+                        key={`year-select-${selectedYear}`}
+                        value={field.value || selectedYear.toString()}
+                        disabled={loadingYears}
+                        onValueChange={(value) => {
+                          const selectedYearNum = Number.parseInt(value)
+                          if (!isNaN(selectedYearNum)) {
+                            console.log('Year dropdown changed:', {
+                              newValue: value,
+                              selectedYearNum,
+                              currentSelectedYear: selectedYear,
+                              currentFieldValue: field.value
+                            })
+                            
+                            // CRITICAL: Update the form field FIRST and immediately to keep UI in sync
+                            // This must happen before any state updates that might trigger form resets
+                            field.onChange(value)
+                            
+                            // Also explicitly set the form value to ensure it's set
+                            form.setValue('year', value, { 
+                              shouldValidate: false,
+                              shouldDirty: false,
+                              shouldTouch: false
+                            })
+                            
+                            // Always update selectedYear state to ensure sync
+                            if (selectedYearNum !== selectedYear) {
+                              console.log('Updating selectedYear state from', selectedYear, 'to', selectedYearNum)
+                              // Update the selected year state, which will trigger the hook to reload
+                              setSelectedYear(selectedYearNum)
+                              // Reset the initialization flag so form will reload with new data
+                              dataInitializedRef.current = false
+                              // Clear any unsaved form data when switching years
+                              clearFormDataFromStorage()
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-all duration-200 max-w-xs hover:border-m8bs-blue/50 disabled:opacity-50 disabled:cursor-not-allowed relative">
+                          <SelectValue placeholder={loadingYears ? "Loading years..." : `Select year (${selectedYear})`} />
+                          {loadingYears && (
+                            <Loader2 className="absolute right-8 h-4 w-4 animate-spin text-m8bs-blue" />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent 
+                          className="bg-m8bs-card border-m8bs-border shadow-xl z-50"
+                          position="popper"
+                          sideOffset={4}
+                        >
+                          {loadingYears ? (
+                            <div className="flex items-center justify-center py-4 px-2">
+                              <Loader2 className="h-5 w-5 animate-spin text-m8bs-blue" />
+                              <span className="ml-2 text-white/70 text-sm">Loading years...</span>
+                            </div>
+                          ) : (
+                            <>
+                              {availableYears.map((availableYear) => (
+                                <SelectItem 
+                                  key={availableYear} 
+                                  value={availableYear.toString()}
+                                  className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30 cursor-pointer transition-colors duration-150 data-[highlighted]:bg-m8bs-blue/30"
+                                >
+                                  <span className="font-medium">{availableYear}</span>
+                                  {availableYear === selectedYear && (
+                                    <span className="ml-2 text-xs text-m8bs-blue/70">(Current)</span>
+                                  )}
+                                </SelectItem>
+                              ))}
+                              {/* Always allow adding current year if not in list */}
+                              {!availableYears.includes(new Date().getFullYear()) && (
+                                <SelectItem 
+                                  value={new Date().getFullYear().toString()}
+                                  className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30 cursor-pointer transition-colors duration-150 data-[highlighted]:bg-m8bs-blue/30 border-t border-m8bs-border/50 mt-1 pt-2"
+                                >
+                                  <span className="font-medium">{new Date().getFullYear()}</span>
+                                  <span className="ml-2 text-xs text-green-400/70">(New)</span>
+                                </SelectItem>
+                              )}
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormDescription className="text-m8bs-muted">Select the year for this business data</FormDescription>
                     <FormMessage />
@@ -1114,7 +1405,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
               />
             </CardContent>
           </Card>
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} key={`tabs-${selectedYear}`} className="w-full">
             <TabsList className="bg-m8bs-blue/20 p-1 border border-m8bs-blue/50 rounded-lg shadow-lg grid grid-cols-3 md:grid-cols-5 w-full">
               <TabsTrigger value="goals" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Goals</TabsTrigger>
               <TabsTrigger value="current" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Current Advisor Book</TabsTrigger>
@@ -1130,7 +1421,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                   <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.businessGoals ? 'text-white' : 'text-red-500'}`}>
                     Business Goals
                   </CardTitle>
-                  <CardDescription className="text-m8bs-muted">Set Your Business Goals For The Year</CardDescription>
+                  <CardDescription className="text-m8bs-muted">Set Your Business Goals For {selectedYear}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -1226,7 +1517,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                   <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.currentValues ? 'text-white' : 'text-red-500'}`}>
                     Current Advisor Book
                   </CardTitle>
-                  <CardDescription className="text-m8bs-muted">Your Current Advisor Book Metrics</CardDescription>
+                  <CardDescription className="text-m8bs-muted">Your Current Advisor Book Metrics For {selectedYear}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1313,7 +1604,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                   <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.clientMetrics ? 'text-white' : 'text-red-500'}`}>
                     Client Metrics
                   </CardTitle>
-                  <CardDescription className="text-m8bs-muted">Key Performance Indicators For Your Client Base</CardDescription>
+                  <CardDescription className="text-m8bs-muted">Key Performance Indicators For Your Client Base In {selectedYear}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1456,7 +1747,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                   <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.campaigns ? 'text-white' : 'text-red-500'}`}>
                     Annual Campaign Goals
                   </CardTitle>
-                  <CardDescription className="text-m8bs-muted">Set Your Annual Campaign Goals For The Year (Monthly values are used to calculate annual totals)</CardDescription>
+                  <CardDescription className="text-m8bs-muted">Set Your Annual Campaign Goals For {selectedYear} (Monthly values are used to calculate annual totals)</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {fields.map((field, index) => (
@@ -1804,7 +2095,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                     <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.commissionRates ? 'text-white' : 'text-red-500'}`}>
                       Commission Rates
                     </CardTitle>
-                    <CardDescription className="text-m8bs-muted">Set Your Commission Percentages And Rates</CardDescription>
+                    <CardDescription className="text-m8bs-muted">Set Your Commission Percentages And Rates For {selectedYear}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

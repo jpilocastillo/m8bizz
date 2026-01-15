@@ -62,7 +62,7 @@ interface MonthlyDataEntryComponentProps {
 export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComponentProps = {}) {
   const { user } = useAuth()
   const year = selectedYear ? Number.parseInt(selectedYear) : new Date().getFullYear()
-  const { data, addMonthlyDataEntry, updateMonthlyDataEntry, deleteMonthlyDataEntry, loadData } = useAdvisorBasecamp(user, year)
+  const { data, addMonthlyDataEntry, updateMonthlyDataEntry, deleteMonthlyDataEntry, loadData, error: basecampError } = useAdvisorBasecamp(user, year)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<MonthlyDataEntry | null>(null)
   const [selectedMonthForComparison, setSelectedMonthForComparison] = useState<string>("")
@@ -102,15 +102,82 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       const month_year = `${values.year}-${values.month.padStart(2, '0')}`
       console.log("Generated month_year:", month_year)
 
+      // Parse and validate numeric values
+      const new_clients = parseInt(values.new_clients)
+      const new_appointments = parseInt(values.new_appointments)
+      const new_leads = parseInt(values.new_leads)
+      const annuity_sales = parseFloat(parseCurrency(values.annuity_sales))
+      const aum_sales = parseFloat(parseCurrency(values.aum_sales))
+      const life_sales = parseFloat(parseCurrency(values.life_sales))
+      const marketing_expenses = parseFloat(parseCurrency(values.marketing_expenses))
+
+      // Validate that all numeric values are valid numbers
+      if (isNaN(new_clients) || new_clients < 0) {
+        toast({
+          title: "Validation Error",
+          description: "New Clients must be a valid non-negative number.",
+          variant: "destructive",
+        })
+        return
+      }
+      if (isNaN(new_appointments) || new_appointments < 0) {
+        toast({
+          title: "Validation Error",
+          description: "New Appointments must be a valid non-negative number.",
+          variant: "destructive",
+        })
+        return
+      }
+      if (isNaN(new_leads) || new_leads < 0) {
+        toast({
+          title: "Validation Error",
+          description: "New Leads must be a valid non-negative number.",
+          variant: "destructive",
+        })
+        return
+      }
+      if (isNaN(annuity_sales) || annuity_sales < 0) {
+        toast({
+          title: "Validation Error",
+          description: "Annuity Sales must be a valid non-negative number.",
+          variant: "destructive",
+        })
+        return
+      }
+      if (isNaN(aum_sales) || aum_sales < 0) {
+        toast({
+          title: "Validation Error",
+          description: "AUM Sales must be a valid non-negative number.",
+          variant: "destructive",
+        })
+        return
+      }
+      if (isNaN(life_sales) || life_sales < 0) {
+        toast({
+          title: "Validation Error",
+          description: "Life Sales must be a valid non-negative number.",
+          variant: "destructive",
+        })
+        return
+      }
+      if (isNaN(marketing_expenses) || marketing_expenses < 0) {
+        toast({
+          title: "Validation Error",
+          description: "Marketing Expenses must be a valid non-negative number.",
+          variant: "destructive",
+        })
+        return
+      }
+
       const entryData = {
         month_year: month_year,
-        new_clients: parseInt(values.new_clients),
-        new_appointments: parseInt(values.new_appointments),
-        new_leads: parseInt(values.new_leads),
-        annuity_sales: parseFloat(parseCurrency(values.annuity_sales)),
-        aum_sales: parseFloat(parseCurrency(values.aum_sales)),
-        life_sales: parseFloat(parseCurrency(values.life_sales)),
-        marketing_expenses: parseFloat(parseCurrency(values.marketing_expenses)),
+        new_clients: new_clients,
+        new_appointments: new_appointments,
+        new_leads: new_leads,
+        annuity_sales: annuity_sales,
+        aum_sales: aum_sales,
+        life_sales: life_sales,
+        marketing_expenses: marketing_expenses,
         notes: values.notes || "",
       }
 
@@ -136,17 +203,20 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
         })
         handleCloseDialog()
       } else {
+        // Show the actual error message from the service
+        const errorMessage = basecampError || "Failed To Save Entry. Please Try Again."
         toast({
           title: "Error",
-          description: "Failed To Save Entry. Please Try Again.",
+          description: errorMessage,
           variant: "destructive",
         })
       }
     } catch (error) {
       console.error("Error submitting form:", error)
+      const errorMessage = error instanceof Error ? error.message : "An Unexpected Error Occurred. Please Try Again."
       toast({
         title: "Error",
-          description: "An Unexpected Error Occurred. Please Try Again.",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -204,6 +274,51 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       marketing_expenses: "",
       notes: "",
     })
+  }
+
+  const handleOpenDialog = () => {
+    setIsDialogOpen(true)
+    // Reset form to defaults when opening
+    setEditingEntry(null)
+    form.reset({
+      month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
+      year: new Date().getFullYear().toString(),
+      new_clients: "",
+      new_appointments: "",
+      new_leads: "",
+      annuity_sales: "",
+      aum_sales: "",
+      life_sales: "",
+      marketing_expenses: "",
+      notes: "",
+    })
+  }
+
+  // Check if entry exists when month/year changes in the form
+  const checkExistingEntry = (month: string, year: string) => {
+    if (!month || !year) return
+    
+    const month_year = `${year}-${month.padStart(2, '0')}`
+    const existing = monthlyEntries.find(e => e.month_year === month_year)
+    
+    if (existing) {
+      setEditingEntry(existing)
+      // Populate form with existing data
+      form.reset({
+        month: month,
+        year: year,
+        new_clients: existing.new_clients.toString(),
+        new_appointments: existing.new_appointments.toString(),
+        new_leads: existing.new_leads.toString(),
+        annuity_sales: existing.annuity_sales.toString(),
+        aum_sales: existing.aum_sales.toString(),
+        life_sales: existing.life_sales.toString(),
+        marketing_expenses: existing.marketing_expenses.toString(),
+        notes: existing.notes || "",
+      })
+    } else {
+      setEditingEntry(null)
+    }
   }
 
   const calculateProgress = (current: number, goal: number) => {
@@ -425,9 +540,16 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
             Track Your Monthly Performance And Compare Against Your Annual Goals From The Advisor Basecamp
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open)
+          if (!open) {
+            handleCloseDialog()
+          } else {
+            handleOpenDialog()
+          }
+        }}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2" onClick={handleOpenDialog}>
               <Plus className="h-4 w-4" />
               Add Monthly Entry
             </Button>
@@ -438,7 +560,9 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                 {editingEntry ? "Edit Monthly Entry" : "Add Monthly Entry"}
               </DialogTitle>
               <DialogDescription>
-                Enter Your Monthly Performance Data For Tracking And Goal Comparison.
+                {editingEntry 
+                  ? `Update your monthly performance data for ${editingEntry.month_year}.`
+                  : "Enter Your Monthly Performance Data For Tracking And Goal Comparison."}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -453,6 +577,10 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                         <FormControl>
                           <select
                             {...field}
+                            onChange={(e) => {
+                              field.onChange(e)
+                              checkExistingEntry(e.target.value, form.getValues('year'))
+                            }}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <option value="">Select month</option>
@@ -484,6 +612,10 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                         <FormControl>
                           <select
                             {...field}
+                            onChange={(e) => {
+                              field.onChange(e)
+                              checkExistingEntry(form.getValues('month'), e.target.value)
+                            }}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <option value="">Select year</option>
