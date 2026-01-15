@@ -254,7 +254,7 @@ export class BehaviorScorecardService {
         .select('id, role_name')
         .eq('user_id', user.id)
 
-      const existingRoleNames = new Set(existingRoles?.map(r => r.role_name) || [])
+      const existingRoleNames = new Set(existingRoles?.map((r: { role_name: string }) => r.role_name) || [])
 
       // Create roles and metrics for each role
       for (const [roleName, metrics] of Object.entries(DEFAULT_METRICS)) {
@@ -262,7 +262,7 @@ export class BehaviorScorecardService {
 
         if (existingRoleNames.has(roleName)) {
           // Get existing role ID
-          const existingRole = existingRoles?.find(r => r.role_name === roleName)
+          const existingRole = existingRoles?.find((r: { role_name: string }) => r.role_name === roleName)
           roleId = existingRole!.id
         } else {
           // Use upsert to handle race conditions and duplicates gracefully
@@ -308,7 +308,7 @@ export class BehaviorScorecardService {
           .select('id, metric_name')
           .eq('role_id', roleId)
 
-        const existingMetricNames = new Set(existingMetrics?.map(m => m.metric_name) || [])
+        const existingMetricNames = new Set(existingMetrics?.map((m: { metric_name: string }) => m.metric_name) || [])
 
         // Create metrics
         for (const metric of metrics) {
@@ -370,11 +370,11 @@ export class BehaviorScorecardService {
           .select('id, metric_name, display_order')
           .eq('role_id', role.id)
 
-        const existingMetricNames = new Set(existingMetrics?.map(m => m.metric_name) || [])
+        const existingMetricNames = new Set(existingMetrics?.map((m: { metric_name: string }) => m.metric_name) || [])
         
         // Calculate max display order for core behaviors
         const maxDisplayOrder = existingMetrics && existingMetrics.length > 0
-          ? Math.max(...existingMetrics.map(m => m.display_order || 0))
+          ? Math.max(...existingMetrics.map((m: { display_order?: number }) => m.display_order || 0))
           : 998
 
         // Add default metrics for predefined roles
@@ -724,7 +724,7 @@ export class BehaviorScorecardService {
 
       return {
         success: true,
-        data: data?.map(d => ({
+        data: data?.map((d: { id: string; metric_id: string; week_number: number; year: number; actual_value: number }) => ({
           id: d.id,
           metricId: d.metric_id,
           weekNumber: d.week_number,
@@ -762,7 +762,7 @@ export class BehaviorScorecardService {
 
       // Group by metric_id
       const dataMap = new Map<string, WeeklyData[]>()
-      data?.forEach(d => {
+      data?.forEach((d: { id: string; metric_id: string; week_number: number; year: number; actual_value: number }) => {
         const weeklyData: WeeklyData = {
           id: d.id,
           metricId: d.metric_id,
@@ -817,7 +817,7 @@ export class BehaviorScorecardService {
       const roleAverages: number[] = []
 
       // Get all metrics for all roles at once (batch query for performance)
-      const roleIds = roles.map(r => r.id)
+      const roleIds = roles.map((r: { id: string }) => r.id)
       const { data: allMetrics } = await supabase
         .from('scorecard_metrics')
         .select('*')
@@ -827,7 +827,7 @@ export class BehaviorScorecardService {
       // Group metrics by role_id
       const metricsByRole = new Map<string, typeof allMetrics>()
       if (allMetrics) {
-        allMetrics.forEach(metric => {
+        allMetrics.forEach((metric: { role_id: string; id: string }) => {
           if (!metricsByRole.has(metric.role_id)) {
             metricsByRole.set(metric.role_id, [])
           }
@@ -840,7 +840,7 @@ export class BehaviorScorecardService {
       const monthEndWeek = monthStartWeek + 3
 
       // Batch fetch ALL weekly data for all metrics in one query (major performance improvement)
-      const metricIds = allMetrics?.map(m => m.id) || []
+      const metricIds = allMetrics?.map((m: { id: string }) => m.id) || []
       let allWeeklyData: any[] = []
       if (metricIds.length > 0) {
         const { data: weeklyData, error: weeklyDataError } = await supabase
@@ -1146,7 +1146,7 @@ export class BehaviorScorecardService {
 
       const roleScorecards: RoleScorecard[] = []
       const roleAverages: number[] = []
-      const roleIds = roles.map(r => r.id)
+      const roleIds = roles.map((r: { id: string }) => r.id)
 
       // Batch fetch all summaries for all roles at once (optimized)
       const { data: allSummaries } = await supabase
@@ -1159,7 +1159,7 @@ export class BehaviorScorecardService {
       // Create a map of role_id -> summary for quick lookup
       const summaryMap = new Map<string, typeof allSummaries[0]>()
       if (allSummaries) {
-        allSummaries.forEach(summary => {
+        allSummaries.forEach((summary: { role_id: string; id: string }) => {
           summaryMap.set(summary.role_id, summary)
         })
       }
@@ -1174,7 +1174,7 @@ export class BehaviorScorecardService {
       // Group metrics by role_id
       const metricsByRole = new Map<string, typeof allMetrics>()
       if (allMetrics) {
-        allMetrics.forEach(metric => {
+        allMetrics.forEach((metric: { role_id: string; id: string }) => {
           if (!metricsByRole.has(metric.role_id)) {
             metricsByRole.set(metric.role_id, [])
           }
@@ -1183,7 +1183,7 @@ export class BehaviorScorecardService {
       }
 
       // Batch fetch all metric scores if we have summaries
-      const summaryIds = allSummaries?.map(s => s.id) || []
+      const summaryIds = allSummaries?.map((s: { id: string }) => s.id) || []
       let allMetricScores: any[] = []
       if (summaryIds.length > 0) {
         const { data: metricScoresData, error: metricScoresError } = await supabase
@@ -1208,7 +1208,7 @@ export class BehaviorScorecardService {
       // Fetch weekly data for on-the-fly calculation when summaries don't exist
       const monthStartWeek = (month - 1) * 4 + 1
       const monthEndWeek = monthStartWeek + 3
-      const metricIds = allMetrics?.map(m => m.id) || []
+      const metricIds = allMetrics?.map((m: { id: string }) => m.id) || []
       let weeklyDataMap = new Map<string, Map<number, number>>()
       
       if (metricIds.length > 0) {
@@ -1223,7 +1223,7 @@ export class BehaviorScorecardService {
         if (weeklyDataError) {
           console.error('Error fetching weekly data in getMonthlyScorecard:', weeklyDataError)
         } else if (weeklyData) {
-          weeklyData.forEach(wd => {
+          weeklyData.forEach((wd: { metric_id: string; week_number: number; actual_value: number }) => {
             if (!weeklyDataMap.has(wd.metric_id)) {
               weeklyDataMap.set(wd.metric_id, new Map())
             }
@@ -1331,7 +1331,7 @@ export class BehaviorScorecardService {
           // Fallback: look up from metricsByRole if join didn't work
           if (!metricName) {
             const roleMetrics = metricsByRole.get(role.id) || []
-            const metric = roleMetrics.find(m => m.id === ms.metric_id)
+            const metric = roleMetrics.find((m: { id: string }) => m.id === ms.metric_id)
             if (metric) {
               metricName = metric.metric_name
               metricType = metric.metric_type
@@ -1419,7 +1419,7 @@ export class BehaviorScorecardService {
         return { success: false, error: error.message }
       }
 
-      const metrics: ScorecardMetric[] = data?.map(m => ({
+      const metrics: ScorecardMetric[] = data?.map((m: { id: string; role_id: string; metric_name: string; metric_type: string; goal_value: number; is_inverted: boolean; display_order: number; is_visible?: boolean }) => ({
         id: m.id,
         roleId: m.role_id,
         metricName: m.metric_name,
@@ -1508,7 +1508,7 @@ export class BehaviorScorecardService {
 
       // Group metrics by role_id
       if (data) {
-        data.forEach(m => {
+        data.forEach((m: { id: string; role_id: string; metric_name: string; metric_type: string; goal_value: number; is_inverted: boolean; display_order: number; is_visible?: boolean }) => {
           const metric: ScorecardMetric = {
             id: m.id,
             roleId: m.role_id,
@@ -1615,9 +1615,9 @@ export class BehaviorScorecardService {
         .select('metric_name, display_order')
         .eq('role_id', roleId)
 
-      const existingMetricNames = new Set(existingMetrics?.map(m => m.metric_name) || [])
+      const existingMetricNames = new Set(existingMetrics?.map((m: { metric_name: string }) => m.metric_name) || [])
       const maxDisplayOrder = existingMetrics && existingMetrics.length > 0
-        ? Math.max(...existingMetrics.map(m => m.display_order || 0))
+        ? Math.max(...existingMetrics.map((m: { display_order?: number }) => m.display_order || 0))
         : 998
 
       // Add missing core behaviors
