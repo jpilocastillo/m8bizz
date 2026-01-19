@@ -25,26 +25,42 @@ If you want to use a custom SMTP server instead of Supabase's default email serv
 
 **Note:** Supabase provides a default email service, but it has rate limits. For production, consider using a custom SMTP provider.
 
-### 3. Whitelist Redirect URLs
+### 3. Configure Site URL Environment Variable
+
+**Important:** Set the `NEXT_PUBLIC_SITE_URL` environment variable to your production URL:
+
+1. In your `.env.local` file (for local development):
+   ```env
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   ```
+
+2. In your production environment (Vercel, Netlify, etc.):
+   ```env
+   NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+   ```
+
+This ensures password reset emails contain the correct production URL instead of localhost.
+
+### 4. Whitelist Redirect URLs
 
 1. Go to **Authentication** > **URL Configuration**
 2. Add your reset password URL to **Redirect URLs**:
    - `http://localhost:3000/reset-password` (for development)
    - `https://yourdomain.com/reset-password` (for production)
 
-### 4. Enable Email Auth Provider
+### 5. Enable Email Auth Provider
 
 1. Go to **Authentication** > **Providers**
 2. Ensure **Email** provider is enabled
 3. Check that **Enable email confirmations** is configured as needed
 
-### 5. Check Rate Limits
+### 6. Check Rate Limits
 
 Supabase has rate limits on email sending:
 - Free tier: Limited emails per hour
 - Check your usage in the Supabase dashboard
 
-### 6. Verify Email Service Status
+### 7. Verify Email Service Status
 
 1. Check Supabase status page for any email service outages
 2. Review your Supabase project logs for email-related errors
@@ -74,6 +90,13 @@ After configuration:
 - Configure SPF/DKIM records if using custom domain
 - Use a reputable SMTP provider
 - Check email content for spam triggers
+
+### Issue: Reset link redirects to localhost instead of production URL
+**Solution:** 
+- Set the `NEXT_PUBLIC_SITE_URL` environment variable to your production URL
+- In production (Vercel/Netlify/etc.), add: `NEXT_PUBLIC_SITE_URL=https://yourdomain.com`
+- Restart your application after setting the environment variable
+- The code will automatically use this URL for password reset links
 
 ## Alternative: Manual Password Reset (Admin)
 

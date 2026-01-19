@@ -36,12 +36,18 @@ export default function ForgotPassword() {
     try {
       const supabase = createClient()
       
+      // Use production site URL if available, otherwise fall back to current origin
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      const redirectUrl = `${siteUrl}/reset-password`
+      
       // Log the request for debugging
       console.log("Requesting password reset for:", values.email)
-      console.log("Redirect URL:", `${window.location.origin}/reset-password`)
+      console.log("Redirect URL:", redirectUrl)
+      console.log("Site URL from env:", process.env.NEXT_PUBLIC_SITE_URL)
+      console.log("Current origin:", window.location.origin)
       
       const { data, error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: redirectUrl,
       })
 
       if (error) {
