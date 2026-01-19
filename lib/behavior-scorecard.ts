@@ -566,38 +566,57 @@ export class BehaviorScorecardService {
         return { success: false, error: 'Role not found or access denied' }
       }
 
-      // Check if the new name is the same as the current name
+      // Check if the new name is the same as the current name (exact match)
       if (role.role_name === trimmedRoleName) {
         return { success: true } // No change needed
       }
 
-      // Check if another role with the same name already exists
-      const { data: existing, error: checkError } = await supabase
-        .from('scorecard_roles')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('role_name', trimmedRoleName)
-        .neq('id', roleId)
-        .maybeSingle()
+      // Check if it's just a case change of the current role name
+      const isCaseChangeOnly = role.role_name.toLowerCase() === trimmedRoleName.toLowerCase()
+      
+      // If it's just a case change, allow it without duplicate check
+      if (isCaseChangeOnly) {
+        // Allow the update - it's just changing the case of the current role
+        // Continue to the update below
+      } else {
+        // Check if another role with the same name already exists (case-insensitive)
+        // First, get all roles for the user to check case-insensitively
+        const { data: allRoles, error: fetchError } = await supabase
+          .from('scorecard_roles')
+          .select('id, role_name')
+          .eq('user_id', user.id)
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Error checking for existing role:', checkError)
-        return { success: false, error: checkError.message || 'Failed to check for existing role' }
-      }
+        if (fetchError) {
+          console.error('Error fetching roles for duplicate check:', fetchError)
+          return { success: false, error: fetchError.message || 'Failed to check for existing role' }
+        }
 
-      if (existing) {
-        return { success: false, error: 'A role with this name already exists' }
+        // Check for case-insensitive duplicate (excluding the current role)
+        const duplicateRole = allRoles?.find(
+          r => r.id !== roleId && r.role_name.toLowerCase() === trimmedRoleName.toLowerCase()
+        )
+
+        if (duplicateRole) {
+          return { success: false, error: `A role with the name "${duplicateRole.role_name}" already exists. Please choose a different name.` }
+        }
       }
 
       // Update the role name
-      const { error: updateError } = await supabase
+      const { data: updatedRole, error: updateError } = await supabase
         .from('scorecard_roles')
         .update({ role_name: trimmedRoleName })
         .eq('id', roleId)
+        .select()
+        .single()
 
       if (updateError) {
         console.error('Error updating role:', updateError)
         return { success: false, error: updateError.message || 'Failed to update role' }
+      }
+
+      if (!updatedRole) {
+        console.error('Update succeeded but no data returned')
+        return { success: false, error: 'Update succeeded but role not found' }
       }
 
       return { success: true }

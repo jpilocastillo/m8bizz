@@ -30,8 +30,9 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
   const registrantsToAttendees = registrants > 0 ? (attendees / registrants) * 100 : 0
   // Appointments set from attendees
   const attendeesToAppointments = attendees > 0 ? (appointmentsSet / attendees) * 100 : 0
-  // 1st appointment no shows from appointments set
-  const appointmentsToNoShows = appointmentsSet > 0 ? (firstAppointmentNoShows / appointmentsSet) * 100 : 0
+  // 1st appointment no shows from appointments set and no shows combined
+  const totalAppointmentsAndNoShows = appointmentsSet + firstAppointmentNoShows
+  const appointmentsToNoShows = totalAppointmentsAndNoShows > 0 ? (firstAppointmentNoShows / totalAppointmentsAndNoShows) * 100 : 0
   // Not qualified from appointments set
   const appointmentsToNotQualified = appointmentsSet > 0 ? (notQualified / appointmentsSet) * 100 : 0
   // Clients from appointments set
@@ -81,7 +82,7 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
       bgColor: "bg-purple-500/20",
       borderColor: "border-purple-500/30",
       progressColor: "bg-purple-500",
-      conversionRate: registrantsToPlateLickers,
+      conversionRate: undefined,
       width: getFunnelWidth(plateLickers),
       dropOff: dropOffRegistrantsToPlateLickers,
     },
@@ -117,7 +118,7 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
       bgColor: "bg-red-500/20",
       borderColor: "border-red-500/30",
       progressColor: "bg-red-500",
-      conversionRate: appointmentsToNoShows,
+      conversionRate: undefined,
       width: getFunnelWidth(firstAppointmentNoShows),
       dropOff: dropOffAppointmentsToNoShows,
     },
@@ -129,7 +130,7 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
       bgColor: "bg-orange-500/20",
       borderColor: "border-orange-500/30",
       progressColor: "bg-orange-500",
-      conversionRate: appointmentsToNotQualified,
+      conversionRate: undefined,
       width: getFunnelWidth(notQualified),
       dropOff: dropOffAppointmentsToNotQualified,
     },
@@ -427,7 +428,7 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
                             </span>
                           </>
                         )}
-                        {index > 0 && dropOffValue > 0 && (
+                        {index > 0 && dropOffValue > 0 && step.label !== "Plate Lickers" && step.label !== "Not Qualified" && (
                           <>
                             <span className="text-white/30">•</span>
                             <span className="text-red-400 font-medium flex items-center gap-1">

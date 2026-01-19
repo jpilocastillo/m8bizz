@@ -26,6 +26,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { format, parseISO } from "date-fns"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface MarketingEvent {
   id: string
@@ -62,11 +69,41 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
   const [eventToDelete, setEventToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedYear, setSelectedYear] = useState<string>("all")
   const router = useRouter()
   const { toast } = useToast()
 
-  // Filter events based on search query
+  // Extract unique years from events
+  const availableYears = Array.from(
+    new Set(
+      initialEvents
+        .map((event) => {
+          try {
+            const [year] = event.date.split('-').map(Number)
+            return year
+          } catch {
+            return null
+          }
+        })
+        .filter((year): year is number => year !== null)
+    )
+  ).sort((a, b) => b - a) // Sort descending (newest first)
+
+  // Filter events based on search query and year
   const filteredEvents = initialEvents.filter((event) => {
+    // Year filter
+    if (selectedYear !== "all") {
+      try {
+        const [year] = event.date.split('-').map(Number)
+        if (year.toString() !== selectedYear) {
+          return false
+        }
+      } catch {
+        return false
+      }
+    }
+
+    // Search filter
     const searchLower = searchQuery.toLowerCase()
     return (
       event.name.toLowerCase().includes(searchLower) ||
@@ -172,8 +209,8 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
 
   return (
     <>
-      <div className="mb-4">
-        <div className="relative">
+      <div className="mb-4 flex gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search Events..."
@@ -182,6 +219,25 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
             className="pl-8 bg-black border-m8bs-border text-white"
           />
         </div>
+        <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <SelectTrigger className="w-[140px] bg-black border-m8bs-border text-white">
+            <SelectValue placeholder="Select Year" />
+          </SelectTrigger>
+          <SelectContent className="bg-black border-m8bs-border text-white">
+            <SelectItem value="all" className="focus:bg-m8bs-card-alt focus:text-white">
+              All Years
+            </SelectItem>
+            {availableYears.map((year) => (
+              <SelectItem
+                key={year}
+                value={year.toString()}
+                className="focus:bg-m8bs-card-alt focus:text-white"
+              >
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-md border border-m8bs-border overflow-hidden">

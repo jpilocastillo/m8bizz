@@ -1256,15 +1256,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">
           {isEditMode ? "Edit Business Data" : "Setup Your Advisor Basecamp"}
         </h1>
-        <p className="text-white/80 mt-2">
-          {isEditMode 
-            ? "Update Your Business Goals, Metrics, And Campaign Data."
-            : "Complete Your Business Profile To Access Your Personalized Advisor Dashboard."
-          }
-        </p>
         {!isEditMode && (
           <div className="bg-m8bs-blue/20 border border-m8bs-blue/50 rounded-lg p-4 mt-4">
             <p className="text-sm text-white">
@@ -1276,7 +1270,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         )}
         
         {/* Data Completeness Progress Bar */}
-        <Card className="mt-4 bg-gradient-to-br from-m8bs-card to-m8bs-card-alt border-m8bs-border shadow-lg">
+        <Card className="mt-4 bg-m8bs-card border-m8bs-border shadow-md hover:shadow-lg transition-all duration-300">
           <CardContent className="pt-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -1299,129 +1293,140 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
 
       {error && (
         <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
-          <p className="text-red-400">{error}</p>
+          <p className="text-white">{error}</p>
         </div>
       )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 [&_label]:text-white [&_p.text-sm]:text-white/60">
-          {/* Year Selector */}
-          <Card className="bg-black border-m8bs-border shadow-lg">
-            <CardContent className="pt-6">
-              <FormField
-                control={form.control}
-                name="year"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white font-medium text-lg">Year</FormLabel>
-                    <FormControl>
-                      <Select
-                        key={`year-select-${selectedYear}`}
-                        value={field.value || selectedYear.toString()}
-                        disabled={loadingYears}
-                        onValueChange={(value) => {
-                          const selectedYearNum = Number.parseInt(value)
-                          if (!isNaN(selectedYearNum)) {
-                            console.log('Year dropdown changed:', {
-                              newValue: value,
-                              selectedYearNum,
-                              currentSelectedYear: selectedYear,
-                              currentFieldValue: field.value
-                            })
-                            
-                            // CRITICAL: Update the form field FIRST and immediately to keep UI in sync
-                            // This must happen before any state updates that might trigger form resets
-                            field.onChange(value)
-                            
-                            // Also explicitly set the form value to ensure it's set
-                            form.setValue('year', value, { 
-                              shouldValidate: false,
-                              shouldDirty: false,
-                              shouldTouch: false
-                            })
-                            
-                            // Always update selectedYear state to ensure sync
-                            if (selectedYearNum !== selectedYear) {
-                              console.log('Updating selectedYear state from', selectedYear, 'to', selectedYearNum)
-                              // Update the selected year state, which will trigger the hook to reload
-                              setSelectedYear(selectedYearNum)
-                              // Reset the initialization flag so form will reload with new data
-                              dataInitializedRef.current = false
-                              // Clear any unsaved form data when switching years
-                              clearFormDataFromStorage()
+          {/* Year Selector - Hidden in edit mode since year is already selected from basecamp */}
+          {isEditMode ? (
+            // Hidden year field for edit mode - year is already selected from basecamp
+            <FormField
+              control={form.control}
+              name="year"
+              render={({ field }) => (
+                <input type="hidden" {...field} value={selectedYear.toString()} />
+              )}
+            />
+          ) : (
+            <Card className="bg-m8bs-card border-m8bs-border shadow-md hover:shadow-lg transition-all duration-300">
+              <CardContent className="pt-6">
+                <FormField
+                  control={form.control}
+                  name="year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-white font-medium text-lg">Year</FormLabel>
+                      <FormControl>
+                        <Select
+                          key={`year-select-${selectedYear}`}
+                          value={field.value || selectedYear.toString()}
+                          disabled={loadingYears}
+                          onValueChange={(value) => {
+                            const selectedYearNum = Number.parseInt(value)
+                            if (!isNaN(selectedYearNum)) {
+                              console.log('Year dropdown changed:', {
+                                newValue: value,
+                                selectedYearNum,
+                                currentSelectedYear: selectedYear,
+                                currentFieldValue: field.value
+                              })
+                              
+                              // CRITICAL: Update the form field FIRST and immediately to keep UI in sync
+                              // This must happen before any state updates that might trigger form resets
+                              field.onChange(value)
+                              
+                              // Also explicitly set the form value to ensure it's set
+                              form.setValue('year', value, { 
+                                shouldValidate: false,
+                                shouldDirty: false,
+                                shouldTouch: false
+                              })
+                              
+                              // Always update selectedYear state to ensure sync
+                              if (selectedYearNum !== selectedYear) {
+                                console.log('Updating selectedYear state from', selectedYear, 'to', selectedYearNum)
+                                // Update the selected year state, which will trigger the hook to reload
+                                setSelectedYear(selectedYearNum)
+                                // Reset the initialization flag so form will reload with new data
+                                dataInitializedRef.current = false
+                                // Clear any unsaved form data when switching years
+                                clearFormDataFromStorage()
+                              }
                             }
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-all duration-200 max-w-xs hover:border-m8bs-blue/50 disabled:opacity-50 disabled:cursor-not-allowed relative">
-                          <SelectValue placeholder={loadingYears ? "Loading years..." : `Select year (${selectedYear})`} />
-                          {loadingYears && (
-                            <Loader2 className="absolute right-8 h-4 w-4 animate-spin text-m8bs-blue" />
-                          )}
-                        </SelectTrigger>
-                        <SelectContent 
-                          className="bg-m8bs-card border-m8bs-border shadow-xl z-50"
-                          position="popper"
-                          sideOffset={4}
+                          }}
                         >
-                          {loadingYears ? (
-                            <div className="flex items-center justify-center py-4 px-2">
-                              <Loader2 className="h-5 w-5 animate-spin text-m8bs-blue" />
-                              <span className="ml-2 text-white/70 text-sm">Loading years...</span>
-                            </div>
-                          ) : (
-                            <>
-                              {availableYears.map((availableYear) => (
-                                <SelectItem 
-                                  key={availableYear} 
-                                  value={availableYear.toString()}
-                                  className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30 cursor-pointer transition-colors duration-150 data-[highlighted]:bg-m8bs-blue/30"
-                                >
-                                  <span className="font-medium">{availableYear}</span>
-                                  {availableYear === selectedYear && (
-                                    <span className="ml-2 text-xs text-m8bs-blue/70">(Current)</span>
-                                  )}
-                                </SelectItem>
-                              ))}
-                              {/* Always allow adding current year if not in list */}
-                              {!availableYears.includes(new Date().getFullYear()) && (
-                                <SelectItem 
-                                  value={new Date().getFullYear().toString()}
-                                  className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30 cursor-pointer transition-colors duration-150 data-[highlighted]:bg-m8bs-blue/30 border-t border-m8bs-border/50 mt-1 pt-2"
-                                >
-                                  <span className="font-medium">{new Date().getFullYear()}</span>
-                                  <span className="ml-2 text-xs text-green-400/70">(New)</span>
-                                </SelectItem>
-                              )}
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormDescription className="text-m8bs-muted">Select the year for this business data</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+                          <SelectTrigger className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-all duration-200 max-w-xs hover:border-m8bs-blue/50 disabled:opacity-50 disabled:cursor-not-allowed relative">
+                            <SelectValue placeholder={loadingYears ? "Loading years..." : `Select year (${selectedYear})`} />
+                            {loadingYears && (
+                              <Loader2 className="absolute right-8 h-4 w-4 animate-spin text-m8bs-blue" />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent 
+                            className="bg-m8bs-card border-m8bs-border shadow-xl z-50"
+                            position="popper"
+                            sideOffset={4}
+                          >
+                            {loadingYears ? (
+                              <div className="flex items-center justify-center py-4 px-2">
+                                <Loader2 className="h-5 w-5 animate-spin text-m8bs-blue" />
+                                <span className="ml-2 text-white/70 text-sm">Loading years...</span>
+                              </div>
+                            ) : (
+                              <>
+                                {availableYears.map((availableYear) => (
+                                  <SelectItem 
+                                    key={availableYear} 
+                                    value={availableYear.toString()}
+                                    className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30 cursor-pointer transition-colors duration-150 data-[highlighted]:bg-m8bs-blue/30"
+                                  >
+                                    <span className="font-medium">{availableYear}</span>
+                                    {availableYear === selectedYear && (
+                                      <span className="ml-2 text-xs text-m8bs-blue/70">(Current)</span>
+                                    )}
+                                  </SelectItem>
+                                ))}
+                                {/* Always allow adding current year if not in list */}
+                                {!availableYears.includes(new Date().getFullYear()) && (
+                                  <SelectItem 
+                                    value={new Date().getFullYear().toString()}
+                                    className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30 cursor-pointer transition-colors duration-150 data-[highlighted]:bg-m8bs-blue/30 border-t border-m8bs-border/50 mt-1 pt-2"
+                                  >
+                                    <span className="font-medium">{new Date().getFullYear()}</span>
+                                    <span className="ml-2 text-xs text-green-400/70">(New)</span>
+                                  </SelectItem>
+                                )}
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormDescription className="text-m8bs-muted">Select the year for this business data</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          )}
           <Tabs value={activeTab} onValueChange={handleTabChange} key={`tabs-${selectedYear}`} className="w-full">
-            <TabsList className="bg-m8bs-blue/20 p-1 border border-m8bs-blue/50 rounded-lg shadow-lg grid grid-cols-3 md:grid-cols-5 w-full">
-              <TabsTrigger value="goals" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Goals</TabsTrigger>
-              <TabsTrigger value="current" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Current Advisor Book</TabsTrigger>
-              <TabsTrigger value="clients" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Client Metrics</TabsTrigger>
-              <TabsTrigger value="campaigns" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Annual Campaigns</TabsTrigger>
-              <TabsTrigger value="income" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70">Revenue</TabsTrigger>
+            <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid grid-cols-3 md:grid-cols-5 w-full h-auto">
+              <TabsTrigger value="goals" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70">Goals</TabsTrigger>
+              <TabsTrigger value="current" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70">Current Advisor Book</TabsTrigger>
+              <TabsTrigger value="clients" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70">Client Metrics</TabsTrigger>
+              <TabsTrigger value="campaigns" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70">Annual Campaigns</TabsTrigger>
+              <TabsTrigger value="income" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70">Revenue</TabsTrigger>
             </TabsList>
 
             {/* Goals Tab */}
             <TabsContent value="goals">
-              <Card className="bg-black border-m8bs-border shadow-lg">
+              <Card className="bg-m8bs-card border-m8bs-border shadow-md hover:shadow-lg transition-all duration-300">
                 <CardHeader className="pb-4">
-                  <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.businessGoals ? 'text-white' : 'text-red-500'}`}>
+                  <CardTitle className="text-xl font-extrabold text-white tracking-tight">
                     Business Goals
                   </CardTitle>
-                  <CardDescription className="text-m8bs-muted">Set Your Business Goals For {selectedYear}</CardDescription>
+                  <CardDescription className="text-m8bs-muted mt-1">Set Your Business Goals For {selectedYear}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -1434,7 +1439,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                           <Input
                             type="text"
                             placeholder="$0"
-                            className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                            className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                             {...field}
                             value={formatCurrency(field.value)}
                             onChange={(e) => {
@@ -1455,9 +1460,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                       name="aumGoalPercentage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">AUM Goal Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">AUM Goal Percentage (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" {...field} />
+                            <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
                           <FormDescription className="text-white/60">Percentage Of Business Goal For AUM</FormDescription>
                           <FormMessage />
@@ -1472,9 +1477,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                         <FormItem>
                           <FormLabel className="text-white font-medium">Annuity Goal Percentage (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} />
+                            <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
-                          <FormDescription className="text-white/60" className="text-white/60">Percentage Of Business Goal For Annuity</FormDescription>
+                          <FormDescription className="text-white/60">Percentage Of Business Goal For Annuity</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1489,9 +1494,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                         <FormItem>
                           <FormLabel className="text-white font-medium">Life Target Goal Percentage (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} />
+                            <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
-                          <FormDescription className="text-white/60" className="text-white/60">Percentage Of Business Goal For Life Insurance</FormDescription>
+                          <FormDescription className="text-white/60">Percentage Of Business Goal For Life Insurance</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1512,12 +1517,12 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
 
             {/* Current Advisor Book Tab */}
             <TabsContent value="current">
-              <Card className="bg-black border-m8bs-border shadow-lg">
+              <Card className="bg-m8bs-card border-m8bs-border shadow-md hover:shadow-lg transition-all duration-300">
                 <CardHeader className="pb-4">
-                  <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.currentValues ? 'text-white' : 'text-red-500'}`}>
+                  <CardTitle className="text-xl font-extrabold text-white tracking-tight">
                     Current Advisor Book
                   </CardTitle>
-                  <CardDescription className="text-m8bs-muted">Your Current Advisor Book Metrics For {selectedYear}</CardDescription>
+                  <CardDescription className="text-m8bs-muted mt-1">Your Current Advisor Book Metrics For {selectedYear}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1531,7 +1536,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             <Input
                               type="text"
                               placeholder="$0"
-                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                              className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -1555,7 +1560,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             <Input
                               type="text"
                               placeholder="$0"
-                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                              className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -1579,7 +1584,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             <Input
                               type="text"
                               placeholder="$0"
-                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                              className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -1599,12 +1604,12 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
 
             {/* Client Metrics Tab */}
             <TabsContent value="clients">
-              <Card className="bg-black border-m8bs-border shadow-lg">
+              <Card className="bg-m8bs-card border-m8bs-border shadow-md hover:shadow-lg transition-all duration-300">
                 <CardHeader className="pb-4">
-                  <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.clientMetrics ? 'text-white' : 'text-red-500'}`}>
+                  <CardTitle className="text-xl font-extrabold text-white tracking-tight">
                     Client Metrics
                   </CardTitle>
-                  <CardDescription className="text-m8bs-muted">Key Performance Indicators For Your Client Base In {selectedYear}</CardDescription>
+                  <CardDescription className="text-m8bs-muted mt-1">Key Performance Indicators For Your Client Base In {selectedYear}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1613,12 +1618,12 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                       name="avgAnnuitySize"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Average Annuity Size ($)</FormLabel>
+                          <FormLabel className="text-white font-medium">Average Annuity Size ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
                               placeholder="$0"
-                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                              className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -1627,6 +1632,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                               }}
                             />
                           </FormControl>
+                          <FormDescription className="text-white/60">Average size of annuity accounts</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1637,12 +1643,12 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                       name="avgAUMSize"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Average AUM Size ($)</FormLabel>
+                          <FormLabel className="text-white font-medium">Average AUM Size ($)</FormLabel>
                           <FormControl>
                             <Input
                               type="text"
                               placeholder="$0"
-                              className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                              className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                               {...field}
                               value={formatCurrency(field.value)}
                               onChange={(e) => {
@@ -1651,6 +1657,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                               }}
                             />
                           </FormControl>
+                          <FormDescription className="text-white/60">Average size of AUM accounts</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1663,7 +1670,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                       name="avgNetWorthNeeded"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Average Net Worth Needed ($)</FormLabel>
+                          <FormLabel className="text-white font-medium">Average Net Worth Needed ($)</FormLabel>
                           <FormControl>
                             <Input 
                               type="text"
@@ -1671,7 +1678,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                               {...field}
                               value={formatCurrency(field.value)}
                               readOnly
-                              className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                              className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white cursor-not-allowed"
                             />
                           </FormControl>
                           <FormDescription className="text-white/60">Auto-Calculated: Average Annuity Size + Average AUM Size</FormDescription>
@@ -1685,10 +1692,11 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                       name="appointmentAttrition"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Appointment Attrition (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Appointment Attrition (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" {...field} />
+                            <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
+                          <FormDescription className="text-white/60">Percentage of appointments that don't convert</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1701,39 +1709,40 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                       name="avgCloseRatio"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Average Close Ratio (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Average Close Ratio (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.1" {...field} />
+                            <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" max="100" step="0.1" {...field} />
                           </FormControl>
+                          <FormDescription className="text-white/60">Percentage of appointments that convert to clients</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
                     <FormItem>
-                      <FormLabel>Annuities Closed (#)</FormLabel>
+                      <FormLabel className="text-white font-medium">Annuities Closed (#)</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           value={calculatedAnnuityClosed}
                           readOnly
-                          className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                          className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white cursor-not-allowed"
                         />
                       </FormControl>
-                      <FormDescription>Auto-Calculated: Annuity Goal / Average Annuity Size</FormDescription>
+                      <FormDescription className="text-white/60">Auto-Calculated: Annuity Goal / Average Annuity Size</FormDescription>
                     </FormItem>
 
                     <FormItem>
-                      <FormLabel>AUM Accounts (#)</FormLabel>
+                      <FormLabel className="text-white font-medium">AUM Accounts (#)</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           value={calculatedAUMAccounts}
                           readOnly
-                          className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                          className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white cursor-not-allowed"
                         />
                       </FormControl>
-                      <FormDescription>Auto-Calculated: AUM Goal / Average AUM Size</FormDescription>
+                      <FormDescription className="text-white/60">Auto-Calculated: AUM Goal / Average AUM Size</FormDescription>
                     </FormItem>
                   </div>
                 </CardContent>
@@ -1742,25 +1751,25 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
 
             {/* Campaigns Tab */}
             <TabsContent value="campaigns">
-              <Card className="bg-black border-m8bs-border shadow-lg">
+              <Card className="bg-m8bs-card border-m8bs-border shadow-md hover:shadow-lg transition-all duration-300">
                 <CardHeader className="pb-4">
-                  <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.campaigns ? 'text-white' : 'text-red-500'}`}>
+                  <CardTitle className="text-xl font-extrabold text-white tracking-tight">
                     Annual Campaign Goals
                   </CardTitle>
-                  <CardDescription className="text-m8bs-muted">Set Your Annual Campaign Goals For {selectedYear} (Monthly values are used to calculate annual totals)</CardDescription>
+                  <CardDescription className="text-m8bs-muted mt-1">Set Your Annual Campaign Goals For {selectedYear} (Monthly values are used to calculate annual totals)</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {fields.map((field, index) => (
-                    <div key={field.id} className="border rounded-lg p-4 space-y-4">
+                    <div key={field.id} className="border border-m8bs-border rounded-lg p-4 space-y-4 bg-m8bs-card/50 hover:bg-m8bs-card/70 transition-all duration-300">
                       <div className="flex justify-between items-center">
-                        <h4 className="font-medium text-white">Annual Campaign Goal {index + 1}</h4>
+                        <h4 className="font-semibold text-white text-lg">Annual Campaign Goal {index + 1}</h4>
                         {fields.length > 1 && (
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => remove(index)}
-                            className="text-white border-m8bs-border hover:bg-m8bs-card-alt"
+                            className="text-white border-m8bs-border hover:bg-red-500/20 hover:border-red-500/50 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1773,9 +1782,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                           name={`campaigns.${index}.name`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Campaign Name</FormLabel>
+                              <FormLabel className="text-white font-medium">Campaign Name</FormLabel>
                               <FormControl>
-                                <Input className="bg-m8bs-card-alt border-m8bs-border text-white" {...field} placeholder="e.g., Facebook Seminars" />
+                                <Input className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" {...field} placeholder="e.g., Facebook Seminars" />
                               </FormControl>
                               <FormDescription className="text-white/60">Name of your annual campaign goal</FormDescription>
                               <FormMessage />
@@ -1788,20 +1797,21 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                           name={`campaigns.${index}.status`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Status</FormLabel>
+                              <FormLabel className="text-white font-medium">Status</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="bg-m8bs-card-alt border-m8bs-border text-white">
+                                  <SelectTrigger className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors">
                                     <SelectValue placeholder="Select status" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent className="bg-m8bs-card border-m8bs-border">
-                                  <SelectItem value="Active">Active</SelectItem>
-                                  <SelectItem value="Planned">Planned</SelectItem>
-                                  <SelectItem value="Completed">Completed</SelectItem>
-                                  <SelectItem value="Paused">Paused</SelectItem>
+                                  <SelectItem value="Active" className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30">Active</SelectItem>
+                                  <SelectItem value="Planned" className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30">Planned</SelectItem>
+                                  <SelectItem value="Completed" className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30">Completed</SelectItem>
+                                  <SelectItem value="Paused" className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30">Paused</SelectItem>
                                 </SelectContent>
                               </Select>
+                              <FormDescription className="text-white/60">Current status of the campaign</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1812,18 +1822,18 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                           name={`campaigns.${index}.frequency`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Campaign Frequency</FormLabel>
+                              <FormLabel className="text-white font-medium">Campaign Frequency</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value || "Monthly"}>
                                 <FormControl>
-                                  <SelectTrigger className="bg-m8bs-card-alt border-m8bs-border text-white">
+                                  <SelectTrigger className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors">
                                     <SelectValue placeholder="Select frequency" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent className="bg-m8bs-card border-m8bs-border">
-                                  <SelectItem value="Monthly">Monthly (×12 annually)</SelectItem>
-                                  <SelectItem value="Quarterly">Quarterly (×4 annually)</SelectItem>
-                                  <SelectItem value="Semi-Annual">Semi-Annual (×2 annually)</SelectItem>
-                                  <SelectItem value="Annual">Annual (×1 annually)</SelectItem>
+                                  <SelectItem value="Monthly" className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30">Monthly (×12 annually)</SelectItem>
+                                  <SelectItem value="Quarterly" className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30">Quarterly (×4 annually)</SelectItem>
+                                  <SelectItem value="Semi-Annual" className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30">Semi-Annual (×2 annually)</SelectItem>
+                                  <SelectItem value="Annual" className="text-white hover:bg-m8bs-blue/20 focus:bg-m8bs-blue/30">Annual (×1 annually)</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormDescription className="text-white/60">Select how often this campaign runs. Labels below will update automatically.</FormDescription>
@@ -1844,12 +1854,12 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             
                             return (
                               <FormItem>
-                                <FormLabel className="text-white">{frequencyLabel} Budget ($)</FormLabel>
+                                <FormLabel className="text-white font-medium">{frequencyLabel} Budget ($)</FormLabel>
                                 <FormControl>
                                   <Input
                                     type="text"
                                     placeholder="$0"
-                                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                                    className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                                     {...field}
                                     value={formatCurrency(field.value)}
                                     onChange={(e) => {
@@ -1877,9 +1887,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             
                             return (
                               <FormItem>
-                                <FormLabel className="text-white">{frequencyLabel} Events (#)</FormLabel>
+                                <FormLabel className="text-white font-medium">{frequencyLabel} Events (#)</FormLabel>
                                 <FormControl>
-                                  <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" placeholder="0" {...field} />
+                                  <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" placeholder="0" {...field} />
                                 </FormControl>
                                 <FormDescription className="text-white/60">
                                   Events per {frequencyLabel.toLowerCase()} (Annual = {frequencyLabel} × {multiplier})
@@ -1900,9 +1910,9 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             
                             return (
                               <FormItem>
-                                <FormLabel className="text-white">{frequencyLabel} Leads Generated (#)</FormLabel>
+                                <FormLabel className="text-white font-medium">{frequencyLabel} Leads Generated (#)</FormLabel>
                                 <FormControl>
-                                  <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" placeholder="0" {...field} />
+                                  <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" placeholder="0" {...field} />
                                 </FormControl>
                                 <FormDescription className="text-white/60">
                                   Leads per {frequencyLabel.toLowerCase()} (Annual = {frequencyLabel} × {multiplier})
@@ -1926,13 +1936,13 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             
                             return (
                               <FormItem>
-                                <FormLabel className="text-white">Total Cost of Event ($)</FormLabel>
+                                <FormLabel className="text-white font-medium">Total Cost of Event ($)</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="text" 
                                     value={formatCurrency(totalCostOfEvent)}
                                     readOnly
-                                    className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                                    className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white cursor-not-allowed"
                                     onChange={() => {}} // Prevent changes
                                     onBlur={() => {}} // Prevent blur events
                                   />
@@ -1955,13 +1965,13 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             
                             return (
                               <FormItem>
-                                <FormLabel className="text-white">Cost per Lead ($)</FormLabel>
+                                <FormLabel className="text-white font-medium">Cost per Lead ($)</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="text" 
                                     value={formatCurrency(costPerLead)}
                                     readOnly
-                                    className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                                    className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white cursor-not-allowed"
                                     onChange={() => {}} // Prevent changes
                                     onBlur={() => {}} // Prevent blur events
                                   />
@@ -1988,13 +1998,13 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                             
                             return (
                               <FormItem>
-                                <FormLabel className="text-white">Cost per Client ($)</FormLabel>
+                                <FormLabel className="text-white font-medium">Cost per Client ($)</FormLabel>
                                 <FormControl>
                                   <Input 
                                     type="text" 
                                     value={formatCurrency(costPerClient)}
                                     readOnly
-                                    className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white"
+                                    className="bg-m8bs-blue/20 border border-m8bs-blue/50 text-white cursor-not-allowed"
                                     onChange={() => {}} // Prevent changes
                                     onBlur={() => {}} // Prevent blur events
                                   />
@@ -2011,11 +2021,12 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                           name={`campaigns.${index}.foodCosts`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-white">Food Costs ($)</FormLabel>
+                              <FormLabel className="text-white font-medium">Food Costs ($)</FormLabel>
                               <FormControl>
                                 <Input
                                   type="text"
                                   placeholder="$0"
+                                  className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                                   {...field}
                                   value={formatCurrency(field.value || "")}
                                   onChange={(e) => {
@@ -2024,6 +2035,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                                   }}
                                 />
                               </FormControl>
+                              <FormDescription className="text-white/60">Food and venue costs for this campaign</FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -2034,8 +2046,8 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
 
                   {/* Annual Campaign Goals Summary */}
                   {fields.length > 0 && (
-                    <div className="mt-6 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
-                      <h4 className="text-lg font-semibold text-white mb-4">Annual Campaign Goals Summary</h4>
+                    <div className="mt-6 p-4 bg-m8bs-card border border-m8bs-border rounded-lg shadow-md">
+                      <h4 className="text-lg font-extrabold text-white mb-4 tracking-tight">Annual Campaign Goals Summary</h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <p className="text-sm text-white/70 mb-1">Total Annual Events</p>
@@ -2078,7 +2090,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                     type="button" 
                     variant="outline" 
                     onClick={addCampaign}
-                    className="mt-4 text-white border-m8bs-border hover:bg-m8bs-card-alt"
+                    className="mt-4 text-white border-m8bs-border hover:bg-m8bs-blue/20 hover:border-m8bs-blue/50 transition-colors"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Annual Campaign Goal
@@ -2090,12 +2102,12 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
             {/* Revenue Tab */}
             <TabsContent value="income">
               <div className="space-y-6">
-                <Card className="bg-black border-m8bs-border shadow-lg">
+                <Card className="bg-m8bs-card border-m8bs-border shadow-md hover:shadow-lg transition-all duration-300">
                   <CardHeader className="pb-4">
-                    <CardTitle className={`text-xl flex items-center gap-2 ${sectionCompletion.commissionRates ? 'text-white' : 'text-red-500'}`}>
+                    <CardTitle className="text-xl font-extrabold text-white tracking-tight">
                       Commission Rates
                     </CardTitle>
-                    <CardDescription className="text-m8bs-muted">Set Your Commission Percentages And Rates For {selectedYear}</CardDescription>
+                    <CardDescription className="text-m8bs-muted mt-1">Set Your Commission Percentages And Rates For {selectedYear}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2104,11 +2116,12 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                         name="planningFeeRate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Average Planning Fee Rate ($)</FormLabel>
+                            <FormLabel className="text-white font-medium">Average Planning Fee Rate ($)</FormLabel>
                             <FormControl>
                               <Input
                                 type="text"
                                 placeholder="$0"
+                                className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
                                 {...field}
                                 value={formatCurrency(field.value)}
                                 onChange={(e) => {
@@ -2117,6 +2130,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                                 }}
                               />
                             </FormControl>
+                            <FormDescription className="text-white/60">Average planning fee rate per client</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -2130,10 +2144,11 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                         name="annuityCommission"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Annuity Commission (%)</FormLabel>
+                            <FormLabel className="text-white font-medium">Annuity Commission (%)</FormLabel>
                             <FormControl>
-                              <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.01" {...field} />
+                              <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" max="100" step="0.01" {...field} />
                             </FormControl>
+                            <FormDescription className="text-white/60">Commission percentage for annuity sales</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -2144,10 +2159,11 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                         name="aumCommission"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">AUM Commission (%)</FormLabel>
+                            <FormLabel className="text-white font-medium">AUM Commission (%)</FormLabel>
                             <FormControl>
-                              <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.01" {...field} />
+                              <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" max="100" step="0.01" {...field} />
                             </FormControl>
+                            <FormDescription className="text-white/60">Commission percentage for AUM accounts</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -2158,10 +2174,11 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                         name="lifeCommission"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-white">Life Commission (%)</FormLabel>
+                            <FormLabel className="text-white font-medium">Life Commission (%)</FormLabel>
                             <FormControl>
-                              <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" step="0.01" {...field} />
+                              <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" step="0.01" {...field} />
                             </FormControl>
+                            <FormDescription className="text-white/60">Commission percentage for life insurance sales</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -2173,17 +2190,18 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                       name="trailIncomePercentage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-white">Trail Income Percentage (%)</FormLabel>
+                          <FormLabel className="text-white font-medium">Trail Income Percentage (%)</FormLabel>
                           <FormControl>
-                            <Input type="number" className="bg-m8bs-card-alt border-m8bs-border text-white" min="0" max="100" step="0.01" {...field} />
+                            <Input type="number" className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors" min="0" max="100" step="0.01" {...field} />
                           </FormControl>
+                          <FormDescription className="text-white/60">Percentage of trail income from existing accounts</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    <div className="p-4 bg-m8bs-blue/20 border border-m8bs-blue/50 rounded-lg">
-                      <h4 className="font-medium mb-2 text-white">Calculated Income</h4>
+                    <div className="p-4 bg-m8bs-blue/20 border border-m8bs-blue/50 rounded-lg shadow-sm">
+                      <h4 className="font-semibold mb-2 text-white">Calculated Income</h4>
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm text-white">
                         <div>Annuity: {formatCurrency(annuityIncome)}</div>
                         <div>AUM: {formatCurrency(aumIncome)}</div>
@@ -2202,14 +2220,14 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-between items-center space-x-4 pt-4 border-t">
+          <div className="flex justify-between items-center space-x-4 pt-6 mt-6 border-t border-m8bs-border">
             <div className="flex space-x-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handlePrevious}
                 disabled={isFirstTab}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-blue/20 hover:border-m8bs-blue/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Previous
@@ -2219,7 +2237,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                 variant="outline"
                 onClick={handleNext}
                 disabled={isLastTab}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-blue/20 hover:border-m8bs-blue/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
               >
                 Next
                 <ChevronRight className="h-4 w-4" />
@@ -2232,7 +2250,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                     type="button" 
                     variant="outline"
                     size="lg"
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                    className="bg-m8bs-card border-red-500/50 text-red-400 hover:bg-red-500/20 hover:border-red-500 hover:text-red-300 transition-all duration-300 shadow-sm hover:shadow-md"
                   >
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Clear Form
@@ -2247,7 +2265,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel className="bg-black-alt border-m8bs-border text-white hover:bg-black">
+                    <AlertDialogCancel className="bg-black border-m8bs-border text-white hover:bg-black">
                       Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
@@ -2266,6 +2284,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                   variant="outline"
                   size="lg"
                   onClick={onCancel}
+                  className="bg-m8bs-card border-m8bs-border text-white hover:bg-m8bs-card-alt transition-all duration-300 shadow-sm hover:shadow-md"
                 >
                   Cancel
                 </Button>
@@ -2273,6 +2292,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
               <Button 
                 type="submit" 
                 size="lg"
+                className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-all duration-300 shadow-md hover:shadow-lg"
                 onClick={async () => {
                   console.log('🔘 Submit button clicked!')
                   console.log('Form is valid:', form.formState.isValid)

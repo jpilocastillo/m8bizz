@@ -26,7 +26,8 @@ import {
   CheckCircle, 
   AlertCircle,
   Save,
-  Calculator
+  Calculator,
+  ArrowLeft
 } from "lucide-react"
 
 // Currency formatting utilities for forms
@@ -159,8 +160,9 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     return Object.keys(errors).length === 0
   }
 
-  // Calculate form completion progress
+  // Calculate form completion progress - includes all fields across all tabs
   const formProgress = useMemo(() => {
+    // Required fields (must be filled)
     const requiredFields = [
       { key: 'name', value: name },
       { key: 'date', value: date },
@@ -169,11 +171,70 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       { key: 'topic', value: topic }
     ]
     
-    const completedFields = requiredFields.filter(field => 
-      field.value && field.value.toString().trim().length > 0
-    ).length
+    // Optional fields (count towards completion but not required)
+    const optionalFields = [
+      // Event details
+      { key: 'time', value: hour && minute ? `${hour}:${minute} ${ampm}` : '' },
+      { key: 'ageRange', value: ageRange },
+      { key: 'mileRadius', value: mileRadius },
+      { key: 'incomeAssets', value: incomeAssets },
+      { key: 'marketingAudience', value: marketingAudience },
+      // Expenses
+      { key: 'advertisingCost', value: advertisingCost },
+      { key: 'foodVenueCost', value: foodVenueCost },
+      { key: 'otherCosts', value: otherCosts },
+      // Attendance
+      { key: 'registrantResponses', value: registrantResponses },
+      { key: 'confirmations', value: confirmations },
+      { key: 'attendees', value: attendees },
+      { key: 'clientsFromEvent', value: clientsFromEvent },
+      { key: 'plateLickers', value: plateLickers },
+      // Appointments
+      { key: 'setAtEvent', value: setAtEvent },
+      { key: 'setAfterEvent', value: setAfterEvent },
+      { key: 'firstAppointmentAttended', value: firstAppointmentAttended },
+      { key: 'firstAppointmentNoShows', value: firstAppointmentNoShows },
+      { key: 'secondAppointmentAttended', value: secondAppointmentAttended },
+      { key: 'notQualified', value: notQualified },
+      // Financial
+      { key: 'annuityPremium', value: annuityPremium },
+      { key: 'annuitiesSold', value: annuitiesSold },
+      { key: 'annuityCommissionPercentage', value: annuityCommissionPercentage },
+      { key: 'lifeInsurancePremium', value: lifeInsurancePremium },
+      { key: 'lifePoliciesSold', value: lifePoliciesSold },
+      { key: 'lifeInsuranceCommissionPercentage', value: lifeInsuranceCommissionPercentage },
+      { key: 'aum', value: aum },
+      { key: 'aumAccountsOpened', value: aumAccountsOpened },
+      { key: 'aumFeePercentage', value: aumFeePercentage },
+      { key: 'financialPlanning', value: financialPlanning },
+      { key: 'financialPlansSold', value: financialPlansSold }
+    ]
     
-    return Math.round((completedFields / requiredFields.length) * 100)
+    const allFields = [...requiredFields, ...optionalFields]
+    const completedFields = allFields.filter(field => {
+      const val = field.value
+      return val !== null && val !== undefined && val !== '' && val.toString().trim().length > 0
+    }).length
+    
+    return Math.round((completedFields / allFields.length) * 100)
+  }, [
+    name, date, location, marketingType, topic,
+    hour, minute, ampm, ageRange, mileRadius, incomeAssets, marketingAudience,
+    advertisingCost, foodVenueCost, otherCosts,
+    registrantResponses, confirmations, attendees, clientsFromEvent, plateLickers,
+    setAtEvent, setAfterEvent, firstAppointmentAttended, firstAppointmentNoShows, secondAppointmentAttended, notQualified,
+    annuityPremium, annuitiesSold, annuityCommissionPercentage,
+    lifeInsurancePremium, lifePoliciesSold, lifeInsuranceCommissionPercentage,
+    aum, aumAccountsOpened, aumFeePercentage, financialPlanning, financialPlansSold
+  ])
+
+  // Check if required fields are complete
+  const requiredFieldsComplete = useMemo(() => {
+    return name && name.trim().length >= 2 &&
+           date &&
+           location && location.trim().length >= 2 &&
+           marketingType && marketingType.trim().length > 0 &&
+           topic && topic.trim().length >= 2
   }, [name, date, location, marketingType, topic])
 
   // Auto-calculate financial fields
@@ -468,8 +529,11 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
           description: `Event ${isEditing ? 'Updated' : 'Created'} Successfully!`,
       })
 
-      console.log('Redirecting to homepage...')
-      router.push("/")
+      // Get the event ID - for new events it's in result.eventId, for updates use initialData.eventId
+      const eventId = isEditing ? initialData?.eventId : result.eventId
+      
+      console.log('Redirecting to single event dashboard...')
+      router.push("/single-event")
       router.refresh()
     } catch (error) {
       console.error('Detailed error:', {
@@ -639,6 +703,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         description: "Event updated successfully!",
       })
 
+      // Redirect to single event dashboard after update
+      router.push("/single-event")
       router.refresh()
     } catch (error) {
       console.error('Detailed error:', {
@@ -678,7 +744,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   return (
     <div className="space-y-6">
       {/* Form Header with Progress */}
-      <Card className="bg-black border-m8bs-border shadow-lg">
+      <Card className="bg-black border-m8bs-border shadow-xl">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
@@ -687,7 +753,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 {isEditing ? 'Edit Event' : 'Create New Event'}
               </CardTitle>
               <CardDescription className="text-m8bs-muted mt-1">
-                {isEditing ? 'Update your marketing event details' : 'Set up a new marketing event with comprehensive tracking'}
+                {isEditing ? 'Update your marketing event details' : 'Set up a new marketing event. Fill in what you have - only basic event details are required.'}
               </CardDescription>
             </div>
           </div>
@@ -701,10 +767,10 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               </Badge>
             </div>
             <Progress value={formProgress} className="h-2 bg-m8bs-border" />
-            {formProgress === 100 && (
+            {requiredFieldsComplete && (
               <div className="flex items-center gap-2 mt-2 text-green-400">
                 <CheckCircle className="h-4 w-4" />
-                <span className="text-sm font-medium">Ready to submit!</span>
+                <span className="text-sm font-medium">Ready to submit! (Required fields complete)</span>
               </div>
             )}
           </div>
@@ -725,43 +791,43 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       <form onSubmit={handleSubmit}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="bg-black p-1 border border-m8bs-border rounded-lg shadow-lg">
-            <TabsTrigger value="event" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+            <TabsTrigger value="event" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/20 flex items-center gap-2 transition-all duration-200">
               <Calendar className="h-4 w-4" />
               Event Details
             </TabsTrigger>
-            <TabsTrigger value="expenses" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+            <TabsTrigger value="expenses" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/20 flex items-center gap-2 transition-all duration-200">
               <DollarSign className="h-4 w-4" />
               Expenses
             </TabsTrigger>
-            <TabsTrigger value="attendance" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+            <TabsTrigger value="attendance" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/20 flex items-center gap-2 transition-all duration-200">
               <Users className="h-4 w-4" />
               Attendance
             </TabsTrigger>
-            <TabsTrigger value="appointments" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+            <TabsTrigger value="appointments" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/20 flex items-center gap-2 transition-all duration-200">
               <Target className="h-4 w-4" />
               Appointments
             </TabsTrigger>
-            <TabsTrigger value="financial" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white flex items-center gap-2">
+            <TabsTrigger value="financial" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/20 flex items-center gap-2 transition-all duration-200">
               <TrendingUp className="h-4 w-4" />
               Financial
             </TabsTrigger>
           </TabsList>
 
         <TabsContent value="event" className="space-y-4">
-          <Card className="bg-black border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-m8bs-blue" />
                 Event Information
               </CardTitle>
               <CardDescription className="text-m8bs-muted">
-                Enter The Basic Details About Your Marketing Event. Fields Marked With * Are Required.
+                Enter The Basic Details About Your Marketing Event. Fields Marked With * Are Required. All Other Fields Are Optional.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-white font-medium flex items-center gap-1">
+                  <Label htmlFor="name" className="text-white font-semibold flex items-center gap-1 text-sm">
                     Event Name <span className="text-red-400">*</span>
                   </Label>
                   <Input
@@ -771,8 +837,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       setName(e.target.value)
                       validateField('name', e.target.value)
                     }}
-                    className={`bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
-                      formErrors.name ? 'border-red-500 focus:border-red-500' : ''
+                    className={`bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md ${
+                      formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30' : ''
                     }`}
                     placeholder="Enter Event Name (E.g., Retirement Planning Seminar)"
                     required
@@ -796,8 +862,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       setDate(e.target.value)
                       validateField('date', e.target.value)
                     }}
-                    className={`bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
-                      formErrors.date ? 'border-red-500 focus:border-red-500' : ''
+                    className={`bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md ${
+                      formErrors.date ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30' : ''
                     }`}
                     required
                   />
@@ -819,8 +885,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       setLocation(e.target.value)
                       validateField('location', e.target.value)
                     }}
-                    className={`bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors ${
-                      formErrors.location ? 'border-red-500 focus:border-red-500' : ''
+                    className={`bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md ${
+                      formErrors.location ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30' : ''
                     }`}
                     placeholder="Enter Venue Location"
                     required
@@ -845,8 +911,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       value={hour}
                       onChange={e => setHour(e.target.value)}
                       placeholder="HH"
-                      required
-                      className="w-16"
+                      className="w-16 bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     />
                     <span>:</span>
                     <Input
@@ -857,10 +922,9 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       value={minute}
                       onChange={e => setMinute(e.target.value)}
                       placeholder="MM"
-                      required
-                      className="w-16"
+                      className="w-16 bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     />
-                    <select value={ampm} onChange={e => setAmpm(e.target.value)} className="bg-[#1f2037] text-white rounded px-2">
+                    <select value={ampm} onChange={e => setAmpm(e.target.value)} className="bg-black border border-m8bs-border text-white rounded-md px-3 py-2 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200">
                       <option value="AM">AM</option>
                       <option value="PM">PM</option>
                     </select>
@@ -874,9 +938,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="marketingType"
                     value={marketingType}
                     onChange={(e) => setMarketingType(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="E.g. MBI Mailer, Facebook Ads"
-                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -887,9 +950,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="topic"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="E.g. Retirement Outlook"
-                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -900,7 +962,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="ageRange"
                     value={ageRange}
                     onChange={(e) => setAgeRange(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="E.g. 58-71"
                   />
                 </div>
@@ -912,7 +974,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="mileRadius"
                     value={mileRadius}
                     onChange={(e) => setMileRadius(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="E.g. 10-15 Mi"
                   />
                 </div>
@@ -924,7 +986,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     id="incomeAssets"
                     value={incomeAssets}
                     onChange={(e) => setIncomeAssets(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="E.g. 500k-2m"
                   />
                 </div>
@@ -938,36 +1000,17 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     min="0"
                     value={marketingAudience ?? ""}
                     onChange={e => setMarketingAudience(e.target.value === "" ? null : e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="Enter Total Number Of People"
                   />
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              {isEditing && (
-                <Button
-                  type="button"
-                  onClick={handleUpdateEvent}
-                  disabled={isSubmitting}
-                  className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 transition-colors"
-                >
-                  {isSubmitting ? "Updating..." : "Update Event"}
-                </Button>
-              )}
-              <Button
-                type="button"
-                onClick={handleNextTab}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 transition-colors"
-              >
-                Next
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="expenses" className="space-y-4">
-          <Card className="bg-black border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-m8bs-blue" />
@@ -991,7 +1034,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       const rawValue = parseCurrencyInput(e.target.value)
                       setAdvertisingCost(rawValue)
                     }}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="$0"
                   />
                 </div>
@@ -1007,7 +1050,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       const rawValue = parseCurrencyInput(e.target.value)
                       setFoodVenueCost(rawValue)
                     }}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="$0"
                   />
                 </div>
@@ -1023,52 +1066,23 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       const rawValue = parseCurrencyInput(e.target.value)
                       setOtherCosts(rawValue)
                     }}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="$0"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-white font-medium">Total Cost ($)</Label>
-                  <div className="bg-black-alt border border-m8bs-border rounded-md p-3 text-white font-medium">
+                  <div className="bg-black border border-m8bs-border rounded-md p-3 text-white font-medium">
                     {formatCurrencyUtil(calculateTotalCost())}
                   </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePrevTab}
-                className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
-              >
-                Previous
-              </Button>
-              <div className="flex gap-2">
-                {isEditing && (
-                  <Button
-                    type="button"
-                    onClick={handleUpdateEvent}
-                    disabled={isSubmitting}
-                    className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
-                  >
-                    {isSubmitting ? "Updating..." : "Update Event"}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  onClick={handleNextTab}
-                  className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
-                >
-                  Next
-                </Button>
-              </div>
-            </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-4">
-          <Card className="bg-black border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <svg
@@ -1100,8 +1114,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={registrantResponses}
                     onChange={(e) => setRegistrantResponses(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1113,8 +1126,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={confirmations}
                     onChange={(e) => setConfirmations(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1126,8 +1138,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={attendees}
                     onChange={(e) => setAttendees(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1139,8 +1150,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={clientsFromEvent}
                     onChange={(e) => setClientsFromEvent(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1152,46 +1162,17 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={plateLickers}
                     onChange={(e) => setPlateLickers(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="No Interest In Appointments Or Services"
                   />
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePrevTab}
-                className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
-              >
-                Previous
-              </Button>
-              <div className="flex gap-2">
-                {isEditing && (
-                  <Button
-                    type="button"
-                    onClick={handleUpdateEvent}
-                    disabled={isSubmitting}
-                    className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
-                  >
-                    {isSubmitting ? "Updating..." : "Update Event"}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  onClick={handleNextTab}
-                  className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
-                >
-                  Next
-                </Button>
-              </div>
-            </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="appointments" className="space-y-4">
-          <Card className="bg-black border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <svg
@@ -1223,8 +1204,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={setAtEvent}
                     onChange={(e) => setSetAtEvent(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1236,8 +1216,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={setAfterEvent}
                     onChange={(e) => setSetAfterEvent(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1249,8 +1228,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={firstAppointmentAttended}
                     onChange={(e) => setFirstAppointmentAttended(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1262,8 +1240,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={firstAppointmentNoShows}
                     onChange={(e) => setFirstAppointmentNoShows(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1275,8 +1252,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={secondAppointmentAttended}
                     onChange={(e) => setSecondAppointmentAttended(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                    required
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1288,46 +1264,17 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     type="number"
                     value={notQualified}
                     onChange={(e) => setNotQualified(e.target.value)}
-                    className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     placeholder="Number Of Prospects Not Qualified"
                   />
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePrevTab}
-                className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
-              >
-                Previous
-              </Button>
-              <div className="flex gap-2">
-                {isEditing && (
-                  <Button
-                    type="button"
-                    onClick={handleUpdateEvent}
-                    disabled={isSubmitting}
-                    className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
-                  >
-                    {isSubmitting ? "Updating..." : "Update Event"}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  onClick={handleNextTab}
-                  className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-colors"
-                >
-                  Next
-                </Button>
-              </div>
-            </CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="financial" className="space-y-4">
-          <Card className="bg-black border-m8bs-border shadow-lg">
+          <Card className="bg-black border-m8bs-border shadow-xl">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-m8bs-blue" />
@@ -1351,8 +1298,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       type="number"
                       value={annuitiesSold}
                       onChange={(e) => setAnnuitiesSold(e.target.value)}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                      required
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1367,7 +1313,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                         const rawValue = parseCurrencyInput(e.target.value)
                         setAnnuityPremium(rawValue)
                       }}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                       placeholder="$0"
                     />
                   </div>
@@ -1383,15 +1329,14 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       max="100"
                       value={annuityCommissionPercentage}
                       onChange={(e) => setAnnuityCommissionPercentage(e.target.value)}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                      required
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="annuityCommission" className="text-white font-medium">
                       Annuity Commission ($)
                     </Label>
-                    <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                    <div className="bg-black border border-m8bs-border rounded-md p-3 text-white font-medium">
                       {formatCurrencyUtil(parseFloat(annuityCommission) || 0)}
                     </div>
                     {annuityPremium && annuityCommissionPercentage && (
@@ -1418,7 +1363,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       min="0"
                       value={aumAccountsOpened}
                       onChange={e => setAumAccountsOpened(e.target.value)}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                       placeholder="Number Of AUM Households"
                     />
                   </div>
@@ -1434,9 +1379,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                         const rawValue = parseCurrencyInput(e.target.value)
                         setAum(rawValue)
                       }}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                       placeholder="$0"
-                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -1451,15 +1395,14 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       max="100"
                       value={aumFeePercentage}
                       onChange={(e) => setAumFeePercentage(e.target.value)}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                      required
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="aumFees" className="text-white font-medium">
                       Annual AUM Fees ($)
                     </Label>
-                    <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                    <div className="bg-black border border-m8bs-border rounded-md p-3 text-white font-medium">
                       {formatCurrencyUtil(parseFloat(aumFees) || 0)}
                     </div>
                     <div className="text-xs text-m8bs-muted flex items-center gap-1">
@@ -1483,13 +1426,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       type="number"
                       value={lifePoliciesSold}
                       onChange={(e) => setLifePoliciesSold(e.target.value)}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                      required
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lifeInsurancePremium" className="text-white font-medium flex items-center gap-1">
-                      Life Insurance Premium ($) <Calculator className="h-3 w-3 text-m8bs-blue" />
+                    <Label htmlFor="lifeInsurancePremium" className="text-white font-medium">
+                      Life Insurance Premium ($)
                     </Label>
                     <Input
                       id="lifeInsurancePremium"
@@ -1499,7 +1441,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                         const rawValue = parseCurrencyInput(e.target.value)
                         setLifeInsurancePremium(rawValue)
                       }}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                       placeholder="$0"
                     />
                   </div>
@@ -1515,15 +1457,14 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       max="100"
                       value={lifeInsuranceCommissionPercentage}
                       onChange={(e) => setLifeInsuranceCommissionPercentage(e.target.value)}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
-                      required
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lifeInsuranceCommission" className="text-white font-medium">
                       Life Insurance Commission ($)
                     </Label>
-                    <div className="bg-[#131525] border border-[#1f2037] rounded-md p-3 text-white font-medium">
+                    <div className="bg-black border border-m8bs-border rounded-md p-3 text-white font-medium">
                       {formatCurrencyUtil(parseFloat(lifeInsuranceCommission) || 0)}
                     </div>
                     {lifeInsurancePremium && lifeInsuranceCommissionPercentage && (
@@ -1550,7 +1491,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       min="0"
                       value={financialPlansSold}
                       onChange={e => setFinancialPlansSold(e.target.value)}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                       placeholder="Number Of Financial Plans Sold"
                     />
                   </div>
@@ -1566,9 +1507,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                         const rawValue = parseCurrencyInput(e.target.value)
                         setFinancialPlanning(rawValue)
                       }}
-                      className="bg-black-alt border-m8bs-border text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors"
+                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
                       placeholder="$0"
-                      required
                     />
                   </div>
                 </div>
@@ -1577,7 +1517,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               {/* Total Production */}
               <div className="space-y-2 pt-4 border-t border-m8bs-border">
                 <Label className="text-white font-medium text-lg">Total Production ($)</Label>
-                <div className="bg-[#131525] border border-[#1f2037] rounded-md p-4 text-white font-bold text-xl">
+                <div className="bg-black border border-m8bs-border rounded-md p-4 text-white font-bold text-xl">
                   {formatCurrencyUtil(calculateTotalProduction())}
                 </div>
               </div>
@@ -1588,7 +1528,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
 
       {/* Form Actions */}
-      <Card className="bg-black border-m8bs-border shadow-lg">
+      <Card className="bg-black border-m8bs-border shadow-xl">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1606,13 +1546,34 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
-                className="bg-black border-m8bs-border text-white hover:bg-black-alt"
+                className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
               >
                 Cancel
               </Button>
+              {activeTab !== "event" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrevTab}
+                  className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+              )}
+              {activeTab !== "financial" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleNextTab}
+                  className="bg-black border-m8bs-border text-white hover:bg-black-alt transition-colors"
+                >
+                  Next
+                </Button>
+              )}
               <Button
                 type="submit"
-                disabled={isSubmitting || Object.keys(formErrors).length > 0 || formProgress < 100}
+                disabled={isSubmitting || Object.keys(formErrors).length > 0}
                 className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white flex items-center gap-2"
               >
                 {isSubmitting ? (

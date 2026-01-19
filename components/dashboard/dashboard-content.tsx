@@ -648,7 +648,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <MarketingExpensesCard
-            advertising={dashboardData.marketingExpenses?.advertising || 500}
+            advertising={dashboardData.marketingExpenses?.advertising || 0}
             foodVenue={dashboardData.marketingExpenses?.foodVenue || 0}
           />
         </motion.div>

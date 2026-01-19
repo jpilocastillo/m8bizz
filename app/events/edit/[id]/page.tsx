@@ -26,12 +26,6 @@ export default async function EditEventPage({ params }: { params: { id: string }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Data Management</h1>
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-m8bs-blue-light to-m8bs-blue bg-clip-text text-transparent">
-          Edit Marketing Event
-        </h2>
-      </div>
       <EventForm initialData={eventData} isEditing={true} userId={user.id} />
     </div>
   )

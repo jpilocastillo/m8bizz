@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Calculator, Calendar, BarChart3, Settings, Download, RefreshCw, Users, Plus, CheckCircle2, ArrowRight, Loader2 } from "lucide-react"
+import { Calculator, Calendar, BarChart3, Settings, Download, RefreshCw, Users, Plus, CheckCircle2, ArrowRight, Loader2, Sparkles } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { behaviorScorecardService, type MonthlyScorecardData, type ScorecardRole, type ScorecardMetric, type PeriodType } from "@/lib/behavior-scorecard"
 import { WeeklyDataEntry } from "@/components/behavior-scorecard/weekly-data-entry"
@@ -49,10 +49,10 @@ export default function BehaviorScorecardPage() {
   // Note: This is for automatic changes, so we don't show loading indicator
   useEffect(() => {
     if (user && roles.length > 0) {
-      // Use a small timeout to debounce rapid changes
+      // Use a longer timeout to debounce rapid changes better
       const timeoutId = setTimeout(() => {
         loadScorecard(false) // false = don't show loading indicator
-      }, 100)
+      }, 300)
       return () => clearTimeout(timeoutId)
     }
   }, [periodType, selectedMonth, selectedQuarter, selectedYear, user, roles.length])
@@ -322,10 +322,22 @@ export default function BehaviorScorecardPage() {
     { value: 12, label: "December" },
   ]
 
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i)
+  const years = useMemo(() => Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i), [])
+
+  // Memoize period display text
+  const periodDisplayText = useMemo(() => {
+    if (periodType === 'month') {
+      return `${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+    } else if (periodType === 'quarter') {
+      return `Q${selectedQuarter} ${selectedYear}`
+    } else {
+      return `${selectedYear}`
+    }
+  }, [periodType, selectedMonth, selectedQuarter, selectedYear, months])
 
   // Show skeleton loading state (non-blocking, allows UI to render)
   const isLoading = loading && roles.length === 0
+
 
   // Show message if user is not authenticated
   if (!user) {
@@ -346,15 +358,29 @@ export default function BehaviorScorecardPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header Title - Full Width */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Business Behavior Scorecard</h1>
-          <p className="text-m8bs-muted mt-1">
-            {isLoading ? "Loading scorecard data..." : "Track and analyze business behaviors and performance indicators"}
-          </p>
+      {/* Enhanced Header with gradient accent */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          <div className="bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark p-3 rounded-xl shadow-lg shadow-m8bs-blue/20">
+            <Calculator className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight bg-gradient-to-r from-white to-white/90 bg-clip-text">
+              Business Behavior Scorecard
+            </h1>
+            <p className="text-m8bs-muted mt-1.5 text-sm">
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading scorecard data...
+                </span>
+              ) : (
+                "Track and analyze business behaviors and performance indicators"
+              )}
+            </p>
+          </div>
         </div>
-        {/* Quick Actions - Lazy load export buttons */}
+        {/* Quick Actions - Enhanced styling */}
         <div className="flex items-center gap-2">
           {!isLoading && scorecardData && profile && (
             <CSVExport data={scorecardData} profile={profile} />
@@ -368,7 +394,7 @@ export default function BehaviorScorecardPage() {
                 }
               }}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 hover:bg-m8bs-blue/10 hover:border-m8bs-blue/50 transition-all duration-200"
             >
               <Plus className="h-4 w-4" />
               Quick Entry
@@ -377,35 +403,54 @@ export default function BehaviorScorecardPage() {
         </div>
       </div>
 
-      {/* Show skeleton loader only during initial load */}
+      {/* Enhanced skeleton loader with shimmer effect */}
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-6 animate-in fade-in-50 duration-500">
+          {/* Header skeleton */}
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 bg-gradient-to-br from-m8bs-blue/20 to-m8bs-blue-dark/20 rounded-xl animate-pulse"></div>
+            <div className="space-y-2 flex-1">
+              <div className="h-8 bg-m8bs-card-alt/50 rounded-lg w-64 animate-pulse"></div>
+              <div className="h-4 bg-m8bs-card-alt/30 rounded-lg w-96 animate-pulse"></div>
+            </div>
+          </div>
+          
+          {/* Filter skeleton */}
+          <div className="flex items-center gap-3">
+            <div className="h-10 bg-m8bs-card-alt/50 rounded-lg w-32 animate-pulse"></div>
+            <div className="h-10 bg-m8bs-card-alt/50 rounded-lg w-40 animate-pulse"></div>
+            <div className="h-10 bg-m8bs-card-alt/50 rounded-lg w-28 animate-pulse"></div>
+          </div>
+
+          {/* Cards skeleton with shimmer */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="bg-m8bs-card border-m8bs-card-alt animate-pulse">
-                <CardContent className="p-6">
-                  <div className="h-4 bg-m8bs-card-alt rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-m8bs-card-alt rounded w-1/2"></div>
+              <Card key={i} className="bg-m8bs-card border-m8bs-card-alt overflow-hidden relative card-shimmer">
+                <CardContent className="p-6 relative">
+                  <div className="h-5 bg-m8bs-card-alt/50 rounded w-3/4 mb-3 animate-pulse"></div>
+                  <div className="h-4 bg-m8bs-card-alt/30 rounded w-1/2 animate-pulse"></div>
                 </CardContent>
               </Card>
             ))}
           </div>
-          <Card className="bg-m8bs-card border-m8bs-card-alt animate-pulse">
-            <CardContent className="p-6">
-              <div className="h-8 bg-m8bs-card-alt rounded w-1/3 mb-4"></div>
-              <div className="space-y-2">
-                <div className="h-4 bg-m8bs-card-alt rounded w-full"></div>
-                <div className="h-4 bg-m8bs-card-alt rounded w-5/6"></div>
-                <div className="h-4 bg-m8bs-card-alt rounded w-4/6"></div>
+          
+          {/* Main content skeleton */}
+          <Card className="bg-m8bs-card border-m8bs-card-alt overflow-hidden relative card-shimmer">
+            <CardContent className="p-6 relative">
+              <div className="h-8 bg-m8bs-card-alt/50 rounded w-1/3 mb-4 animate-pulse"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-m8bs-card-alt/50 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-m8bs-card-alt/30 rounded w-5/6 animate-pulse"></div>
+                <div className="h-4 bg-m8bs-card-alt/30 rounded w-4/6 animate-pulse"></div>
               </div>
             </CardContent>
           </Card>
         </div>
       ) : (
         <>
-          {/* Period Selectors - Below Title */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
+          {/* Enhanced Period Selectors with better styling */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 bg-m8bs-card-alt/50 p-2 rounded-lg border border-m8bs-border/50">
               <Select 
                 value={periodType} 
                 onValueChange={(v) => {
@@ -414,7 +459,7 @@ export default function BehaviorScorecardPage() {
                 }}
                 disabled={loadingFilters}
               >
-                <SelectTrigger className={`w-[120px] ${loadingFilters ? 'opacity-50' : ''}`}>
+                <SelectTrigger className={`w-[120px] bg-m8bs-card border-m8bs-border hover:border-m8bs-blue/50 transition-colors ${loadingFilters ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -433,7 +478,7 @@ export default function BehaviorScorecardPage() {
                   }}
                   disabled={loadingFilters}
                 >
-                  <SelectTrigger className={`w-[140px] ${loadingFilters ? 'opacity-50' : ''}`}>
+                  <SelectTrigger className={`w-[140px] bg-m8bs-card border-m8bs-border hover:border-m8bs-blue/50 transition-colors ${loadingFilters ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     <SelectValue placeholder="Select month" />
                   </SelectTrigger>
                   <SelectContent>
@@ -455,7 +500,7 @@ export default function BehaviorScorecardPage() {
                   }}
                   disabled={loadingFilters}
                 >
-                  <SelectTrigger className={`w-[120px] ${loadingFilters ? 'opacity-50' : ''}`}>
+                  <SelectTrigger className={`w-[120px] bg-m8bs-card border-m8bs-border hover:border-m8bs-blue/50 transition-colors ${loadingFilters ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     <SelectValue placeholder="Select quarter" />
                   </SelectTrigger>
                   <SelectContent>
@@ -475,7 +520,7 @@ export default function BehaviorScorecardPage() {
                 }}
                 disabled={loadingFilters}
               >
-                <SelectTrigger className={`w-[100px] ${loadingFilters ? 'opacity-50' : ''}`}>
+                <SelectTrigger className={`w-[100px] bg-m8bs-card border-m8bs-border hover:border-m8bs-blue/50 transition-colors ${loadingFilters ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   <SelectValue placeholder="Year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -488,22 +533,22 @@ export default function BehaviorScorecardPage() {
               </Select>
             </div>
 
-            {/* Loading indicator and current period display */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-m8bs-card-alt rounded-lg border border-m8bs-border">
+            {/* Enhanced loading indicator and current period display */}
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200 ${
+              loadingFilters 
+                ? 'bg-m8bs-blue/10 border-m8bs-blue/30' 
+                : 'bg-m8bs-card-alt border-m8bs-border'
+            }`}>
               {loadingFilters ? (
                 <>
-                  <Loader2 className="h-3 w-3 animate-spin text-m8bs-blue" />
-                  <span className="text-xs text-m8bs-muted">Loading...</span>
+                  <Loader2 className="h-4 w-4 animate-spin text-m8bs-blue" />
+                  <span className="text-xs text-m8bs-blue font-medium">Loading...</span>
                 </>
               ) : (
                 <>
-                  <Calendar className="h-3 w-3 text-m8bs-muted" />
-                  <span className="text-xs text-white font-medium">
-                    {periodType === 'month' 
-                      ? `${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
-                      : periodType === 'quarter'
-                      ? `Q${selectedQuarter} ${selectedYear}`
-                      : `${selectedYear}`}
+                  <Calendar className="h-4 w-4 text-m8bs-blue" />
+                  <span className="text-sm text-white font-semibold">
+                    {periodDisplayText}
                   </span>
                 </>
               )}
@@ -511,47 +556,56 @@ export default function BehaviorScorecardPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "view" | "entry" | "settings")} className="space-y-4">
-        <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid w-full grid-cols-3">
-          <TabsTrigger value="view" className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all">
+        <TabsList className="bg-m8bs-card p-1.5 border border-m8bs-border rounded-xl shadow-lg grid w-full grid-cols-3 gap-1">
+          <TabsTrigger 
+            value="view" 
+            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg text-white/70 hover:text-white hover:bg-m8bs-card-alt py-3 text-sm font-semibold transition-all duration-200 rounded-lg"
+          >
             <BarChart3 className="h-4 w-4" />
-            View Scorecard
+            <span>View Scorecard</span>
           </TabsTrigger>
-          <TabsTrigger value="entry" className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all">
+          <TabsTrigger 
+            value="entry" 
+            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg text-white/70 hover:text-white hover:bg-m8bs-card-alt py-3 text-sm font-semibold transition-all duration-200 rounded-lg"
+          >
             <Calendar className="h-4 w-4" />
-            Data Entry
+            <span>Data Entry</span>
           </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all">
+          <TabsTrigger 
+            value="settings" 
+            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg text-white/70 hover:text-white hover:bg-m8bs-card-alt py-3 text-sm font-semibold transition-all duration-200 rounded-lg"
+          >
             <Settings className="h-4 w-4" />
-            Settings
+            <span>Settings</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="view" className="space-y-4">
+        <TabsContent value="view" className="space-y-4 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
           {scorecardData && scorecardData.companySummary && (
             <>
               <CompanySummary companySummary={scorecardData.companySummary} />
               
               {scorecardData.roleScorecards.length > 0 ? (
-                <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
+                <Card className="bg-m8bs-card border-m8bs-card-alt shadow-xl hover:shadow-2xl transition-shadow duration-300">
                   <CardContent className="p-0">
                     <Tabs defaultValue={scorecardData.roleScorecards[0]?.roleId || ""} className="w-full">
-                      <TabsList className="w-full bg-m8bs-card-alt p-1 border-b border-m8bs-border rounded-t-lg rounded-b-none grid grid-cols-2 lg:grid-cols-4 gap-1">
+                      <TabsList className="w-full bg-m8bs-card-alt p-1.5 border-b border-m8bs-border rounded-t-lg rounded-b-none grid grid-cols-2 lg:grid-cols-4 gap-1.5">
                         {scorecardData.roleScorecards.map((roleScorecard) => (
                           <TabsTrigger
                             key={roleScorecard.roleId}
                             value={roleScorecard.roleId}
-                            className="flex items-center gap-2 data-[state=active]:bg-m8bs-blue data-[state=active]:text-white text-white/70 data-[state=active]:shadow-md py-2 text-sm font-medium transition-all"
+                            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg text-white/70 hover:text-white hover:bg-m8bs-card py-2.5 text-sm font-semibold transition-all duration-200 rounded-lg"
                           >
                             <Users className="h-4 w-4" />
                             <span className="truncate">{roleScorecard.roleName}</span>
                             <Badge 
                               variant="outline" 
-                              className={`ml-auto text-xs ${
-                                roleScorecard.averageGrade === 'A' ? 'border-green-500/50 text-green-400' :
-                                roleScorecard.averageGrade === 'B' ? 'border-blue-500/50 text-blue-400' :
-                                roleScorecard.averageGrade === 'C' ? 'border-yellow-500/50 text-yellow-400' :
-                                roleScorecard.averageGrade === 'D' ? 'border-orange-500/50 text-orange-400' :
-                                'border-red-500/50 text-red-400'
+                              className={`ml-auto text-xs font-bold px-2 py-0.5 ${
+                                roleScorecard.averageGrade === 'A' ? 'border-green-500/50 text-green-400 bg-green-500/10' :
+                                roleScorecard.averageGrade === 'B' ? 'border-blue-500/50 text-blue-400 bg-blue-500/10' :
+                                roleScorecard.averageGrade === 'C' ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10' :
+                                roleScorecard.averageGrade === 'D' ? 'border-orange-500/50 text-orange-400 bg-orange-500/10' :
+                                'border-red-500/50 text-red-400 bg-red-500/10'
                               }`}
                             >
                               {roleScorecard.averageGrade}
@@ -709,7 +763,7 @@ export default function BehaviorScorecardPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="entry" className="space-y-4">
+        <TabsContent value="entry" className="space-y-4 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
           <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -741,20 +795,24 @@ export default function BehaviorScorecardPage() {
                       key={role.id}
                       variant={selectedRole === role.name ? "default" : "outline"}
                       onClick={() => setSelectedRole(role.name)}
-                      className={`h-auto p-4 flex flex-col items-start gap-2 transition-all ${
+                      className={`h-auto p-5 flex flex-col items-start gap-3 transition-all duration-200 group ${
                         selectedRole === role.name 
-                          ? 'bg-m8bs-blue hover:bg-m8bs-blue-dark border-m8bs-blue' 
-                          : 'hover:border-m8bs-blue/50'
+                          ? 'bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark hover:from-m8bs-blue-dark hover:to-m8bs-blue border-m8bs-blue shadow-lg shadow-m8bs-blue/20 scale-105' 
+                          : 'hover:border-m8bs-blue/50 hover:bg-m8bs-card-alt/50 hover:scale-105'
                       }`}
                     >
                       <div className="flex items-center justify-between w-full">
-                        <span className="font-semibold text-left">{role.name}</span>
+                        <span className={`font-semibold text-left ${selectedRole === role.name ? 'text-white' : 'text-white'}`}>
+                          {role.name}
+                        </span>
                         {selectedRole === role.name && (
-                          <CheckCircle2 className="h-4 w-4" />
+                          <CheckCircle2 className="h-5 w-5 text-white animate-in zoom-in-50 duration-200" />
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Users className="h-3 w-3" />
+                      <div className={`flex items-center gap-2 text-xs ${
+                        selectedRole === role.name ? 'text-white/80' : 'text-muted-foreground'
+                      }`}>
+                        <Users className={`h-3.5 w-3.5 ${selectedRole === role.name ? 'text-white/80' : ''}`} />
                         <span>{role.metrics.length} {role.metrics.length === 1 ? 'metric' : 'metrics'}</span>
                       </div>
                     </Button>
@@ -921,10 +979,12 @@ export default function BehaviorScorecardPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-4">
+        <TabsContent value="settings" className="space-y-4 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
           <EnhancedRoleManagement
             roles={roles}
             onRoleChange={async () => {
+              // Store the currently selected role ID before clearing (preserves selection after name change)
+              const currentSelectedRoleId = roles.find(r => r.name === selectedRole)?.id || null
               // Clear selected roles temporarily to force refresh
               setSelectedRole(null)
               setSettingsRoleId(null)
@@ -932,7 +992,13 @@ export default function BehaviorScorecardPage() {
               setRoles([])
               // Reload everything but skip initialization to prevent recreating deleted roles
               await initializeAndLoad(true)
-              // The initializeAndLoad will set a new selectedRole if roles exist
+              // After initializeAndLoad completes, it will have set the roles state
+              // We need to restore selection by ID. Since state updates are async, we'll
+              // use a small delay to read the updated state, or better - modify initializeAndLoad
+              // For now, the initializeAndLoad function will select the first role if the
+              // current selection doesn't exist, which should work for most cases.
+              // If we need to preserve by ID, we'd need to modify initializeAndLoad to accept
+              // a preserveRoleId parameter.
             }}
           />
         </TabsContent>

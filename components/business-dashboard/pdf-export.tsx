@@ -14,6 +14,8 @@ import {
   BarChart as RechartsBarChart,
   CartesianGrid,
   Cell,
+  Label,
+  LabelList,
   Legend,
   Pie,
   PieChart,
@@ -295,10 +297,10 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
             <h3 className="text-xl font-bold text-gray-800 mb-4">What's Needed to Reach Your Business Goal</h3>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {[
-                { title: "Clients Needed", value: metrics.clientsNeeded.toString(), description: "Target clients needed", color: "red" },
-                { title: "Monthly New Appointments Needed", value: metrics.monthlyNewAppointmentsNeeded.toString(), description: "Monthly target", color: "blue" },
-                { title: "Annual Ideal Closing Prospects Needed", value: metrics.annualIdealClosingProspects.toString(), description: "Prospects needed", color: "green" },
-                { title: "Annual Total Prospects Necessary", value: metrics.annualTotalProspectsNecessary.toString(), description: "Annual prospects needed", color: "purple" },
+                { title: "Clients Needed", value: metrics.clientsNeeded.toLocaleString(), description: "Target clients needed", color: "red" },
+                { title: "Monthly New Appointments Needed", value: metrics.monthlyNewAppointmentsNeeded.toLocaleString(), description: "Monthly target", color: "blue" },
+                { title: "Annual Ideal Closing Prospects Needed", value: metrics.annualIdealClosingProspects.toLocaleString(), description: "Prospects needed", color: "green" },
+                { title: "Annual Total Prospects Necessary", value: metrics.annualTotalProspectsNecessary.toLocaleString(), description: "Annual prospects needed", color: "purple" },
                 { title: "Total Advisor Book", value: formatCurrency(metrics.totalBookValue), description: "Current book value", color: "yellow" },
               ].map((metric, index) => (
                 <Card key={index} className="border-none shadow-lg overflow-hidden h-full flex flex-col bg-white">
@@ -309,16 +311,16 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                     metric.color === 'purple' ? 'bg-purple-500' :
                     'bg-yellow-500'
                   }`}></div>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold text-center text-gray-700">
+                  <CardHeader className="pb-3 px-4 pt-4 h-[85px] flex flex-col justify-center">
+                    <CardTitle className="text-sm font-semibold text-center text-gray-700 leading-tight line-clamp-2">
                       {metric.title}
                     </CardTitle>
                     <p className="text-xs text-gray-500 text-center mt-1">
                       {metric.description}
                     </p>
                   </CardHeader>
-                  <CardContent className="flex-1 flex items-center justify-center">
-                    <div className={`text-3xl font-bold text-center ${
+                  <CardContent className="flex-1 flex items-center justify-center px-4 pb-4 h-[100px]">
+                    <div className={`text-3xl font-bold text-center w-full tabular-nums leading-none ${
                       metric.color === 'red' ? 'text-red-500' :
                       metric.color === 'blue' ? 'text-blue-500' :
                       metric.color === 'green' ? 'text-green-500' :
@@ -363,9 +365,9 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                 const businessGoal = data.businessGoals?.business_goal || 0
                 const goalPercentage = businessGoal > 0 ? (item.goal / businessGoal) * 100 : 0
                 return (
-                  <Card key={index} className="border-none shadow-lg bg-white">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
+                  <Card key={index} className="border-none shadow-lg bg-white h-full flex flex-col">
+                    <CardContent className="p-6 flex flex-col h-full">
+                      <div className="flex items-start justify-between mb-4 h-[50px]">
                         <div className={`p-3 rounded-lg`} style={{ backgroundColor: `${item.color}20` }}>
                           <div className="w-6 h-6 rounded" style={{ backgroundColor: item.color }}></div>
                         </div>
@@ -373,14 +375,14 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                           {item.percentage.toFixed(1)}%
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{item.name}</h4>
-                        <div className="text-2xl font-extrabold text-gray-800 tabular-nums">
+                      <div className="space-y-2 h-[90px] flex flex-col justify-center">
+                        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide line-clamp-2">{item.name}</h4>
+                        <div className="text-2xl font-extrabold text-gray-800 tabular-nums leading-none">
                           {formatCurrency(item.goal)}
                         </div>
-                        <p className="text-xs text-gray-500">{item.description}</p>
+                        <p className="text-xs text-gray-500 line-clamp-1">{item.description}</p>
                       </div>
-                      <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="mt-auto pt-4 border-t border-gray-200">
                         <div className="flex items-center justify-between text-xs mb-2">
                           <span className="text-gray-500">Of Business Goal</span>
                           <span className="text-gray-700 font-semibold">{goalPercentage.toFixed(1)}%</span>
@@ -500,7 +502,7 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
               <div className="text-sm text-gray-600">Annuity vs AUM vs Life Production distribution</div>
             </CardHeader>
             <CardContent>
-              <div className="h-[350px]">
+              <div className="h-[350px] relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -511,11 +513,17 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                       ]}
                       cx="50%"
                       cy="50%"
-                      innerRadius={90}
-                      outerRadius={120}
+                      innerRadius={80}
+                      outerRadius={140}
                       paddingAngle={5}
                       dataKey="value"
-                      label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, value, percent }: { name: string; value: number; percent: number }) => {
+                        const formattedValue = formatCurrency(value)
+                        const percentage = `${(percent * 100).toFixed(1)}%`
+                        return `${name}: ${formattedValue} (${percentage})`
+                      }}
+                      labelLine={{ stroke: '#374151', strokeWidth: 1.5 }}
+                      style={{ fontSize: '11px', fontWeight: '600', fill: '#1f2937' }}
                       isAnimationActive={false}
                     >
                       {[
@@ -523,7 +531,7 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                         { name: "AUM", value: data.currentValues?.current_aum || 0, color: "#f97316" },
                         { name: "Life Production", value: data.currentValues?.current_life_production || 0, color: "#a855f7" },
                       ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} strokeWidth={2} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -541,9 +549,24 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                       height={50}
                       iconType="circle"
                       wrapperStyle={{ fontSize: '14px', fontWeight: '500' }}
+                      formatter={(value: string, entry: any) => {
+                        const dataEntry = [
+                          { name: "Annuity", value: data.currentValues?.current_annuity || 0 },
+                          { name: "AUM", value: data.currentValues?.current_aum || 0 },
+                          { name: "Life Production", value: data.currentValues?.current_life_production || 0 },
+                        ].find(d => d.name === value)
+                        return `${value}: ${formatCurrency(dataEntry?.value || 0)}`
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
+                {/* Center label overlay */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center bg-white/95 rounded-lg px-4 py-2 border border-gray-200 shadow-sm">
+                    <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Total Book Value</div>
+                    <div className="text-lg font-bold text-gray-800">{formatCurrency(metrics.totalBookValue)}</div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -560,7 +583,7 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                   <RechartsBarChart data={[
                     { name: "Appointment Attrition", value: data.clientMetrics?.appointment_attrition || 0 },
                     { name: "Average Close Ratio", value: data.clientMetrics?.avg_close_ratio || 0 },
-                  ]} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  ]} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                     <XAxis 
                       dataKey="name" 
@@ -584,6 +607,13 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                     <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                       <Cell fill="#ef4444" />
                       <Cell fill="#22c55e" />
+                      <LabelList 
+                        dataKey="value" 
+                        position="top" 
+                        formatter={(value: number) => `${value.toFixed(1)}%`}
+                        style={{ fill: '#1f2937', fontSize: '13px', fontWeight: '700' }}
+                        offset={5}
+                      />
                     </Bar>
                   </RechartsBarChart>
                 </ResponsiveContainer>
@@ -594,18 +624,18 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
 
         {/* PAGE 3: Client Acquisition and Campaigns */}
         <div className="page-break">
-          <div className="mb-6">
+          <div className="mb-6 pb-4">
             <h2 className="text-2xl font-extrabold text-gray-800 mb-2">Client Acquisition Goals</h2>
             <p className="text-gray-600 mb-6">Annual Goals Based On Campaign Data{year ? ` (${year})` : ''}</p>
           </div>
 
           {/* Annual Goals Cards */}
-          <Card className="border-none shadow-lg bg-white mb-8">
+          <Card className="border-none shadow-lg bg-white mb-8 overflow-visible">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl font-semibold text-gray-800">Annual Goals - {year || new Date().getFullYear()}</CardTitle>
               <div className="text-sm text-gray-600">Key Annual Goals Based On Campaign Data</div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-visible">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { name: "Clients Needed", value: metrics.clientsNeeded, color: "#ef4444" },
@@ -615,20 +645,20 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                 ].map((goal, index) => (
                   <div
                     key={index}
-                    className="p-4 rounded-lg border border-gray-200 bg-gray-50"
+                    className="p-4 rounded-lg border border-gray-200 bg-gray-50 h-full flex flex-col"
                   >
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-3 mb-3 h-[60px]">
                       <div
-                        className="p-2 rounded-lg"
+                        className="p-2 rounded-lg flex-shrink-0"
                         style={{ backgroundColor: `${goal.color}20` }}
                       >
                         <div className="w-5 h-5 rounded" style={{ backgroundColor: goal.color }}></div>
                       </div>
-                      <h3 className="text-sm font-semibold text-gray-700">{goal.name}</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 line-clamp-2 leading-tight">{goal.name}</h3>
                     </div>
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex items-center justify-center h-[60px]">
                       <span
-                        className="text-2xl font-extrabold"
+                        className="text-2xl font-extrabold tabular-nums text-center w-full"
                         style={{ color: goal.color }}
                       >
                         {goal.value.toLocaleString()}
@@ -640,15 +670,90 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
             </CardContent>
           </Card>
 
-          {/* Lead Sources Cards */}
+          {/* Lead Sources Chart */}
           {data.campaigns && data.campaigns.length > 0 && (
-            <Card className="border-none shadow-lg bg-white mb-8">
+            <Card className="border-none shadow-lg bg-white mb-8" style={{ overflow: 'visible' }}>
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold text-gray-800">Lead Sources - {year || new Date().getFullYear()}</CardTitle>
+                <div className="text-sm text-gray-600">Distribution Of Lead Generation</div>
+              </CardHeader>
+              <CardContent className="overflow-visible" style={{ padding: '2rem', paddingTop: '1.5rem', overflow: 'visible' }}>
+                <div className="h-[450px]" style={{ overflow: 'visible', padding: '30px', margin: '-10px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
+                      <Pie
+                        data={data.campaigns.map((campaign, index) => {
+                          const colors = ["#3b82f6", "#8b5cf6", "#f97316", "#ef4444", "#64748b", "#22c55e", "#eab308", "#ec4899"]
+                          const annualLeads = (campaign.leads || 0) * 12
+                          const totalLeads = data.campaigns.reduce((sum, c) => sum + ((c.leads || 0) * 12), 0)
+                          return {
+                            name: campaign.name || `Campaign ${index + 1}`,
+                            value: annualLeads,
+                            color: colors[index % colors.length],
+                            percentage: totalLeads > 0 ? (annualLeads / totalLeads) * 100 : 0
+                          }
+                        })}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={130}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={false}
+                        isAnimationActive={false}
+                      >
+                        {data.campaigns.map((campaign, index) => {
+                          const colors = ["#3b82f6", "#8b5cf6", "#f97316", "#ef4444", "#64748b", "#22c55e", "#eab308", "#ec4899"]
+                          const color = colors[index % colors.length]
+                          return (
+                            <Cell key={`cell-${index}`} fill={color} stroke={color} strokeWidth={2} />
+                          )
+                        })}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => [`${value.toLocaleString()} leads`, 'Annual Leads']}
+                        contentStyle={{
+                          backgroundColor: '#fff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                          fontSize: '14px'
+                        }}
+                      />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={120}
+                        iconType="circle"
+                        wrapperStyle={{ fontSize: '14px', fontWeight: '600', paddingTop: '20px' }}
+                        formatter={(value: string, entry: any) => {
+                          const campaign = data.campaigns.find(c => (c.name || '').includes(value) || value.includes(c.name || ''))
+                          const annualLeads = campaign ? ((campaign.leads || 0) * 12) : 0
+                          const totalLeads = data.campaigns.reduce((sum, c) => sum + ((c.leads || 0) * 12), 0)
+                          const percentage = totalLeads > 0 ? (annualLeads / totalLeads) * 100 : 0
+                          return `${value} - ${percentage.toFixed(1)}% (${annualLeads.toLocaleString()} leads)`
+                        }}
+                      />
+                      <Label
+                        value="Lead Sources"
+                        position="center"
+                        style={{ fontSize: '16px', fontWeight: 'bold', fill: '#1f2937', textAnchor: 'middle' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lead Sources Cards */}
+          {data.campaigns && data.campaigns.length > 0 && (
+            <Card className="border-none shadow-lg bg-white mb-8" style={{ overflow: 'visible' }}>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-semibold text-gray-800">Lead Sources Breakdown - {year || new Date().getFullYear()}</CardTitle>
                 <div className="text-sm text-gray-600">Campaign Lead Generation Goals</div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <CardContent className="pb-10 pt-6" style={{ overflow: 'visible', paddingBottom: '2.5rem' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {data.campaigns.map((campaign, index) => {
                     const colors = ["#3b82f6", "#8b5cf6", "#f97316", "#ef4444", "#64748b", "#22c55e", "#eab308", "#ec4899"]
                     const color = colors[index % colors.length]
@@ -660,29 +765,30 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
                     return (
                       <div
                         key={campaign.id || index}
-                        className="p-4 rounded-lg border border-gray-200 bg-gray-50"
+                        className="rounded-lg border border-gray-200 bg-gray-50"
+                        style={{ padding: '1.5rem', paddingBottom: '2rem', overflow: 'visible', minHeight: '140px' }}
                       >
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-3 mb-4 min-h-[40px]">
                           <div
                             className="w-3 h-3 rounded-full flex-shrink-0"
                             style={{ backgroundColor: color }}
                           />
-                          <h3 className="text-sm font-semibold text-gray-700 truncate">{campaign.name || `Campaign ${index + 1}`}</h3>
+                          <h3 className="text-sm font-semibold text-gray-700 line-clamp-2 leading-tight">{campaign.name || `Campaign ${index + 1}`}</h3>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <div className="flex items-baseline gap-2">
                             <span
-                              className="text-2xl font-extrabold"
+                              className="text-2xl font-extrabold tabular-nums"
                               style={{ color: color }}
                             >
                               {annualLeads.toLocaleString()}
                             </span>
                             <span className="text-sm text-gray-600">leads</span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500" style={{ minHeight: '20px' }}>
                             <span>{monthlyLeads.toLocaleString()}/month</span>
                             <span>•</span>
-                            <span>{percentage.toFixed(1)}% of total</span>
+                            <span style={{ display: 'block', width: '100%' }}>{percentage.toFixed(1)}% of total</span>
                           </div>
                         </div>
                       </div>
@@ -695,12 +801,12 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
 
           {/* Client Metrics and Appointment Metrics */}
           <div className="grid gap-6 md:grid-cols-2 mb-8">
-            <Card className="border-none shadow-lg bg-white">
+            <Card className="border-none shadow-lg bg-white overflow-visible">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold text-gray-800">Client Metrics</CardTitle>
                 <div className="text-sm text-gray-600">Key Client Performance Indicators</div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-visible">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b-2 border-gray-200 bg-gray-50">
@@ -729,12 +835,12 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-lg bg-white">
+            <Card className="border-none shadow-lg bg-white overflow-visible">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold text-gray-800">Appointment & Prospect Metrics</CardTitle>
                 <div className="text-sm text-gray-600">Appointment And Prospect Tracking</div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-visible">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b-2 border-gray-200 bg-gray-50">

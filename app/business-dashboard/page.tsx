@@ -250,11 +250,6 @@ export default function BusinessDashboard() {
                 <h1 className="text-3xl font-extrabold text-white tracking-tight">
                   M8 Advisor Basecamp
                 </h1>
-                <p className="text-m8bs-muted mt-1">
-                  {editMode 
-                    ? "Edit Your Business Data" 
-                    : "Complete Your Profile To Unlock All Dashboard Features"}
-                </p>
               </div>
               
               <DataEntryFormV2

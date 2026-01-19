@@ -180,13 +180,36 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
                   <XAxis dataKey="name" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--popover)",
-                      borderRadius: "6px",
-                      border: "1px solid var(--border)",
-                      color: "var(--popover-foreground)",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    formatter={(value: number, name: string) => {
+                      const formattedValue = typeof value === 'number' ? value.toLocaleString() : value
+                      return [formattedValue, name]
                     }}
+                    labelFormatter={(label) => `Month: ${label}`}
+                    contentStyle={{
+                      backgroundColor: "rgba(24, 24, 27, 0.98)",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(59, 130, 246, 0.5)",
+                      color: "#ffffff",
+                      padding: "12px 16px",
+                      boxShadow: "0 8px 16px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                    labelStyle={{
+                      color: "#ffffff",
+                      fontSize: "15px",
+                      fontWeight: "700",
+                      marginBottom: "10px",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+                      paddingBottom: "8px",
+                    }}
+                    itemStyle={{
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      padding: "6px 0",
+                      fontWeight: "600",
+                    }}
+                    separator=": "
                   />
                   <Legend />
                   <Area
@@ -248,36 +271,7 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
                     outerRadius={90}
                     paddingAngle={5}
                     dataKey="value"
-                    label={({ name, percent, cx, cy, midAngle, innerRadius, outerRadius, fill }) => {
-                      // Hide labels for very small slices (less than 1%)
-                      if (percent < 0.01) return '';
-                      
-                      // Calculate label position outside the chart
-                      const RADIAN = Math.PI / 180;
-                      const radius = outerRadius + 20; // Position outside the chart
-                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                      
-                      return (
-                        <text 
-                          x={x} 
-                          y={y} 
-                          fill={fill} 
-                          textAnchor={x > cx ? 'start' : 'end'} 
-                          dominantBaseline="central"
-                          fontSize="12"
-                          fontWeight="600"
-                        >
-                          {`${name} ${(percent * 100).toFixed(0)}%`}
-                        </text>
-                      );
-                    }}
-                    labelLine={{
-                      stroke: '#94a3b8',
-                      strokeWidth: 1,
-                      length: 10,
-                      lengthType: 'straight'
-                    }}
+                    label={false}
                   >
                     {leadSourceData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -295,7 +289,12 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
                   <Legend 
                     wrapperStyle={{ paddingTop: '20px' }}
                     iconType="circle"
-                    formatter={(value) => <span style={{ color: '#fff', fontSize: '12px' }}>{value}</span>}
+                    formatter={(value, entry) => {
+                      const total = leadSourceData.reduce((sum, item) => sum + item.value, 0) || 1
+                      const item = leadSourceData.find(d => d.name === value)
+                      const percentage = item ? ((item.value / total) * 100).toFixed(1) : '0.0'
+                      return <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>{value} - {percentage}%</span>
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>

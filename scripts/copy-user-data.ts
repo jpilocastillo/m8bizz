@@ -92,14 +92,34 @@ async function copyUserData() {
           .select('*')
           .eq('event_id', originalEventId)
 
-        if (!expensesError && expenses && expenses.length > 0) {
+        if (expensesError) {
+          console.error(`      ❌ Error fetching expenses for event "${event.name}":`, expensesError.message)
+        } else if (expenses && expenses.length > 0) {
+          let expensesCopied = 0
+          let expensesFailed = 0
           for (const expense of expenses) {
-            delete expense.id
-            expense.event_id = newEvent.id
-            expense.created_at = new Date().toISOString()
-            expense.updated_at = new Date().toISOString()
-            await supabase.from('marketing_expenses').insert(expense)
+            const expenseCopy = { ...expense }
+            delete expenseCopy.id
+            delete expenseCopy.total_cost // Generated column - will be calculated automatically
+            expenseCopy.event_id = newEvent.id
+            expenseCopy.created_at = new Date().toISOString()
+            expenseCopy.updated_at = new Date().toISOString()
+            const { error: insertError } = await supabase.from('marketing_expenses').insert(expenseCopy)
+            if (insertError) {
+              console.error(`      ❌ Error copying expense for event "${event.name}":`, insertError.message)
+              expensesFailed++
+            } else {
+              expensesCopied++
+            }
           }
+          if (expensesCopied > 0) {
+            console.log(`      ✅ Copied ${expensesCopied} expense record(s)`)
+          }
+          if (expensesFailed > 0) {
+            console.log(`      ⚠️  Failed to copy ${expensesFailed} expense record(s)`)
+          }
+        } else {
+          console.log(`      ℹ️  No expenses to copy for event "${event.name}"`)
         }
 
         // Copy event_attendance
@@ -108,14 +128,33 @@ async function copyUserData() {
           .select('*')
           .eq('event_id', originalEventId)
 
-        if (!attendanceError && attendance && attendance.length > 0) {
+        if (attendanceError) {
+          console.error(`      ❌ Error fetching attendance for event "${event.name}":`, attendanceError.message)
+        } else if (attendance && attendance.length > 0) {
+          let attendanceCopied = 0
+          let attendanceFailed = 0
           for (const att of attendance) {
-            delete att.id
-            att.event_id = newEvent.id
-            att.created_at = new Date().toISOString()
-            att.updated_at = new Date().toISOString()
-            await supabase.from('event_attendance').insert(att)
+            const attCopy = { ...att }
+            delete attCopy.id
+            attCopy.event_id = newEvent.id
+            attCopy.created_at = new Date().toISOString()
+            attCopy.updated_at = new Date().toISOString()
+            const { error: insertError } = await supabase.from('event_attendance').insert(attCopy)
+            if (insertError) {
+              console.error(`      ❌ Error copying attendance for event "${event.name}":`, insertError.message)
+              attendanceFailed++
+            } else {
+              attendanceCopied++
+            }
           }
+          if (attendanceCopied > 0) {
+            console.log(`      ✅ Copied ${attendanceCopied} attendance record(s)`)
+          }
+          if (attendanceFailed > 0) {
+            console.log(`      ⚠️  Failed to copy ${attendanceFailed} attendance record(s)`)
+          }
+        } else {
+          console.log(`      ℹ️  No attendance to copy for event "${event.name}"`)
         }
 
         // Copy event_appointments
@@ -124,14 +163,33 @@ async function copyUserData() {
           .select('*')
           .eq('event_id', originalEventId)
 
-        if (!appointmentsError && appointments && appointments.length > 0) {
+        if (appointmentsError) {
+          console.error(`      ❌ Error fetching appointments for event "${event.name}":`, appointmentsError.message)
+        } else if (appointments && appointments.length > 0) {
+          let appointmentsCopied = 0
+          let appointmentsFailed = 0
           for (const appt of appointments) {
-            delete appt.id
-            appt.event_id = newEvent.id
-            appt.created_at = new Date().toISOString()
-            appt.updated_at = new Date().toISOString()
-            await supabase.from('event_appointments').insert(appt)
+            const apptCopy = { ...appt }
+            delete apptCopy.id
+            apptCopy.event_id = newEvent.id
+            apptCopy.created_at = new Date().toISOString()
+            apptCopy.updated_at = new Date().toISOString()
+            const { error: insertError } = await supabase.from('event_appointments').insert(apptCopy)
+            if (insertError) {
+              console.error(`      ❌ Error copying appointment for event "${event.name}":`, insertError.message)
+              appointmentsFailed++
+            } else {
+              appointmentsCopied++
+            }
           }
+          if (appointmentsCopied > 0) {
+            console.log(`      ✅ Copied ${appointmentsCopied} appointment record(s)`)
+          }
+          if (appointmentsFailed > 0) {
+            console.log(`      ⚠️  Failed to copy ${appointmentsFailed} appointment record(s)`)
+          }
+        } else {
+          console.log(`      ℹ️  No appointments to copy for event "${event.name}"`)
         }
 
         // Copy financial_production
@@ -140,14 +198,34 @@ async function copyUserData() {
           .select('*')
           .eq('event_id', originalEventId)
 
-        if (!productionError && production && production.length > 0) {
+        if (productionError) {
+          console.error(`      ❌ Error fetching production for event "${event.name}":`, productionError.message)
+        } else if (production && production.length > 0) {
+          let productionCopied = 0
+          let productionFailed = 0
           for (const prod of production) {
-            delete prod.id
-            prod.event_id = newEvent.id
-            prod.created_at = new Date().toISOString()
-            prod.updated_at = new Date().toISOString()
-            await supabase.from('financial_production').insert(prod)
+            const prodCopy = { ...prod }
+            delete prodCopy.id
+            delete prodCopy.total // Generated column - will be calculated automatically
+            prodCopy.event_id = newEvent.id
+            prodCopy.created_at = new Date().toISOString()
+            prodCopy.updated_at = new Date().toISOString()
+            const { error: insertError } = await supabase.from('financial_production').insert(prodCopy)
+            if (insertError) {
+              console.error(`      ❌ Error copying production for event "${event.name}":`, insertError.message)
+              productionFailed++
+            } else {
+              productionCopied++
+            }
           }
+          if (productionCopied > 0) {
+            console.log(`      ✅ Copied ${productionCopied} financial production record(s)`)
+          }
+          if (productionFailed > 0) {
+            console.log(`      ⚠️  Failed to copy ${productionFailed} production record(s)`)
+          }
+        } else {
+          console.log(`      ℹ️  No production to copy for event "${event.name}"`)
         }
       }
     } else {

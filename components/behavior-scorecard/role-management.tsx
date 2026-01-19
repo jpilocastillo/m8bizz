@@ -96,20 +96,37 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
       return
     }
 
+    const trimmedName = editingRoleName.trim()
+    
+    // Check if the name actually changed
+    const currentRole = roles.find(r => r.id === editingRoleId)
+    if (currentRole && currentRole.name === trimmedName) {
+      // No change needed, just exit edit mode
+      setEditingRoleId(null)
+      setEditingRoleName('')
+      return
+    }
+
     setUpdating(true)
     try {
-      const result = await behaviorScorecardService.updateRole(editingRoleId, editingRoleName.trim())
+      console.log('Updating role:', { roleId: editingRoleId, newName: trimmedName })
+      const result = await behaviorScorecardService.updateRole(editingRoleId, trimmedName)
+      console.log('Update result:', result)
+      
       if (result.success) {
         toast({
           title: "Role updated",
           description: `Role name has been updated successfully.`,
         })
+        // Clear editing state first
         setEditingRoleId(null)
         setEditingRoleName('')
+        // Then refresh roles - await to ensure it completes
         if (onRoleChange) {
-          onRoleChange()
+          await onRoleChange()
         }
       } else {
+        console.error('Update failed:', result.error)
         toast({
           title: "Error updating role",
           description: result.error || "Failed to update role",
@@ -120,7 +137,7 @@ export function RoleManagement({ roles, onRoleChange }: RoleManagementProps) {
       console.error('Error updating role:', error)
       toast({
         title: "Error",
-        description: "Failed to update role",
+        description: error instanceof Error ? error.message : "Failed to update role",
         variant: "destructive",
       })
     } finally {

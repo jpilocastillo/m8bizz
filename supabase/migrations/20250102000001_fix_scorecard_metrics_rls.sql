@@ -67,3 +67,5 @@ CREATE POLICY "Users can delete their own scorecard metrics" ON public.scorecard
 
 
 
+
+
