@@ -16,6 +16,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ClientClosedList } from "@/components/dashboard/client-closed-list"
+import { useAuth } from "@/components/auth-provider"
 
 // Sample data structure with defaults
 const defaultData = {
@@ -60,6 +63,7 @@ interface FilterState {
 }
 
 export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
+  const { user } = useAuth()
   // Initialize state with the provided data or defaults
   const [filteredData, setFilteredData] = useState(() => analyticsData || defaultData)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -333,13 +337,30 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
         </div>
       </motion.div>
 
-      {/* Filters */}
-      <motion.div variants={item}>
-        <AnalyticsFilters 
-          onFiltersChange={setFilters}
-          events={analyticsData?.events || []}
-        />
-      </motion.div>
+      <Tabs defaultValue="analytics" className="w-full">
+        <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid grid-cols-2 w-full h-auto mb-6">
+          <TabsTrigger 
+            value="analytics" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70"
+          >
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger 
+            value="clients" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70"
+          >
+            Client Tracking
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="analytics" className="space-y-6">
+          {/* Filters */}
+          <motion.div variants={item}>
+            <AnalyticsFilters 
+              onFiltersChange={setFilters}
+              events={analyticsData?.events || []}
+            />
+          </motion.div>
 
       {/* Summary Cards */}
       <motion.div 
@@ -614,6 +635,18 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
           </Card>
         </div>
       </motion.div>
+        </TabsContent>
+
+        <TabsContent value="clients" className="space-y-6">
+          {user?.id ? (
+            <ClientClosedList userId={user.id} year={selectedYear} showYTD={true} />
+          ) : (
+            <div className="text-center py-12 text-m8bs-muted">
+              <p>Please log in to view client tracking.</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </motion.div>
   )
 }

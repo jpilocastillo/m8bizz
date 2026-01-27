@@ -35,19 +35,6 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // Proactively refresh session if it's about to expire (within 10 minutes)
-  if (session?.expires_at) {
-    const expiresIn = session.expires_at * 1000 - Date.now()
-    const tenMinutes = 10 * 60 * 1000
-    
-    if (expiresIn < tenMinutes && expiresIn > 0) {
-      // Refresh session in background (don't block the request)
-      supabase.auth.refreshSession().catch((error) => {
-        console.error("Error refreshing session in middleware:", error)
-      })
-    }
-  }
-
   // Handle admin routes
   if (req.nextUrl.pathname.startsWith('/admin')) {
     // Allow access to admin login page
@@ -91,11 +78,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Allow public access to landing page
-  if (req.nextUrl.pathname === '/landing') {
-    return res
-  }
-
   // Handle root page - redirect to login if not authenticated
   if (req.nextUrl.pathname === '/') {
     if (!session) {
@@ -109,7 +91,6 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/',
-    '/landing',
     '/business-dashboard/:path*',
     '/admin/:path*',
     '/login',

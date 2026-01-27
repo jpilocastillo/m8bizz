@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -18,6 +18,8 @@ import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { useAuth } from "@/components/auth-provider"
 import { MonthlyDataEntry } from "@/lib/advisor-basecamp"
 import { format, parseISO } from "date-fns"
+import { aggregateEventDataByMonth } from "@/lib/client-tracking"
+import { RefreshCw, Info } from "lucide-react"
 import { Edit, Trash2, Plus, TrendingUp, TrendingDown, Target, DollarSign, Users, Calendar, BarChart3, PieChart, LineChart } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Line, LineChart as RechartsLineChart, Bar, BarChart, PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Area, AreaChart, ComposedChart } from "recharts"
@@ -67,6 +69,11 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
   const [editingEntry, setEditingEntry] = useState<MonthlyDataEntry | null>(null)
   const [selectedMonthForComparison, setSelectedMonthForComparison] = useState<string>("")
   const currentYear = selectedYear || new Date().getFullYear().toString()
+  const [autoPopulatedData, setAutoPopulatedData] = useState<any>(null)
+  const [isLoadingEventData, setIsLoadingEventData] = useState(false)
+  const [clientNames, setClientNames] = useState<string[]>([])
+  const [eventDataForMonth, setEventDataForMonth] = useState<any>(null)
+  const [eventDataForAllMonths, setEventDataForAllMonths] = useState<Record<string, any>>({})
 
   const form = useForm<MonthlyEntryFormData>({
     resolver: zodResolver(monthlyEntrySchema),
@@ -262,6 +269,8 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
   const handleCloseDialog = () => {
     setIsDialogOpen(false)
     setEditingEntry(null)
+    setAutoPopulatedData(null)
+    setClientNames([])
     form.reset({
       month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
       year: new Date().getFullYear().toString(),
@@ -276,13 +285,17 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     })
   }
 
-  const handleOpenDialog = () => {
+  const handleOpenDialog = async () => {
     setIsDialogOpen(true)
     // Reset form to defaults when opening
     setEditingEntry(null)
+    setAutoPopulatedData(null)
+    setClientNames([])
+    const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0')
+    const currentYear = new Date().getFullYear().toString()
     form.reset({
-      month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
-      year: new Date().getFullYear().toString(),
+      month: currentMonth,
+      year: currentYear,
       new_clients: "",
       new_appointments: "",
       new_leads: "",
@@ -292,10 +305,60 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       marketing_expenses: "",
       notes: "",
     })
+    // Auto-load event data for current month
+    await loadEventData(currentMonth, currentYear)
+  }
+
+  // Auto-populate from events when month/year changes
+  const loadEventData = async (month: string, year: string) => {
+    if (!month || !year || !user?.id) return
+
+    setIsLoadingEventData(true)
+    try {
+      const monthNum = parseInt(month)
+      const yearNum = parseInt(year)
+      const eventData = await aggregateEventDataByMonth(user.id, monthNum, yearNum)
+      
+      setAutoPopulatedData(eventData)
+      setClientNames(eventData.client_names || [])
+
+      // Only auto-populate if there's no existing entry
+      const month_year = `${year}-${month.padStart(2, '0')}`
+      const existing = monthlyEntries.find(e => e.month_year === month_year)
+      
+      if (!existing && eventData) {
+        // Auto-populate form fields
+        const currentValues = form.getValues()
+        form.setValue('new_appointments', (eventData.appointments_booked || 0).toString(), { shouldValidate: false })
+        form.setValue('marketing_expenses', (eventData.marketing_expenses || 0).toString(), { shouldValidate: false })
+        form.setValue('annuity_sales', (eventData.annuity_sales || 0).toString(), { shouldValidate: false })
+        form.setValue('aum_sales', (eventData.aum_sales || 0).toString(), { shouldValidate: false })
+        form.setValue('life_sales', (eventData.life_sales || 0).toString(), { shouldValidate: false })
+        form.setValue('new_clients', (eventData.new_clients || 0).toString(), { shouldValidate: false })
+        
+        // Add client names to notes if they exist (always add/update, don't duplicate)
+        if (eventData.client_names && eventData.client_names.length > 0) {
+          const clientNamesText = `Clients from events: ${eventData.client_names.join(', ')}`
+          const existingNotes = currentValues.notes || ""
+          
+          // Remove existing client names line if present, then add new one
+          const notesWithoutClientNames = existingNotes.replace(/\n\nClients from events:.*$/i, '').trim()
+          const finalNotes = notesWithoutClientNames 
+            ? `${notesWithoutClientNames}\n\n${clientNamesText}`
+            : clientNamesText
+          
+          form.setValue('notes', finalNotes, { shouldValidate: false })
+        }
+      }
+    } catch (error) {
+      console.error("Error loading event data:", error)
+    } finally {
+      setIsLoadingEventData(false)
+    }
   }
 
   // Check if entry exists when month/year changes in the form
-  const checkExistingEntry = (month: string, year: string) => {
+  const checkExistingEntry = async (month: string, year: string) => {
     if (!month || !year) return
     
     const month_year = `${year}-${month.padStart(2, '0')}`
@@ -303,6 +366,8 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     
     if (existing) {
       setEditingEntry(existing)
+      setAutoPopulatedData(null)
+      setClientNames([])
       // Populate form with existing data
       form.reset({
         month: month,
@@ -318,6 +383,8 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       })
     } else {
       setEditingEntry(null)
+      // Load event data for auto-population
+      await loadEventData(month, year)
     }
   }
 
@@ -338,21 +405,31 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     return <TrendingDown className="h-4 w-4 text-red-500" />
   }
 
-  // Calculate year-to-date totals from monthly entries
+  // Calculate year-to-date totals from monthly entries (including event data)
   const calculateYearToDate = () => {
     const yearEntries = monthlyEntries.filter(entry => entry.month_year.startsWith(currentYear))
     
-    return yearEntries.reduce((acc, entry) => ({
-      totalSales: acc.totalSales + entry.annuity_sales + entry.aum_sales + entry.life_sales,
-      totalCommissionIncome: acc.totalCommissionIncome + calculateCommissionIncome(entry),
-      totalClients: acc.totalClients + entry.new_clients,
-      totalAppointments: acc.totalAppointments + entry.new_appointments,
-      totalLeads: acc.totalLeads + entry.new_leads,
-      totalMarketingExpenses: acc.totalMarketingExpenses + entry.marketing_expenses,
-      annuitySales: acc.annuitySales + entry.annuity_sales,
-      aumSales: acc.aumSales + entry.aum_sales,
-      lifeSales: acc.lifeSales + entry.life_sales,
-    }), {
+    return yearEntries.reduce((acc, entry) => {
+      const eventData = eventDataForAllMonths[entry.month_year] || {}
+      const eventAnnuity = eventData.annuity_sales || 0
+      const eventAUM = eventData.aum_sales || 0
+      const eventLife = eventData.life_sales || 0
+      const eventClients = eventData.new_clients || 0
+      const eventAppointments = eventData.appointments_booked || 0
+      const eventExpenses = eventData.marketing_expenses || 0
+      
+      return {
+        totalSales: acc.totalSales + entry.annuity_sales + entry.aum_sales + entry.life_sales + eventAnnuity + eventAUM + eventLife,
+        totalCommissionIncome: acc.totalCommissionIncome + calculateCommissionIncome(entry) + eventAnnuity + eventAUM + eventLife,
+        totalClients: acc.totalClients + entry.new_clients + eventClients,
+        totalAppointments: acc.totalAppointments + entry.new_appointments + eventAppointments,
+        totalLeads: acc.totalLeads + entry.new_leads,
+        totalMarketingExpenses: acc.totalMarketingExpenses + entry.marketing_expenses + eventExpenses,
+        annuitySales: acc.annuitySales + entry.annuity_sales + eventAnnuity,
+        aumSales: acc.aumSales + entry.aum_sales + eventAUM,
+        lifeSales: acc.lifeSales + entry.life_sales + eventLife,
+      }
+    }, {
       totalSales: 0,
       totalCommissionIncome: 0,
       totalClients: 0,
@@ -444,17 +521,26 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
   const yearToDate = calculateYearToDate()
   const goals = getGoals()
 
-  // Prepare chart data for goal comparison
+  // Prepare chart data for goal comparison (including event data)
   const prepareGoalComparisonData = () => {
     const yearEntries = monthlyEntries
       .filter(entry => entry.month_year.startsWith(currentYear))
       .sort((a, b) => a.month_year.localeCompare(b.month_year))
     
     return yearEntries.map(entry => {
-      const totalSales = entry.annuity_sales + entry.aum_sales + entry.life_sales
-      const commissionIncome = calculateCommissionIncome(entry)
-      const roi = entry.marketing_expenses > 0 
-        ? ((commissionIncome - entry.marketing_expenses) / entry.marketing_expenses) * 100 
+      const eventData = eventDataForAllMonths[entry.month_year] || {}
+      const eventAnnuity = eventData.annuity_sales || 0
+      const eventAUM = eventData.aum_sales || 0
+      const eventLife = eventData.life_sales || 0
+      const eventExpenses = eventData.marketing_expenses || 0
+      const eventClients = eventData.new_clients || 0
+      const eventAppointments = eventData.appointments_booked || 0
+      
+      const totalSales = (entry.annuity_sales + entry.aum_sales + entry.life_sales) + (eventAnnuity + eventAUM + eventLife)
+      const totalExpenses = entry.marketing_expenses + eventExpenses
+      const commissionIncome = calculateCommissionIncome(entry) + eventAnnuity + eventAUM + eventLife
+      const roi = totalExpenses > 0 
+        ? ((commissionIncome - totalExpenses) / totalExpenses) * 100 
         : commissionIncome > 0 
           ? 9999 // Show high ROI when there's income but no expenses
           : 0
@@ -463,13 +549,13 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
         month: format(parseISO(entry.month_year + "-01"), "MMM"),
         totalSales,
         commissionIncome,
-        annuitySales: entry.annuity_sales,
-        aumSales: entry.aum_sales,
-        lifeSales: entry.life_sales,
-        newClients: entry.new_clients,
-        newAppointments: entry.new_appointments,
+        annuitySales: entry.annuity_sales + eventAnnuity,
+        aumSales: entry.aum_sales + eventAUM,
+        lifeSales: entry.life_sales + eventLife,
+        newClients: entry.new_clients + eventClients,
+        newAppointments: entry.new_appointments + eventAppointments,
         newLeads: entry.new_leads,
-        marketingExpenses: entry.marketing_expenses,
+        marketingExpenses: totalExpenses,
         roi,
         monthYear: entry.month_year,
       }
@@ -479,9 +565,18 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
   const prepareGoalProgressData = () => {
     const yearEntries = monthlyEntries.filter(entry => entry.month_year.startsWith(currentYear))
     
-    const totalAnnuity = yearEntries.reduce((sum, entry) => sum + entry.annuity_sales, 0)
-    const totalAUM = yearEntries.reduce((sum, entry) => sum + entry.aum_sales, 0)
-    const totalLife = yearEntries.reduce((sum, entry) => sum + entry.life_sales, 0)
+    const totalAnnuity = yearEntries.reduce((sum, entry) => {
+      const eventData = eventDataForAllMonths[entry.month_year] || {}
+      return sum + entry.annuity_sales + (eventData.annuity_sales || 0)
+    }, 0)
+    const totalAUM = yearEntries.reduce((sum, entry) => {
+      const eventData = eventDataForAllMonths[entry.month_year] || {}
+      return sum + entry.aum_sales + (eventData.aum_sales || 0)
+    }, 0)
+    const totalLife = yearEntries.reduce((sum, entry) => {
+      const eventData = eventDataForAllMonths[entry.month_year] || {}
+      return sum + entry.life_sales + (eventData.life_sales || 0)
+    }, 0)
     const totalSales = totalAnnuity + totalAUM + totalLife
     
     return [
@@ -500,10 +595,18 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       .sort((a, b) => a.month_year.localeCompare(b.month_year))
     
     return yearEntries.map((entry, index) => {
-      const totalSales = entry.annuity_sales + entry.aum_sales + entry.life_sales
+      const eventData = eventDataForAllMonths[entry.month_year] || {}
+      const eventAnnuity = eventData.annuity_sales || 0
+      const eventAUM = eventData.aum_sales || 0
+      const eventLife = eventData.life_sales || 0
+      
+      const totalSales = (entry.annuity_sales + entry.aum_sales + entry.life_sales) + (eventAnnuity + eventAUM + eventLife)
       const cumulativeSales = yearEntries
         .slice(0, index + 1)
-        .reduce((sum, e) => sum + e.annuity_sales + e.aum_sales + e.life_sales, 0)
+        .reduce((sum, e) => {
+          const eData = eventDataForAllMonths[e.month_year] || {}
+          return sum + e.annuity_sales + e.aum_sales + e.life_sales + (eData.annuity_sales || 0) + (eData.aum_sales || 0) + (eData.life_sales || 0)
+        }, 0)
       
       return {
         month: format(parseISO(entry.month_year + "-01"), "MMM"),
@@ -525,18 +628,69 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     ? monthlyEntries.find(entry => entry.month_year === selectedMonthForComparison)
     : null
 
+  // Fetch event data for all months when entries or user changes
+  useEffect(() => {
+    const fetchAllEventData = async () => {
+      if (!user || monthlyEntries.length === 0) {
+        setEventDataForAllMonths({})
+        return
+      }
+      
+      setIsLoadingEventData(true)
+      try {
+        const eventDataMap: Record<string, any> = {}
+        
+        // Fetch event data for each month
+        for (const entry of monthlyEntries) {
+          const [year, month] = entry.month_year.split('-')
+          try {
+            const eventData = await aggregateEventDataByMonth(user.id, parseInt(month), parseInt(year))
+            eventDataMap[entry.month_year] = eventData
+          } catch (error) {
+            console.error(`Error fetching event data for ${entry.month_year}:`, error)
+            eventDataMap[entry.month_year] = null
+          }
+        }
+        
+        setEventDataForAllMonths(eventDataMap)
+        
+        // Set event data for selected month if available
+        if (selectedMonthData) {
+          setEventDataForMonth(eventDataMap[selectedMonthData.month_year] || null)
+        }
+      } catch (error) {
+        console.error("Error fetching event data:", error)
+        setEventDataForAllMonths({})
+      } finally {
+        setIsLoadingEventData(false)
+      }
+    }
+
+    fetchAllEventData()
+  }, [monthlyEntries, user])
+
+  // Update event data for selected month when selection changes
+  useEffect(() => {
+    if (selectedMonthData && eventDataForAllMonths[selectedMonthData.month_year]) {
+      setEventDataForMonth(eventDataForAllMonths[selectedMonthData.month_year])
+    } else {
+      setEventDataForMonth(null)
+    }
+  }, [selectedMonthData, eventDataForAllMonths])
+
   // Debug logging
   console.log('Monthly entries:', monthlyEntries)
   console.log('Goal comparison data:', goalComparisonData)
   console.log('Goal progress data:', goalProgressData)
   console.log('Monthly progress data:', monthlyProgressData)
+  console.log('Event data for month:', eventDataForMonth)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Monthly Data Entry</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl font-extrabold text-white tracking-tight">Monthly Data Entry</h2>
+          <p className="text-m8bs-muted mt-2">
             Track Your Monthly Performance And Compare Against Your Annual Goals From The Advisor Basecamp
           </p>
         </div>
@@ -612,9 +766,9 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                         <FormControl>
                           <select
                             {...field}
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               field.onChange(e)
-                              checkExistingEntry(form.getValues('month'), e.target.value)
+                              await checkExistingEntry(form.getValues('month'), e.target.value)
                             }}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
@@ -639,7 +793,14 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     name="new_clients"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white font-medium">New Clients</FormLabel>
+                        <FormLabel className="text-white font-medium flex items-center gap-2">
+                          New Clients
+                          {autoPopulatedData && !editingEntry && (
+                            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
+                              From Events: {autoPopulatedData.new_clients || 0}
+                            </Badge>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="0" {...field} />
                         </FormControl>
@@ -655,7 +816,14 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     name="new_appointments"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white font-medium">Monthly New Appointments Booked</FormLabel>
+                        <FormLabel className="text-white font-medium flex items-center gap-2">
+                          Monthly New Appointments Booked
+                          {autoPopulatedData && !editingEntry && (
+                            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
+                              From Events: {autoPopulatedData.appointments_booked || 0}
+                            </Badge>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="0" {...field} />
                         </FormControl>
@@ -685,7 +853,14 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     name="annuity_sales"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white font-medium">Annuity Sales ($)</FormLabel>
+                        <FormLabel className="text-white font-medium flex items-center gap-2">
+                          Annuity Sales ($)
+                          {autoPopulatedData && !editingEntry && (
+                            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
+                              From Events: {formatCurrency(autoPopulatedData.annuity_sales || 0)}
+                            </Badge>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -708,7 +883,14 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     name="aum_sales"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white font-medium">AUM Sales ($)</FormLabel>
+                        <FormLabel className="text-white font-medium flex items-center gap-2">
+                          AUM Sales ($)
+                          {autoPopulatedData && !editingEntry && (
+                            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
+                              From Events: {formatCurrency(autoPopulatedData.aum_sales || 0)}
+                            </Badge>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -731,7 +913,14 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     name="life_sales"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white font-medium">Life Sales ($)</FormLabel>
+                        <FormLabel className="text-white font-medium flex items-center gap-2">
+                          Life Sales ($)
+                          {autoPopulatedData && !editingEntry && (
+                            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
+                              From Events: {formatCurrency(autoPopulatedData.life_sales || 0)}
+                            </Badge>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -756,7 +945,14 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     name="marketing_expenses"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-white font-medium">Marketing Expenses ($)</FormLabel>
+                        <FormLabel className="text-white font-medium flex items-center gap-2">
+                          Marketing Expenses ($)
+                          {autoPopulatedData && !editingEntry && (
+                            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
+                              From Events: {formatCurrency(autoPopulatedData.marketing_expenses || 0)}
+                            </Badge>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="text"
@@ -775,6 +971,25 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   />
                 </div>
 
+                {/* Client Names Display */}
+                {clientNames.length > 0 && !editingEntry && (
+                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <div className="flex items-start gap-2 mb-2">
+                      <Info className="h-4 w-4 text-blue-400 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-blue-300 mb-2">Clients from Events:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {clientNames.map((name, idx) => (
+                            <Badge key={idx} variant="secondary" className="bg-blue-500/20 text-blue-300">
+                              {name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <FormField
                   control={form.control}
                   name="notes"
@@ -792,14 +1007,29 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   )}
                 />
 
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingEntry ? "Update Entry" : "Add Entry"}
-                  </Button>
-
+                <div className="flex justify-between items-center">
+                  {!editingEntry && form.getValues('month') && form.getValues('year') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        await loadEventData(form.getValues('month'), form.getValues('year'))
+                      }}
+                      disabled={isLoadingEventData}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isLoadingEventData ? 'animate-spin' : ''}`} />
+                      Refresh from Events
+                    </Button>
+                  )}
+                  <div className="flex gap-2 ml-auto">
+                    <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      {editingEntry ? "Update Entry" : "Add Entry"}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </Form>
@@ -809,24 +1039,24 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
 
       {/* Month Selection for Comparison */}
       {monthlyEntries.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Month Comparison Tool</CardTitle>
-            <CardDescription>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">Month Comparison Tool</CardTitle>
+            <CardDescription className="text-m8bs-muted mt-2">
               Select A Month To Compare Your Performance Against Your Goals And Review Your Notes
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <label htmlFor="month-select" className="text-sm font-medium">
+                <label htmlFor="month-select" className="text-sm font-medium text-white">
                   Select Month to Compare
                 </label>
                 <select
                   id="month-select"
                   value={selectedMonthForComparison}
                   onChange={(e) => setSelectedMonthForComparison(e.target.value)}
-                  className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="mt-1 flex h-10 w-full rounded-md border border-m8bs-border bg-m8bs-card-alt text-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">Choose a month...</option>
                   {monthlyEntries
@@ -853,117 +1083,201 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
 
       {/* Month Comparison View */}
       {selectedMonthData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl">
+          <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+            <CardTitle className="text-xl font-extrabold text-white tracking-tight">
               {format(parseISO(selectedMonthData.month_year + "-01"), "MMMM yyyy")} - Goal Comparison
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-m8bs-muted mt-2">
               Performance Analysis And Notes For The Selected Month
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="p-6 space-y-6">
             {/* Performance Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">New Clients</div>
-                <div className="text-2xl font-bold">{selectedMonthData.new_clients.toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newClientsGoal.toLocaleString()}</div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Appointments Booked</div>
-                <div className="text-2xl font-bold">{selectedMonthData.new_appointments.toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newAppointmentsGoal.toLocaleString()}</div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">New Leads</div>
-                <div className="text-2xl font-bold">{selectedMonthData.new_leads.toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground">Vs Goal: {goals.newLeadsGoal.toLocaleString()}</div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Total Sales</div>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales)}
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">New Clients</div>
+                <div className="text-2xl font-bold text-white">
+                  {(selectedMonthData.new_clients + (eventDataForMonth?.new_clients || 0)).toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-m8bs-muted">Vs Goal: {goals.newClientsGoal.toLocaleString()}</div>
+                {eventDataForMonth && eventDataForMonth.new_clients > 0 && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    ({selectedMonthData.new_clients} manual + {eventDataForMonth.new_clients} from events)
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">Appointments Booked</div>
+                <div className="text-2xl font-bold text-white">
+                  {(selectedMonthData.new_appointments + (eventDataForMonth?.appointments_booked || 0)).toLocaleString()}
+                </div>
+                <div className="text-xs text-m8bs-muted">Vs Goal: {goals.newAppointmentsGoal.toLocaleString()}</div>
+                {eventDataForMonth && eventDataForMonth.appointments_booked > 0 && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    ({selectedMonthData.new_appointments} manual + {eventDataForMonth.appointments_booked} from events)
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">New Leads</div>
+                <div className="text-2xl font-bold text-white">{selectedMonthData.new_leads.toLocaleString()}</div>
+                <div className="text-xs text-m8bs-muted">Vs Goal: {goals.newLeadsGoal.toLocaleString()}</div>
+              </div>
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">Total Sales</div>
+                <div className="text-2xl font-bold text-white">
+                  {formatCurrency(
+                    (selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales) +
+                    ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))
+                  )}
+                </div>
+                <div className="text-xs text-m8bs-muted">
                   Vs Monthly Goal: {formatCurrency(goals.businessGoal / 12)}
                 </div>
+                {eventDataForMonth && ((eventDataForMonth.annuity_sales || 0) + (eventDataForMonth.aum_sales || 0) + (eventDataForMonth.life_sales || 0)) > 0 && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    ({formatCurrency(selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales)} manual + {formatCurrency((eventDataForMonth.annuity_sales || 0) + (eventDataForMonth.aum_sales || 0) + (eventDataForMonth.life_sales || 0))} from events)
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Sales Breakdown */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Annuity Sales</div>
-                <div className="text-xl font-semibold">{formatCurrency(selectedMonthData.annuity_sales)}</div>
-                <div className="text-xs text-muted-foreground">
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">Annuity Sales</div>
+                <div className="text-xl font-semibold text-white">
+                  {formatCurrency(selectedMonthData.annuity_sales + (eventDataForMonth?.annuity_sales || 0))}
+                </div>
+                <div className="text-xs text-m8bs-muted">
                   Vs Goal: {formatCurrency(goals.annuityGoal / 12)}
                 </div>
+                {eventDataForMonth && eventDataForMonth.annuity_sales > 0 && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    ({formatCurrency(selectedMonthData.annuity_sales)} manual + {formatCurrency(eventDataForMonth.annuity_sales)} from events)
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">AUM Sales</div>
-                <div className="text-xl font-semibold">{formatCurrency(selectedMonthData.aum_sales)}</div>
-                <div className="text-xs text-muted-foreground">
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">AUM Sales</div>
+                <div className="text-xl font-semibold text-white">
+                  {formatCurrency(selectedMonthData.aum_sales + (eventDataForMonth?.aum_sales || 0))}
+                </div>
+                <div className="text-xs text-m8bs-muted">
                   Vs Goal: {formatCurrency(goals.aumGoal / 12)}
                 </div>
+                {eventDataForMonth && eventDataForMonth.aum_sales > 0 && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    ({formatCurrency(selectedMonthData.aum_sales)} manual + {formatCurrency(eventDataForMonth.aum_sales)} from events)
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Life Sales</div>
-                <div className="text-xl font-semibold">{formatCurrency(selectedMonthData.life_sales)}</div>
-                <div className="text-xs text-muted-foreground">
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">Life Sales</div>
+                <div className="text-xl font-semibold text-white">
+                  {formatCurrency(selectedMonthData.life_sales + (eventDataForMonth?.life_sales || 0))}
+                </div>
+                <div className="text-xs text-m8bs-muted">
                   Vs Goal: {formatCurrency(goals.lifeTargetGoal / 12)}
                 </div>
+                {eventDataForMonth && eventDataForMonth.life_sales > 0 && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    ({formatCurrency(selectedMonthData.life_sales)} manual + {formatCurrency(eventDataForMonth.life_sales)} from events)
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Marketing Performance */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Marketing Expenses</div>
-                <div className="text-xl font-semibold">{formatCurrency(selectedMonthData.marketing_expenses)}</div>
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">Marketing Expenses</div>
+                <div className="text-xl font-semibold text-white">
+                  {formatCurrency(selectedMonthData.marketing_expenses + (eventDataForMonth?.marketing_expenses || 0))}
+                </div>
+                {eventDataForMonth && eventDataForMonth.marketing_expenses > 0 && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    ({formatCurrency(selectedMonthData.marketing_expenses)} manual + {formatCurrency(eventDataForMonth.marketing_expenses)} from events)
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Marketing ROI</div>
-                <div className="text-xl font-semibold">
-                  {selectedMonthData.marketing_expenses > 0 
-                    ? (((calculateCommissionIncome(selectedMonthData) - selectedMonthData.marketing_expenses) / selectedMonthData.marketing_expenses) * 100).toFixed(0)
-                    : calculateCommissionIncome(selectedMonthData) > 0 
-                      ? "9999" // Show high ROI when there's income but no expenses
-                      : "0"}%
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">Marketing ROI</div>
+                <div className="text-xl font-semibold text-white">
+                  {(() => {
+                    const totalExpenses = selectedMonthData.marketing_expenses + (eventDataForMonth?.marketing_expenses || 0)
+                    const totalIncome = calculateCommissionIncome(selectedMonthData) + 
+                      ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))
+                    return totalExpenses > 0 
+                      ? (((totalIncome - totalExpenses) / totalExpenses) * 100).toFixed(0)
+                      : totalIncome > 0 
+                        ? "9999" // Show high ROI when there's income but no expenses
+                        : "0"
+                  })()}%
                 </div>
               </div>
             </div>
 
+            {/* Event Data Summary */}
+            {eventDataForMonth && eventDataForMonth.client_names && eventDataForMonth.client_names.length > 0 && (
+              <div className="space-y-2 border-t border-m8bs-border pt-4">
+                <div className="text-sm font-medium text-m8bs-muted">Clients from Events</div>
+                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <div className="text-sm mb-2 text-blue-300 font-medium">
+                    <strong>{eventDataForMonth.client_names.length}</strong> clients closed from events this month:
+                  </div>
+                  <div className="text-xs text-blue-200/90">
+                    {eventDataForMonth.client_names.join(', ')}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Notes Section */}
             {selectedMonthData.notes && (
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">Notes & Observations</div>
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm whitespace-pre-wrap">{selectedMonthData.notes}</p>
+              <div className="space-y-2 border-t border-m8bs-border pt-4">
+                <div className="text-sm font-medium text-m8bs-muted">Notes & Observations</div>
+                <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                  <p className="text-sm whitespace-pre-wrap text-purple-200/90">{selectedMonthData.notes}</p>
                 </div>
               </div>
             )}
 
             {/* Goal Progress Summary */}
-            <div className="space-y-4">
-              <div className="text-sm font-medium text-muted-foreground">Goal Progress Summary</div>
+            <div className="space-y-4 border-t border-m8bs-border pt-4">
+              <div className="text-sm font-medium text-m8bs-muted">Goal Progress Summary</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border rounded-lg">
-                  <div className="text-sm font-medium">Sales Goal Progress</div>
-                  <div className="text-2xl font-bold mt-2">
-                    {((selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales) / (goals.businessGoal / 12) * 100).toFixed(0)}%
+                <div className="p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                  <div className="text-sm font-medium text-m8bs-muted">Sales Goal Progress</div>
+                  <div className="text-2xl font-bold mt-2 text-white">
+                    {(() => {
+                      const totalSales = (selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales) +
+                        ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))
+                      return ((totalSales / (goals.businessGoal / 12)) * 100).toFixed(0)
+                    })()}%
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {formatCurrency(selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales)} Of {formatCurrency(goals.businessGoal / 12)}
+                  <div className="text-xs text-m8bs-muted mt-1">
+                    {(() => {
+                      const totalSales = (selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales) +
+                        ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))
+                      return `${formatCurrency(totalSales)} Of ${formatCurrency(goals.businessGoal / 12)}`
+                    })()}
                   </div>
                 </div>
-                <div className="p-4 border rounded-lg">
-                  <div className="text-sm font-medium">Client Acquisition Progress</div>
-                  <div className="text-2xl font-bold mt-2">
-                    {((selectedMonthData.new_clients / goals.newClientsGoal) * 100).toFixed(0)}%
+                <div className="p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                  <div className="text-sm font-medium text-m8bs-muted">Client Acquisition Progress</div>
+                  <div className="text-2xl font-bold mt-2 text-white">
+                    {(() => {
+                      const totalClients = selectedMonthData.new_clients + (eventDataForMonth?.new_clients || 0)
+                      return ((totalClients / goals.newClientsGoal) * 100).toFixed(0)
+                    })()}%
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {selectedMonthData.new_clients.toLocaleString()} Of {goals.newClientsGoal.toLocaleString()} Clients
+                  <div className="text-xs text-m8bs-muted mt-1">
+                    {(() => {
+                      const totalClients = selectedMonthData.new_clients + (eventDataForMonth?.new_clients || 0)
+                      return `${totalClients.toLocaleString()} Of ${goals.newClientsGoal.toLocaleString()} Clients`
+                    })()}
                   </div>
                 </div>
               </div>
@@ -973,11 +1287,11 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       )}
 
       {monthlyEntries.length === 0 ? (
-        <Card>
+        <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">No Monthly Entries Yet</h3>
-              <p className="text-muted-foreground mb-4">
+              <h3 className="text-lg font-semibold text-white mb-2">No Monthly Entries Yet</h3>
+              <p className="text-m8bs-muted mb-4">
                 Start tracking your monthly performance by adding your first entry.
               </p>
               <Button onClick={() => setIsDialogOpen(true)}>
@@ -992,34 +1306,30 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
           {/* Year-to-Date Summary */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Business Goal Progress */}
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="h-1 w-full bg-blue-500"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="bg-m8bs-card border-m8bs-border rounded-sm overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col">
+              <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-blue-600"></div>
+              <CardHeader className="bg-m8bs-card px-4 py-3">
+                <CardTitle className="text-xs font-semibold text-white">
                   Business Goal
-                  <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Progress against annual business goal
-                  </CardDescription>
                 </CardTitle>
-                <div className="rounded-full p-2 bg-blue-500/10">
-                  <Target className="h-4 w-4 text-blue-500" />
-                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-500">
+              <CardContent className="px-4 pb-4 pt-2 flex-1">
+                <div className="text-3xl font-bold text-blue-400 mb-1.5 tabular-nums tracking-tight">
                   {calculateProgress(yearToDate.totalSales, goals.businessGoal).toFixed(0)}%
                 </div>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  <span>{formatCurrency(yearToDate.totalSales)} / {formatCurrency(goals.businessGoal)}</span>
+                <div className="flex items-center text-xs text-m8bs-muted mb-3 space-x-1">
+                  <span className="font-medium">{formatCurrency(yearToDate.totalSales)}</span>
+                  <span>/</span>
+                  <span>{formatCurrency(goals.businessGoal)}</span>
                 </div>
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Progress</span>
-                    <span>{calculateProgress(yearToDate.totalSales, goals.businessGoal).toFixed(0)}%</span>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-m8bs-muted font-medium">Progress</span>
+                    <span className="text-white font-semibold">{calculateProgress(yearToDate.totalSales, goals.businessGoal).toFixed(0)}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div className="w-full bg-m8bs-border/40 rounded-full h-1.5 overflow-hidden">
                     <div 
-                      className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(calculateProgress(yearToDate.totalSales, goals.businessGoal), 100)}%` }}
                     ></div>
                   </div>
@@ -1028,34 +1338,30 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
             </Card>
 
             {/* AUM Goal Progress */}
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="h-1 w-full bg-green-500"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="bg-m8bs-card border-m8bs-border rounded-sm overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col">
+              <div className="h-1 w-full bg-gradient-to-r from-green-500 to-green-600"></div>
+              <CardHeader className="bg-m8bs-card px-4 py-3">
+                <CardTitle className="text-xs font-semibold text-white">
                   AUM Goal
-                  <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Progress against annual AUM goal
-                  </CardDescription>
                 </CardTitle>
-                <div className="rounded-full p-2 bg-green-500/10">
-                  <DollarSign className="h-4 w-4 text-green-500" />
-                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-500">
+              <CardContent className="px-4 pb-4 pt-2 flex-1">
+                <div className="text-3xl font-bold text-green-400 mb-1.5 tabular-nums tracking-tight">
                   {calculateProgress(yearToDate.aumSales, goals.aumGoal).toFixed(0)}%
                 </div>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  <span>{formatCurrency(yearToDate.aumSales)} / {formatCurrency(goals.aumGoal)}</span>
+                <div className="flex items-center text-xs text-m8bs-muted mb-3 space-x-1">
+                  <span className="font-medium">{formatCurrency(yearToDate.aumSales)}</span>
+                  <span>/</span>
+                  <span>{formatCurrency(goals.aumGoal)}</span>
                 </div>
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Progress</span>
-                    <span>{calculateProgress(yearToDate.aumSales, goals.aumGoal).toFixed(0)}%</span>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-m8bs-muted font-medium">Progress</span>
+                    <span className="text-white font-semibold">{calculateProgress(yearToDate.aumSales, goals.aumGoal).toFixed(0)}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div className="w-full bg-m8bs-border/40 rounded-full h-1.5 overflow-hidden">
                     <div 
-                      className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-green-500 to-green-600 h-1.5 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(calculateProgress(yearToDate.aumSales, goals.aumGoal), 100)}%` }}
                     ></div>
                   </div>
@@ -1064,34 +1370,30 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
             </Card>
 
             {/* Annuity Goal Progress */}
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="h-1 w-full bg-purple-500"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="bg-m8bs-card border-m8bs-border rounded-sm overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col">
+              <div className="h-1 w-full bg-gradient-to-r from-purple-500 to-purple-600"></div>
+              <CardHeader className="bg-m8bs-card px-4 py-3">
+                <CardTitle className="text-xs font-semibold text-white">
                   Annuity Goal
-                  <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Progress against annual annuity goal
-                  </CardDescription>
                 </CardTitle>
-                <div className="rounded-full p-2 bg-purple-500/10">
-                  <TrendingUp className="h-4 w-4 text-purple-500" />
-                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-purple-500">
+              <CardContent className="px-4 pb-4 pt-2 flex-1">
+                <div className="text-3xl font-bold text-purple-400 mb-1.5 tabular-nums tracking-tight">
                   {calculateProgress(yearToDate.annuitySales, goals.annuityGoal).toFixed(0)}%
                 </div>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  <span>{formatCurrency(yearToDate.annuitySales)} / {formatCurrency(goals.annuityGoal)}</span>
+                <div className="flex items-center text-xs text-m8bs-muted mb-3 space-x-1">
+                  <span className="font-medium">{formatCurrency(yearToDate.annuitySales)}</span>
+                  <span>/</span>
+                  <span>{formatCurrency(goals.annuityGoal)}</span>
                 </div>
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Progress</span>
-                    <span>{calculateProgress(yearToDate.annuitySales, goals.annuityGoal).toFixed(0)}%</span>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-m8bs-muted font-medium">Progress</span>
+                    <span className="text-white font-semibold">{calculateProgress(yearToDate.annuitySales, goals.annuityGoal).toFixed(0)}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div className="w-full bg-m8bs-border/40 rounded-full h-1.5 overflow-hidden">
                     <div 
-                      className="bg-purple-500 h-1.5 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-1.5 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(calculateProgress(yearToDate.annuitySales, goals.annuityGoal), 100)}%` }}
                     ></div>
                   </div>
@@ -1100,34 +1402,30 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
             </Card>
 
             {/* Life Goal Progress */}
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="h-1 w-full bg-orange-500"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="bg-m8bs-card border-m8bs-border rounded-sm overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col">
+              <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-orange-600"></div>
+              <CardHeader className="bg-m8bs-card px-4 py-3">
+                <CardTitle className="text-xs font-semibold text-white">
                   Life Goal
-                  <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Progress against annual life goal
-                  </CardDescription>
                 </CardTitle>
-                <div className="rounded-full p-2 bg-orange-500/10">
-                  <Users className="h-4 w-4 text-orange-500" />
-                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-orange-500">
+              <CardContent className="px-4 pb-4 pt-2 flex-1">
+                <div className="text-3xl font-bold text-orange-400 mb-1.5 tabular-nums tracking-tight">
                   {calculateProgress(yearToDate.lifeSales, goals.lifeGoal).toFixed(0)}%
                 </div>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  <span>{formatCurrency(yearToDate.lifeSales)} / {formatCurrency(goals.lifeGoal)}</span>
+                <div className="flex items-center text-xs text-m8bs-muted mb-3 space-x-1">
+                  <span className="font-medium">{formatCurrency(yearToDate.lifeSales)}</span>
+                  <span>/</span>
+                  <span>{formatCurrency(goals.lifeGoal)}</span>
                 </div>
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Progress</span>
-                    <span>{calculateProgress(yearToDate.lifeSales, goals.lifeGoal).toFixed(0)}%</span>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-m8bs-muted font-medium">Progress</span>
+                    <span className="text-white font-semibold">{calculateProgress(yearToDate.lifeSales, goals.lifeGoal).toFixed(0)}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div className="w-full bg-m8bs-border/40 rounded-full h-1.5 overflow-hidden">
                     <div 
-                      className="bg-orange-500 h-1.5 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-1.5 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(calculateProgress(yearToDate.lifeSales, goals.lifeGoal), 100)}%` }}
                     ></div>
                   </div>
@@ -1138,102 +1436,109 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
 
           {/* Year-to-Date Summary Stats */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="h-1 w-full bg-blue-500"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="bg-m8bs-card border-m8bs-border rounded-sm overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col">
+              <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-blue-600"></div>
+              <CardHeader className="bg-m8bs-card px-4 py-3">
+                <CardTitle className="text-xs font-semibold text-white">
                   New Clients
-                  <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Total new clients this year
-                  </CardDescription>
                 </CardTitle>
-                <div className="rounded-full p-2 bg-blue-500/10">
-                  <Users className="h-4 w-4 text-blue-500" />
-                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-blue-500">{yearToDate.totalClients}</div>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  <span>Year to date</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="h-1 w-full bg-green-500"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Appointments
-                  <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Total appointments this year vs target
-                  </CardDescription>
-                </CardTitle>
-                <div className="rounded-full p-2 bg-green-500/10">
-                  <Calendar className="h-4 w-4 text-green-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-500">{yearToDate.totalAppointments}</div>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
-                  <span>Year to date</span>
-                  {data.clientMetrics?.monthly_ideal_prospects && (
-                    <span className="ml-2 text-xs">
-                      vs Target: {Math.ceil((data.clientMetrics.monthly_ideal_prospects * 3) * 12)}
-                    </span>
+              <CardContent className="px-4 pb-4 pt-2 flex-1">
+                <div className="text-3xl font-bold text-blue-400 mb-1.5 tabular-nums tracking-tight">{yearToDate.totalClients}</div>
+                <div className="flex items-center text-xs text-m8bs-muted mb-3 space-x-1">
+                  <span className="font-medium">Year to date</span>
+                  {(data.clientMetrics?.clients_needed || 0) > 0 && (
+                    <>
+                      <span>/</span>
+                      <span>{data.clientMetrics.clients_needed}</span>
+                    </>
                   )}
                 </div>
-                {data.clientMetrics?.monthly_ideal_prospects && (
-                  <div className="mt-2">
-                    <Progress 
-                      value={Math.min((yearToDate.totalAppointments / ((data.clientMetrics.monthly_ideal_prospects * 3) * 12)) * 100, 100)} 
-                      className="h-2" 
-                    />
+                {(data.clientMetrics?.clients_needed || 0) > 0 && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-m8bs-muted font-medium">Progress</span>
+                      <span className="text-white font-semibold">{calculateProgress(yearToDate.totalClients, data.clientMetrics.clients_needed).toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-m8bs-border/40 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(calculateProgress(yearToDate.totalClients, data.clientMetrics.clients_needed), 100)}%` }}
+                      ></div>
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="h-1 w-full bg-purple-500"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Leads Generated
-                  <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Total leads this year
-                  </CardDescription>
+            <Card className="bg-m8bs-card border-m8bs-border rounded-sm overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col">
+              <div className="h-1 w-full bg-gradient-to-r from-green-500 to-green-600"></div>
+              <CardHeader className="bg-m8bs-card px-4 py-3">
+                <CardTitle className="text-xs font-semibold text-white">
+                  Appointments
                 </CardTitle>
-                <div className="rounded-full p-2 bg-purple-500/10">
-                  <Target className="h-4 w-4 text-purple-500" />
-                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-purple-500">{yearToDate.totalLeads}</div>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
+              <CardContent className="px-4 pb-4 pt-2 flex-1">
+                <div className="text-3xl font-bold text-green-400 mb-1.5 tabular-nums tracking-tight">{yearToDate.totalAppointments}</div>
+                <div className="flex items-center text-xs text-m8bs-muted mb-3 space-x-1">
+                  <span className="font-medium">Year to date</span>
+                  {data.clientMetrics?.monthly_ideal_prospects && (
+                    <>
+                      <span>/</span>
+                      <span>{Math.ceil((data.clientMetrics.monthly_ideal_prospects * 3) * 12)}</span>
+                    </>
+                  )}
+                </div>
+                {data.clientMetrics?.monthly_ideal_prospects && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-m8bs-muted font-medium">Progress</span>
+                      <span className="text-white font-semibold">
+                        {Math.min((yearToDate.totalAppointments / ((data.clientMetrics.monthly_ideal_prospects * 3) * 12)) * 100, 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-m8bs-border/40 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-green-500 to-green-600 h-1.5 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min((yearToDate.totalAppointments / ((data.clientMetrics.monthly_ideal_prospects * 3) * 12)) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-m8bs-card border-m8bs-border rounded-sm overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col">
+              <div className="h-1 w-full bg-gradient-to-r from-purple-500 to-purple-600"></div>
+              <CardHeader className="bg-m8bs-card px-4 py-3">
+                <CardTitle className="text-xs font-semibold text-white">
+                  Leads Generated
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-2 flex-1">
+                <div className="text-3xl font-bold text-purple-400 mb-1.5 tabular-nums tracking-tight">{yearToDate.totalLeads}</div>
+                <div className="flex items-center text-xs text-m8bs-muted font-medium">
                   <span>Year to date</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="h-1 w-full bg-orange-500"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="bg-m8bs-card border-m8bs-border rounded-sm overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col">
+              <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-orange-600"></div>
+              <CardHeader className="bg-m8bs-card px-4 py-3">
+                <CardTitle className="text-xs font-semibold text-white">
                   Marketing ROI
-                  <CardDescription className="text-muted-foreground text-xs mt-1">
-                    Return on marketing investment
-                  </CardDescription>
                 </CardTitle>
-                <div className="rounded-full p-2 bg-orange-500/10">
-                  <TrendingUp className="h-4 w-4 text-orange-500" />
-                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-orange-500">
+              <CardContent className="px-4 pb-4 pt-2 flex-1">
+                <div className="text-3xl font-bold text-orange-400 mb-1.5 tabular-nums tracking-tight">
                   {yearToDate.totalMarketingExpenses > 0 
                     ? ((yearToDate.totalCommissionIncome - yearToDate.totalMarketingExpenses) / yearToDate.totalMarketingExpenses * 100).toFixed(0)
-                    : 0}%
+                    : yearToDate.totalCommissionIncome > 0 
+                      ? "9999" // Show high ROI when there's income but no expenses
+                      : "0"}%
                 </div>
-                <div className="flex items-center text-xs text-muted-foreground mt-1">
+                <div className="flex items-center text-xs text-m8bs-muted font-medium">
                   <span>Year to date</span>
                 </div>
               </CardContent>
@@ -1247,17 +1552,17 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
           {monthlyEntries.length > 0 && (
             <>
               {/* Goal Progress Chart */}
-              <Card className="border-none shadow-lg overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl">
+                <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+                  <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                     <Target className="h-5 w-5" />
                     Progress vs Goals
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-m8bs-muted mt-2">
                     Your progress against annual goals from the advisor basecamp
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={goalProgressData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -1298,17 +1603,17 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
               </Card>
 
               {/* Monthly Progress Chart */}
-              <Card className="border-none shadow-lg overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl">
+                <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+                  <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                     <TrendingUp className="h-5 w-5" />
                     Monthly Progress
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-m8bs-muted mt-2">
                     Monthly sales vs monthly goals
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={goalComparisonData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -1350,17 +1655,17 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
               </Card>
 
               {/* Cumulative Progress Chart */}
-              <Card className="border-none shadow-lg overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl">
+                <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+                  <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                     <Target className="h-5 w-5" />
                     Cumulative Progress
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-m8bs-muted mt-2">
                     Cumulative progress against annual business goal
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <ResponsiveContainer width="100%" height={300}>
                     <ComposedChart data={monthlyProgressData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -1418,17 +1723,17 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
 
               {/* ROI and Marketing Performance */}
               <div className="grid gap-4 md:grid-cols-2">
-                <Card className="border-none shadow-lg overflow-hidden">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl">
+                  <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+                    <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                       <TrendingUp className="h-5 w-5" />
                       Marketing ROI Trend
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-m8bs-muted mt-2">
                       Return on marketing investment over time
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-6">
                     <ResponsiveContainer width="100%" height={300}>
                       <RechartsLineChart data={goalComparisonData}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -1474,17 +1779,17 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-lg overflow-hidden">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                <Card className="bg-m8bs-card border-m8bs-border rounded-lg overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl">
+                  <CardHeader className="bg-m8bs-card border-b border-m8bs-border px-6 py-4">
+                    <CardTitle className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                       <DollarSign className="h-5 w-5" />
                       Marketing Expenses vs Sales
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-m8bs-muted mt-2">
                       Marketing spend compared to sales generated
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-6">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={goalComparisonData}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -1507,30 +1812,43 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
 
           <Card>
             <CardHeader>
-              <CardTitle>Monthly Entries</CardTitle>
+              <CardTitle>Monthly Entries - {currentYear} YTD</CardTitle>
               <CardDescription>
-                Your Monthly Performance Data And Goal Progress
+                Your Monthly Performance Data And Goal Progress For {currentYear}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Month</TableHead>
-                    <TableHead>New Clients</TableHead>
-                    <TableHead>Monthly New Appointments Booked</TableHead>
-                    <TableHead>New Leads</TableHead>
-                    <TableHead>Total Sales</TableHead>
-                    <TableHead>Marketing ROI</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {monthlyEntries.map((entry) => {
-                    const totalSales = entry.annuity_sales + entry.aum_sales + entry.life_sales
-                    const commissionIncome = calculateCommissionIncome(entry)
-                    const roi = entry.marketing_expenses > 0 
-                      ? ((commissionIncome - entry.marketing_expenses) / entry.marketing_expenses) * 100 
+            <CardContent className="p-6">
+              <div className="rounded-md border border-m8bs-border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-m8bs-border bg-m8bs-card-alt">
+                      <TableHead className="text-white font-semibold">Month</TableHead>
+                      <TableHead className="text-white font-semibold">New Clients</TableHead>
+                      <TableHead className="text-white font-semibold">Client Names</TableHead>
+                      <TableHead className="text-white font-semibold">Monthly New Appointments Booked</TableHead>
+                      <TableHead className="text-white font-semibold">New Leads</TableHead>
+                      <TableHead className="text-white font-semibold">Total Sales</TableHead>
+                      <TableHead className="text-white font-semibold">Marketing ROI</TableHead>
+                      <TableHead className="text-white font-semibold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                  {monthlyEntries
+                    .filter(entry => entry.month_year.startsWith(currentYear))
+                    .map((entry) => {
+                    const eventData = eventDataForAllMonths[entry.month_year] || {}
+                    const eventAnnuity = eventData.annuity_sales || 0
+                    const eventAUM = eventData.aum_sales || 0
+                    const eventLife = eventData.life_sales || 0
+                    const eventExpenses = eventData.marketing_expenses || 0
+                    const eventClients = eventData.new_clients || 0
+                    
+                    const totalSales = (entry.annuity_sales + entry.aum_sales + entry.life_sales) + (eventAnnuity + eventAUM + eventLife)
+                    const totalClients = entry.new_clients + eventClients
+                    const totalExpenses = entry.marketing_expenses + eventExpenses
+                    const commissionIncome = calculateCommissionIncome(entry) + eventAnnuity + eventAUM + eventLife
+                    const roi = totalExpenses > 0 
+                      ? ((commissionIncome - totalExpenses) / totalExpenses) * 100 
                       : commissionIncome > 0 
                         ? 9999 // Show high ROI when there's income but no expenses
                         : 0
@@ -1543,41 +1861,80 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     // Check if this is the selected year
                     const isCurrentYear = entry.month_year.startsWith(currentYear)
                     
+                    // Extract client names from notes
+                    const extractClientNames = (notes: string | null | undefined): string[] => {
+                      if (!notes) return []
+                      const match = notes.match(/Clients from events:\s*(.+?)(?:\n\n|$)/i)
+                      if (match && match[1]) {
+                        return match[1].split(',').map(name => name.trim()).filter(Boolean)
+                      }
+                      return []
+                    }
+                    const clientNamesFromNotes = extractClientNames(entry.notes)
+                    
                     return (
-                      <TableRow key={entry.id}>
-                        <TableCell className="font-medium">
+                      <TableRow key={entry.id} className="border-m8bs-border hover:bg-m8bs-card-alt/50">
+                        <TableCell className="font-medium text-white">
                           <div className="flex items-center gap-2">
                             {format(parseISO(entry.month_year + "-01"), "MMMM yyyy")}
-                            {isCurrentYear && <Badge variant="secondary" className="text-xs">Current Year</Badge>}
+                            {isCurrentYear && <Badge variant="secondary" className="text-xs bg-blue-500/20 text-blue-300 border-blue-500/50">Current Year</Badge>}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-white">
                           <div className="flex items-center gap-2">
-                            {entry.new_clients}
+                            {totalClients}
                             {getProgressIcon(salesProgress)}
+                            {eventClients > 0 && (
+                              <span className="text-xs text-blue-400">
+                                (+{eventClients})
+                              </span>
+                            )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-white">
+                          {clientNamesFromNotes.length > 0 ? (
+                            <div className="flex flex-wrap gap-1 max-w-[200px]">
+                              {clientNamesFromNotes.map((name, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs bg-blue-500/20 text-blue-300 border-blue-500/50">
+                                  {name}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-m8bs-muted text-sm">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-white">
                           <div className="flex items-center gap-2">
-                            {entry.new_appointments}
+                            {entry.new_appointments + (eventData.appointments_booked || 0)}
+                            {eventData.appointments_booked > 0 && (
+                              <span className="text-xs text-blue-400">
+                                (+{eventData.appointments_booked})
+                              </span>
+                            )}
                             {data.clientMetrics?.monthly_ideal_prospects && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs border-m8bs-border text-m8bs-muted">
                                 vs {Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3)}
                               </Badge>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{entry.new_leads}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-white">{entry.new_leads}</TableCell>
+                        <TableCell className="text-white">
                           <div className="flex items-center gap-2">
                             {formatCurrency(totalSales)}
-                            <Badge variant="outline" className={getProgressColor(salesProgress)}>
+                            {eventAnnuity + eventAUM + eventLife > 0 && (
+                              <span className="text-xs text-blue-400">
+                                (+{formatCurrency(eventAnnuity + eventAUM + eventLife)})
+                              </span>
+                            )}
+                            <Badge variant="outline" className={`${getProgressColor(salesProgress)} border-m8bs-border`}>
                               {salesProgress.toFixed(0)}%
                             </Badge>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={roi > 0 ? "default" : "destructive"}>
+                        <TableCell className="text-white">
+                          <Badge variant={roi > 0 ? "default" : "destructive"} className={roi > 0 ? "bg-green-500/20 text-green-300 border-green-500/50" : ""}>
                             {roi.toFixed(0)}%
                           </Badge>
                         </TableCell>
@@ -1604,6 +1961,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   })}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
 
@@ -1611,37 +1969,52 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
           {data.businessGoals && (
             <Card>
               <CardHeader>
-                <CardTitle>Goal Progress Summary</CardTitle>
+                <CardTitle>Goal Progress Summary - {currentYear} YTD</CardTitle>
                 <CardDescription>
-                  How your monthly performance compares to your annual goals
+                  How your {currentYear} monthly performance compares to your annual goals
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(monthlyEntries.reduce((sum, entry) => sum + entry.annuity_sales, 0))}
+                  <div className="text-center p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                    <div className="text-2xl font-bold text-blue-400">
+                      {formatCurrency(monthlyEntries
+                        .filter(entry => entry.month_year.startsWith(currentYear))
+                        .reduce((sum, entry) => {
+                          const eventData = eventDataForAllMonths[entry.month_year] || {}
+                          return sum + entry.annuity_sales + (eventData.annuity_sales || 0)
+                        }, 0))}
                     </div>
-                    <div className="text-sm text-muted-foreground">Total Annuity Sales</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-sm text-m8bs-muted mt-1">Total Annuity Sales (YTD)</div>
+                    <div className="text-xs text-m8bs-muted mt-1">
                       Goal: {formatCurrency(data.businessGoals.annuity_goal)}
                     </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(monthlyEntries.reduce((sum, entry) => sum + entry.aum_sales, 0))}
+                  <div className="text-center p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                    <div className="text-2xl font-bold text-green-400">
+                      {formatCurrency(monthlyEntries
+                        .filter(entry => entry.month_year.startsWith(currentYear))
+                        .reduce((sum, entry) => {
+                          const eventData = eventDataForAllMonths[entry.month_year] || {}
+                          return sum + entry.aum_sales + (eventData.aum_sales || 0)
+                        }, 0))}
                     </div>
-                    <div className="text-sm text-muted-foreground">Total AUM Sales</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-sm text-m8bs-muted mt-1">Total AUM Sales (YTD)</div>
+                    <div className="text-xs text-m8bs-muted mt-1">
                       Goal: {formatCurrency(data.businessGoals.aum_goal)}
                     </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {monthlyEntries.reduce((sum, entry) => sum + entry.new_clients, 0)}
+                  <div className="text-center p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                    <div className="text-2xl font-bold text-purple-400">
+                      {monthlyEntries
+                        .filter(entry => entry.month_year.startsWith(currentYear))
+                        .reduce((sum, entry) => {
+                          const eventData = eventDataForAllMonths[entry.month_year] || {}
+                          return sum + entry.new_clients + (eventData.new_clients || 0)
+                        }, 0)}
                     </div>
-                    <div className="text-sm text-muted-foreground">Total New Clients</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-sm text-m8bs-muted mt-1">Total New Clients (YTD)</div>
+                    <div className="text-xs text-m8bs-muted mt-1">
                       Goal: {data.businessGoals.business_goal}
                     </div>
                   </div>

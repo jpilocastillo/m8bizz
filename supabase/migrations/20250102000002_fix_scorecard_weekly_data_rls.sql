@@ -74,3 +74,5 @@ CREATE POLICY "Users can delete their own scorecard weekly data" ON public.score
 
 
 
+
+

@@ -166,6 +166,71 @@ export interface Database {
           },
         ]
       }
+      event_clients: {
+        Row: {
+          id: string
+          event_id: string
+          client_name: string
+          close_date: string
+          annuity_premium: number | null
+          annuity_commission: number | null
+          annuity_commission_percentage: number | null
+          life_insurance_premium: number | null
+          life_insurance_commission: number | null
+          life_insurance_commission_percentage: number | null
+          aum_amount: number | null
+          aum_fee_percentage: number | null
+          aum_fees: number | null
+          financial_planning_fee: number | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          client_name: string
+          close_date: string
+          annuity_premium?: number | null
+          annuity_commission?: number | null
+          annuity_commission_percentage?: number | null
+          life_insurance_premium?: number | null
+          life_insurance_commission?: number | null
+          life_insurance_commission_percentage?: number | null
+          aum_amount?: number | null
+          aum_fee_percentage?: number | null
+          financial_planning_fee?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          client_name?: string
+          close_date?: string
+          annuity_premium?: number | null
+          annuity_commission?: number | null
+          annuity_commission_percentage?: number | null
+          life_insurance_premium?: number | null
+          life_insurance_commission?: number | null
+          life_insurance_commission_percentage?: number | null
+          aum_amount?: number | null
+          aum_fee_percentage?: number | null
+          financial_planning_fee?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_clients_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "marketing_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_production: {
         Row: {
           aum: number | null

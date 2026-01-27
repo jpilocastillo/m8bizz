@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { fetchUserEvents, getAvailableYears } from "@/lib/data"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ClientClosedList } from "./client-closed-list"
 
 interface DashboardContentProps {
   initialData: any
@@ -433,6 +435,24 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
         </div>
       </div>
 
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="bg-m8bs-card p-1 border border-m8bs-border rounded-lg shadow-lg grid grid-cols-2 w-full h-auto mb-6">
+          <TabsTrigger 
+            value="dashboard" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70"
+          >
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger 
+            value="clients" 
+            className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-md py-2 text-sm font-medium transition-all text-white/70"
+          >
+            Client Tracking
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+
       {/* Top metrics */}
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6"
@@ -454,9 +474,9 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
         <motion.div variants={item}>
           <ThreeDMetricCard
             title="Written Business"
-            value={clients}
+            value={dashboardData.writtenBusiness || 0}
             icon={<FileText className="h-5 w-5 text-green-400" />}
-            description="Total Number Of Policies Written"
+            description="Total Number Of Clients Closed"
             color="green"
           />
         </motion.div>
@@ -707,7 +727,18 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           />
         </motion.div>
       </div>
+        </TabsContent>
 
+        <TabsContent value="clients" className="space-y-6">
+          {selectedEventId ? (
+            <ClientClosedList eventId={selectedEventId} />
+          ) : (
+            <div className="text-center py-12 text-m8bs-muted">
+              <p>Please select an event to view client tracking.</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

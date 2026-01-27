@@ -24,3 +24,7 @@ export function formatNumber(value: number): string {
 export function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`
 }
+
+export function parseCurrency(value: string): string {
+  return value.replace(/[$,]/g, "")
+}

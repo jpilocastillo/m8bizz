@@ -93,21 +93,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [secondAppointmentAttended, setSecondAppointmentAttended] = useState("")
   const [notQualified, setNotQualified] = useState("")
 
-  // Financial production
-  const [annuityPremium, setAnnuityPremium] = useState("")
-  const [lifeInsurancePremium, setLifeInsurancePremium] = useState("")
-  const [aum, setAum] = useState("")
-  const [aumFeePercentage, setAumFeePercentage] = useState("1.5")
-  const [aumFees, setAumFees] = useState("")
-  const [financialPlanning, setFinancialPlanning] = useState("")
-  const [annuitiesSold, setAnnuitiesSold] = useState("")
-  const [lifePoliciesSold, setLifePoliciesSold] = useState("")
-  const [annuityCommissionPercentage, setAnnuityCommissionPercentage] = useState("")
-  const [annuityCommission, setAnnuityCommission] = useState("")
-  const [lifeInsuranceCommissionPercentage, setLifeInsuranceCommissionPercentage] = useState("")
-  const [lifeInsuranceCommission, setLifeInsuranceCommission] = useState("")
-  const [aumAccountsOpened, setAumAccountsOpened] = useState("")
-  const [financialPlansSold, setFinancialPlansSold] = useState("")
 
   // Add state for 12-hour time input
   const [hour, setHour] = useState("");
@@ -197,17 +182,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       { key: 'secondAppointmentAttended', value: secondAppointmentAttended },
       { key: 'notQualified', value: notQualified },
       // Financial
-      { key: 'annuityPremium', value: annuityPremium },
-      { key: 'annuitiesSold', value: annuitiesSold },
-      { key: 'annuityCommissionPercentage', value: annuityCommissionPercentage },
-      { key: 'lifeInsurancePremium', value: lifeInsurancePremium },
-      { key: 'lifePoliciesSold', value: lifePoliciesSold },
-      { key: 'lifeInsuranceCommissionPercentage', value: lifeInsuranceCommissionPercentage },
-      { key: 'aum', value: aum },
-      { key: 'aumAccountsOpened', value: aumAccountsOpened },
-      { key: 'aumFeePercentage', value: aumFeePercentage },
-      { key: 'financialPlanning', value: financialPlanning },
-      { key: 'financialPlansSold', value: financialPlansSold }
     ]
     
     const allFields = [...requiredFields, ...optionalFields]
@@ -223,9 +197,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     advertisingCost, foodVenueCost, otherCosts,
     registrantResponses, confirmations, attendees, clientsFromEvent, plateLickers,
     setAtEvent, setAfterEvent, firstAppointmentAttended, firstAppointmentNoShows, secondAppointmentAttended, notQualified,
-    annuityPremium, annuitiesSold, annuityCommissionPercentage,
-    lifeInsurancePremium, lifePoliciesSold, lifeInsuranceCommissionPercentage,
-    aum, aumAccountsOpened, aumFeePercentage, financialPlanning, financialPlansSold
   ])
 
   // Check if required fields are complete
@@ -237,27 +208,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
            topic && topic.trim().length >= 2
   }, [name, date, location, marketingType, topic])
 
-  // Auto-calculate financial fields
-  useEffect(() => {
-    if (aum && aumFeePercentage) {
-      const calculated = (parseFloat(aum) * parseFloat(aumFeePercentage)) / 100
-      setAumFees(calculated.toFixed(2))
-    }
-  }, [aum, aumFeePercentage])
-
-  useEffect(() => {
-    if (annuityPremium && annuityCommissionPercentage) {
-      const calculated = (parseFloat(annuityPremium) * parseFloat(annuityCommissionPercentage)) / 100
-      setAnnuityCommission(calculated.toFixed(2))
-    }
-  }, [annuityPremium, annuityCommissionPercentage])
-
-  useEffect(() => {
-    if (lifeInsurancePremium && lifeInsuranceCommissionPercentage) {
-      const calculated = (parseFloat(lifeInsurancePremium) * parseFloat(lifeInsuranceCommissionPercentage)) / 100
-      setLifeInsuranceCommission(calculated.toFixed(2))
-    }
-  }, [lifeInsurancePremium, lifeInsuranceCommissionPercentage])
 
   useEffect(() => {
     if (initialData) {
@@ -298,33 +248,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       setSecondAppointmentAttended(initialData.appointments?.secondAppointmentAttended?.toString() || "")
       setNotQualified(initialData.appointments?.notQualified?.toString() || "")
 
-      // Financial production
-      setAnnuityPremium(initialData.financialProduction?.annuity_premium?.toString() || "")
-      setLifeInsurancePremium(initialData.financialProduction?.life_insurance_premium?.toString() || "")
-      setAum(initialData.financialProduction?.aum?.toString() || "")
-      const existingAumFees = initialData.financialProduction?.aum_fees || 0
-      const existingAum = initialData.financialProduction?.aum || 0
-      const calculatedPercentage = existingAum > 0 ? ((existingAumFees / existingAum) * 100).toFixed(2) : "1.5"
-      setAumFeePercentage(calculatedPercentage)
-      setAumFees(existingAumFees.toString())
-      setFinancialPlanning(initialData.financialProduction?.financial_planning?.toString() || "")
-      setAnnuitiesSold(initialData.financialProduction?.annuities_sold?.toString() || "")
-      setLifePoliciesSold(initialData.financialProduction?.life_policies_sold?.toString() || "")
-      setAnnuityCommission(initialData.financialProduction?.annuity_commission?.toString() || "")
-      setLifeInsuranceCommission(initialData.financialProduction?.life_insurance_commission?.toString() || "")
-      // Calculate percentage from existing annuity commission
-      const existingCommission = initialData.financialProduction?.annuity_commission || 0
-      const existingPremium = initialData.financialProduction?.annuity_premium || 0
-      const annuityCommissionPercentage = existingPremium > 0 ? ((existingCommission / existingPremium) * 100).toFixed(2) : ""
-      setAnnuityCommissionPercentage(annuityCommissionPercentage)
-      setAnnuityCommission(existingCommission.toString())
-      // Calculate percentage from existing life insurance commission
-      const existingLifeCommission = initialData.financialProduction?.life_insurance_commission || 0
-      const lifeInsuranceCommissionPercentage = existingPremium > 0 ? ((existingLifeCommission / existingPremium) * 100).toFixed(2) : ""
-      setLifeInsuranceCommissionPercentage(lifeInsuranceCommissionPercentage)
-      setLifeInsuranceCommission(existingLifeCommission.toString())
-      setAumAccountsOpened(initialData.financialProduction?.aum_accounts_opened?.toString() || "")
-      setFinancialPlansSold(initialData.financialProduction?.financial_plans_sold?.toString() || "")
 
       // Parse 24-hour time to 12-hour
       if (initialData.eventDetails?.time) {
@@ -343,43 +266,11 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     }
   }, [initialData])
 
-  // Calculate AUM fees when AUM or percentage changes
-  useEffect(() => {
-    const aumValue = parseFloat(aum) || 0
-    const percentage = parseFloat(aumFeePercentage) || 0
-    const annualFees = (aumValue * percentage) / 100
-    setAumFees(annualFees.toFixed(2))
-  }, [aum, aumFeePercentage])
-
-  // Calculate annuity commission when premium or percentage changes
-  useEffect(() => {
-    const premiumValue = parseFloat(annuityPremium) || 0
-    const percentage = parseFloat(annuityCommissionPercentage) || 0
-    const commission = (premiumValue * percentage) / 100
-    setAnnuityCommission(commission.toFixed(2))
-  }, [annuityPremium, annuityCommissionPercentage])
-
-  // Calculate life insurance commission when premium or percentage changes
-  useEffect(() => {
-    const premiumValue = parseFloat(lifeInsurancePremium) || 0
-    const percentage = parseFloat(lifeInsuranceCommissionPercentage) || 0
-    const commission = (premiumValue * percentage) / 100
-    setLifeInsuranceCommission(commission.toFixed(2))
-  }, [lifeInsurancePremium, lifeInsuranceCommissionPercentage])
-
   const calculateTotalCost = () => {
     const adCost = Number.parseFloat(advertisingCost) || 0
     const foodCost = Number.parseFloat(foodVenueCost) || 0
     const other = Number.parseFloat(otherCosts) || 0
     return adCost + foodCost + other
-  }
-
-  const calculateTotalProduction = () => {
-    const aumFeesValue = parseFloat(aumFees) || 0
-    const annuityCommissionValue = parseFloat(annuityCommission) || 0
-    const lifeInsuranceCommissionValue = parseFloat(lifeInsuranceCommission) || 0
-    const planningValue = parseFloat(financialPlanning) || 0
-    return aumFeesValue + annuityCommissionValue + lifeInsuranceCommissionValue + planningValue
   }
 
   // Helper to convert to 24-hour format
@@ -480,19 +371,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
             second_appointment_attended: parseInt(secondAppointmentAttended) || 0,
             not_qualified: parseInt(notQualified) || 0
-          },
-          financialProduction: {
-            annuity_premium: parseFloat(annuityPremium) || 0,
-            life_insurance_premium: parseFloat(lifeInsurancePremium) || 0,
-            aum: parseFloat(aum) || 0,
-            financial_planning: parseFloat(financialPlanning) || 0,
-            annuities_sold: parseInt(annuitiesSold) || 0,
-            life_policies_sold: parseInt(lifePoliciesSold) || 0,
-            annuity_commission: parseFloat(annuityCommission) || 0,
-            life_insurance_commission: parseFloat(lifeInsuranceCommission) || 0,
-            aum_fees: parseFloat(aumFees) || 0,
-            aum_accounts_opened: parseInt(aumAccountsOpened) || 0,
-            financial_plans_sold: parseInt(financialPlansSold) || 0,
           }
         }
       }
@@ -556,12 +434,10 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     if (activeTab === "event") setActiveTab("expenses")
     else if (activeTab === "expenses") setActiveTab("attendance")
     else if (activeTab === "attendance") setActiveTab("appointments")
-    else if (activeTab === "appointments") setActiveTab("financial")
   }
 
   const handlePrevTab = () => {
-    if (activeTab === "financial") setActiveTab("appointments")
-    else if (activeTab === "appointments") setActiveTab("attendance")
+    if (activeTab === "appointments") setActiveTab("attendance")
     else if (activeTab === "attendance") setActiveTab("expenses")
     else if (activeTab === "expenses") setActiveTab("event")
   }
@@ -655,19 +531,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
             second_appointment_attended: parseInt(secondAppointmentAttended) || 0,
             not_qualified: parseInt(notQualified) || 0
-          },
-          financialProduction: {
-            annuity_premium: parseFloat(annuityPremium) || 0,
-            life_insurance_premium: parseFloat(lifeInsurancePremium) || 0,
-            aum: parseFloat(aum) || 0,
-            financial_planning: parseFloat(financialPlanning) || 0,
-            annuities_sold: parseInt(annuitiesSold) || 0,
-            life_policies_sold: parseInt(lifePoliciesSold) || 0,
-            annuity_commission: parseFloat(annuityCommission) || 0,
-            life_insurance_commission: parseFloat(lifeInsuranceCommission) || 0,
-            aum_fees: parseFloat(aumFees) || 0,
-            aum_accounts_opened: parseInt(aumAccountsOpened) || 0,
-            financial_plans_sold: parseInt(financialPlansSold) || 0,
           }
         }
       }
@@ -806,10 +669,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             <TabsTrigger value="appointments" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/20 flex items-center gap-2 transition-all duration-200">
               <Target className="h-4 w-4" />
               Appointments
-            </TabsTrigger>
-            <TabsTrigger value="financial" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/20 flex items-center gap-2 transition-all duration-200">
-              <TrendingUp className="h-4 w-4" />
-              Financial
             </TabsTrigger>
           </TabsList>
 
@@ -1273,257 +1132,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
           </Card>
         </TabsContent>
 
-        <TabsContent value="financial" className="space-y-4">
-          <Card className="bg-black border-m8bs-border shadow-xl">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl text-white flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-m8bs-blue" />
-                Financial Production
-              </CardTitle>
-              <CardDescription className="text-m8bs-muted">
-                Enter Financial Results From This Marketing Event. Auto-Calculations Will Help You Determine Commissions And Fees.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Annuity Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-m8bs-border pb-2">Annuity</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="annuitiesSold" className="text-white font-medium">
-                      Annuities Sold
-                    </Label>
-                    <Input
-                      id="annuitiesSold"
-                      type="number"
-                      value={annuitiesSold}
-                      onChange={(e) => setAnnuitiesSold(e.target.value)}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="annuityPremium" className="text-white font-medium flex items-center gap-1">
-                      Annuity Premium ($) <Calculator className="h-3 w-3 text-m8bs-blue" />
-                    </Label>
-                    <Input
-                      id="annuityPremium"
-                      type="text"
-                      value={formatCurrencyInput(annuityPremium)}
-                      onChange={(e) => {
-                        const rawValue = parseCurrencyInput(e.target.value)
-                        setAnnuityPremium(rawValue)
-                      }}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="annuityCommissionPercentage" className="text-white font-medium">
-                      Annuity Commission Percentage (%)
-                    </Label>
-                    <Input
-                      id="annuityCommissionPercentage"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={annuityCommissionPercentage}
-                      onChange={(e) => setAnnuityCommissionPercentage(e.target.value)}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="annuityCommission" className="text-white font-medium">
-                      Annuity Commission ($)
-                    </Label>
-                    <div className="bg-black border border-m8bs-border rounded-md p-3 text-white font-medium">
-                      {formatCurrencyUtil(parseFloat(annuityCommission) || 0)}
-                    </div>
-                    {annuityPremium && annuityCommissionPercentage && (
-                      <div className="text-xs text-m8bs-muted flex items-center gap-1">
-                        <Calculator className="h-3 w-3" />
-                        Auto-calculated
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* AUM Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-m8bs-border pb-2">AUM</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="aumAccountsOpened" className="text-white font-medium">
-                      AUM Households
-                    </Label>
-                    <Input
-                      id="aumAccountsOpened"
-                      type="number"
-                      min="0"
-                      value={aumAccountsOpened}
-                      onChange={e => setAumAccountsOpened(e.target.value)}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                      placeholder="Number Of AUM Households"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="aum" className="text-white font-medium">
-                      AUM ($)
-                    </Label>
-                    <Input
-                      id="aum"
-                      type="text"
-                      value={formatCurrencyInput(aum)}
-                      onChange={(e) => {
-                        const rawValue = parseCurrencyInput(e.target.value)
-                        setAum(rawValue)
-                      }}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="aumFeePercentage" className="text-white font-medium">
-                      AUM Fee Percentage (%)
-                    </Label>
-                    <Input
-                      id="aumFeePercentage"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={aumFeePercentage}
-                      onChange={(e) => setAumFeePercentage(e.target.value)}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="aumFees" className="text-white font-medium">
-                      Annual AUM Fees ($)
-                    </Label>
-                    <div className="bg-black border border-m8bs-border rounded-md p-3 text-white font-medium">
-                      {formatCurrencyUtil(parseFloat(aumFees) || 0)}
-                    </div>
-                    <div className="text-xs text-m8bs-muted flex items-center gap-1">
-                      <Calculator className="h-3 w-3" />
-                      Auto-calculated
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Life Insurance Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-m8bs-border pb-2">Life Insurance</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="lifePoliciesSold" className="text-white font-medium">
-                      Life Policies Sold
-                    </Label>
-                    <Input
-                      id="lifePoliciesSold"
-                      type="number"
-                      value={lifePoliciesSold}
-                      onChange={(e) => setLifePoliciesSold(e.target.value)}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lifeInsurancePremium" className="text-white font-medium">
-                      Life Insurance Premium ($)
-                    </Label>
-                    <Input
-                      id="lifeInsurancePremium"
-                      type="text"
-                      value={formatCurrencyInput(lifeInsurancePremium)}
-                      onChange={(e) => {
-                        const rawValue = parseCurrencyInput(e.target.value)
-                        setLifeInsurancePremium(rawValue)
-                      }}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lifeInsuranceCommissionPercentage" className="text-white font-medium">
-                      Life Insurance Commission Percentage (%)
-                    </Label>
-                    <Input
-                      id="lifeInsuranceCommissionPercentage"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={lifeInsuranceCommissionPercentage}
-                      onChange={(e) => setLifeInsuranceCommissionPercentage(e.target.value)}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lifeInsuranceCommission" className="text-white font-medium">
-                      Life Insurance Commission ($)
-                    </Label>
-                    <div className="bg-black border border-m8bs-border rounded-md p-3 text-white font-medium">
-                      {formatCurrencyUtil(parseFloat(lifeInsuranceCommission) || 0)}
-                    </div>
-                    {lifeInsurancePremium && lifeInsuranceCommissionPercentage && (
-                      <div className="text-xs text-m8bs-muted flex items-center gap-1">
-                        <Calculator className="h-3 w-3" />
-                        Auto-calculated
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Financial Planning Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white border-b border-m8bs-border pb-2">Financial Planning</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="financialPlansSold" className="text-white font-medium">
-                      Financial Plans Sold
-                    </Label>
-                    <Input
-                      id="financialPlansSold"
-                      type="number"
-                      min="0"
-                      value={financialPlansSold}
-                      onChange={e => setFinancialPlansSold(e.target.value)}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                      placeholder="Number Of Financial Plans Sold"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="financialPlanning" className="text-white font-medium">
-                      Financial Planning ($)
-                    </Label>
-                    <Input
-                      id="financialPlanning"
-                      type="text"
-                      value={formatCurrencyInput(financialPlanning)}
-                      onChange={(e) => {
-                        const rawValue = parseCurrencyInput(e.target.value)
-                        setFinancialPlanning(rawValue)
-                      }}
-                      className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                      placeholder="$0"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Total Production */}
-              <div className="space-y-2 pt-4 border-t border-m8bs-border">
-                <Label className="text-white font-medium text-lg">Total Production ($)</Label>
-                <div className="bg-black border border-m8bs-border rounded-md p-4 text-white font-bold text-xl">
-                  {formatCurrencyUtil(calculateTotalProduction())}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
 
@@ -1561,7 +1169,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   Previous
                 </Button>
               )}
-              {activeTab !== "financial" && (
+              {activeTab !== "appointments" && (
                 <Button
                   type="button"
                   variant="outline"

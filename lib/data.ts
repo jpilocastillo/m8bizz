@@ -388,6 +388,19 @@ export async function fetchAllEvents(userId: string, year?: number): Promise<Mar
           aum_accounts_opened,
           financial_plans_sold,
           total
+        ),
+        event_clients (
+          id,
+          annuity_premium,
+          annuity_commission,
+          annuity_commission_percentage,
+          life_insurance_premium,
+          life_insurance_commission,
+          life_insurance_commission_percentage,
+          aum_amount,
+          aum_fee_percentage,
+          aum_fees,
+          financial_planning_fee
         )
       `)
       .eq('user_id', userId);
@@ -428,12 +441,49 @@ export async function fetchAllEvents(userId: string, year?: number): Promise<Mar
       const latestFinancial = Array.isArray(event.financial_production) ? event.financial_production[0] : event.financial_production;
       const latestExpenses = Array.isArray(event.marketing_expenses) ? event.marketing_expenses[0] : event.marketing_expenses;
       const latestAppointments = Array.isArray(event.event_appointments) ? event.event_appointments[0] : event.event_appointments;
+      const clients = Array.isArray(event.event_clients) ? event.event_clients : (event.event_clients ? [event.event_clients] : []);
+
+      // Aggregate financial data from event_clients
+      const aggregatedFromClients = {
+        annuity_premium: clients.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0),
+        annuity_commission: clients.reduce((sum: number, c: any) => sum + (c.annuity_commission || 0), 0),
+        life_insurance_premium: clients.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0),
+        life_insurance_commission: clients.reduce((sum: number, c: any) => sum + (c.life_insurance_commission || 0), 0),
+        aum: clients.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0),
+        financial_planning: clients.reduce((sum: number, c: any) => sum + (c.financial_planning_fee || 0), 0),
+        annuities_sold: clients.filter((c: any) => (c.annuity_premium || 0) > 0).length,
+        life_policies_sold: clients.filter((c: any) => (c.life_insurance_premium || 0) > 0).length,
+        aum_fees: clients.reduce((sum: number, c: any) => {
+          // Use stored aum_fees if available, otherwise calculate from amount and percentage
+          if (c.aum_fees != null && c.aum_fees > 0) {
+            return sum + c.aum_fees
+          } else if (c.aum_amount && c.aum_fee_percentage) {
+            return sum + ((c.aum_amount * c.aum_fee_percentage) / 100)
+          }
+          return sum
+        }, 0),
+        aum_accounts_opened: clients.filter((c: any) => (c.aum_amount || 0) > 0).length
+      }
+
+      // Use aggregated client data if available, otherwise fall back to financial_production
+      const financialData = clients.length > 0 ? aggregatedFromClients : (latestFinancial || {
+        annuity_premium: 0,
+        annuity_commission: 0,
+        life_insurance_premium: 0,
+        life_insurance_commission: 0,
+        aum: 0,
+        financial_planning: 0,
+        annuities_sold: 0,
+        life_policies_sold: 0,
+        aum_fees: 0,
+        aum_accounts_opened: 0
+      })
 
       // Calculate revenue from commissions and fees (not premiums)
-      const annuityCommission = typeof latestFinancial?.annuity_commission === 'number' ? latestFinancial.annuity_commission : 0
-      const lifeInsuranceCommission = typeof latestFinancial?.life_insurance_commission === 'number' ? latestFinancial.life_insurance_commission : 0
-      const aumFees = typeof latestFinancial?.aum_fees === 'number' ? latestFinancial.aum_fees : 0
-      const financialPlanning = typeof latestFinancial?.financial_planning === 'number' ? latestFinancial.financial_planning : 0
+      const annuityCommission = financialData.annuity_commission || 0
+      const lifeInsuranceCommission = financialData.life_insurance_commission || 0
+      const aumFees = financialData.aum_fees || 0
+      const financialPlanning = financialData.financial_planning || 0
       
       const total = annuityCommission + lifeInsuranceCommission + aumFees + financialPlanning
       
@@ -481,7 +531,7 @@ export async function fetchAllEvents(userId: string, year?: number): Promise<Mar
         attendees: typeof latestAttendance?.attendees === 'number' ? latestAttendance.attendees : 0,
         revenue: total,
         attendance: latestAttendance,
-        financial_production: latestFinancial ? { ...latestFinancial, total } : undefined,
+        financial_production: financialData ? { ...financialData, total } : undefined,
         marketing_expenses: latestExpenses,
         event_appointments: latestAppointments,
         marketing_audience: event.marketing_audience
@@ -556,6 +606,19 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
           annuity_commission,
           life_insurance_commission,
           aum_fees
+        ),
+        event_clients (
+          id,
+          annuity_premium,
+          annuity_commission,
+          annuity_commission_percentage,
+          life_insurance_premium,
+          life_insurance_commission,
+          life_insurance_commission_percentage,
+          aum_amount,
+          aum_fee_percentage,
+          aum_fees,
+          financial_planning_fee
         )
       `)
       .eq("user_id", userId)
@@ -619,14 +682,59 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
     // Log plate licker data
     console.log('Plate Licker Data:', { plateLickers: attendance.plate_lickers, attendees: attendance.attendees });
 
+    // Aggregate financial data from event_clients
+    const clients = event.event_clients || []
+    const aggregatedFromClients = {
+      annuity_premium: clients.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0),
+      annuity_commission: clients.reduce((sum: number, c: any) => sum + (c.annuity_commission || 0), 0),
+      life_insurance_premium: clients.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0),
+      life_insurance_commission: clients.reduce((sum: number, c: any) => sum + (c.life_insurance_commission || 0), 0),
+      aum: clients.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0),
+      financial_planning: clients.reduce((sum: number, c: any) => sum + (c.financial_planning_fee || 0), 0),
+      annuities_sold: 0, // Count clients with annuity premium > 0
+      life_policies_sold: 0, // Count clients with life premium > 0
+      aum_fees: 0, // Calculate from AUM and fee percentage if available
+      aum_accounts_opened: clients.filter((c: any) => (c.aum_amount || 0) > 0).length
+    }
+    
+    // Count products sold
+    aggregatedFromClients.annuities_sold = clients.filter((c: any) => (c.annuity_premium || 0) > 0).length
+    aggregatedFromClients.life_policies_sold = clients.filter((c: any) => (c.life_insurance_premium || 0) > 0).length
+    
+    // Calculate AUM fees from clients (use stored aum_fees if available, otherwise calculate)
+    aggregatedFromClients.aum_fees = clients.reduce((sum: number, c: any) => {
+      // Use stored aum_fees if available
+      if (c.aum_fees != null && c.aum_fees > 0) {
+        return sum + c.aum_fees
+      } else if (c.aum_amount && c.aum_fee_percentage) {
+        // Otherwise calculate from amount and percentage
+        return sum + ((c.aum_amount * c.aum_fee_percentage) / 100)
+      }
+      return sum
+    }, 0)
+
+    // Use aggregated client data if available, otherwise fall back to financial_production
+    const financialData = clients.length > 0 ? aggregatedFromClients : (financial || {
+      annuity_premium: 0,
+      annuity_commission: 0,
+      life_insurance_premium: 0,
+      life_insurance_commission: 0,
+      aum: 0,
+      financial_planning: 0,
+      annuities_sold: 0,
+      life_policies_sold: 0,
+      aum_fees: 0,
+      aum_accounts_opened: 0
+    })
+
     // Calculate totals and metrics
     const totalExpenses = expenses.total_cost || 0
     
     // Calculate revenue from commissions and fees (not premiums)
-    const totalIncome = (financial.annuity_commission || 0) + 
-                       (financial.life_insurance_commission || 0) + 
-                       (financial.aum_fees || 0) + 
-                       (financial.financial_planning || 0)
+    const totalIncome = (financialData.annuity_commission || 0) + 
+                       (financialData.life_insurance_commission || 0) + 
+                       (financialData.aum_fees || 0) + 
+                       (financialData.financial_planning || 0)
 
     const roi = totalExpenses > 0 
       ? Math.round(((totalIncome - totalExpenses) / totalExpenses) * 100) 
@@ -668,14 +776,15 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         value: roi,
         trend: [roi]
       },
-      writtenBusiness: totalIncome,
+      writtenBusiness: clients.length, // Count of client records from client tracking
       income: {
         total: totalIncome,
         breakdown: {
-          annuityCommission: financial.annuity_commission || 0,
-          lifeInsuranceCommission: financial.life_insurance_commission || 0,
-          aumFees: financial.aum_fees || 0,
-          financialPlanning: financial.financial_planning || 0
+          fixedAnnuity: financialData.annuity_commission || 0, // Using commission for income breakdown
+          life: financialData.life_insurance_commission || 0, // Using commission for income breakdown
+          aum: financialData.aum_fees || 0, // Using fees for income breakdown
+          financialPlanning: financialData.financial_planning || 0,
+          aumFees: financialData.aum_fees || 0
         }
       },
       conversionRate: {
@@ -725,19 +834,21 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         notQualified: appointments.not_qualified
       },
       productsSold: {
-        annuities: financial.annuities_sold || 0,
-        lifePolicies: financial.life_policies_sold || 0
+        annuities: financialData.annuities_sold || 0,
+        lifePolicies: financialData.life_policies_sold || 0
       },
       financialProduction: {
-        annuity_premium: financial.annuity_premium || 0,
-        life_insurance_premium: financial.life_insurance_premium || 0,
-        aum: financial.aum || 0,
-        financial_planning: financial.financial_planning || 0,
+        annuity_premium: financialData.annuity_premium || 0,
+        life_insurance_premium: financialData.life_insurance_premium || 0,
+        aum: financialData.aum || 0,
+        financial_planning: financialData.financial_planning || 0,
+        annuities_sold: financialData.annuities_sold || 0,
+        life_policies_sold: financialData.life_policies_sold || 0,
+        annuity_commission: financialData.annuity_commission || 0,
+        life_insurance_commission: financialData.life_insurance_commission || 0,
+        aum_fees: financialData.aum_fees || 0,
+        aum_accounts_opened: financialData.aum_accounts_opened || 0,
         total: totalIncome,
-        annuities_sold: financial.annuities_sold || 0,
-        life_policies_sold: financial.life_policies_sold || 0,
-        annuity_commission: financial.annuity_commission || 0,
-        life_insurance_commission: financial.life_insurance_commission || 0,
         aum_fees: financial.aum_fees || 0,
         aum_accounts_opened: financial.aum_accounts_opened || 0,
         financial_plans_sold: financial.financial_plans_sold || 0
@@ -819,7 +930,7 @@ export async function createEvent(userId: string, eventData: any) {
     const { attendance, expenses, appointments, financialProduction } = relatedData || {}
 
     // Create all related records in parallel
-    const [attendanceResult, expensesResult, appointmentsResult, financialResult] = await Promise.all([
+    const [attendanceResult, expensesResult, appointmentsResult] = await Promise.all([
       // Attendance
       attendance ? (async () => {
         try {
@@ -856,21 +967,10 @@ export async function createEvent(userId: string, eventData: any) {
         }
       })() : Promise.resolve({ success: true, error: null }),
 
-      // Financial Production
-      financialProduction ? (async () => {
-        try {
-          const { error } = await supabase
-            .from('financial_production')
-            .insert([{ event_id: event.id, ...financialProduction }])
-          return { success: !error, error }
-        } catch (error) {
-          return { success: false, error }
-        }
-      })() : Promise.resolve({ success: true, error: null })
     ])
 
     // Check if any of the related records failed to create
-    if (!attendanceResult.success || !expensesResult.success || !appointmentsResult.success || !financialResult.success) {
+    if (!attendanceResult.success || !expensesResult.success || !appointmentsResult.success) {
       console.error("Error creating related records:", {
         attendance: attendanceResult.error,
         expenses: expensesResult.error,
@@ -1068,38 +1168,6 @@ export async function updateEvent(eventId: string, eventData: any) {
         }
       }
 
-      // Update financial production
-      if (relatedData.financialProduction) {
-        // First check if financial production record exists
-        const { data: existingFinancial } = await supabase
-          .from("financial_production")
-          .select("id")
-          .eq("event_id", eventId)
-          .maybeSingle()
-
-        if (existingFinancial) {
-          // Update existing record
-          const { error: financialError } = await supabase
-            .from("financial_production")
-            .update(relatedData.financialProduction)
-            .eq("event_id", eventId)
-
-          if (financialError) {
-            console.error("Error updating financial production:", financialError)
-            return { success: false, error: financialError.message }
-          }
-        } else {
-          // Insert new record
-          const { error: financialError } = await supabase
-            .from("financial_production")
-            .insert([{ event_id: eventId, ...relatedData.financialProduction }])
-
-          if (financialError) {
-            console.error("Error inserting financial production:", financialError)
-            return { success: false, error: financialError.message }
-          }
-        }
-      }
     }
 
     return { success: true }
@@ -1231,6 +1299,10 @@ export async function createEventAppointments(data: {
   }
 }
 
+/**
+ * @deprecated Financial production is now tracked per client in event_clients table.
+ * This function is kept for backward compatibility but should not be used for new events.
+ */
 export async function createEventFinancialProduction(data: {
   event_id: string
   annuity_premium: number
