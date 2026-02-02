@@ -87,3 +87,4 @@ create trigger update_event_clients_updated_at
     execute function update_event_clients_updated_at();
 
 
+

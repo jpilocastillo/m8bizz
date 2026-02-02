@@ -91,7 +91,17 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     },
   })
 
-  const monthlyEntries = data.monthlyDataEntries || []
+  // Filter monthly entries to only show entries from the selected year
+  const monthlyEntries = (data.monthlyDataEntries || []).filter(entry => 
+    entry.month_year.startsWith(year.toString())
+  )
+
+  // Clear selected month when year changes
+  useEffect(() => {
+    if (selectedMonthForComparison && !selectedMonthForComparison.startsWith(year.toString())) {
+      setSelectedMonthForComparison("")
+    }
+  }, [year, selectedMonthForComparison])
 
   const handleSubmit = async (values: MonthlyEntryFormData) => {
     console.log("Form submitted with values:", values)
