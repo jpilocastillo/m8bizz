@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { createClient } from "@/lib/supabase/client"
 import { fetchAllEvents } from "@/lib/data"
+import { aggregateEventDataByMonth, recalculateMonthlyEntryFromEvents } from "@/lib/client-tracking"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
 import { DatabaseStatus } from "@/components/database-status"
@@ -170,35 +171,67 @@ export default function Overview() {
     }
 
     const summary = events.reduce((acc, event) => {
-      // Handle attendance - could be object or array
-      const attendance = Array.isArray(event.attendance) 
-        ? (event.attendance[0] || {}) 
-        : (event.attendance || {})
+      // Use flat properties first (from fetchAllEvents normalization)
+      // Fall back to nested objects if flat properties don't exist
       
-      // Handle expenses - could be object or array
-      const expenses = Array.isArray(event.marketing_expenses) 
-        ? (event.marketing_expenses[0] || {}) 
-        : (event.marketing_expenses || {})
+      // Revenue: use flat property first, then calculate from financial_production
+      let revenue = 0
+      if (event.revenue !== undefined) {
+        revenue = Number(event.revenue) || 0
+      } else {
+        // Handle financial_production - could be object or array
+        const financial = Array.isArray(event.financial_production) 
+          ? (event.financial_production[0] || {}) 
+          : (event.financial_production || {})
+        
+        // Use the total if available, otherwise calculate from components
+        revenue = financial.total !== undefined 
+          ? (Number(financial.total) || 0)
+          : ((Number(financial.aum_fees) || 0) + 
+             (Number(financial.annuity_commission) || 0) + 
+             (Number(financial.life_insurance_commission) || 0) + 
+             (Number(financial.financial_planning) || 0))
+      }
       
-      // Handle financial_production - could be object or array
-      const financial = Array.isArray(event.financial_production) 
-        ? (event.financial_production[0] || {}) 
-        : (event.financial_production || {})
+      // Attendees: use flat property first, then fall back to attendance object
+      let attendees = 0
+      if (event.attendees !== undefined) {
+        attendees = Number(event.attendees) || 0
+      } else {
+        const attendance = Array.isArray(event.attendance) 
+          ? (event.attendance[0] || {}) 
+          : (event.attendance || {})
+        attendees = Number(attendance.attendees) || 0
+      }
       
-      // Use the total if available, otherwise calculate from components
-      const totalProduction = financial.total !== undefined 
-        ? (financial.total || 0)
-        : ((financial.aum_fees || 0) + 
-           (financial.annuity_commission || 0) + 
-           (financial.life_insurance_commission || 0) + 
-           (financial.financial_planning || 0))
+      // Clients: use flat property first, then fall back to attendance object
+      let clients = 0
+      if (event.clients !== undefined) {
+        clients = Number(event.clients) || 0
+      } else {
+        const attendance = Array.isArray(event.attendance) 
+          ? (event.attendance[0] || {}) 
+          : (event.attendance || {})
+        clients = Number(attendance.clients_from_event) || 0
+      }
+      
+      // Expenses: extract from marketing_expenses
+      let expenses = 0
+      if (event.expenses !== undefined) {
+        expenses = Number(event.expenses) || 0
+      } else {
+        const expensesObj = Array.isArray(event.marketing_expenses) 
+          ? (event.marketing_expenses[0] || {}) 
+          : (event.marketing_expenses || {})
+        expenses = Number(expensesObj.total_cost) || 0
+      }
 
       return {
         totalEvents: acc.totalEvents + 1,
-        totalAttendees: acc.totalAttendees + (Number(attendance.attendees) || 0),
-        totalRevenue: acc.totalRevenue + (Number(totalProduction) || 0),
-        totalExpenses: acc.totalExpenses + (Number(expenses.total_cost) || 0),
-        totalClients: acc.totalClients + (Number(attendance.clients_from_event) || 0)
+        totalAttendees: acc.totalAttendees + attendees,
+        totalRevenue: acc.totalRevenue + revenue,
+        totalExpenses: acc.totalExpenses + expenses,
+        totalClients: acc.totalClients + clients
       }
     }, {
       totalEvents: 0,
@@ -227,36 +260,59 @@ export default function Overview() {
     
     return events
       .map(event => {
-        // Handle financial_production - could be object or array
-        const financial = Array.isArray(event.financial_production) 
-          ? (event.financial_production[0] || {}) 
-          : (event.financial_production || {})
+        // Revenue: use flat property first, then calculate from financial_production
+        let revenue = 0
+        if (event.revenue !== undefined) {
+          revenue = Number(event.revenue) || 0
+        } else {
+          const financial = Array.isArray(event.financial_production) 
+            ? (event.financial_production[0] || {}) 
+            : (event.financial_production || {})
+          
+          revenue = financial.total !== undefined 
+            ? (Number(financial.total) || 0)
+            : ((Number(financial.aum_fees) || 0) + 
+               (Number(financial.annuity_commission) || 0) + 
+               (Number(financial.life_insurance_commission) || 0) + 
+               (Number(financial.financial_planning) || 0))
+        }
         
-        // Use the total if available, otherwise calculate from components
-        const totalProduction = financial.total !== undefined 
-          ? (Number(financial.total) || 0)
-          : ((Number(financial.aum_fees) || 0) + 
-             (Number(financial.annuity_commission) || 0) + 
-             (Number(financial.life_insurance_commission) || 0) + 
-             (Number(financial.financial_planning) || 0))
+        // Expenses: extract from marketing_expenses
+        let expenses = 0
+        if (event.expenses !== undefined) {
+          expenses = Number(event.expenses) || 0
+        } else {
+          expenses = Array.isArray(event.marketing_expenses) 
+            ? (Number(event.marketing_expenses[0]?.total_cost) || 0)
+            : (Number(event.marketing_expenses?.total_cost) || 0)
+        }
         
-        // Handle expenses - could be object or array
-        const expenses = Array.isArray(event.marketing_expenses) 
-          ? (Number(event.marketing_expenses[0]?.total_cost) || 0)
-          : (Number(event.marketing_expenses?.total_cost) || 0)
+        // Attendees: use flat property first, then fall back to attendance object
+        let attendees = 0
+        if (event.attendees !== undefined) {
+          attendees = Number(event.attendees) || 0
+        } else {
+          const attendance = Array.isArray(event.attendance) 
+            ? (event.attendance[0] || {}) 
+            : (event.attendance || {})
+          attendees = Number(attendance.attendees) || 0
+        }
         
-        // Handle attendance - could be object or array
-        const attendance = Array.isArray(event.attendance) 
-          ? (event.attendance[0] || {}) 
-          : (event.attendance || {})
+        // Clients: use flat property first, then fall back to attendance object
+        let clients = 0
+        if (event.clients !== undefined) {
+          clients = Number(event.clients) || 0
+        } else {
+          const attendance = Array.isArray(event.attendance) 
+            ? (event.attendance[0] || {}) 
+            : (event.attendance || {})
+          clients = Number(attendance.clients_from_event) || 0
+        }
         
-        const attendees = Number(attendance.attendees) || 0
-        const clients = Number(attendance.clients_from_event) || 0
-        
-        const profit = totalProduction - expenses
+        const profit = revenue - expenses
         const roi = expenses > 0 
           ? Number(((profit / expenses) * 100).toFixed(1))
-          : totalProduction > 0 
+          : revenue > 0 
             ? 9999 // Show high ROI when there's revenue but no expenses
             : 0
         
@@ -282,7 +338,7 @@ export default function Overview() {
           location: event.location,
           type: event.marketing_type || 'Other',
           topic: event.topic || 'N/A',
-          revenue: totalProduction,
+          revenue,
           expenses,
           profit,
           attendees,
@@ -303,18 +359,53 @@ export default function Overview() {
       .slice(0, count)
   }, [])
 
-  const getLatestMonthlyEntry = useCallback((advisorData: any) => {
-    if (!advisorData?.monthlyDataEntries || advisorData.monthlyDataEntries.length === 0) {
+  const getLatestMonthlyEntry = useCallback((advisorData: any, year: number) => {
+    if (!advisorData?.monthlyDataEntries || !Array.isArray(advisorData.monthlyDataEntries) || advisorData.monthlyDataEntries.length === 0) {
       return null
     }
     
-    return advisorData.monthlyDataEntries
-      .sort((a: any, b: any) => b.month_year.localeCompare(a.month_year))[0]
+    // Filter entries by selected year first
+    const yearEntries = advisorData.monthlyDataEntries.filter((entry: any) => {
+      if (!entry || !entry.month_year) return false
+      return entry.month_year.startsWith(year.toString())
+    })
+    
+    if (yearEntries.length === 0) {
+      return null
+    }
+    
+    // Sort by month_year descending and get the latest
+    const sorted = yearEntries.sort((a: any, b: any) => {
+      if (!a.month_year || !b.month_year) return 0
+      return b.month_year.localeCompare(a.month_year)
+    })
+    
+    const latestEntry = sorted[0]
+    if (!latestEntry) return null
+    
+    // Ensure all numeric values are properly converted (database may return strings for decimals)
+    // Handle both string and number types from database
+    return {
+      ...latestEntry,
+      new_clients: Number(latestEntry.new_clients) || 0,
+      new_appointments: Number(latestEntry.new_appointments) || 0,
+      new_leads: Number(latestEntry.new_leads) || 0,
+      annuity_sales: parseFloat(String(latestEntry.annuity_sales || 0)) || 0,
+      aum_sales: parseFloat(String(latestEntry.aum_sales || 0)) || 0,
+      life_sales: parseFloat(String(latestEntry.life_sales || 0)) || 0,
+      marketing_expenses: parseFloat(String(latestEntry.marketing_expenses || 0)) || 0,
+    }
   }, [])
 
   useEffect(() => {
     async function loadOverviewData() {
       if (!user) return
+      
+      // Wait for advisorData to be loaded if it's still loading
+      if (advisorLoading) {
+        console.log('Waiting for advisorData to load...')
+        return
+      }
 
       try {
         setLoading(true)
@@ -338,7 +429,55 @@ export default function Overview() {
         const topEvents = getTopEvents(yearEvents, 3)
         
         // Get latest monthly entry for selected year
-        const latestMonthlyEntry = getLatestMonthlyEntry(advisorData)
+        let latestMonthlyEntry = getLatestMonthlyEntry(advisorData, selectedYear)
+        
+        // If monthly entry has notes with "Clients from events" but 0 values, recalculate from events
+        if (latestMonthlyEntry && latestMonthlyEntry.notes && latestMonthlyEntry.notes.includes("Clients from events:")) {
+          const hasZeroValues = 
+            (Number(latestMonthlyEntry.new_clients) || 0) === 0 &&
+            (parseFloat(String(latestMonthlyEntry.annuity_sales || 0)) || 0) === 0 &&
+            (parseFloat(String(latestMonthlyEntry.aum_sales || 0)) || 0) === 0 &&
+            (parseFloat(String(latestMonthlyEntry.life_sales || 0)) || 0) === 0
+          
+          if (hasZeroValues) {
+            // Try to recalculate from events
+            try {
+              const [year, month] = latestMonthlyEntry.month_year.split('-').map(Number)
+              const result = await recalculateMonthlyEntryFromEvents(user.id, latestMonthlyEntry.month_year)
+              if (result.success) {
+                // Reload the entry after recalculation
+                const eventData = await aggregateEventDataByMonth(user.id, month, year)
+                latestMonthlyEntry = {
+                  ...latestMonthlyEntry,
+                  new_clients: eventData.new_clients,
+                  annuity_sales: eventData.annuity_sales,
+                  aum_sales: eventData.aum_sales,
+                  life_sales: eventData.life_sales,
+                  new_appointments: eventData.appointments_booked,
+                  marketing_expenses: eventData.marketing_expenses,
+                }
+              }
+            } catch (error) {
+              console.error("Error recalculating monthly entry:", error)
+              // Fall back to showing event data directly if recalculation fails
+              try {
+                const [year, month] = latestMonthlyEntry.month_year.split('-').map(Number)
+                const eventData = await aggregateEventDataByMonth(user.id, month, year)
+                latestMonthlyEntry = {
+                  ...latestMonthlyEntry,
+                  new_clients: eventData.new_clients,
+                  annuity_sales: eventData.annuity_sales,
+                  aum_sales: eventData.aum_sales,
+                  life_sales: eventData.life_sales,
+                  new_appointments: eventData.appointments_booked,
+                  marketing_expenses: eventData.marketing_expenses,
+                }
+              } catch (fallbackError) {
+                console.error("Error getting event data as fallback:", fallbackError)
+              }
+            }
+          }
+        }
         
         // Check data availability for other pages
         const hasEvents = yearEvents.length > 0
@@ -393,7 +532,7 @@ export default function Overview() {
     }
 
     loadOverviewData()
-  }, [user, advisorData, selectedYear, calculateAnalyticsSummary, getTopEvents, getLatestMonthlyEntry])
+  }, [user, advisorData, advisorLoading, selectedYear, calculateAnalyticsSummary, getTopEvents, getLatestMonthlyEntry])
 
   // Save selected year to localStorage
   useEffect(() => {
@@ -995,26 +1134,54 @@ export default function Overview() {
                     <div className="flex justify-between items-center">
                       <span className="text-m8bs-muted">Period</span>
                       <span className="text-white font-semibold">
-                        {format(new Date(data.latestMonthlyEntry.month_year + "-01"), "MMMM yyyy")}
+                        {(() => {
+                          try {
+                            if (data.latestMonthlyEntry.month_year) {
+                              const [year, month] = data.latestMonthlyEntry.month_year.split('-')
+                              const date = new Date(Number(year), Number(month) - 1, 1)
+                              return format(date, "MMMM yyyy")
+                            }
+                            return "N/A"
+                          } catch {
+                            return data.latestMonthlyEntry.month_year || "N/A"
+                          }
+                        })()}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="text-center p-3 bg-m8bs-card-alt rounded-lg">
-                        <div className="text-white font-bold">{data.latestMonthlyEntry.new_clients}</div>
+                        <div className="text-white font-bold">
+                          {Number(data.latestMonthlyEntry.new_clients) || 0}
+                        </div>
                         <div className="text-xs text-m8bs-muted">New Clients</div>
                       </div>
                       <div className="text-center p-3 bg-m8bs-card-alt rounded-lg">
-                        <div className="text-white font-bold">{data.latestMonthlyEntry.new_appointments}</div>
+                        <div className="text-white font-bold">
+                          {Number(data.latestMonthlyEntry.new_appointments) || 0}
+                        </div>
                         <div className="text-xs text-m8bs-muted">Appointments</div>
                       </div>
                       <div className="text-center p-3 bg-m8bs-card-alt rounded-lg">
                         <div className="text-white font-bold">
-                          ${(data.latestMonthlyEntry.annuity_sales + data.latestMonthlyEntry.aum_sales + data.latestMonthlyEntry.life_sales).toLocaleString()}
+                          ${(() => {
+                            // Handle decimal values from database (might be strings)
+                            const annuity = parseFloat(String(data.latestMonthlyEntry.annuity_sales || 0)) || 0
+                            const aum = parseFloat(String(data.latestMonthlyEntry.aum_sales || 0)) || 0
+                            const life = parseFloat(String(data.latestMonthlyEntry.life_sales || 0)) || 0
+                            const total = annuity + aum + life
+                            return total.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                          })()}
                         </div>
                         <div className="text-xs text-m8bs-muted">Total Sales</div>
                       </div>
                       <div className="text-center p-3 bg-m8bs-card-alt rounded-lg">
-                        <div className="text-white font-bold">${data.latestMonthlyEntry.marketing_expenses?.toLocaleString()}</div>
+                        <div className="text-white font-bold">
+                          ${(() => {
+                            // Handle decimal values from database (might be strings)
+                            const expenses = parseFloat(String(data.latestMonthlyEntry.marketing_expenses || 0)) || 0
+                            return expenses.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                          })()}
+                        </div>
                         <div className="text-xs text-m8bs-muted">Expenses</div>
                       </div>
                     </div>

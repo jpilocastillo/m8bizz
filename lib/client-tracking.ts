@@ -438,17 +438,34 @@ export async function syncClientToMonthlyEntry(
     }
 
     // Prepare the entry data
-    // Only update client/sales fields if they are 0 (no manual entry) or entry doesn't exist
-    // This prevents overwriting manual entries with event data
+    // Use aggregated event data if entry doesn't exist or if existing values are 0 (meaning no manual entry)
+    // This prevents overwriting manual entries with event data, but populates from events when appropriate
+    // Convert existing values to numbers to handle string "0" cases
+    const existingNewClients = Number(existingEntry?.new_clients || 0)
+    const existingAnnuitySales = parseFloat(String(existingEntry?.annuity_sales || 0)) || 0
+    const existingAumSales = parseFloat(String(existingEntry?.aum_sales || 0)) || 0
+    const existingLifeSales = parseFloat(String(existingEntry?.life_sales || 0)) || 0
+    
     const entryData = {
       month_year,
-      new_clients: existingEntry?.new_clients || 0, // Preserve manual entry, don't overwrite with event data
-      new_appointments: existingEntry?.new_appointments || 0,
-      new_leads: existingEntry?.new_leads || 0,
-      annuity_sales: existingEntry?.annuity_sales || 0, // Preserve manual entry, don't overwrite with event data
-      aum_sales: existingEntry?.aum_sales || 0, // Preserve manual entry, don't overwrite with event data
-      life_sales: existingEntry?.life_sales || 0, // Preserve manual entry, don't overwrite with event data
-      marketing_expenses: existingEntry?.marketing_expenses || 0,
+      // Use aggregated data if no existing entry or if existing value is 0 (no manual entry)
+      // Check if value is > 0 to determine if it's a manual entry
+      new_clients: (existingEntry && existingNewClients > 0) 
+        ? existingNewClients 
+        : aggregated.new_clients,
+      new_appointments: Number(existingEntry?.new_appointments || 0) || 0,
+      new_leads: Number(existingEntry?.new_leads || 0) || 0,
+      // Use aggregated data if no existing entry or if existing value is 0 (no manual entry)
+      annuity_sales: (existingEntry && existingAnnuitySales > 0) 
+        ? existingAnnuitySales 
+        : aggregated.annuity_sales,
+      aum_sales: (existingEntry && existingAumSales > 0) 
+        ? existingAumSales 
+        : aggregated.aum_sales,
+      life_sales: (existingEntry && existingLifeSales > 0) 
+        ? existingLifeSales 
+        : aggregated.life_sales,
+      marketing_expenses: parseFloat(String(existingEntry?.marketing_expenses || 0)) || 0,
       notes: notesText || null
     }
 
@@ -467,6 +484,104 @@ export async function syncClientToMonthlyEntry(
   } catch (error) {
     console.error("Error in syncClientToMonthlyEntry:", error)
     // Don't throw - this is non-blocking, errors are logged
+  }
+}
+
+/**
+ * Recalculate and update a monthly entry from event clients
+ * This is useful when a monthly entry exists but has 0 values even though clients exist
+ */
+export async function recalculateMonthlyEntryFromEvents(
+  userId: string,
+  monthYear: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user || user.id !== userId) {
+      return { success: false, error: 'User mismatch or not authenticated' }
+    }
+    
+    // Parse month_year to get year and month
+    const [yearStr, monthStr] = monthYear.split('-')
+    const year = parseInt(yearStr)
+    const month = parseInt(monthStr)
+    
+    if (isNaN(year) || isNaN(month)) {
+      return { success: false, error: 'Invalid month_year format' }
+    }
+    
+    // Get aggregated data from events
+    const eventData = await aggregateEventDataByMonth(userId, month, year)
+    
+    // Get existing entry
+    const { data: existingEntry, error: entryError } = await supabase
+      .from("monthly_data_entries")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("month_year", monthYear)
+      .maybeSingle()
+    
+    if (entryError) {
+      console.error("Error fetching existing entry:", entryError)
+      return { success: false, error: entryError.message }
+    }
+    
+    if (!existingEntry) {
+      return { success: false, error: 'Monthly entry not found' }
+    }
+    
+    // Convert existing values to numbers
+    const existingNewClients = Number(existingEntry.new_clients || 0)
+    const existingAnnuitySales = parseFloat(String(existingEntry.annuity_sales || 0)) || 0
+    const existingAumSales = parseFloat(String(existingEntry.aum_sales || 0)) || 0
+    const existingLifeSales = parseFloat(String(existingEntry.life_sales || 0)) || 0
+    
+    // Only update if existing values are 0 (preserve manual entries)
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+    
+    if (existingNewClients === 0 && eventData.new_clients > 0) {
+      updateData.new_clients = eventData.new_clients
+    }
+    if (existingAnnuitySales === 0 && eventData.annuity_sales > 0) {
+      updateData.annuity_sales = eventData.annuity_sales
+    }
+    if (existingAumSales === 0 && eventData.aum_sales > 0) {
+      updateData.aum_sales = eventData.aum_sales
+    }
+    if (existingLifeSales === 0 && eventData.life_sales > 0) {
+      updateData.life_sales = eventData.life_sales
+    }
+    if (Number(existingEntry.new_appointments || 0) === 0 && eventData.appointments_booked > 0) {
+      updateData.new_appointments = eventData.appointments_booked
+    }
+    if (parseFloat(String(existingEntry.marketing_expenses || 0)) === 0 && eventData.marketing_expenses > 0) {
+      updateData.marketing_expenses = eventData.marketing_expenses
+    }
+    
+    // Only update if there are changes
+    if (Object.keys(updateData).length > 1) {
+      const { error: updateError } = await supabase
+        .from("monthly_data_entries")
+        .update(updateData)
+        .eq("id", existingEntry.id)
+        .eq("user_id", userId)
+      
+      if (updateError) {
+        console.error("Error updating monthly entry:", updateError)
+        return { success: false, error: updateError.message }
+      }
+      
+      return { success: true }
+    }
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Error recalculating monthly entry:", error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
 
