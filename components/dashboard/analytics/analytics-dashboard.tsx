@@ -64,12 +64,65 @@ interface FilterState {
 
 export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   const { user } = useAuth()
-  // Initialize state with the provided data or defaults
-  const [filteredData, setFilteredData] = useState(() => analyticsData || defaultData)
+  const currentYear = new Date().getFullYear()
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear)
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear, 2025])
+  
+  // Initialize filteredData with current year's data only
+  const getInitialFilteredData = () => {
+    if (!analyticsData) return defaultData
+    
+    // Filter events for current year
+    const currentYearEvents = analyticsData.events?.filter((event: any) => {
+      if (event.date) {
+        try {
+          const [year] = event.date.split('-').map(Number)
+          return !isNaN(year) && year === currentYear
+        } catch {
+          return false
+        }
+      }
+      return false
+    }) || []
+    
+    // Calculate summary for current year only
+    const totalAttendees = currentYearEvents.reduce((sum, event) => sum + (event.attendees || 0), 0)
+    const totalRevenue = currentYearEvents.reduce((sum, event) => sum + (event.revenue || 0), 0)
+    const totalExpenses = currentYearEvents.reduce((sum, event) => sum + (event.expenses || 0), 0)
+    const totalClients = currentYearEvents.reduce((sum, event) => sum + (event.clients || 0), 0)
+    const totalRegistrants = currentYearEvents.reduce((sum, event) => sum + (event.registrants || 0), 0)
+    
+    return {
+      ...analyticsData,
+      events: currentYearEvents,
+      summary: {
+        ...analyticsData.summary,
+        totalEvents: currentYearEvents.length,
+        totalAttendees,
+        avgAttendees: currentYearEvents.length > 0 ? Math.round(totalAttendees / currentYearEvents.length) : 0,
+        totalRevenue,
+        totalExpenses,
+        totalProfit: totalRevenue - totalExpenses,
+        overallROI: totalExpenses > 0 
+          ? Math.round(((totalRevenue - totalExpenses) / totalExpenses) * 100) 
+          : totalRevenue > 0 
+            ? 9999
+            : 0,
+        totalClients,
+        overallConversionRate: totalAttendees > 0 ? (totalClients / totalAttendees) * 100 : 0,
+        totalAppointmentsSet: currentYearEvents.reduce((sum, event) => sum + (event.appointmentsSet || 0), 0),
+        totalAppointmentsMade: currentYearEvents.reduce((sum, event) => sum + (event.appointmentsMade || 0), 0),
+        totalRegistrants,
+        totalPlateLickers: currentYearEvents.reduce((sum, event) => sum + (event.plateLickers || 0), 0),
+        totalFirstAppointmentNoShows: currentYearEvents.reduce((sum, event) => sum + (event.firstAppointmentNoShows || 0), 0),
+        totalNotQualified: currentYearEvents.reduce((sum, event) => sum + (event.notQualified || 0), 0),
+      }
+    }
+  }
+  
+  const [filteredData, setFilteredData] = useState(() => getInitialFilteredData())
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
-  const [availableYears, setAvailableYears] = useState<number[]>([new Date().getFullYear(), 2025])
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     dateRange: { from: undefined, to: undefined },
@@ -246,9 +299,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   // Validate data on mount and when analyticsData changes
   useEffect(() => {
     validateData(analyticsData)
-    if (analyticsData) {
-      setFilteredData(analyticsData)
-    }
+    // Don't overwrite filteredData here - let the filtering useEffect handle it
   }, [analyticsData, validateData])
 
   const container = {
