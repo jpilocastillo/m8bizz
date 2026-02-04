@@ -590,7 +590,7 @@ export async function getYTDSummary(userId: string, year: number): Promise<{
     const total_financial_planning = clients.reduce((sum, c) => sum + (c.financial_planning_fee || 0), 0)
     const total_annuity_commission = clients.reduce((sum, c) => sum + (c.annuity_commission || 0), 0)
     const total_life_commission = clients.reduce((sum, c) => sum + (c.life_insurance_commission || 0), 0)
-    const total_value = total_annuity + total_life + total_aum + total_financial_planning + total_annuity_commission + total_life_commission
+    const total_value = total_annuity + total_life + total_aum + total_financial_planning
     const average_deal_size = total_clients > 0 ? total_value / total_clients : 0
 
     // Monthly breakdown
@@ -607,8 +607,7 @@ export async function getYTDSummary(userId: string, year: number): Promise<{
         monthlyData.set(month, {
           clients: current.clients + 1,
           value: current.value + (client.annuity_premium || 0) + (client.life_insurance_premium || 0) + 
-                 (client.aum_amount || 0) + (client.financial_planning_fee || 0) +
-                 (client.annuity_commission || 0) + (client.life_insurance_commission || 0)
+                 (client.aum_amount || 0) + (client.financial_planning_fee || 0)
         })
       }
     })

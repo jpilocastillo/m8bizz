@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/auth-provider"
@@ -108,48 +108,209 @@ export default function Overview() {
   }
 
   // Load available years from events
-  useEffect(() => {
-    async function loadAvailableYears() {
-      if (!user) return
+  const loadAvailableYears = useCallback(async () => {
+    if (!user) return
+    
+    try {
+      const allEvents = await fetchAllEvents(user.id)
+      const years = new Set<number>()
+      const currentYear = 2026 // Always include current year
       
-      try {
-        const allEvents = await fetchAllEvents(user.id)
-        const years = new Set<number>()
-        const currentYear = 2026 // Always include current year
-        
-        // Always add current year (2026)
-        years.add(currentYear)
-        
-        allEvents.forEach(event => {
-          if (event.date) {
-            try {
-              const [year] = event.date.split('-').map(Number)
-              if (!isNaN(year)) {
-                years.add(year)
-              }
-            } catch {
-              // Skip invalid dates
+      // Always add current year (2026)
+      years.add(currentYear)
+      
+      allEvents.forEach(event => {
+        if (event.date) {
+          try {
+            const [year] = event.date.split('-').map(Number)
+            if (!isNaN(year)) {
+              years.add(year)
             }
+          } catch {
+            // Skip invalid dates
           }
-        })
-        
-        const sortedYears = Array.from(years).sort((a, b) => b - a)
-        setAvailableYears(sortedYears)
-        
-        // Set selected year to current year (2026) if not already set or if selected year is not in list
-        if (!sortedYears.includes(selectedYear)) {
-          setSelectedYear(currentYear)
         }
-      } catch (error) {
-        console.error("Error loading available years:", error)
-        // Fallback to just current year
-        setAvailableYears([2026])
-        setSelectedYear(2026)
+      })
+      
+      const sortedYears = Array.from(years).sort((a, b) => b - a)
+      setAvailableYears(sortedYears)
+      
+      // Set selected year to current year (2026) if not already set or if selected year is not in list
+      setSelectedYear(prev => {
+        if (!sortedYears.includes(prev)) {
+          return currentYear
+        }
+        return prev
+      })
+    } catch (error) {
+      console.error("Error loading available years:", error)
+      // Fallback to just current year
+      setAvailableYears([2026])
+      setSelectedYear(2026)
+    }
+  }, [user])
+
+  useEffect(() => {
+    loadAvailableYears()
+  }, [loadAvailableYears])
+
+  const calculateAnalyticsSummary = useCallback((events: any[]) => {
+    if (!events || events.length === 0) {
+      return {
+        totalEvents: 0,
+        totalAttendees: 0,
+        avgAttendees: 0,
+        totalRevenue: 0,
+        totalExpenses: 0,
+        totalProfit: 0,
+        overallROI: 0,
+        totalClients: 0,
+        overallConversionRate: 0
       }
     }
+
+    const summary = events.reduce((acc, event) => {
+      // Handle attendance - could be object or array
+      const attendance = Array.isArray(event.attendance) 
+        ? (event.attendance[0] || {}) 
+        : (event.attendance || {})
+      
+      // Handle expenses - could be object or array
+      const expenses = Array.isArray(event.marketing_expenses) 
+        ? (event.marketing_expenses[0] || {}) 
+        : (event.marketing_expenses || {})
+      
+      // Handle financial_production - could be object or array
+      const financial = Array.isArray(event.financial_production) 
+        ? (event.financial_production[0] || {}) 
+        : (event.financial_production || {})
+      
+      // Use the total if available, otherwise calculate from components
+      const totalProduction = financial.total !== undefined 
+        ? (financial.total || 0)
+        : ((financial.aum_fees || 0) + 
+           (financial.annuity_commission || 0) + 
+           (financial.life_insurance_commission || 0) + 
+           (financial.financial_planning || 0))
+
+      return {
+        totalEvents: acc.totalEvents + 1,
+        totalAttendees: acc.totalAttendees + (Number(attendance.attendees) || 0),
+        totalRevenue: acc.totalRevenue + (Number(totalProduction) || 0),
+        totalExpenses: acc.totalExpenses + (Number(expenses.total_cost) || 0),
+        totalClients: acc.totalClients + (Number(attendance.clients_from_event) || 0)
+      }
+    }, {
+      totalEvents: 0,
+      totalAttendees: 0,
+      totalRevenue: 0,
+      totalExpenses: 0,
+      totalClients: 0
+    })
+
+    summary.avgAttendees = summary.totalEvents > 0 ? Math.round(summary.totalAttendees / summary.totalEvents) : 0
+    summary.totalProfit = summary.totalRevenue - summary.totalExpenses
+    summary.overallROI = summary.totalExpenses > 0 
+      ? Math.round(((summary.totalProfit / summary.totalExpenses) * 100)) 
+      : summary.totalRevenue > 0 
+        ? 9999 // Show high ROI when there's revenue but no expenses
+        : 0
+    summary.overallConversionRate = summary.totalAttendees > 0 
+      ? Number(((summary.totalClients / summary.totalAttendees) * 100).toFixed(1)) 
+      : 0
+
+    return summary
+  }, [])
+
+  const getTopEvents = useCallback((events: any[], count: number) => {
+    if (!events || events.length === 0) return []
     
-    loadAvailableYears()
-  }, [user])
+    return events
+      .map(event => {
+        // Handle financial_production - could be object or array
+        const financial = Array.isArray(event.financial_production) 
+          ? (event.financial_production[0] || {}) 
+          : (event.financial_production || {})
+        
+        // Use the total if available, otherwise calculate from components
+        const totalProduction = financial.total !== undefined 
+          ? (Number(financial.total) || 0)
+          : ((Number(financial.aum_fees) || 0) + 
+             (Number(financial.annuity_commission) || 0) + 
+             (Number(financial.life_insurance_commission) || 0) + 
+             (Number(financial.financial_planning) || 0))
+        
+        // Handle expenses - could be object or array
+        const expenses = Array.isArray(event.marketing_expenses) 
+          ? (Number(event.marketing_expenses[0]?.total_cost) || 0)
+          : (Number(event.marketing_expenses?.total_cost) || 0)
+        
+        // Handle attendance - could be object or array
+        const attendance = Array.isArray(event.attendance) 
+          ? (event.attendance[0] || {}) 
+          : (event.attendance || {})
+        
+        const attendees = Number(attendance.attendees) || 0
+        const clients = Number(attendance.clients_from_event) || 0
+        
+        const profit = totalProduction - expenses
+        const roi = expenses > 0 
+          ? Number(((profit / expenses) * 100).toFixed(1))
+          : totalProduction > 0 
+            ? 9999 // Show high ROI when there's revenue but no expenses
+            : 0
+        
+        const conversionRate = attendees > 0 
+          ? Number(((clients / attendees) * 100).toFixed(1))
+          : 0
+        
+        // Extract year from date for sorting
+        const getYear = (dateString: string | null | undefined): number => {
+          if (!dateString) return 0
+          try {
+            const [year] = dateString.split('-').map(Number)
+            return year || 0
+          } catch {
+            return 0
+          }
+        }
+        
+        return {
+          id: event.id,
+          name: event.name,
+          date: event.date,
+          location: event.location,
+          type: event.marketing_type || 'Other',
+          topic: event.topic || 'N/A',
+          revenue: totalProduction,
+          expenses,
+          profit,
+          attendees,
+          clients,
+          roi: { value: roi },
+          conversionRate,
+          year: getYear(event.date),
+        }
+      })
+      .sort((a, b) => {
+        // First sort by year (descending - newest years first)
+        if (b.year !== a.year) {
+          return b.year - a.year
+        }
+        // Then sort by ROI (descending - highest ROI first)
+        return (b.roi?.value || 0) - (a.roi?.value || 0)
+      })
+      .slice(0, count)
+  }, [])
+
+  const getLatestMonthlyEntry = useCallback((advisorData: any) => {
+    if (!advisorData?.monthlyDataEntries || advisorData.monthlyDataEntries.length === 0) {
+      return null
+    }
+    
+    return advisorData.monthlyDataEntries
+      .sort((a: any, b: any) => b.month_year.localeCompare(a.month_year))[0]
+  }, [])
 
   useEffect(() => {
     async function loadOverviewData() {
@@ -232,7 +393,7 @@ export default function Overview() {
     }
 
     loadOverviewData()
-  }, [user, advisorData, selectedYear])
+  }, [user, advisorData, selectedYear, calculateAnalyticsSummary, getTopEvents, getLatestMonthlyEntry])
 
   // Save selected year to localStorage
   useEffect(() => {
@@ -240,164 +401,6 @@ export default function Overview() {
       localStorage.setItem(`overview-year-${user.id}`, selectedYear.toString())
     }
   }, [selectedYear, user])
-
-  const calculateAnalyticsSummary = (events: any[]) => {
-    if (!events || events.length === 0) {
-      return {
-        totalEvents: 0,
-        totalAttendees: 0,
-        avgAttendees: 0,
-        totalRevenue: 0,
-        totalExpenses: 0,
-        totalProfit: 0,
-        overallROI: 0,
-        totalClients: 0,
-        overallConversionRate: 0
-      }
-    }
-
-    const summary = events.reduce((acc, event) => {
-      // Handle attendance - could be object or array
-      const attendance = Array.isArray(event.attendance) 
-        ? (event.attendance[0] || {}) 
-        : (event.attendance || {})
-      
-      // Handle expenses - could be object or array
-      const expenses = Array.isArray(event.marketing_expenses) 
-        ? (event.marketing_expenses[0] || {}) 
-        : (event.marketing_expenses || {})
-      
-      // Handle financial_production - could be object or array
-      const financial = Array.isArray(event.financial_production) 
-        ? (event.financial_production[0] || {}) 
-        : (event.financial_production || {})
-      
-      // Use the total if available, otherwise calculate from components
-      const totalProduction = financial.total !== undefined 
-        ? (financial.total || 0)
-        : ((financial.aum_fees || 0) + 
-           (financial.annuity_commission || 0) + 
-           (financial.life_insurance_commission || 0) + 
-           (financial.financial_planning || 0))
-
-      return {
-        totalEvents: acc.totalEvents + 1,
-        totalAttendees: acc.totalAttendees + (Number(attendance.attendees) || 0),
-        totalRevenue: acc.totalRevenue + (Number(totalProduction) || 0),
-        totalExpenses: acc.totalExpenses + (Number(expenses.total_cost) || 0),
-        totalClients: acc.totalClients + (Number(attendance.clients_from_event) || 0)
-      }
-    }, {
-      totalEvents: 0,
-      totalAttendees: 0,
-      totalRevenue: 0,
-      totalExpenses: 0,
-      totalClients: 0
-    })
-
-    summary.avgAttendees = summary.totalEvents > 0 ? Math.round(summary.totalAttendees / summary.totalEvents) : 0
-    summary.totalProfit = summary.totalRevenue - summary.totalExpenses
-    summary.overallROI = summary.totalExpenses > 0 
-      ? Math.round(((summary.totalProfit / summary.totalExpenses) * 100)) 
-      : summary.totalRevenue > 0 
-        ? 9999 // Show high ROI when there's revenue but no expenses
-        : 0
-    summary.overallConversionRate = summary.totalAttendees > 0 
-      ? Number(((summary.totalClients / summary.totalAttendees) * 100).toFixed(1)) 
-      : 0
-
-    return summary
-  }
-
-  const getTopEvents = (events: any[], count: number) => {
-    if (!events || events.length === 0) return []
-    
-    return events
-      .map(event => {
-        // Handle financial_production - could be object or array
-        const financial = Array.isArray(event.financial_production) 
-          ? (event.financial_production[0] || {}) 
-          : (event.financial_production || {})
-        
-        // Use the total if available, otherwise calculate from components
-        const totalProduction = financial.total !== undefined 
-          ? (Number(financial.total) || 0)
-          : ((Number(financial.aum_fees) || 0) + 
-             (Number(financial.annuity_commission) || 0) + 
-             (Number(financial.life_insurance_commission) || 0) + 
-             (Number(financial.financial_planning) || 0))
-        
-        // Handle expenses - could be object or array
-        const expenses = Array.isArray(event.marketing_expenses) 
-          ? (Number(event.marketing_expenses[0]?.total_cost) || 0)
-          : (Number(event.marketing_expenses?.total_cost) || 0)
-        
-        // Handle attendance - could be object or array
-        const attendance = Array.isArray(event.attendance) 
-          ? (event.attendance[0] || {}) 
-          : (event.attendance || {})
-        
-        const attendees = Number(attendance.attendees) || 0
-        const clients = Number(attendance.clients_from_event) || 0
-        
-        const profit = totalProduction - expenses
-        const roi = expenses > 0 
-          ? Number(((profit / expenses) * 100).toFixed(1))
-          : totalProduction > 0 
-            ? 9999 // Show high ROI when there's revenue but no expenses
-            : 0
-        
-        const conversionRate = attendees > 0 
-          ? Number(((clients / attendees) * 100).toFixed(1))
-          : 0
-        
-        // Extract year from date for sorting
-        const getYear = (dateString: string | null | undefined): number => {
-          if (!dateString) return 0
-          try {
-            const [year] = dateString.split('-').map(Number)
-            return year || 0
-          } catch {
-            return 0
-          }
-        }
-        
-        return {
-          id: event.id,
-          name: event.name,
-          date: event.date,
-          location: event.location,
-          type: event.marketing_type || 'Other',
-          topic: event.topic || 'N/A',
-          revenue: totalProduction,
-          expenses,
-          profit,
-          attendees,
-          clients,
-          roi: { value: roi },
-          conversionRate,
-          year: getYear(event.date),
-        }
-      })
-      .sort((a, b) => {
-        // First sort by year (descending - newest years first)
-        if (b.year !== a.year) {
-          return b.year - a.year
-        }
-        // Then sort by ROI (descending - highest ROI first)
-        return (b.roi?.value || 0) - (a.roi?.value || 0)
-      })
-      .slice(0, count)
-  }
-
-  const getLatestMonthlyEntry = (advisorData: any) => {
-    if (!advisorData?.monthlyDataEntries || advisorData.monthlyDataEntries.length === 0) {
-      return null
-    }
-    
-    return advisorData.monthlyDataEntries
-      .sort((a: any, b: any) => b.month_year.localeCompare(a.month_year))[0]
-  }
 
   const calculateGoalProgress = (current: number, goal: number) => {
     if (goal === 0) return 0

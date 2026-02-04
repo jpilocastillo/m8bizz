@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -59,7 +59,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { toast } from "@/hooks/use-toast"
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 import {
   LineChart,
   Line,
@@ -109,14 +109,7 @@ export function ClientClosedList({
 
   const currentUserId = userId || user?.id || ""
 
-  useEffect(() => {
-    loadClients()
-    if (showYTD && currentUserId && year) {
-      loadYTDSummary()
-    }
-  }, [eventId, currentUserId, year, showYTD])
-
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     if (!currentUserId) return
 
     setLoading(true)
@@ -140,9 +133,9 @@ export function ClientClosedList({
     } finally {
       setLoading(false)
     }
-  }
+  }, [eventId, currentUserId, year, showYTD])
 
-  const loadYTDSummary = async () => {
+  const loadYTDSummary = useCallback(async () => {
     if (!currentUserId || !year) return
 
     try {
@@ -151,7 +144,14 @@ export function ClientClosedList({
     } catch (error) {
       console.error("Error loading YTD summary:", error)
     }
-  }
+  }, [currentUserId, year])
+
+  useEffect(() => {
+    loadClients()
+    if (showYTD && currentUserId && year) {
+      loadYTDSummary()
+    }
+  }, [loadClients, loadYTDSummary, showYTD, currentUserId, year])
 
   const handleAddClient = async (data: EventClientInsert | EventClientUpdate) => {
     try {
@@ -269,12 +269,10 @@ export function ClientClosedList({
 
   const getTotalValue = (client: EventClient) => {
     return (
-      (client.annuity_premium || 0) +
-      (client.life_insurance_premium || 0) +
-      (client.aum_amount || 0) +
-      (client.financial_planning_fee || 0) +
-      (client.annuity_commission || 0) +
-      (client.life_insurance_commission || 0)
+      Number(client.annuity_premium || 0) +
+      Number(client.life_insurance_premium || 0) +
+      Number(client.aum_amount || 0) +
+      Number(client.financial_planning_fee || 0)
     )
   }
 
@@ -287,7 +285,7 @@ export function ClientClosedList({
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
         (client) =>
-          client.client_name.toLowerCase().includes(query) ||
+          (client.client_name?.toLowerCase().includes(query) ?? false) ||
           (client.notes && client.notes.toLowerCase().includes(query))
       )
     }
@@ -319,8 +317,8 @@ export function ClientClosedList({
 
       switch (sortField) {
         case "client_name":
-          aValue = a.client_name.toLowerCase()
-          bValue = b.client_name.toLowerCase()
+          aValue = (a.client_name || "").toLowerCase()
+          bValue = (b.client_name || "").toLowerCase()
           break
         case "close_date":
           aValue = new Date(a.close_date).getTime()
@@ -436,6 +434,7 @@ export function ClientClosedList({
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(url)
 
     toast({
       title: "Success",
@@ -476,9 +475,16 @@ export function ClientClosedList({
       monthlyData[monthKey].aum += client.aum_amount || 0
     })
 
-    return Object.values(monthlyData).sort((a, b) => 
-      new Date(a.month).getTime() - new Date(b.month).getTime()
-    )
+    return Object.values(monthlyData).sort((a, b) => {
+      try {
+        const dateA = parse(a.month, "MMM yyyy", new Date())
+        const dateB = parse(b.month, "MMM yyyy", new Date())
+        return dateA.getTime() - dateB.getTime()
+      } catch {
+        // Fallback to string comparison if parsing fails
+        return a.month.localeCompare(b.month)
+      }
+    })
   }, [filteredAndSortedClients])
 
   const productDistribution = useMemo(() => {
@@ -912,9 +918,8 @@ export function ClientClosedList({
                 {filteredAndSortedClients.map((client) => {
                   const isExpanded = expandedClients.has(client.id || "")
                   return (
-                    <>
+                    <React.Fragment key={client.id || `client-${Math.random()}`}>
                       <TableRow 
-                        key={client.id} 
                         className="border-m8bs-border hover:bg-m8bs-card-alt/50 cursor-pointer"
                         onClick={() => client.id && toggleExpand(client.id)}
                       >
@@ -1018,7 +1023,7 @@ export function ClientClosedList({
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </React.Fragment>
                   )
                 })}
               </TableBody>

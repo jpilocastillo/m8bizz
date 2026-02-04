@@ -177,11 +177,7 @@ export function ClientClosedForm({
       const percentage = parseFloat(annuityCommissionPercentage) || 0
       if (premium > 0 && percentage > 0) {
         const calculated = (premium * percentage) / 100
-        const currentCommission = parseFloat(parseCurrency(annuityCommission || "0")) || 0
-        // Only auto-update if the current commission matches what would be calculated (user hasn't manually overridden)
-        if (Math.abs(currentCommission - calculated) < 0.01 || currentCommission === 0) {
-          form.setValue("annuity_commission", formatCurrency(calculated))
-        }
+        form.setValue("annuity_commission", formatCurrency(calculated))
       }
     }
   }
@@ -193,11 +189,7 @@ export function ClientClosedForm({
       const percentage = parseFloat(lifeInsuranceCommissionPercentage) || 0
       if (premium > 0 && percentage > 0) {
         const calculated = (premium * percentage) / 100
-        const currentCommission = parseFloat(parseCurrency(lifeInsuranceCommission || "0")) || 0
-        // Only auto-update if the current commission matches what would be calculated (user hasn't manually overridden)
-        if (Math.abs(currentCommission - calculated) < 0.01 || currentCommission === 0) {
-          form.setValue("life_insurance_commission", formatCurrency(calculated))
-        }
+        form.setValue("life_insurance_commission", formatCurrency(calculated))
       }
     }
   }
@@ -209,11 +201,7 @@ export function ClientClosedForm({
       const percentage = parseFloat(aumFeePercentage) || 0
       if (aum > 0 && percentage > 0) {
         const calculated = (aum * percentage) / 100
-        const currentFees = parseFloat(parseCurrency(aumFees || "0")) || 0
-        // Only auto-update if the current fees match what would be calculated (user hasn't manually overridden)
-        if (Math.abs(currentFees - calculated) < 0.01 || currentFees === 0) {
-          form.setValue("aum_fees", formatCurrency(calculated))
-        }
+        form.setValue("aum_fees", formatCurrency(calculated))
       }
     }
   }
@@ -233,6 +221,20 @@ export function ClientClosedForm({
     calculateAumFees()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aumAmount, aumFeePercentage])
+
+  // Recalculate when form is opened or client data changes
+  useEffect(() => {
+    if (open) {
+      // Small delay to ensure form values are set
+      const timer = setTimeout(() => {
+        calculateAnnuityCommission()
+        calculateLifeInsuranceCommission()
+        calculateAumFees()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, client?.id])
 
   const handleSubmit = async (values: ClientFormData) => {
     setIsSubmitting(true)
