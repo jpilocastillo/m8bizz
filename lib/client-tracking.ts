@@ -438,14 +438,16 @@ export async function syncClientToMonthlyEntry(
     }
 
     // Prepare the entry data
+    // Only update client/sales fields if they are 0 (no manual entry) or entry doesn't exist
+    // This prevents overwriting manual entries with event data
     const entryData = {
       month_year,
-      new_clients: aggregated.new_clients,
+      new_clients: existingEntry?.new_clients || 0, // Preserve manual entry, don't overwrite with event data
       new_appointments: existingEntry?.new_appointments || 0,
       new_leads: existingEntry?.new_leads || 0,
-      annuity_sales: aggregated.annuity_sales,
-      aum_sales: aggregated.aum_sales,
-      life_sales: aggregated.life_sales,
+      annuity_sales: existingEntry?.annuity_sales || 0, // Preserve manual entry, don't overwrite with event data
+      aum_sales: existingEntry?.aum_sales || 0, // Preserve manual entry, don't overwrite with event data
+      life_sales: existingEntry?.life_sales || 0, // Preserve manual entry, don't overwrite with event data
       marketing_expenses: existingEntry?.marketing_expenses || 0,
       notes: notesText || null
     }

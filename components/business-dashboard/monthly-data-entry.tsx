@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -92,9 +92,12 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
   })
 
   // Filter monthly entries to only show entries from the selected year
-  const monthlyEntries = (data.monthlyDataEntries || []).filter(entry => 
-    entry.month_year.startsWith(year.toString())
-  )
+  // Memoize to prevent infinite re-renders
+  const monthlyEntries = useMemo(() => {
+    return (data.monthlyDataEntries || []).filter(entry => 
+      entry.month_year.startsWith(year.toString())
+    )
+  }, [data.monthlyDataEntries, year])
 
   // Clear selected month when year changes
   useEffect(() => {
@@ -416,6 +419,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
   }
 
   // Calculate year-to-date totals from monthly entries (including event data)
+  // Uses getManualValue to prevent double-counting when monthly entries contain event data
   const calculateYearToDate = () => {
     const yearEntries = monthlyEntries.filter(entry => entry.month_year.startsWith(currentYear))
     
@@ -428,16 +432,32 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       const eventAppointments = eventData.appointments_booked || 0
       const eventExpenses = eventData.marketing_expenses || 0
       
+      // Calculate true manual values (monthly entry - event data)
+      const manualAnnuity = getManualValue(entry.annuity_sales, eventAnnuity)
+      const manualAUM = getManualValue(entry.aum_sales, eventAUM)
+      const manualLife = getManualValue(entry.life_sales, eventLife)
+      const manualClients = getManualValue(entry.new_clients, eventClients)
+      const manualAppointments = getManualValue(entry.new_appointments, eventAppointments)
+      const manualExpenses = getManualValue(entry.marketing_expenses, eventExpenses)
+      
+      // Total = manual + event
+      const totalAnnuity = manualAnnuity + eventAnnuity
+      const totalAUM = manualAUM + eventAUM
+      const totalLife = manualLife + eventLife
+      const totalClients = manualClients + eventClients
+      const totalAppointments = manualAppointments + eventAppointments
+      const totalExpenses = manualExpenses + eventExpenses
+      
       return {
-        totalSales: acc.totalSales + entry.annuity_sales + entry.aum_sales + entry.life_sales + eventAnnuity + eventAUM + eventLife,
+        totalSales: acc.totalSales + totalAnnuity + totalAUM + totalLife,
         totalCommissionIncome: acc.totalCommissionIncome + calculateCommissionIncome(entry) + eventAnnuity + eventAUM + eventLife,
-        totalClients: acc.totalClients + entry.new_clients + eventClients,
-        totalAppointments: acc.totalAppointments + entry.new_appointments + eventAppointments,
+        totalClients: acc.totalClients + totalClients,
+        totalAppointments: acc.totalAppointments + totalAppointments,
         totalLeads: acc.totalLeads + entry.new_leads,
-        totalMarketingExpenses: acc.totalMarketingExpenses + entry.marketing_expenses + eventExpenses,
-        annuitySales: acc.annuitySales + entry.annuity_sales + eventAnnuity,
-        aumSales: acc.aumSales + entry.aum_sales + eventAUM,
-        lifeSales: acc.lifeSales + entry.life_sales + eventLife,
+        totalMarketingExpenses: acc.totalMarketingExpenses + totalExpenses,
+        annuitySales: acc.annuitySales + totalAnnuity,
+        aumSales: acc.aumSales + totalAUM,
+        lifeSales: acc.lifeSales + totalLife,
       }
     }, {
       totalSales: 0,
@@ -546,8 +566,17 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       const eventClients = eventData.new_clients || 0
       const eventAppointments = eventData.appointments_booked || 0
       
-      const totalSales = (entry.annuity_sales + entry.aum_sales + entry.life_sales) + (eventAnnuity + eventAUM + eventLife)
-      const totalExpenses = entry.marketing_expenses + eventExpenses
+      // Calculate true manual values to prevent double-counting
+      const manualAnnuity = getManualValue(entry.annuity_sales, eventAnnuity)
+      const manualAUM = getManualValue(entry.aum_sales, eventAUM)
+      const manualLife = getManualValue(entry.life_sales, eventLife)
+      const manualExpenses = getManualValue(entry.marketing_expenses, eventExpenses)
+      const manualClients = getManualValue(entry.new_clients, eventClients)
+      const manualAppointments = getManualValue(entry.new_appointments, eventAppointments)
+      
+      // Total = manual + event
+      const totalSales = (manualAnnuity + manualAUM + manualLife) + (eventAnnuity + eventAUM + eventLife)
+      const totalExpenses = manualExpenses + eventExpenses
       const commissionIncome = calculateCommissionIncome(entry) + eventAnnuity + eventAUM + eventLife
       const roi = totalExpenses > 0 
         ? ((commissionIncome - totalExpenses) / totalExpenses) * 100 
@@ -559,11 +588,11 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
         month: format(parseISO(entry.month_year + "-01"), "MMM"),
         totalSales,
         commissionIncome,
-        annuitySales: entry.annuity_sales + eventAnnuity,
-        aumSales: entry.aum_sales + eventAUM,
-        lifeSales: entry.life_sales + eventLife,
-        newClients: entry.new_clients + eventClients,
-        newAppointments: entry.new_appointments + eventAppointments,
+        annuitySales: manualAnnuity + eventAnnuity,
+        aumSales: manualAUM + eventAUM,
+        lifeSales: manualLife + eventLife,
+        newClients: manualClients + eventClients,
+        newAppointments: manualAppointments + eventAppointments,
         newLeads: entry.new_leads,
         marketingExpenses: totalExpenses,
         roi,
@@ -577,15 +606,18 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     
     const totalAnnuity = yearEntries.reduce((sum, entry) => {
       const eventData = eventDataForAllMonths[entry.month_year] || {}
-      return sum + entry.annuity_sales + (eventData.annuity_sales || 0)
+      const manualAnnuity = getManualValue(entry.annuity_sales, eventData.annuity_sales || 0)
+      return sum + manualAnnuity + (eventData.annuity_sales || 0)
     }, 0)
     const totalAUM = yearEntries.reduce((sum, entry) => {
       const eventData = eventDataForAllMonths[entry.month_year] || {}
-      return sum + entry.aum_sales + (eventData.aum_sales || 0)
+      const manualAUM = getManualValue(entry.aum_sales, eventData.aum_sales || 0)
+      return sum + manualAUM + (eventData.aum_sales || 0)
     }, 0)
     const totalLife = yearEntries.reduce((sum, entry) => {
       const eventData = eventDataForAllMonths[entry.month_year] || {}
-      return sum + entry.life_sales + (eventData.life_sales || 0)
+      const manualLife = getManualValue(entry.life_sales, eventData.life_sales || 0)
+      return sum + manualLife + (eventData.life_sales || 0)
     }, 0)
     const totalSales = totalAnnuity + totalAUM + totalLife
     
@@ -610,12 +642,20 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       const eventAUM = eventData.aum_sales || 0
       const eventLife = eventData.life_sales || 0
       
-      const totalSales = (entry.annuity_sales + entry.aum_sales + entry.life_sales) + (eventAnnuity + eventAUM + eventLife)
+      // Calculate true manual values to prevent double-counting
+      const manualAnnuity = getManualValue(entry.annuity_sales, eventAnnuity)
+      const manualAUM = getManualValue(entry.aum_sales, eventAUM)
+      const manualLife = getManualValue(entry.life_sales, eventLife)
+      
+      const totalSales = (manualAnnuity + manualAUM + manualLife) + (eventAnnuity + eventAUM + eventLife)
       const cumulativeSales = yearEntries
         .slice(0, index + 1)
         .reduce((sum, e) => {
           const eData = eventDataForAllMonths[e.month_year] || {}
-          return sum + e.annuity_sales + e.aum_sales + e.life_sales + (eData.annuity_sales || 0) + (eData.aum_sales || 0) + (eData.life_sales || 0)
+          const mAnnuity = getManualValue(e.annuity_sales, eData.annuity_sales || 0)
+          const mAUM = getManualValue(e.aum_sales, eData.aum_sales || 0)
+          const mLife = getManualValue(e.life_sales, eData.life_sales || 0)
+          return sum + mAnnuity + mAUM + mLife + (eData.annuity_sales || 0) + (eData.aum_sales || 0) + (eData.life_sales || 0)
         }, 0)
       
       return {
@@ -634,9 +674,12 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
   const monthlyProgressData = prepareMonthlyProgressData()
 
   // Get selected month data for comparison
-  const selectedMonthData = selectedMonthForComparison 
-    ? monthlyEntries.find(entry => entry.month_year === selectedMonthForComparison)
-    : null
+  // Memoize selectedMonthData to prevent unnecessary re-renders
+  const selectedMonthData = useMemo(() => {
+    return selectedMonthForComparison 
+      ? monthlyEntries.find(entry => entry.month_year === selectedMonthForComparison)
+      : null
+  }, [selectedMonthForComparison, monthlyEntries])
 
   // Fetch event data for all months when entries or user changes
   useEffect(() => {
@@ -688,12 +731,45 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     }
   }, [selectedMonthData, eventDataForAllMonths])
 
+  // Helper function to calculate true manual value (monthly entry - event data)
+  // This prevents double-counting when monthly entries contain event data
+  const getManualValue = (monthlyValue: number, eventValue: number): number => {
+    // If monthly entry matches event data (within 0.01 tolerance for floating point), treat as 0 manual
+    // Otherwise, monthly entry is the total (manual + any previously stored event data)
+    // We subtract event data to get the true manual value, clamped to 0
+    const difference = monthlyValue - eventValue
+    return Math.max(0, difference)
+  }
+
+  // Calculate true manual values for the selected month
+  const manualValues = useMemo(() => {
+    if (!selectedMonthData || !eventDataForMonth) {
+      return {
+        new_clients: selectedMonthData?.new_clients || 0,
+        new_appointments: selectedMonthData?.new_appointments || 0,
+        annuity_sales: selectedMonthData?.annuity_sales || 0,
+        aum_sales: selectedMonthData?.aum_sales || 0,
+        life_sales: selectedMonthData?.life_sales || 0,
+        marketing_expenses: selectedMonthData?.marketing_expenses || 0,
+      }
+    }
+    return {
+      new_clients: getManualValue(selectedMonthData.new_clients, eventDataForMonth.new_clients || 0),
+      new_appointments: getManualValue(selectedMonthData.new_appointments, eventDataForMonth.appointments_booked || 0),
+      annuity_sales: getManualValue(selectedMonthData.annuity_sales, eventDataForMonth.annuity_sales || 0),
+      aum_sales: getManualValue(selectedMonthData.aum_sales, eventDataForMonth.aum_sales || 0),
+      life_sales: getManualValue(selectedMonthData.life_sales, eventDataForMonth.life_sales || 0),
+      marketing_expenses: getManualValue(selectedMonthData.marketing_expenses, eventDataForMonth.marketing_expenses || 0),
+    }
+  }, [selectedMonthData, eventDataForMonth])
+
   // Debug logging
   console.log('Monthly entries:', monthlyEntries)
   console.log('Goal comparison data:', goalComparisonData)
   console.log('Goal progress data:', goalProgressData)
   console.log('Monthly progress data:', monthlyProgressData)
   console.log('Event data for month:', eventDataForMonth)
+  console.log('Manual values:', manualValues)
 
   return (
     <div className="space-y-6">
@@ -1108,24 +1184,24 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
               <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                 <div className="text-sm font-medium text-m8bs-muted">New Clients</div>
                 <div className="text-2xl font-bold text-white">
-                  {(selectedMonthData.new_clients + (eventDataForMonth?.new_clients || 0)).toLocaleString()}
+                  {(manualValues.new_clients + (eventDataForMonth?.new_clients || 0)).toLocaleString()}
                 </div>
                 <div className="text-xs text-m8bs-muted">Vs Goal: {goals.newClientsGoal.toLocaleString()}</div>
-                {eventDataForMonth && eventDataForMonth.new_clients > 0 && (
+                {(manualValues.new_clients > 0 || (eventDataForMonth && eventDataForMonth.new_clients > 0)) && (
                   <div className="text-xs text-blue-400 mt-1">
-                    ({selectedMonthData.new_clients} manual + {eventDataForMonth.new_clients} from events)
+                    ({manualValues.new_clients} manual + {(eventDataForMonth?.new_clients || 0)} from events)
                   </div>
                 )}
               </div>
               <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                 <div className="text-sm font-medium text-m8bs-muted">Appointments Booked</div>
                 <div className="text-2xl font-bold text-white">
-                  {(selectedMonthData.new_appointments + (eventDataForMonth?.appointments_booked || 0)).toLocaleString()}
+                  {(manualValues.new_appointments + (eventDataForMonth?.appointments_booked || 0)).toLocaleString()}
                 </div>
                 <div className="text-xs text-m8bs-muted">Vs Goal: {goals.newAppointmentsGoal.toLocaleString()}</div>
-                {eventDataForMonth && eventDataForMonth.appointments_booked > 0 && (
+                {(manualValues.new_appointments > 0 || (eventDataForMonth && eventDataForMonth.appointments_booked > 0)) && (
                   <div className="text-xs text-blue-400 mt-1">
-                    ({selectedMonthData.new_appointments} manual + {eventDataForMonth.appointments_booked} from events)
+                    ({manualValues.new_appointments} manual + {(eventDataForMonth?.appointments_booked || 0)} from events)
                   </div>
                 )}
               </div>
@@ -1138,16 +1214,16 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                 <div className="text-sm font-medium text-m8bs-muted">Total Sales</div>
                 <div className="text-2xl font-bold text-white">
                   {formatCurrency(
-                    (selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales) +
+                    (manualValues.annuity_sales + manualValues.aum_sales + manualValues.life_sales) +
                     ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))
                   )}
                 </div>
                 <div className="text-xs text-m8bs-muted">
                   Vs Monthly Goal: {formatCurrency(goals.businessGoal / 12)}
                 </div>
-                {eventDataForMonth && ((eventDataForMonth.annuity_sales || 0) + (eventDataForMonth.aum_sales || 0) + (eventDataForMonth.life_sales || 0)) > 0 && (
+                {((manualValues.annuity_sales + manualValues.aum_sales + manualValues.life_sales) > 0 || ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0)) > 0) && (
                   <div className="text-xs text-blue-400 mt-1">
-                    ({formatCurrency(selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales)} manual + {formatCurrency((eventDataForMonth.annuity_sales || 0) + (eventDataForMonth.aum_sales || 0) + (eventDataForMonth.life_sales || 0))} from events)
+                    ({formatCurrency(manualValues.annuity_sales + manualValues.aum_sales + manualValues.life_sales)} manual + {formatCurrency((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))} from events)
                   </div>
                 )}
               </div>
@@ -1158,42 +1234,42 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
               <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                 <div className="text-sm font-medium text-m8bs-muted">Annuity Sales</div>
                 <div className="text-xl font-semibold text-white">
-                  {formatCurrency(selectedMonthData.annuity_sales + (eventDataForMonth?.annuity_sales || 0))}
+                  {formatCurrency(manualValues.annuity_sales + (eventDataForMonth?.annuity_sales || 0))}
                 </div>
                 <div className="text-xs text-m8bs-muted">
                   Vs Goal: {formatCurrency(goals.annuityGoal / 12)}
                 </div>
-                {eventDataForMonth && eventDataForMonth.annuity_sales > 0 && (
+                {(manualValues.annuity_sales > 0 || (eventDataForMonth && eventDataForMonth.annuity_sales > 0)) && (
                   <div className="text-xs text-blue-400 mt-1">
-                    ({formatCurrency(selectedMonthData.annuity_sales)} manual + {formatCurrency(eventDataForMonth.annuity_sales)} from events)
+                    ({formatCurrency(manualValues.annuity_sales)} manual + {formatCurrency(eventDataForMonth?.annuity_sales || 0)} from events)
                   </div>
                 )}
               </div>
               <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                 <div className="text-sm font-medium text-m8bs-muted">AUM Sales</div>
                 <div className="text-xl font-semibold text-white">
-                  {formatCurrency(selectedMonthData.aum_sales + (eventDataForMonth?.aum_sales || 0))}
+                  {formatCurrency(manualValues.aum_sales + (eventDataForMonth?.aum_sales || 0))}
                 </div>
                 <div className="text-xs text-m8bs-muted">
                   Vs Goal: {formatCurrency(goals.aumGoal / 12)}
                 </div>
-                {eventDataForMonth && eventDataForMonth.aum_sales > 0 && (
+                {(manualValues.aum_sales > 0 || (eventDataForMonth && eventDataForMonth.aum_sales > 0)) && (
                   <div className="text-xs text-blue-400 mt-1">
-                    ({formatCurrency(selectedMonthData.aum_sales)} manual + {formatCurrency(eventDataForMonth.aum_sales)} from events)
+                    ({formatCurrency(manualValues.aum_sales)} manual + {formatCurrency(eventDataForMonth?.aum_sales || 0)} from events)
                   </div>
                 )}
               </div>
               <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                 <div className="text-sm font-medium text-m8bs-muted">Life Sales</div>
                 <div className="text-xl font-semibold text-white">
-                  {formatCurrency(selectedMonthData.life_sales + (eventDataForMonth?.life_sales || 0))}
+                  {formatCurrency(manualValues.life_sales + (eventDataForMonth?.life_sales || 0))}
                 </div>
                 <div className="text-xs text-m8bs-muted">
                   Vs Goal: {formatCurrency(goals.lifeTargetGoal / 12)}
                 </div>
-                {eventDataForMonth && eventDataForMonth.life_sales > 0 && (
+                {(manualValues.life_sales > 0 || (eventDataForMonth && eventDataForMonth.life_sales > 0)) && (
                   <div className="text-xs text-blue-400 mt-1">
-                    ({formatCurrency(selectedMonthData.life_sales)} manual + {formatCurrency(eventDataForMonth.life_sales)} from events)
+                    ({formatCurrency(manualValues.life_sales)} manual + {formatCurrency(eventDataForMonth?.life_sales || 0)} from events)
                   </div>
                 )}
               </div>
@@ -1204,11 +1280,11 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
               <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                 <div className="text-sm font-medium text-m8bs-muted">Marketing Expenses</div>
                 <div className="text-xl font-semibold text-white">
-                  {formatCurrency(selectedMonthData.marketing_expenses + (eventDataForMonth?.marketing_expenses || 0))}
+                  {formatCurrency(manualValues.marketing_expenses + (eventDataForMonth?.marketing_expenses || 0))}
                 </div>
-                {eventDataForMonth && eventDataForMonth.marketing_expenses > 0 && (
+                {(manualValues.marketing_expenses > 0 || (eventDataForMonth && eventDataForMonth.marketing_expenses > 0)) && (
                   <div className="text-xs text-blue-400 mt-1">
-                    ({formatCurrency(selectedMonthData.marketing_expenses)} manual + {formatCurrency(eventDataForMonth.marketing_expenses)} from events)
+                    ({formatCurrency(manualValues.marketing_expenses)} manual + {formatCurrency(eventDataForMonth?.marketing_expenses || 0)} from events)
                   </div>
                 )}
               </div>
@@ -1216,7 +1292,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                 <div className="text-sm font-medium text-m8bs-muted">Marketing ROI</div>
                 <div className="text-xl font-semibold text-white">
                   {(() => {
-                    const totalExpenses = selectedMonthData.marketing_expenses + (eventDataForMonth?.marketing_expenses || 0)
+                    const totalExpenses = manualValues.marketing_expenses + (eventDataForMonth?.marketing_expenses || 0)
                     const totalIncome = calculateCommissionIncome(selectedMonthData) + 
                       ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))
                     return totalExpenses > 0 
@@ -1262,14 +1338,14 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   <div className="text-sm font-medium text-m8bs-muted">Sales Goal Progress</div>
                   <div className="text-2xl font-bold mt-2 text-white">
                     {(() => {
-                      const totalSales = (selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales) +
+                      const totalSales = (manualValues.annuity_sales + manualValues.aum_sales + manualValues.life_sales) +
                         ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))
                       return ((totalSales / (goals.businessGoal / 12)) * 100).toFixed(0)
                     })()}%
                   </div>
                   <div className="text-xs text-m8bs-muted mt-1">
                     {(() => {
-                      const totalSales = (selectedMonthData.annuity_sales + selectedMonthData.aum_sales + selectedMonthData.life_sales) +
+                      const totalSales = (manualValues.annuity_sales + manualValues.aum_sales + manualValues.life_sales) +
                         ((eventDataForMonth?.annuity_sales || 0) + (eventDataForMonth?.aum_sales || 0) + (eventDataForMonth?.life_sales || 0))
                       return `${formatCurrency(totalSales)} Of ${formatCurrency(goals.businessGoal / 12)}`
                     })()}
@@ -1279,13 +1355,13 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   <div className="text-sm font-medium text-m8bs-muted">Client Acquisition Progress</div>
                   <div className="text-2xl font-bold mt-2 text-white">
                     {(() => {
-                      const totalClients = selectedMonthData.new_clients + (eventDataForMonth?.new_clients || 0)
+                      const totalClients = manualValues.new_clients + (eventDataForMonth?.new_clients || 0)
                       return ((totalClients / goals.newClientsGoal) * 100).toFixed(0)
                     })()}%
                   </div>
                   <div className="text-xs text-m8bs-muted mt-1">
                     {(() => {
-                      const totalClients = selectedMonthData.new_clients + (eventDataForMonth?.new_clients || 0)
+                      const totalClients = manualValues.new_clients + (eventDataForMonth?.new_clients || 0)
                       return `${totalClients.toLocaleString()} Of ${goals.newClientsGoal.toLocaleString()} Clients`
                     })()}
                   </div>
@@ -1852,10 +1928,20 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     const eventLife = eventData.life_sales || 0
                     const eventExpenses = eventData.marketing_expenses || 0
                     const eventClients = eventData.new_clients || 0
+                    const eventAppointments = eventData.appointments_booked || 0
                     
-                    const totalSales = (entry.annuity_sales + entry.aum_sales + entry.life_sales) + (eventAnnuity + eventAUM + eventLife)
-                    const totalClients = entry.new_clients + eventClients
-                    const totalExpenses = entry.marketing_expenses + eventExpenses
+                    // Calculate true manual values to prevent double-counting
+                    const manualAnnuity = getManualValue(entry.annuity_sales, eventAnnuity)
+                    const manualAUM = getManualValue(entry.aum_sales, eventAUM)
+                    const manualLife = getManualValue(entry.life_sales, eventLife)
+                    const manualExpenses = getManualValue(entry.marketing_expenses, eventExpenses)
+                    const manualClients = getManualValue(entry.new_clients, eventClients)
+                    const manualAppointments = getManualValue(entry.new_appointments, eventAppointments)
+                    
+                    // Total = manual + event
+                    const totalSales = (manualAnnuity + manualAUM + manualLife) + (eventAnnuity + eventAUM + eventLife)
+                    const totalClients = manualClients + eventClients
+                    const totalExpenses = manualExpenses + eventExpenses
                     const commissionIncome = calculateCommissionIncome(entry) + eventAnnuity + eventAUM + eventLife
                     const roi = totalExpenses > 0 
                       ? ((commissionIncome - totalExpenses) / totalExpenses) * 100 
@@ -1916,7 +2002,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                         </TableCell>
                         <TableCell className="text-white">
                           <div className="flex items-center gap-2">
-                            {entry.new_appointments + (eventData.appointments_booked || 0)}
+                            {manualAppointments + (eventData.appointments_booked || 0)}
                             {eventData.appointments_booked > 0 && (
                               <span className="text-xs text-blue-400">
                                 (+{eventData.appointments_booked})
@@ -1992,7 +2078,8 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                         .filter(entry => entry.month_year.startsWith(currentYear))
                         .reduce((sum, entry) => {
                           const eventData = eventDataForAllMonths[entry.month_year] || {}
-                          return sum + entry.annuity_sales + (eventData.annuity_sales || 0)
+                          const manualAnnuity = getManualValue(entry.annuity_sales, eventData.annuity_sales || 0)
+                          return sum + manualAnnuity + (eventData.annuity_sales || 0)
                         }, 0))}
                     </div>
                     <div className="text-sm text-m8bs-muted mt-1">Total Annuity Sales (YTD)</div>
@@ -2006,7 +2093,8 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                         .filter(entry => entry.month_year.startsWith(currentYear))
                         .reduce((sum, entry) => {
                           const eventData = eventDataForAllMonths[entry.month_year] || {}
-                          return sum + entry.aum_sales + (eventData.aum_sales || 0)
+                          const manualAUM = getManualValue(entry.aum_sales, eventData.aum_sales || 0)
+                          return sum + manualAUM + (eventData.aum_sales || 0)
                         }, 0))}
                     </div>
                     <div className="text-sm text-m8bs-muted mt-1">Total AUM Sales (YTD)</div>
@@ -2020,7 +2108,8 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                         .filter(entry => entry.month_year.startsWith(currentYear))
                         .reduce((sum, entry) => {
                           const eventData = eventDataForAllMonths[entry.month_year] || {}
-                          return sum + entry.new_clients + (eventData.new_clients || 0)
+                          const manualClients = getManualValue(entry.new_clients, eventData.new_clients || 0)
+                          return sum + manualClients + (eventData.new_clients || 0)
                         }, 0)}
                     </div>
                     <div className="text-sm text-m8bs-muted mt-1">Total New Clients (YTD)</div>

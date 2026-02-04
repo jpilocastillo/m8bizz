@@ -207,20 +207,34 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   // Update filtered data when filters change
   useEffect(() => {
     if (analyticsData) {
+      const totalAttendees = filteredEvents.reduce((sum, event) => sum + (event.attendees || 0), 0)
+      const totalRevenue = filteredEvents.reduce((sum, event) => sum + (event.revenue || 0), 0)
+      const totalExpenses = filteredEvents.reduce((sum, event) => sum + (event.expenses || 0), 0)
+      const totalClients = filteredEvents.reduce((sum, event) => sum + (event.clients || 0), 0)
+      const totalRegistrants = filteredEvents.reduce((sum, event) => sum + (event.registrants || 0), 0)
+      
       const updatedData = {
         ...analyticsData,
         events: filteredEvents,
         summary: {
           ...analyticsData.summary,
           totalEvents: filteredEvents.length,
-          totalAttendees: filteredEvents.reduce((sum, event) => sum + (event.attendees || 0), 0),
-          totalRevenue: filteredEvents.reduce((sum, event) => sum + (event.revenue || 0), 0),
-          totalExpenses: filteredEvents.reduce((sum, event) => sum + (event.expenses || 0), 0),
-          totalProfit: filteredEvents.reduce((sum, event) => sum + (event.profit || 0), 0),
-          totalClients: filteredEvents.reduce((sum, event) => sum + (event.clients || 0), 0),
+          totalAttendees,
+          avgAttendees: filteredEvents.length > 0 ? Math.round(totalAttendees / filteredEvents.length) : 0,
+          totalRevenue,
+          totalExpenses,
+          totalProfit: totalRevenue - totalExpenses,
+          overallROI: totalExpenses > 0 
+            ? Math.round(((totalRevenue - totalExpenses) / totalExpenses) * 100) 
+            : totalRevenue > 0 
+              ? 9999 // Show high ROI when there's revenue but no expenses
+              : 0,
+          totalClients,
+          overallConversionRate: totalAttendees > 0 ? (totalClients / totalAttendees) * 100 : 0,
           totalAppointmentsSet: filteredEvents.reduce((sum, event) => sum + (event.appointmentsSet || 0), 0),
           totalAppointmentsMade: filteredEvents.reduce((sum, event) => sum + (event.appointmentsMade || 0), 0),
-          totalRegistrants: filteredEvents.reduce((sum, event) => sum + (event.registrants || 0), 0),
+          totalRegistrants,
+          totalPlateLickers: filteredEvents.reduce((sum, event) => sum + (event.plateLickers || 0), 0),
           totalFirstAppointmentNoShows: filteredEvents.reduce((sum, event) => sum + (event.firstAppointmentNoShows || 0), 0),
           totalNotQualified: filteredEvents.reduce((sum, event) => sum + (event.notQualified || 0), 0),
         }

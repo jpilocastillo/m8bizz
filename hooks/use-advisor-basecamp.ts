@@ -51,7 +51,8 @@ export function useAdvisorBasecamp(user: User | null, year: number = new Date().
     // Reset the ref so it will reload even if data was previously loaded
     hasLoadedRef.current = false
     await loadDataInternal(user, year)
-  }, [user, year, loadDataInternal])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, year]) // Only depend on user.id and year - loadDataInternal is stable
 
   // Load data only on initial mount or when user/year changes
   useEffect(() => {
@@ -70,7 +71,8 @@ export function useAdvisorBasecamp(user: User | null, year: number = new Date().
       // Data already loaded for this user and year, just set loading to false
       setLoading(false)
     }
-  }, [user?.id, year, loadDataInternal]) // Depend on user.id, year, and the stable loadDataInternal
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, year]) // Only depend on user.id and year - loadDataInternal is stable
 
   const updateBusinessGoals = async (goals: BusinessGoals) => {
     if (!user) return false

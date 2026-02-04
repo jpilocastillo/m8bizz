@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -45,11 +45,11 @@ export function AnalyticsFilters({ onFiltersChange, events }: AnalyticsFiltersPr
 
   const [isOpen, setIsOpen] = useState(false)
 
-  // Extract unique values for filter options
-  const uniqueLocations = [...new Set(events.map(event => event.location).filter(Boolean))]
-  const uniqueTypes = [...new Set(events.map(event => event.type).filter(Boolean))]
-  const uniqueTopics = [...new Set(events.map(event => event.topic).filter(Boolean))]
-  const uniqueTimeSlots = [...new Set(events.map(event => event.time).filter(Boolean))]
+  // Extract unique values for filter options - memoized to prevent re-renders
+  const uniqueLocations = useMemo(() => [...new Set(events.map(event => event.location).filter(Boolean))], [events])
+  const uniqueTypes = useMemo(() => [...new Set(events.map(event => event.type).filter(Boolean))], [events])
+  const uniqueTopics = useMemo(() => [...new Set(events.map(event => event.topic).filter(Boolean))], [events])
+  const uniqueTimeSlots = useMemo(() => [...new Set(events.map(event => event.time).filter(Boolean))], [events])
 
   const updateFilters = (newFilters: Partial<FilterState>) => {
     const updatedFilters = { ...filters, ...newFilters }

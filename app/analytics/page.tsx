@@ -97,7 +97,11 @@ export default async function AnalyticsPage() {
           return sum + firstAttended + secondAttended
         }, 0),
         totalRegistrants: events.reduce((sum, event) => sum + (event.attendance?.registrant_responses || 0), 0),
-        totalPlateLickers: events.reduce((sum, event) => sum + (event.attendance?.plate_lickers || 0), 0),
+        totalPlateLickers: events.reduce((sum, event) => {
+          // Use the value directly from the form - no validation or transformation
+          const plateLickers = event.attendance?.plate_lickers
+          return sum + (plateLickers != null && typeof plateLickers === 'number' ? plateLickers : 0)
+        }, 0),
         totalFirstAppointmentNoShows: events.reduce((sum, event) => sum + (event.event_appointments?.first_appointment_no_shows || 0), 0),
         totalNotQualified: events.reduce((sum, event) => sum + (event.event_appointments?.not_qualified || 0), 0),
       },
@@ -133,6 +137,7 @@ export default async function AnalyticsPage() {
           clients: event.attendance?.clients_from_event || 0,
           registrants: event.attendance?.registrant_responses || 0,
           confirmations: event.attendance?.confirmations || 0,
+          plateLickers: event.attendance?.plate_lickers != null && typeof event.attendance?.plate_lickers === 'number' ? event.attendance.plate_lickers : 0,
           appointmentsSet: (() => {
             const setAtEvent = event.event_appointments?.set_at_event || 0
             const setAfterEvent = event.event_appointments?.set_after_event || 0

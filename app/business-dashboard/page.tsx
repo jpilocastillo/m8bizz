@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardMetrics } from "@/components/business-dashboard/dashboard-metrics"
 import { GoalProgress } from "@/components/business-dashboard/goal-progress"
@@ -77,12 +77,14 @@ export default function BusinessDashboard() {
     }
   }, [selectedYear, user])
   
-  // Filter monthly data entries by selected year
-  const filteredMonthlyData = data.monthlyDataEntries?.filter(entry => 
-    entry.month_year.startsWith(selectedYear.toString())
-  ) || []
+  // Filter monthly data entries by selected year - memoized to prevent re-renders
+  const filteredMonthlyData = useMemo(() => {
+    return data.monthlyDataEntries?.filter(entry => 
+      entry.month_year.startsWith(selectedYear.toString())
+    ) || []
+  }, [data.monthlyDataEntries, selectedYear])
 
-  // Debug logging to track data changes
+  // Debug logging to track data changes - only log when specific properties change
   useEffect(() => {
     console.log('BusinessDashboard data updated:', data)
     console.log('Data completeness check:', {
@@ -94,7 +96,16 @@ export default function BusinessDashboard() {
       financialBook: !!data.financialBook,
       isComplete: !!(data.businessGoals && data.currentValues && data.clientMetrics && data.campaigns && data.campaigns.length > 0 && data.commissionRates && data.financialBook)
     })
-  }, [data])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    data.businessGoals?.id,
+    data.currentValues?.id,
+    data.clientMetrics?.id,
+    data.campaigns?.length,
+    data.commissionRates?.id,
+    data.financialBook?.id,
+    data.monthlyDataEntries?.length
+  ])
 
   useEffect(() => {
     setMounted(true)

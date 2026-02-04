@@ -148,7 +148,8 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       }
     }
     loadYears()
-  }, [userId, initialData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]) // Only depend on userId - initialData is only used for initial setup
 
   // Filter events by year and reload when year changes
   useEffect(() => {
