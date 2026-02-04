@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, useCallback } from "react"
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -106,8 +106,142 @@ export function ClientClosedList({
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set())
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const hasRestoredScroll = useRef(false)
 
   const currentUserId = userId || user?.id || ""
+
+  // Create a unique storage key based on component props
+  const storageKey = useMemo(() => {
+    const keyParts = ["client-closed-list"]
+    if (eventId) keyParts.push(`event-${eventId}`)
+    if (userId) keyParts.push(`user-${userId}`)
+    if (year) keyParts.push(`year-${year}`)
+    if (showYTD) keyParts.push("ytd")
+    return keyParts.join("-")
+  }, [eventId, userId, year, showYTD])
+
+  // Restore state from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    try {
+      const savedState = localStorage.getItem(storageKey)
+      if (savedState) {
+        const parsed = JSON.parse(savedState)
+        
+        if (parsed.searchQuery !== undefined) setSearchQuery(parsed.searchQuery)
+        if (parsed.productFilter !== undefined) setProductFilter(parsed.productFilter)
+        if (parsed.sortField !== undefined) setSortField(parsed.sortField)
+        if (parsed.sortDirection !== undefined) setSortDirection(parsed.sortDirection)
+        if (parsed.expandedClients !== undefined && Array.isArray(parsed.expandedClients)) {
+          setExpandedClients(new Set(parsed.expandedClients))
+        }
+        if (parsed.showAnalytics !== undefined) setShowAnalytics(parsed.showAnalytics)
+      }
+    } catch (error) {
+      console.error("Error restoring state from localStorage:", error)
+    }
+  }, [storageKey])
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    try {
+      const stateToSave = {
+        searchQuery,
+        productFilter,
+        sortField,
+        sortDirection,
+        expandedClients: Array.from(expandedClients),
+        showAnalytics,
+      }
+      localStorage.setItem(storageKey, JSON.stringify(stateToSave))
+    } catch (error) {
+      console.error("Error saving state to localStorage:", error)
+    }
+  }, [searchQuery, productFilter, sortField, sortDirection, expandedClients, showAnalytics, storageKey])
+
+
+  // Save scroll position periodically and on scroll
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const saveScrollPosition = () => {
+      try {
+        // The main element is the scrollable container based on the layout
+        const mainElement = document.querySelector("main")
+        if (mainElement) {
+          const scrollPosition = mainElement.scrollTop
+          localStorage.setItem(`${storageKey}-scroll`, String(scrollPosition))
+        }
+      } catch (error) {
+        console.error("Error saving scroll position:", error)
+      }
+    }
+
+    const mainElement = document.querySelector("main")
+    if (!mainElement) return
+
+    // Save scroll position on scroll (throttled)
+    let scrollTimeout: NodeJS.Timeout | null = null
+    const handleScroll = () => {
+      if (scrollTimeout) clearTimeout(scrollTimeout)
+      scrollTimeout = setTimeout(saveScrollPosition, 150)
+    }
+
+    mainElement.addEventListener("scroll", handleScroll, { passive: true })
+
+    return () => {
+      mainElement.removeEventListener("scroll", handleScroll)
+      if (scrollTimeout) clearTimeout(scrollTimeout)
+      // Save one final time on cleanup
+      saveScrollPosition()
+    }
+  }, [storageKey])
+
+  // Reset scroll restoration flag when storage key changes
+  useEffect(() => {
+    hasRestoredScroll.current = false
+  }, [storageKey])
+
+  // Restore scroll position after content loads
+  useEffect(() => {
+    if (typeof window === "undefined" || hasRestoredScroll.current || loading) return
+
+    const restoreScroll = () => {
+      try {
+        const mainElement = document.querySelector("main")
+        if (mainElement) {
+          const savedScroll = localStorage.getItem(`${storageKey}-scroll`)
+          if (savedScroll) {
+            const scrollPosition = Number.parseInt(savedScroll, 10)
+            if (!isNaN(scrollPosition) && scrollPosition > 0) {
+              // Use requestAnimationFrame to ensure DOM is ready
+              requestAnimationFrame(() => {
+                const mainEl = document.querySelector("main")
+                if (mainEl) {
+                  mainEl.scrollTop = scrollPosition
+                  hasRestoredScroll.current = true
+                }
+              })
+            } else {
+              hasRestoredScroll.current = true
+            }
+          } else {
+            hasRestoredScroll.current = true
+          }
+        }
+      } catch (error) {
+        console.error("Error restoring scroll position:", error)
+        hasRestoredScroll.current = true
+      }
+    }
+
+    // Wait for content to render and then restore scroll
+    const timeoutId = setTimeout(restoreScroll, 200)
+    return () => clearTimeout(timeoutId)
+  }, [loading, storageKey])
 
   const loadClients = useCallback(async () => {
     if (!currentUserId) return

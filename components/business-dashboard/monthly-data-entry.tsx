@@ -69,6 +69,44 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
   const [editingEntry, setEditingEntry] = useState<MonthlyDataEntry | null>(null)
   const [selectedMonthForComparison, setSelectedMonthForComparison] = useState<string>("")
   const currentYear = selectedYear || new Date().getFullYear().toString()
+
+  // Create a unique storage key based on user and year
+  const storageKey = useMemo(() => {
+    return `month-comparison-${user?.id || 'anonymous'}-${year}`
+  }, [user?.id, year])
+
+  // Restore selected month from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined" || !user?.id) return
+
+    try {
+      const savedMonth = localStorage.getItem(storageKey)
+      if (savedMonth) {
+        // Validate that the saved month is still valid for the current year
+        if (savedMonth.startsWith(year.toString())) {
+          setSelectedMonthForComparison(savedMonth)
+        }
+      }
+    } catch (error) {
+      console.error("Error restoring selected month from localStorage:", error)
+    }
+  }, [storageKey, year, user?.id])
+
+  // Save selected month to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window === "undefined" || !user?.id) return
+
+    try {
+      if (selectedMonthForComparison) {
+        localStorage.setItem(storageKey, selectedMonthForComparison)
+      } else {
+        // Remove from storage if cleared
+        localStorage.removeItem(storageKey)
+      }
+    } catch (error) {
+      console.error("Error saving selected month to localStorage:", error)
+    }
+  }, [selectedMonthForComparison, storageKey, user?.id])
   const [autoPopulatedData, setAutoPopulatedData] = useState<any>(null)
   const [isLoadingEventData, setIsLoadingEventData] = useState(false)
   const [clientNames, setClientNames] = useState<string[]>([])
