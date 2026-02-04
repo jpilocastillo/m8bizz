@@ -123,13 +123,24 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       console.log("Generated month_year:", month_year)
 
       // Parse and validate numeric values
-      const new_clients = parseInt(values.new_clients)
-      const new_appointments = parseInt(values.new_appointments)
-      const new_leads = parseInt(values.new_leads)
-      const annuity_sales = parseFloat(parseCurrency(values.annuity_sales))
-      const aum_sales = parseFloat(parseCurrency(values.aum_sales))
-      const life_sales = parseFloat(parseCurrency(values.life_sales))
-      const marketing_expenses = parseFloat(parseCurrency(values.marketing_expenses))
+      // Handle empty strings and ensure proper parsing
+      const new_clients = parseInt(values.new_clients || "0") || 0
+      const new_appointments = parseInt(values.new_appointments || "0") || 0
+      const new_leads = parseInt(values.new_leads || "0") || 0
+      const annuity_sales = parseFloat(parseCurrency(values.annuity_sales || "0")) || 0
+      const aum_sales = parseFloat(parseCurrency(values.aum_sales || "0")) || 0
+      const life_sales = parseFloat(parseCurrency(values.life_sales || "0")) || 0
+      const marketing_expenses = parseFloat(parseCurrency(values.marketing_expenses || "0")) || 0
+      
+      console.log("Parsed values:", {
+        new_clients,
+        new_appointments,
+        new_leads,
+        annuity_sales,
+        aum_sales,
+        life_sales,
+        marketing_expenses
+      })
 
       // Validate that all numeric values are valid numbers
       if (isNaN(new_clients) || new_clients < 0) {
@@ -340,8 +351,22 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       const existing = monthlyEntries.find(e => e.month_year === month_year)
       
       if (!existing && eventData) {
-        // Auto-populate form fields
+        // Auto-populate form fields with event data
+        // Log for debugging
+        console.log('Auto-populating form with event data:', {
+          month_year,
+          eventData,
+          appointments_booked: eventData.appointments_booked || 0,
+          marketing_expenses: eventData.marketing_expenses || 0,
+          annuity_sales: eventData.annuity_sales || 0,
+          aum_sales: eventData.aum_sales || 0,
+          life_sales: eventData.life_sales || 0,
+          new_clients: eventData.new_clients || 0,
+          client_names: eventData.client_names || []
+        })
+        
         const currentValues = form.getValues()
+        // Set numeric values as strings (form will format currency fields for display)
         form.setValue('new_appointments', (eventData.appointments_booked || 0).toString(), { shouldValidate: false })
         form.setValue('marketing_expenses', (eventData.marketing_expenses || 0).toString(), { shouldValidate: false })
         form.setValue('annuity_sales', (eventData.annuity_sales || 0).toString(), { shouldValidate: false })
@@ -378,10 +403,12 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     const existing = monthlyEntries.find(e => e.month_year === month_year)
     
     if (existing) {
+      console.log('Loading existing entry for editing:', { month_year, existing })
       setEditingEntry(existing)
       setAutoPopulatedData(null)
       setClientNames([])
-      // Populate form with existing data
+      // Populate form with existing manual data (not event data)
+      // The existing entry should only contain manual data after our fix
       form.reset({
         month: month,
         year: year,
@@ -394,6 +421,8 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
         marketing_expenses: existing.marketing_expenses.toString(),
         notes: existing.notes || "",
       })
+      // Also load event data to show in the "From Events" badges
+      await loadEventData(month, year)
     } else {
       setEditingEntry(null)
       // Load event data for auto-population
@@ -416,6 +445,16 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     if (progress >= 100) return <TrendingUp className="h-4 w-4 text-green-500" />
     if (progress >= 80) return <TrendingUp className="h-4 w-4 text-yellow-500" />
     return <TrendingDown className="h-4 w-4 text-red-500" />
+  }
+
+  // Helper function to calculate true manual value (monthly entry - event data)
+  // This prevents double-counting when monthly entries contain event data
+  const getManualValue = (monthlyValue: number, eventValue: number): number => {
+    // If monthly entry matches event data (within 0.01 tolerance for floating point), treat as 0 manual
+    // Otherwise, monthly entry is the total (manual + any previously stored event data)
+    // We subtract event data to get the true manual value, clamped to 0
+    const difference = monthlyValue - eventValue
+    return Math.max(0, difference)
   }
 
   // Calculate year-to-date totals from monthly entries (including event data)
@@ -548,8 +587,9 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     return annuityCommission + aumCommission + lifeCommission
   }
 
-  const yearToDate = calculateYearToDate()
-  const goals = getGoals()
+  // Memoize yearToDate calculation to prevent issues with initialization order
+  const yearToDate = useMemo(() => calculateYearToDate(), [monthlyEntries, eventDataForAllMonths, currentYear])
+  const goals = useMemo(() => getGoals(), [data.businessGoals, data.clientMetrics])
 
   // Prepare chart data for goal comparison (including event data)
   const prepareGoalComparisonData = () => {
@@ -669,9 +709,10 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
     })
   }
 
-  const goalComparisonData = prepareGoalComparisonData()
-  const goalProgressData = prepareGoalProgressData()
-  const monthlyProgressData = prepareMonthlyProgressData()
+  // Memoize data preparation functions to prevent initialization order issues
+  const goalComparisonData = useMemo(() => prepareGoalComparisonData(), [monthlyEntries, eventDataForAllMonths, currentYear])
+  const goalProgressData = useMemo(() => prepareGoalProgressData(), [monthlyEntries, eventDataForAllMonths, currentYear, goals])
+  const monthlyProgressData = useMemo(() => prepareMonthlyProgressData(), [monthlyEntries, eventDataForAllMonths, currentYear])
 
   // Get selected month data for comparison
   // Memoize selectedMonthData to prevent unnecessary re-renders
@@ -730,16 +771,6 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       setEventDataForMonth(null)
     }
   }, [selectedMonthData, eventDataForAllMonths])
-
-  // Helper function to calculate true manual value (monthly entry - event data)
-  // This prevents double-counting when monthly entries contain event data
-  const getManualValue = (monthlyValue: number, eventValue: number): number => {
-    // If monthly entry matches event data (within 0.01 tolerance for floating point), treat as 0 manual
-    // Otherwise, monthly entry is the total (manual + any previously stored event data)
-    // We subtract event data to get the true manual value, clamped to 0
-    const difference = monthlyValue - eventValue
-    return Math.max(0, difference)
-  }
 
   // Calculate true manual values for the selected month
   const manualValues = useMemo(() => {
