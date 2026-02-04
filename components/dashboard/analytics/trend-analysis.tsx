@@ -24,7 +24,20 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
     const groupedData: { [key: string]: any[] } = {}
     
     events.forEach(event => {
-      const eventDate = new Date(event.date)
+      if (!event.date) return
+      
+      // Parse date properly - handle YYYY-MM-DD format
+      let eventDate: Date
+      if (typeof event.date === 'string' && event.date.includes('-')) {
+        const [year, month, day] = event.date.split('-').map(Number)
+        eventDate = new Date(year, month - 1, day) // month is 0-indexed
+      } else {
+        eventDate = new Date(event.date)
+      }
+      
+      // Validate date
+      if (isNaN(eventDate.getTime())) return
+      
       const monthKey = format(eventDate, "MMM yyyy")
       
       if (!groupedData[monthKey]) {
@@ -36,14 +49,72 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
     // Calculate metrics for each month
     return Object.entries(groupedData)
       .map(([month, monthEvents]) => {
-        const totalRevenue = monthEvents.reduce((sum, event) => sum + (event.revenue || 0), 0)
-        const totalAttendees = monthEvents.reduce((sum, event) => sum + (event.attendees || 0), 0)
-        const totalClients = monthEvents.reduce((sum, event) => sum + (event.clients || 0), 0)
-        const totalExpenses = monthEvents.reduce((sum, event) => sum + (event.expenses || 0), 0)
-        const roi = totalExpenses > 0 ? ((totalRevenue - totalExpenses) / totalExpenses) * 100 : 0
+        const totalRevenue = monthEvents.reduce((sum, event) => {
+          // Handle both flat revenue property and nested financial_production
+          if (event.revenue !== undefined) {
+            return sum + (Number(event.revenue) || 0)
+          }
+          // Fallback to calculating from financial_production if available
+          if (event.financial_production) {
+            const fp = event.financial_production
+            return sum + (
+              (Number(fp.aum_fees) || 0) +
+              (Number(fp.annuity_commission) || 0) +
+              (Number(fp.life_insurance_commission) || 0) +
+              (Number(fp.financial_planning) || 0)
+            )
+          }
+          return sum
+        }, 0)
+        
+        const totalAttendees = monthEvents.reduce((sum, event) => {
+          // Handle both flat attendees property and nested attendance
+          if (event.attendees !== undefined) {
+            return sum + (Number(event.attendees) || 0)
+          }
+          if (event.attendance?.attendees !== undefined) {
+            return sum + (Number(event.attendance.attendees) || 0)
+          }
+          return sum
+        }, 0)
+        
+        const totalClients = monthEvents.reduce((sum, event) => {
+          // Handle both flat clients property and nested attendance
+          if (event.clients !== undefined) {
+            return sum + (Number(event.clients) || 0)
+          }
+          if (event.attendance?.clients_from_event !== undefined) {
+            return sum + (Number(event.attendance.clients_from_event) || 0)
+          }
+          return sum
+        }, 0)
+        
+        const totalExpenses = monthEvents.reduce((sum, event) => {
+          // Handle both flat expenses property and nested marketing_expenses
+          if (event.expenses !== undefined) {
+            return sum + (Number(event.expenses) || 0)
+          }
+          if (event.marketing_expenses?.total_cost !== undefined) {
+            return sum + (Number(event.marketing_expenses.total_cost) || 0)
+          }
+          return sum
+        }, 0)
+        
+        // Calculate ROI: ((Revenue - Expenses) / Expenses) * 100
+        const roi = totalExpenses > 0 
+          ? Math.round(((totalRevenue - totalExpenses) / totalExpenses) * 100)
+          : totalRevenue > 0 
+            ? 9999 // High ROI when there's revenue but no expenses
+            : 0
 
         // Get the first event's date for proper sorting
-        const firstEventDate = new Date(monthEvents[0].date)
+        let firstEventDate: Date
+        if (typeof monthEvents[0].date === 'string' && monthEvents[0].date.includes('-')) {
+          const [year, month, day] = monthEvents[0].date.split('-').map(Number)
+          firstEventDate = new Date(year, month - 1, day)
+        } else {
+          firstEventDate = new Date(monthEvents[0].date)
+        }
 
         return {
           month,
@@ -69,13 +140,23 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
     const latest = processedData[processedData.length - 1]
     const previous = processedData[processedData.length - 2]
     
-    const latestValue = latest[metric]
-    const previousValue = previous[metric]
+    const latestValue = Number(latest[metric]) || 0
+    const previousValue = Number(previous[metric]) || 0
     
-    if (previousValue === 0) return { direction: "stable", percentage: 0, icon: Minus }
+    // Handle zero cases
+    if (previousValue === 0) {
+      if (latestValue > 0) {
+        return { direction: "up", percentage: 100, icon: TrendingUp }
+      }
+      return { direction: "stable", percentage: 0, icon: Minus }
+    }
     
+    // Calculate percentage change
     const percentage = ((latestValue - previousValue) / previousValue) * 100
-    const direction = percentage > 5 ? "up" : percentage < -5 ? "down" : "stable"
+    
+    // Use a threshold to determine direction (5% for most metrics, but handle ROI differently)
+    const threshold = metric === "roi" ? 10 : 5 // ROI can be more volatile
+    const direction = percentage > threshold ? "up" : percentage < -threshold ? "down" : "stable"
     const icon = direction === "up" ? TrendingUp : direction === "down" ? TrendingDown : Minus
     
     return { direction, percentage: Math.abs(percentage), icon }
