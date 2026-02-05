@@ -12,10 +12,10 @@ interface CompanySummaryProps {
   companySummary: CompanySummary
 }
 
-type SortOption = 'grade' | 'percentage' | 'name'
+type SortOption = 'grade'
 
 export function CompanySummary({ companySummary }: CompanySummaryProps) {
-  const [sortBy, setSortBy] = useState<SortOption>('percentage')
+  const [sortBy, setSortBy] = useState<SortOption>('grade')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -46,19 +46,9 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
   // Organize roles by grade tier
   const organizedRoles = useMemo(() => {
     const sorted = [...companySummary.roleScorecards].sort((a, b) => {
-      if (sortBy === 'percentage') {
-        return sortDirection === 'desc' 
-          ? b.averageGradePercentage - a.averageGradePercentage
-          : a.averageGradePercentage - b.averageGradePercentage
-      } else if (sortBy === 'grade') {
-        const aOrder = getGradeOrder(a.averageGrade)
-        const bOrder = getGradeOrder(b.averageGrade)
-        return sortDirection === 'desc' ? aOrder - bOrder : bOrder - aOrder
-      } else {
-        return sortDirection === 'desc'
-          ? b.roleName.localeCompare(a.roleName)
-          : a.roleName.localeCompare(b.roleName)
-      }
+      const aOrder = getGradeOrder(a.averageGrade)
+      const bOrder = getGradeOrder(b.averageGrade)
+      return sortDirection === 'desc' ? aOrder - bOrder : bOrder - aOrder
     })
 
     // Group by grade
@@ -148,26 +138,10 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleSort('percentage')}
-                    className={`h-6 px-2 text-xs ${sortBy === 'percentage' ? 'bg-m8bs-blue/20' : ''}`}
-                  >
-                    Perf{sortBy === 'percentage' && (sortDirection === 'desc' ? <ArrowDown className="h-2 w-2 ml-1" /> : <ArrowUp className="h-2 w-2 ml-1" />)}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
                     onClick={() => handleSort('grade')}
                     className={`h-6 px-2 text-xs ${sortBy === 'grade' ? 'bg-m8bs-blue/20' : ''}`}
                   >
                     Grade{sortBy === 'grade' && (sortDirection === 'desc' ? <ArrowDown className="h-2 w-2 ml-1" /> : <ArrowUp className="h-2 w-2 ml-1" />)}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('name')}
-                    className={`h-6 px-2 text-xs ${sortBy === 'name' ? 'bg-m8bs-blue/20' : ''}`}
-                  >
-                    Name{sortBy === 'name' && (sortDirection === 'desc' ? <ArrowDown className="h-2 w-2 ml-1" /> : <ArrowUp className="h-2 w-2 ml-1" />)}
                   </Button>
                 </div>
               </div>
