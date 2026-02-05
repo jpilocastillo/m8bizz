@@ -1357,6 +1357,11 @@ export class BehaviorScorecardService {
             : 0
           const averageGrade = calculateGrade(averageGradePercentage)
 
+          // Add to roleAverages for company summary calculation (only valid finite numbers)
+          if (isFinite(averageGradePercentage) && !isNaN(averageGradePercentage)) {
+            roleAverages.push(averageGradePercentage)
+          }
+
           const separatedScores = calculateSeparateScores(metricScores)
           roleScorecards.push({
             roleId: role.id,
@@ -1406,8 +1411,14 @@ export class BehaviorScorecardService {
           })
         }
 
-        const avgPercentage = Number(summary.average_grade_percentage) || 0
-        roleAverages.push(avgPercentage)
+        // Handle null/undefined values properly
+        const avgPercentage = summary.average_grade_percentage != null 
+          ? Number(summary.average_grade_percentage) 
+          : 0
+        // Only add valid finite numbers to roleAverages
+        if (isFinite(avgPercentage) && !isNaN(avgPercentage)) {
+          roleAverages.push(avgPercentage)
+        }
 
         const separatedScores = calculateSeparateScores(scores)
         
@@ -1426,21 +1437,13 @@ export class BehaviorScorecardService {
         })
       }
 
-      // Get company summary
-      const { data: companySummary } = await supabase
-        .from('company_summaries')
-        .select('company_average, company_grade')
-        .eq('user_id', user.id)
-        .eq('month', month)
-        .eq('year', year)
-        .maybeSingle()
-
-      const companyAverage = companySummary
-        ? Number(companySummary.company_average) || 0
-        : (roleAverages.length > 0 ? roleAverages.reduce((sum, avg) => sum + avg, 0) / roleAverages.length : 0)
-      const companyGrade = companySummary
-        ? (companySummary.company_grade as Grade) || 'F'
-        : calculateGrade(companyAverage)
+      // Calculate company summary from actual role averages (consistent with quarterly/yearly)
+      // Filter out Infinity and NaN values
+      const validRoleAverages = roleAverages.filter(avg => isFinite(avg) && !isNaN(avg))
+      const companyAverage = validRoleAverages.length > 0
+        ? validRoleAverages.reduce((sum, avg) => sum + avg, 0) / validRoleAverages.length
+        : 0
+      const companyGrade = calculateGrade(companyAverage)
 
       return {
         success: true,
@@ -1819,8 +1822,10 @@ export class BehaviorScorecardService {
       }
 
       // Calculate company summary
-      const companyAverage = roleAverages.length > 0
-        ? roleAverages.reduce((sum, avg) => sum + avg, 0) / roleAverages.length
+      // Filter out Infinity and NaN values
+      const validRoleAverages = roleAverages.filter(avg => isFinite(avg) && !isNaN(avg))
+      const companyAverage = validRoleAverages.length > 0
+        ? validRoleAverages.reduce((sum, avg) => sum + avg, 0) / validRoleAverages.length
         : 0
       const companyGrade = calculateGrade(companyAverage)
 
@@ -1959,8 +1964,10 @@ export class BehaviorScorecardService {
       }
 
       // Calculate company summary
-      const companyAverage = roleAverages.length > 0
-        ? roleAverages.reduce((sum, avg) => sum + avg, 0) / roleAverages.length
+      // Filter out Infinity and NaN values
+      const validRoleAverages = roleAverages.filter(avg => isFinite(avg) && !isNaN(avg))
+      const companyAverage = validRoleAverages.length > 0
+        ? validRoleAverages.reduce((sum, avg) => sum + avg, 0) / validRoleAverages.length
         : 0
       const companyGrade = calculateGrade(companyAverage)
 
