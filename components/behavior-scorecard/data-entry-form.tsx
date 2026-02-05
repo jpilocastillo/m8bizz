@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { behaviorScorecardService, type ScorecardRole, type ScorecardMetric, calculatePercentageOfGoal, calculateGrade, isDefaultMetric } from '@/lib/behavior-scorecard'
-import { Save, Calendar, Calculator, Plus, Trash2, Edit2, Check, X, AlertCircle, Loader2, CheckCircle2, RefreshCw } from 'lucide-react'
+import { Save, Calendar, Calculator, Plus, Trash2, Edit2, Check, X, AlertCircle, Loader2, CheckCircle2, RefreshCw, Copy, Clipboard, RotateCcw, ArrowDown, HelpCircle, Zap, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +36,11 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   const handleSaveRef = useRef<() => Promise<void>>()
   const isInitializingRef = useRef(true)
   const localStorageSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [bulkEditMode, setBulkEditMode] = useState(false)
+  const [focusedInput, setFocusedInput] = useState<string | null>(null)
+  const inputRefs = useRef<Record<string, HTMLInputElement>>({})
+  const originalValuesRef = useRef<Record<string, { goal: number; value: number }>>({})
 
   // Generate localStorage key based on role, year, and month
   const getStorageKey = useCallback(() => {
@@ -180,8 +185,35 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
     }
   }, [monthlyData, goalData, hasChanges, saveToLocalStorage])
 
-  const handleMonthlyValueChange = (metricId: string, value: string) => {
-    const numValue = parseFloat(value) || 0
+  const handleMonthlyValueChange = (metricId: string, value: string, metricType?: string) => {
+    // Handle empty string
+    if (value === '' || value === '-') {
+      setMonthlyData(prev => ({
+        ...prev,
+        [metricId]: 0,
+      }))
+      setHasChanges(true)
+      return
+    }
+    
+    let numValue = parseFloat(value)
+    
+    // Validate based on metric type
+    if (metricType === 'rating_1_5' || metricType === 'rating_scale') {
+      numValue = Math.max(0, Math.min(5, numValue))
+    } else if (numValue < 0) {
+      numValue = 0
+    }
+    
+    // Round to appropriate decimal places
+    if (metricType === 'currency') {
+      numValue = Math.round(numValue)
+    } else if (metricType === 'rating_1_5' || metricType === 'rating_scale') {
+      numValue = Math.round(numValue * 10) / 10
+    } else {
+      numValue = Math.round(numValue)
+    }
+    
     setMonthlyData(prev => ({
       ...prev,
       [metricId]: numValue,
@@ -189,14 +221,99 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
     setHasChanges(true)
   }
 
-  const handleGoalChange = (metricId: string, value: string) => {
-    const numValue = parseFloat(value) || 0
+  const handleGoalChange = (metricId: string, value: string, metricType?: string) => {
+    // Handle empty string
+    if (value === '' || value === '-') {
+      setGoalData(prev => ({
+        ...prev,
+        [metricId]: 0,
+      }))
+      setHasChanges(true)
+      return
+    }
+    
+    let numValue = parseFloat(value)
+    
+    // Validate based on metric type
+    if (metricType === 'rating_1_5' || metricType === 'rating_scale') {
+      numValue = Math.max(0, Math.min(5, numValue))
+    } else if (numValue < 0) {
+      numValue = 0
+    }
+    
+    // Round to appropriate decimal places
+    if (metricType === 'currency') {
+      numValue = Math.round(numValue)
+    } else if (metricType === 'rating_1_5' || metricType === 'rating_scale') {
+      numValue = Math.round(numValue * 10) / 10
+    } else {
+      numValue = Math.round(numValue)
+    }
+    
     setGoalData(prev => ({
       ...prev,
       [metricId]: numValue,
     }))
     setHasChanges(true)
   }
+
+  // Fill from previous month
+  const handleFillFromPrevious = async () => {
+    try {
+      const previousMonth = month === 1 ? 12 : month - 1
+      const previousYear = month === 1 ? year - 1 : year
+      const monthStartWeek = (previousMonth - 1) * 4 + 1
+      
+      const metricIds = metrics.map(m => m.id)
+      const result = await behaviorScorecardService.getBatchWeeklyData(metricIds, previousYear)
+      
+      if (result.success && result.data) {
+        const newMonthlyData: Record<string, number> = {}
+        result.data.forEach((weeklyDataArray, metricId) => {
+          const monthWeek1Data = weeklyDataArray.find(wd => wd.weekNumber === monthStartWeek)
+          if (monthWeek1Data) {
+            newMonthlyData[metricId] = monthWeek1Data.actualValue
+          }
+        })
+        
+        setMonthlyData(prev => ({ ...prev, ...newMonthlyData }))
+        setHasChanges(true)
+        
+        toast({
+          title: "Data filled",
+          description: `Filled values from ${new Date(previousYear, previousMonth - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load previous month's data",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Clear all values
+  const handleClearAll = () => {
+    const clearedData: Record<string, number> = {}
+    metrics.forEach(metric => {
+      clearedData[metric.id] = 0
+    })
+    setMonthlyData(clearedData)
+    setHasChanges(true)
+    toast({
+      title: "Cleared",
+      description: "All monthly values have been cleared",
+    })
+  }
+
+  // Filter metrics based on search
+  const filteredMetrics = metrics.filter(metric => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    return metric.metricName.toLowerCase().includes(query) ||
+           metric.metricType.toLowerCase().includes(query)
+  })
 
   const handleQuickEdit = (metricId: string) => {
     setEditingMetric(metricId)
@@ -206,7 +323,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
     setEditingMetric(null)
   }
 
-  const handleSaveEdit = async (metricId: string) => {
+  const handleSaveEdit = async (metricId: string, silent = false) => {
     const metric = metrics.find(m => m.id === metricId)
     if (!metric) return
 
@@ -214,6 +331,15 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
       const newGoal = goalData[metricId] ?? metric.goalValue
       const monthlyValue = monthlyData[metricId] || 0
       const monthStartWeek = (month - 1) * 4 + 1
+
+      // Check if there are actual changes
+      const goalChanged = newGoal !== metric.goalValue
+      const valueChanged = monthlyValue !== 0 || monthlyData[metricId] !== undefined
+
+      if (!goalChanged && !valueChanged) {
+        setEditingMetric(null)
+        return
+      }
 
       // Prepare batch operations
       const weeklyDataEntries = [
@@ -224,7 +350,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
       ]
 
       // Execute goal update and weekly data save in parallel
-      const goalUpdatePromise = newGoal !== metric.goalValue 
+      const goalUpdatePromise = goalChanged
         ? behaviorScorecardService.updateMetricGoal(metricId, newGoal)
         : Promise.resolve({ success: true as const })
       
@@ -233,20 +359,22 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
         behaviorScorecardService.batchSaveWeeklyData(weeklyDataEntries)
       ])
 
-      if (goalResult.success && newGoal !== metric.goalValue) {
-        toast({
-          title: "Goal updated",
-          description: `Goal for ${metric.metricName} has been updated.`,
-        })
-      }
+      if (!silent) {
+        if (goalResult.success && goalChanged) {
+          toast({
+            title: "Goal updated",
+            description: `Goal for ${metric.metricName} has been updated.`,
+          })
+        }
 
-      if (!weeklyDataResult.success && weeklyDataResult.errors) {
-        console.error(`Failed to save weekly data:`, weeklyDataResult.errors)
-        toast({
-          title: "Warning",
-          description: "Some data may not have been saved correctly.",
-          variant: "destructive",
-        })
+        if (!weeklyDataResult.success && weeklyDataResult.errors) {
+          console.error(`Failed to save weekly data:`, weeklyDataResult.errors)
+          toast({
+            title: "Warning",
+            description: "Some data may not have been saved correctly.",
+            variant: "destructive",
+          })
+        }
       }
 
       // Recalculate monthly summary after saving (don't wait for it)
@@ -255,17 +383,21 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
       })
 
       setEditingMetric(null)
+      // Clear original values after successful save
+      delete originalValuesRef.current[metricId]
       
       if (onSave) {
         await onSave()
       }
     } catch (error) {
       console.error('Error in handleSaveEdit:', error)
-      toast({
-        title: "Error",
-        description: "Failed to save changes. Please try again.",
-        variant: "destructive",
-      })
+      if (!silent) {
+        toast({
+          title: "Error",
+          description: "Failed to save changes. Please try again.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
@@ -521,20 +653,73 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   return (
     <Card className="bg-black border-m8bs-border shadow-lg">
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl text-white flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-m8bs-blue" />
-          {roleName} - Data Entry Form
-        </CardTitle>
-        <CardDescription className="text-m8bs-muted">
-          Enter Monthly Data For {new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-xl text-white flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-m8bs-blue" />
+              {roleName} - Data Entry Form
+            </CardTitle>
+            <CardDescription className="text-m8bs-muted">
+              Enter Monthly Data For {new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleFillFromPrevious}
+              className="text-xs border-m8bs-border"
+              title="Fill values from previous month"
+            >
+              <ArrowDown className="h-3 w-3 mr-1" />
+              Fill Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearAll}
+              className="text-xs border-m8bs-border text-red-400"
+              title="Clear all values"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Clear All
+            </Button>
+          </div>
+        </div>
+        
+        {/* Search and filter bar */}
+        <div className="mt-4 flex items-center gap-2">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-m8bs-muted" />
+            <Input
+              type="text"
+              placeholder="Search metrics..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-m8bs-card-alt border-m8bs-border text-white placeholder:text-m8bs-muted focus:border-m8bs-blue"
+            />
+          </div>
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchQuery('')}
+              className="text-xs text-m8bs-muted"
+            >
+              Clear
+            </Button>
+          )}
+          <Badge variant="outline" className="text-xs border-m8bs-border">
+            {filteredMetrics.length} of {metrics.length} metrics
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <ScrollArea className="w-full">
-          <div className="rounded-md border border-m8bs-border">
-            <Table>
+          <div className="rounded-md border border-m8bs-border overflow-x-auto">
+            <Table className="min-w-[800px]">
               <TableHeader>
-                <TableRow className="bg-m8bs-card-alt hover:bg-m8bs-card-alt">
+                <TableRow className="bg-m8bs-card-alt">
                   <TableHead className="w-[250px] text-white font-semibold sticky left-0 bg-m8bs-card-alt z-10 border-r border-m8bs-border">
                     Monthly Statistics
                   </TableHead>
@@ -556,7 +741,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {metrics.map((metric, index) => {
+                {filteredMetrics.map((metric, index) => {
                   const monthlyValue = getMonthlyValue(metric.id)
                   const goalValue = goalData[metric.id] ?? metric.goalValue
                   const percentage = calculateMetricPercentage(metric.id)
@@ -566,10 +751,12 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                   return (
                     <TableRow 
                       key={metric.id} 
-                      className={`${index % 2 === 0 ? 'bg-m8bs-card-alt/30' : 'bg-m8bs-card-alt/50'} hover:bg-m8bs-card-alt/70 transition-colors`}
+                      className={`group ${index % 2 === 0 ? 'bg-m8bs-card-alt/30' : 'bg-m8bs-card-alt/50'} transition-colors ${
+                        editingMetric === metric.id ? 'ring-2 ring-m8bs-blue/50 bg-m8bs-blue/10' : ''
+                      }`}
                     >
                       <TableCell className="font-medium text-white sticky left-0 bg-inherit z-10 border-r border-m8bs-border">
-                        <div>
+                        <div className="group relative">
                           <div className="font-semibold flex items-center gap-2">
                             {metric.metricName}
                             {isDefaultMetric(metric.metricName) && (
@@ -577,57 +764,158 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                                 Core
                               </Badge>
                             )}
+                            <HelpCircle className="h-3 w-3 text-m8bs-muted opacity-50 cursor-help" />
                           </div>
                           <div className="text-xs text-m8bs-muted mt-1">
                             {metric.metricType}
                             {metric.isInverted && ' • (lower is better)'}
                           </div>
+                          {/* Tooltip */}
+                          <div className="hidden">
+                            <div className="text-xs text-white">
+                              <div className="font-semibold mb-1">{metric.metricName}</div>
+                              <div className="text-m8bs-muted">
+                                Type: {metric.metricType}
+                                {metric.isInverted && <div className="mt-1">Lower values are better</div>}
+                                <div className="mt-1">Goal: {formatValue(goalValue, metric.metricType)}</div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="p-2">
-                        {isEditing ? (
-                          <Input
-                            type="number"
-                            step={getInputStep(metric.metricType)}
-                            min="0"
-                            value={goalValue}
-                            onChange={(e) => handleGoalChange(metric.id, e.target.value)}
-                            className="w-full text-center bg-m8bs-card border-m8bs-blue text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
-                            autoFocus
-                          />
-                        ) : (
-                          <div className="text-center text-white font-medium">
-                            {formatValue(goalValue, metric.metricType)}
-                          </div>
-                        )}
+                        <Input
+                          ref={(el) => {
+                            if (el) inputRefs.current[`goal-${metric.id}`] = el
+                          }}
+                          type="number"
+                          step={getInputStep(metric.metricType)}
+                          min="0"
+                          max={getInputMax(metric.metricType)}
+                          value={goalValue}
+                          onChange={(e) => {
+                            handleGoalChange(metric.id, e.target.value, metric.metricType)
+                            // Auto-save on blur if value changed
+                            const newValue = parseFloat(e.target.value) || 0
+                            if (newValue !== metric.goalValue) {
+                              // Mark for save
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Tab' && !e.shiftKey) {
+                              // Focus next input
+                              const nextInput = inputRefs.current[`value-${metric.id}`]
+                              if (nextInput) {
+                                e.preventDefault()
+                                nextInput.focus()
+                                nextInput.select()
+                              }
+                            }
+                          }}
+                          onFocus={() => {
+                            setFocusedInput(`goal-${metric.id}`)
+                            setEditingMetric(metric.id)
+                            // Store original values when starting to edit
+                            if (!originalValuesRef.current[metric.id]) {
+                              originalValuesRef.current[metric.id] = {
+                                goal: goalValue,
+                                value: monthlyValue
+                              }
+                            }
+                          }}
+                          onBlur={async () => {
+                            setFocusedInput(null)
+                            // Auto-save if goal changed (silent save)
+                            const currentGoal = goalData[metric.id] ?? metric.goalValue
+                            if (currentGoal !== metric.goalValue) {
+                              await handleSaveEdit(metric.id, true)
+                            } else {
+                              // Small delay to allow clicking save button
+                              setTimeout(() => {
+                                if (editingMetric === metric.id) {
+                                  setEditingMetric(null)
+                                }
+                              }, 200)
+                            }
+                          }}
+                          onClick={(e) => e.currentTarget.select()}
+                          className={`w-full text-center bg-m8bs-card/50 border-m8bs-border focus:border-m8bs-blue focus:ring-m8bs-blue/20 text-white transition-all h-9 cursor-text ${
+                            focusedInput === `goal-${metric.id}` ? 'ring-2 ring-m8bs-blue/50 bg-m8bs-card border-m8bs-blue' : ''
+                          }`}
+                          title={`Goal for ${metric.metricName}. Click to edit. Tab to move to value.`}
+                        />
                       </TableCell>
                       <TableCell className="p-2">
-                        {isEditing ? (
-                          <Input
-                            type="number"
-                            step={getInputStep(metric.metricType)}
-                            min="0"
-                            max={getInputMax(metric.metricType)}
-                            value={monthlyValue}
-                            onChange={(e) => handleMonthlyValueChange(metric.id, e.target.value)}
-                            className="w-full text-center bg-m8bs-card border-m8bs-blue text-white focus:border-m8bs-blue focus:ring-m8bs-blue/20 transition-colors h-9"
-                          />
-                        ) : (
-                          <div className="text-center text-white font-medium">
-                            {formatValue(monthlyValue, metric.metricType)}
-                          </div>
-                        )}
+                        <Input
+                          ref={(el) => {
+                            if (el) inputRefs.current[`value-${metric.id}`] = el
+                          }}
+                          type="number"
+                          step={getInputStep(metric.metricType)}
+                          min="0"
+                          max={getInputMax(metric.metricType)}
+                          value={monthlyValue}
+                          onChange={(e) => handleMonthlyValueChange(metric.id, e.target.value, metric.metricType)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Tab' && e.shiftKey) {
+                              // Focus previous input
+                              const prevInput = inputRefs.current[`goal-${metric.id}`]
+                              if (prevInput) {
+                                e.preventDefault()
+                                prevInput.focus()
+                                prevInput.select()
+                              }
+                            }
+                          }}
+                          onFocus={() => {
+                            setFocusedInput(`value-${metric.id}`)
+                            setEditingMetric(metric.id)
+                            // Store original values when starting to edit
+                            if (!originalValuesRef.current[metric.id]) {
+                              originalValuesRef.current[metric.id] = {
+                                goal: goalValue,
+                                value: monthlyValue
+                              }
+                            }
+                          }}
+                          onBlur={async () => {
+                            setFocusedInput(null)
+                            // Auto-save on blur (silent save)
+                            await handleSaveEdit(metric.id, true)
+                          }}
+                          onClick={(e) => e.currentTarget.select()}
+                          className={`w-full text-center bg-m8bs-card/50 border-m8bs-border focus:border-m8bs-blue focus:ring-m8bs-blue/20 text-white transition-all h-9 cursor-text ${
+                            focusedInput === `value-${metric.id}` ? 'ring-2 ring-m8bs-blue/50 bg-m8bs-card border-m8bs-blue' : ''
+                          }`}
+                          title={`Monthly value for ${metric.metricName}. Click to edit.`}
+                        />
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className={`font-semibold ${
-                          percentage >= 90 ? 'text-green-400' :
-                          percentage >= 80 ? 'text-blue-400' :
-                          percentage >= 70 ? 'text-yellow-400' :
-                          percentage >= 60 ? 'text-orange-400' :
-                          'text-red-400'
-                        }`}>
-                          {percentage.toFixed(1)}%
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={`font-semibold ${
+                            percentage >= 90 ? 'text-green-400' :
+                            percentage >= 80 ? 'text-blue-400' :
+                            percentage >= 70 ? 'text-yellow-400' :
+                            percentage >= 60 ? 'text-orange-400' :
+                            'text-red-400'
+                          }`}>
+                            {percentage.toFixed(1)}%
+                          </span>
+                          {isEditing && (
+                            <div className="h-1 w-16 bg-m8bs-card-alt rounded-full overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-300 ${
+                                  percentage >= 90 ? 'bg-green-500' :
+                                  percentage >= 80 ? 'bg-blue-500' :
+                                  percentage >= 70 ? 'bg-yellow-500' :
+                                  percentage >= 60 ? 'bg-orange-500' :
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${Math.min(percentage, 100)}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge className={`${
@@ -641,34 +929,52 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        {isEditing ? (
+                        {editingMetric === metric.id ? (
                           <div className="flex items-center justify-center gap-1">
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleSaveEdit(metric.id)}
-                              className="h-7 w-7 p-0 text-green-400 hover:text-green-300 hover:bg-green-500/20"
+                              className="h-7 w-7 p-0 text-green-400"
+                              title="Save changes"
                             >
                               <Check className="h-4 w-4" />
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={handleCancelEdit}
-                              className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                              onClick={() => {
+                                // Reset to original values
+                                const original = originalValuesRef.current[metric.id]
+                                if (original) {
+                                  setGoalData(prev => {
+                                    const newData = { ...prev }
+                                    if (original.goal === metric.goalValue) {
+                                      delete newData[metric.id]
+                                    } else {
+                                      newData[metric.id] = original.goal
+                                    }
+                                    return newData
+                                  })
+                                  setMonthlyData(prev => ({
+                                    ...prev,
+                                    [metric.id]: original.value
+                                  }))
+                                  delete originalValuesRef.current[metric.id]
+                                }
+                                setEditingMetric(null)
+                                setFocusedInput(null)
+                              }}
+                              className="h-7 w-7 p-0 text-red-400"
+                              title="Cancel editing and reset values"
                             >
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleQuickEdit(metric.id)}
-                            className="h-7 w-7 p-0 text-m8bs-muted hover:text-m8bs-blue hover:bg-m8bs-blue/20"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
+                          <div className="text-xs text-m8bs-muted">
+                            Click to edit
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
@@ -735,7 +1041,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                 <Button
                   onClick={() => handleSave()}
                   variant="outline"
-                  className="flex items-center gap-2 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500"
+                  className="flex items-center gap-2 border-red-500/50 text-red-400"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Retry Save
@@ -746,8 +1052,8 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                 disabled={saving || !hasChanges}
                 className={`flex items-center gap-2 transition-all duration-200 ${
                   saveStatus === 'success' && !hasChanges
-                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                    : 'bg-m8bs-blue hover:bg-m8bs-blue-dark text-white'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-m8bs-blue text-white'
                 } disabled:opacity-50 disabled:cursor-not-allowed ${
                   saving ? 'animate-pulse' : ''
                 }`}
@@ -782,7 +1088,13 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
               {saveStats.errors > 0 && (
                 <span className="text-red-400">Errors: {saveStats.errors}</span>
               )}
-              <span className="ml-auto text-xs opacity-70">Press Ctrl+S to save</span>
+              <div className="ml-auto flex items-center gap-3 text-xs opacity-70">
+                <span>Press <kbd className="px-1.5 py-0.5 bg-m8bs-card-alt border border-m8bs-border rounded text-xs">Ctrl+S</kbd> to save</span>
+                <span>•</span>
+                <span>Press <kbd className="px-1.5 py-0.5 bg-m8bs-card-alt border border-m8bs-border rounded text-xs">Enter</kbd> to save row</span>
+                <span>•</span>
+                <span>Press <kbd className="px-1.5 py-0.5 bg-m8bs-card-alt border border-m8bs-border rounded text-xs">Esc</kbd> to cancel</span>
+              </div>
             </div>
           )}
         </CardFooter>

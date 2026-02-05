@@ -1369,7 +1369,14 @@ export class BehaviorScorecardService {
             metrics: metricScores,
             averageGradePercentage,
             averageGrade,
-            ...separatedScores,
+            defaultMetrics: separatedScores.defaultMetrics,
+            defaultMetricsAverage: separatedScores.defaultAverage,
+            defaultMetricsGrade: separatedScores.defaultGrade,
+            userMetrics: separatedScores.userMetrics,
+            userMetricsAverage: separatedScores.userAverage,
+            userMetricsGrade: separatedScores.userGrade,
+            combinedAverage: separatedScores.combinedAverage,
+            combinedGrade: separatedScores.combinedGrade,
           })
           continue
         }
@@ -1433,7 +1440,14 @@ export class BehaviorScorecardService {
           metrics: scores,
           averageGradePercentage: avgPercentage,
           averageGrade: (summary.average_grade_letter as Grade) || 'F',
-          ...separatedScores,
+          defaultMetrics: separatedScores.defaultMetrics,
+          defaultMetricsAverage: separatedScores.defaultAverage,
+          defaultMetricsGrade: separatedScores.defaultGrade,
+          userMetrics: separatedScores.userMetrics,
+          userMetricsAverage: separatedScores.userAverage,
+          userMetricsGrade: separatedScores.userGrade,
+          combinedAverage: separatedScores.combinedAverage,
+          combinedGrade: separatedScores.combinedGrade,
         })
       }
 
@@ -1817,7 +1831,14 @@ export class BehaviorScorecardService {
           metrics: metricScores,
           averageGradePercentage,
           averageGrade,
-          ...separatedScores,
+          defaultMetrics: separatedScores.defaultMetrics,
+          defaultMetricsAverage: separatedScores.defaultAverage,
+          defaultMetricsGrade: separatedScores.defaultGrade,
+          userMetrics: separatedScores.userMetrics,
+          userMetricsAverage: separatedScores.userAverage,
+          userMetricsGrade: separatedScores.userGrade,
+          combinedAverage: separatedScores.combinedAverage,
+          combinedGrade: separatedScores.combinedGrade,
         })
       }
 
@@ -1959,7 +1980,14 @@ export class BehaviorScorecardService {
           metrics: metricScores,
           averageGradePercentage,
           averageGrade,
-          ...separatedScores,
+          defaultMetrics: separatedScores.defaultMetrics,
+          defaultMetricsAverage: separatedScores.defaultAverage,
+          defaultMetricsGrade: separatedScores.defaultGrade,
+          userMetrics: separatedScores.userMetrics,
+          userMetricsAverage: separatedScores.userAverage,
+          userMetricsGrade: separatedScores.userGrade,
+          combinedAverage: separatedScores.combinedAverage,
+          combinedGrade: separatedScores.combinedGrade,
         })
       }
 

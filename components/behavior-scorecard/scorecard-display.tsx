@@ -1,5 +1,6 @@
 "use client"
 
+import { memo, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { type RoleScorecard, type MetricScore, calculateGrade } from '@/lib/behavior-scorecard'
@@ -9,60 +10,95 @@ interface ScorecardDisplayProps {
   roleScorecard: RoleScorecard
 }
 
-export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case 'A': return 'bg-green-500/20 text-green-400 border-green-500/50'
-      case 'B': return 'bg-blue-500/20 text-blue-400 border-blue-500/50'
-      case 'C': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
-      case 'D': return 'bg-orange-500/20 text-orange-400 border-orange-500/50'
-      case 'F': return 'bg-red-500/20 text-red-400 border-red-500/50'
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50'
-    }
+const getGradeColor = (grade: string) => {
+  switch (grade) {
+    case 'A': return 'bg-green-500/20 text-green-400 border-green-500/50'
+    case 'B': return 'bg-blue-500/20 text-blue-400 border-blue-500/50'
+    case 'C': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
+    case 'D': return 'bg-orange-500/20 text-orange-400 border-orange-500/50'
+    case 'F': return 'bg-red-500/20 text-red-400 border-red-500/50'
+    default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50'
   }
+}
 
-  const formatValue = (value: number, metricType: string) => {
-    if (metricType === 'currency') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(value)
-    }
-    if (metricType === 'percentage') {
-      return `${value}%`
-    }
-    if (metricType === 'time') {
-      return `${value} ${value === 1 ? 'day' : 'days'}`
-    }
-    if (metricType === 'rating_1_5' || metricType === 'rating_scale') {
-      return value.toFixed(1)
-    }
-    return value.toString()
+const formatValue = (value: number, metricType: string) => {
+  if (metricType === 'currency') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value)
   }
+  if (metricType === 'percentage') {
+    return `${value}%`
+  }
+  if (metricType === 'time') {
+    return `${value} ${value === 1 ? 'day' : 'days'}`
+  }
+  if (metricType === 'rating_1_5' || metricType === 'rating_scale') {
+    return value.toFixed(1)
+  }
+  return value.toString()
+}
 
-  const getTrendIcon = (percentage: number) => {
-    if (percentage >= 90) return <TrendingUp className="h-4 w-4 text-green-400" />
-    if (percentage >= 70) return <Minus className="h-4 w-4 text-yellow-400" />
-    return <TrendingDown className="h-4 w-4 text-red-400" />
-  }
+const getTrendIcon = (percentage: number) => {
+  if (percentage >= 90) return <TrendingUp className="h-4 w-4 text-green-400" />
+  if (percentage >= 70) return <Minus className="h-4 w-4 text-yellow-400" />
+  return <TrendingDown className="h-4 w-4 text-red-400" />
+}
+
+const MetricRow = memo(({ metric }: { metric: MetricScore }) => (
+  <div
+    className="grid grid-cols-5 gap-2 p-1.5 bg-m8bs-card-alt rounded border border-m8bs-border hover:bg-m8bs-card hover:border-m8bs-blue/30 transition-all duration-200"
+  >
+    <div className="col-span-2 flex items-center gap-1">
+      {getTrendIcon(metric.percentageOfGoal)}
+      <span className="text-white font-medium text-xs truncate">{metric.metricName}</span>
+    </div>
+    <div className="text-right text-m8bs-muted text-xs">
+      {formatValue(metric.goalValue, metric.metricType)}
+    </div>
+    <div className="text-right text-white font-semibold text-xs">
+      {formatValue(metric.actualValue, metric.metricType)}
+    </div>
+    <div className="text-right">
+      <Badge className={`${getGradeColor(metric.grade)} border px-1 py-0 text-xs`}>
+        {metric.grade}
+      </Badge>
+    </div>
+  </div>
+))
+MetricRow.displayName = 'MetricRow'
+
+export const ScorecardDisplay = memo(function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
+  const combinedGrade = roleScorecard.combinedGrade || roleScorecard.averageGrade
+  const combinedAverage = roleScorecard.combinedAverage ?? roleScorecard.averageGradePercentage
+  const defaultMetricsGrade = roleScorecard.defaultMetricsGrade || 'F'
+  const userMetricsGrade = roleScorecard.userMetricsGrade || 'F'
+  
+  const defaultMetricsAverage = useMemo(() => 
+    roleScorecard.defaultMetricsAverage?.toFixed(0) || '0', 
+    [roleScorecard.defaultMetricsAverage]
+  )
+  const userMetricsAverage = useMemo(() => 
+    roleScorecard.userMetricsAverage?.toFixed(0) || '0', 
+    [roleScorecard.userMetricsAverage]
+  )
 
   return (
-    <Card className="bg-m8bs-card border-m8bs-card-alt shadow-md">
+    <Card className="bg-m8bs-card border-m8bs-card-alt shadow-md hover:shadow-lg transition-shadow duration-300">
       <CardHeader className="pb-1 pt-3">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base font-bold text-white">{roleScorecard.roleName}</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className={`${getGradeColor(roleScorecard.combinedGrade || roleScorecard.averageGrade)} border px-2 py-0.5 text-sm font-bold`}>
-              {roleScorecard.combinedGrade || roleScorecard.averageGrade}
+            <Badge className={`${getGradeColor(combinedGrade)} border px-2 py-0.5 text-sm font-bold shadow-sm`}>
+              {combinedGrade}
             </Badge>
-            <span className="text-xs text-m8bs-muted">
-              {roleScorecard.combinedAverage !== undefined 
-                ? `${roleScorecard.combinedAverage.toFixed(0)}%`
-                : `${roleScorecard.averageGradePercentage.toFixed(0)}%`}
+            <span className="text-xs text-m8bs-muted font-medium">
+              {combinedAverage.toFixed(0)}%
             </span>
           </div>
         </div>
@@ -78,11 +114,11 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
                   <h3 className="text-sm font-semibold text-white">Core Behaviors</h3>
                   {roleScorecard.defaultMetricsAverage !== undefined && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-m8bs-muted">
-                        {roleScorecard.defaultMetricsAverage.toFixed(0)}%
+                      <span className="text-xs text-m8bs-muted font-medium">
+                        {defaultMetricsAverage}%
                       </span>
-                      <Badge className={`${getGradeColor(roleScorecard.defaultMetricsGrade || 'F')} border px-1.5 py-0.5 text-xs`}>
-                        {roleScorecard.defaultMetricsGrade || 'F'}
+                      <Badge className={`${getGradeColor(defaultMetricsGrade)} border px-1.5 py-0.5 text-xs shadow-sm`}>
+                        {defaultMetricsGrade}
                       </Badge>
                     </div>
                   )}
@@ -95,26 +131,7 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
                     <div className="text-right">Grade</div>
                   </div>
                   {roleScorecard.defaultMetrics.map((metric) => (
-                    <div
-                      key={metric.metricId}
-                      className="grid grid-cols-5 gap-2 p-1.5 bg-m8bs-card-alt rounded border border-m8bs-border hover:bg-m8bs-card transition-colors"
-                    >
-                      <div className="col-span-2 flex items-center gap-1">
-                        {getTrendIcon(metric.percentageOfGoal)}
-                        <span className="text-white font-medium text-xs truncate">{metric.metricName}</span>
-                      </div>
-                      <div className="text-right text-m8bs-muted text-xs">
-                        {formatValue(metric.goalValue, metric.metricType)}
-                      </div>
-                      <div className="text-right text-white font-semibold text-xs">
-                        {formatValue(metric.actualValue, metric.metricType)}
-                      </div>
-                      <div className="text-right">
-                        <Badge className={`${getGradeColor(metric.grade)} border px-1 py-0 text-xs`}>
-                          {metric.grade}
-                        </Badge>
-                      </div>
-                    </div>
+                    <MetricRow key={metric.metricId} metric={metric} />
                   ))}
                 </div>
               </div>
@@ -127,11 +144,11 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
                   <h3 className="text-sm font-semibold text-white">Role-Specific</h3>
                   {roleScorecard.userMetricsAverage !== undefined && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-m8bs-muted">
-                        {roleScorecard.userMetricsAverage.toFixed(0)}%
+                      <span className="text-xs text-m8bs-muted font-medium">
+                        {userMetricsAverage}%
                       </span>
-                      <Badge className={`${getGradeColor(roleScorecard.userMetricsGrade || 'F')} border px-1.5 py-0.5 text-xs`}>
-                        {roleScorecard.userMetricsGrade || 'F'}
+                      <Badge className={`${getGradeColor(userMetricsGrade)} border px-1.5 py-0.5 text-xs shadow-sm`}>
+                        {userMetricsGrade}
                       </Badge>
                     </div>
                   )}
@@ -144,26 +161,7 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
                     <div className="text-right">Grade</div>
                   </div>
                   {roleScorecard.userMetrics.map((metric) => (
-                    <div
-                      key={metric.metricId}
-                      className="grid grid-cols-5 gap-2 p-1.5 bg-m8bs-card-alt rounded border border-m8bs-border hover:bg-m8bs-card transition-colors"
-                    >
-                      <div className="col-span-2 flex items-center gap-1">
-                        {getTrendIcon(metric.percentageOfGoal)}
-                        <span className="text-white font-medium text-xs truncate">{metric.metricName}</span>
-                      </div>
-                      <div className="text-right text-m8bs-muted text-xs">
-                        {formatValue(metric.goalValue, metric.metricType)}
-                      </div>
-                      <div className="text-right text-white font-semibold text-xs">
-                        {formatValue(metric.actualValue, metric.metricType)}
-                      </div>
-                      <div className="text-right">
-                        <Badge className={`${getGradeColor(metric.grade)} border px-1 py-0 text-xs`}>
-                          {metric.grade}
-                        </Badge>
-                      </div>
-                    </div>
+                    <MetricRow key={metric.metricId} metric={metric} />
                   ))}
                 </div>
               </div>
@@ -180,13 +178,13 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
 
           {/* Combined Score Row - Full Width */}
           {roleScorecard.combinedAverage !== undefined && (
-            <div className="grid grid-cols-4 gap-2 p-2 bg-gradient-to-r from-m8bs-blue/20 to-m8bs-blue-dark/20 rounded border border-m8bs-blue/50 text-sm">
+            <div className="grid grid-cols-4 gap-2 p-2.5 bg-gradient-to-r from-m8bs-blue/20 via-m8bs-blue/15 to-m8bs-blue-dark/20 rounded-lg border border-m8bs-blue/50 text-sm shadow-sm">
               <div className="col-span-2 text-white font-semibold">Combined</div>
               <div className="text-right text-white font-semibold">
                 {roleScorecard.combinedAverage.toFixed(0)}%
               </div>
               <div className="text-right">
-                <Badge className={`${getGradeColor(roleScorecard.combinedGrade || 'F')} border px-1.5 py-0.5 text-xs`}>
+                <Badge className={`${getGradeColor(roleScorecard.combinedGrade || 'F')} border px-1.5 py-0.5 text-xs font-bold shadow-sm`}>
                   {roleScorecard.combinedGrade || 'F'}
                 </Badge>
               </div>
@@ -196,5 +194,5 @@ export function ScorecardDisplay({ roleScorecard }: ScorecardDisplayProps) {
       </CardContent>
     </Card>
   )
-}
+})
 

@@ -13,6 +13,7 @@ import { WeeklyDataEntry } from "@/components/behavior-scorecard/weekly-data-ent
 import { DataEntryForm } from "@/components/behavior-scorecard/data-entry-form"
 import { ScorecardDisplay } from "@/components/behavior-scorecard/scorecard-display"
 import { CompanySummary } from "@/components/behavior-scorecard/company-summary"
+import { ScorecardSkeleton, CompanySummarySkeleton } from "@/components/behavior-scorecard/scorecard-skeleton"
 import { CSVExport } from "@/components/behavior-scorecard/csv-export"
 import { MetricVisibilitySettings } from "@/components/behavior-scorecard/metric-visibility-settings"
 import { EnhancedRoleManagement } from "@/components/behavior-scorecard/enhanced-role-management"
@@ -285,27 +286,31 @@ export default function BehaviorScorecardPage() {
   }
 
 
-  const selectedRoleData = roles.find(r => r.name === selectedRole)
+  // Memoize expensive computations
+  const selectedRoleData = useMemo(() => 
+    roles.find(r => r.name === selectedRole),
+    [roles, selectedRole]
+  )
 
-  // Helper function to check if user has any data
-  const hasData = () => {
+  // Helper function to check if user has any data - memoized
+  const hasData = useMemo(() => {
     if (!scorecardData) return false
     if (scorecardData.roleScorecards.length === 0) return false
     // Check if any role has metrics with actual values
     return scorecardData.roleScorecards.some(role => 
       role.metrics.some(metric => metric.actualValue > 0)
     )
-  }
+  }, [scorecardData])
 
-  // Helper function to check if roles have metrics
-  const rolesHaveMetrics = () => {
+  // Helper function to check if roles have metrics - memoized
+  const rolesHaveMetrics = useMemo(() => {
     return roles.length > 0 && roles.some(role => role.metrics.length > 0)
-  }
+  }, [roles])
 
-  // Helper function to check if any role has metrics
-  const hasAnyMetrics = () => {
+  // Helper function to check if any role has metrics - memoized
+  const hasAnyMetrics = useMemo(() => {
     return roles.some(role => role.metrics.length > 0)
-  }
+  }, [roles])
 
   const months = [
     { value: 1, label: "January" },
@@ -556,32 +561,42 @@ export default function BehaviorScorecardPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "view" | "entry" | "settings")} className="space-y-4">
-        <TabsList className="bg-m8bs-card p-1.5 border border-m8bs-border rounded-xl shadow-lg grid w-full grid-cols-3 gap-1">
+        <TabsList className="bg-m8bs-card-alt/80 backdrop-blur-sm p-2 border border-m8bs-border/50 rounded-2xl shadow-xl grid w-full grid-cols-3 gap-2 relative overflow-hidden">
+          {/* Subtle background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-r from-m8bs-blue/5 via-transparent to-m8bs-blue-dark/5 pointer-events-none" />
+          
           <TabsTrigger 
             value="view" 
-            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg text-white/70 hover:text-white hover:bg-m8bs-card-alt py-3 text-sm font-semibold transition-all duration-200 rounded-lg"
+            className="tab-glow-active tab-underline-active relative flex items-center justify-center gap-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/30 data-[state=active]:scale-[1.02] text-white/60 hover:text-white hover:bg-m8bs-card/60 hover:scale-[1.01] py-3.5 px-4 text-sm font-semibold transition-all duration-300 rounded-xl group overflow-hidden"
           >
-            <BarChart3 className="h-4 w-4" />
-            <span>View Scorecard</span>
+            <BarChart3 className="h-4 w-4 relative z-10 group-hover:scale-110 transition-transform duration-300" />
+            <span className="relative z-10">View Scorecard</span>
           </TabsTrigger>
+          
           <TabsTrigger 
             value="entry" 
-            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg text-white/70 hover:text-white hover:bg-m8bs-card-alt py-3 text-sm font-semibold transition-all duration-200 rounded-lg"
+            className="tab-glow-active tab-underline-active relative flex items-center justify-center gap-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/30 data-[state=active]:scale-[1.02] text-white/60 hover:text-white hover:bg-m8bs-card/60 hover:scale-[1.01] py-3.5 px-4 text-sm font-semibold transition-all duration-300 rounded-xl group overflow-hidden"
           >
-            <Calendar className="h-4 w-4" />
-            <span>Data Entry</span>
+            <Calendar className="h-4 w-4 relative z-10 group-hover:scale-110 transition-transform duration-300" />
+            <span className="relative z-10">Data Entry</span>
           </TabsTrigger>
+          
           <TabsTrigger 
             value="settings" 
-            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg text-white/70 hover:text-white hover:bg-m8bs-card-alt py-3 text-sm font-semibold transition-all duration-200 rounded-lg"
+            className="tab-glow-active tab-underline-active relative flex items-center justify-center gap-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/30 data-[state=active]:scale-[1.02] text-white/60 hover:text-white hover:bg-m8bs-card/60 hover:scale-[1.01] py-3.5 px-4 text-sm font-semibold transition-all duration-300 rounded-xl group overflow-hidden"
           >
-            <Settings className="h-4 w-4" />
-            <span>Settings</span>
+            <Settings className="h-4 w-4 relative z-10 group-hover:scale-110 transition-transform duration-300" />
+            <span className="relative z-10">Settings</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="view" className="space-y-4 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-          {scorecardData && scorecardData.companySummary && (
+          {loadingFilters ? (
+            <>
+              <CompanySummarySkeleton />
+              <ScorecardSkeleton />
+            </>
+          ) : scorecardData && scorecardData.companySummary ? (
             <>
               <CompanySummary companySummary={scorecardData.companySummary} />
               
@@ -589,23 +604,29 @@ export default function BehaviorScorecardPage() {
                 <Card className="bg-m8bs-card border-m8bs-card-alt shadow-xl hover:shadow-2xl transition-shadow duration-300">
                   <CardContent className="p-0">
                     <Tabs defaultValue={scorecardData.roleScorecards[0]?.roleId || ""} className="w-full">
-                      <TabsList className="w-full bg-m8bs-card-alt p-1.5 border-b border-m8bs-border rounded-t-lg rounded-b-none grid grid-cols-2 lg:grid-cols-4 gap-1.5">
-                        {scorecardData.roleScorecards.map((roleScorecard) => (
+                      <TabsList className="w-full bg-m8bs-card-alt/90 backdrop-blur-sm p-2 border-b border-m8bs-border/50 rounded-t-xl rounded-b-none grid grid-cols-2 lg:grid-cols-4 gap-2 relative overflow-hidden">
+                        {/* Subtle background gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-m8bs-blue/5 via-transparent to-transparent pointer-events-none" />
+                        
+                        {scorecardData.roleScorecards.map((roleScorecard, index) => (
                           <TabsTrigger
                             key={roleScorecard.roleId}
                             value={roleScorecard.roleId}
-                            className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue data-[state=active]:to-m8bs-blue-dark data-[state=active]:text-white data-[state=active]:shadow-lg text-white/70 hover:text-white hover:bg-m8bs-card py-2.5 text-sm font-semibold transition-all duration-200 rounded-lg"
+                            className="relative flex items-center gap-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue/90 data-[state=active]:to-m8bs-blue-dark/90 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-m8bs-blue/20 data-[state=active]:scale-[1.02] text-white/60 hover:text-white hover:bg-m8bs-card/70 hover:scale-[1.01] py-3 px-3 text-sm font-semibold transition-all duration-300 rounded-lg group overflow-hidden"
+                            style={{
+                              animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
+                            }}
                           >
-                            <Users className="h-4 w-4" />
-                            <span className="truncate">{roleScorecard.roleName}</span>
+                            <Users className="h-4 w-4 relative z-10 group-hover:scale-110 transition-transform duration-300 flex-shrink-0" />
+                            <span className="truncate relative z-10 flex-1 min-w-0">{roleScorecard.roleName}</span>
                             <Badge 
                               variant="outline" 
-                              className={`ml-auto text-xs font-bold px-2 py-0.5 ${
-                                roleScorecard.averageGrade === 'A' ? 'border-green-500/50 text-green-400 bg-green-500/10' :
-                                roleScorecard.averageGrade === 'B' ? 'border-blue-500/50 text-blue-400 bg-blue-500/10' :
-                                roleScorecard.averageGrade === 'C' ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10' :
-                                roleScorecard.averageGrade === 'D' ? 'border-orange-500/50 text-orange-400 bg-orange-500/10' :
-                                'border-red-500/50 text-red-400 bg-red-500/10'
+                              className={`relative z-10 ml-auto text-xs font-bold px-2 py-0.5 flex-shrink-0 transition-all duration-300 data-[state=active]:scale-105 ${
+                                roleScorecard.averageGrade === 'A' ? 'border-green-500/50 text-green-400 bg-green-500/10 data-[state=active]:bg-green-500/20 data-[state=active]:border-green-500/70' :
+                                roleScorecard.averageGrade === 'B' ? 'border-blue-500/50 text-blue-400 bg-blue-500/10 data-[state=active]:bg-blue-500/20 data-[state=active]:border-blue-500/70' :
+                                roleScorecard.averageGrade === 'C' ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10 data-[state=active]:bg-yellow-500/20 data-[state=active]:border-yellow-500/70' :
+                                roleScorecard.averageGrade === 'D' ? 'border-orange-500/50 text-orange-400 bg-orange-500/10 data-[state=active]:bg-orange-500/20 data-[state=active]:border-orange-500/70' :
+                                'border-red-500/50 text-red-400 bg-red-500/10 data-[state=active]:bg-red-500/20 data-[state=active]:border-red-500/70'
                               }`}
                             >
                               {roleScorecard.averageGrade}
@@ -613,11 +634,14 @@ export default function BehaviorScorecardPage() {
                           </TabsTrigger>
                         ))}
                       </TabsList>
-                      {scorecardData.roleScorecards.map((roleScorecard) => (
+                      {scorecardData.roleScorecards.map((roleScorecard, index) => (
                         <TabsContent
                           key={roleScorecard.roleId}
                           value={roleScorecard.roleId}
-                          className="p-6 mt-0"
+                          className="p-6 mt-0 animate-in fade-in-50 slide-in-from-bottom-2 duration-300"
+                          style={{
+                            animationDelay: `${index * 0.05}s`
+                          }}
                         >
                           <ScorecardDisplay roleScorecard={roleScorecard} />
                         </TabsContent>
@@ -636,9 +660,14 @@ export default function BehaviorScorecardPage() {
                 </Card>
               )}
             </>
+          ) : (
+            <div className="text-center py-12 text-m8bs-muted">
+              <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No scorecard data available</p>
+            </div>
           )}
 
-          {(!hasData()) && (
+          {(!hasData) && (
             <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
@@ -686,7 +715,7 @@ export default function BehaviorScorecardPage() {
                   )}
 
                   {/* Step 2: Add Metrics */}
-                  {roles.length > 0 && !hasAnyMetrics() ? (
+                  {roles.length > 0 && !hasAnyMetrics ? (
                     <div className="flex items-start gap-4 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-m8bs-blue flex items-center justify-center text-white font-bold">
                         2
@@ -706,7 +735,7 @@ export default function BehaviorScorecardPage() {
                         </Button>
                       </div>
                     </div>
-                  ) : roles.length > 0 && hasAnyMetrics() ? (
+                  ) : roles.length > 0 && hasAnyMetrics ? (
                     <div className="flex items-start gap-4 p-4 bg-m8bs-card-alt/50 border border-m8bs-border/50 rounded-lg opacity-60">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white">
                         <CheckCircle2 className="h-5 w-5" />
@@ -721,10 +750,10 @@ export default function BehaviorScorecardPage() {
                   ) : null}
 
                   {/* Step 3: Enter Monthly Data */}
-                  {rolesHaveMetrics() ? (
+                  {rolesHaveMetrics ? (
                     <div className="flex items-start gap-4 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-m8bs-blue flex items-center justify-center text-white font-bold">
-                        {roles.length === 0 ? '1' : hasAnyMetrics() ? '3' : '2'}
+                        {roles.length === 0 ? '1' : hasAnyMetrics ? '3' : '2'}
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold text-white mb-2">Enter Monthly Data</h4>
@@ -744,7 +773,7 @@ export default function BehaviorScorecardPage() {
                   ) : null}
 
                   {/* Step 4: View Scorecard */}
-                  {hasData() ? (
+                  {hasData ? (
                     <div className="flex items-start gap-4 p-4 bg-m8bs-card-alt/50 border border-m8bs-border/50 rounded-lg opacity-60">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white">
                         <CheckCircle2 className="h-5 w-5" />
@@ -921,7 +950,7 @@ export default function BehaviorScorecardPage() {
             </Card>
           )}
 
-          {!selectedRoleData && roles.length > 0 && !hasAnyMetrics() && (
+          {!selectedRoleData && roles.length > 0 && !hasAnyMetrics && (
             <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
@@ -966,7 +995,7 @@ export default function BehaviorScorecardPage() {
             </Card>
           )}
 
-          {!selectedRoleData && roles.length > 0 && hasAnyMetrics() && (
+          {!selectedRoleData && roles.length > 0 && hasAnyMetrics && (
             <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg">
               <CardContent className="p-12 text-center">
                 <Settings className="h-16 w-16 text-m8bs-muted mx-auto mb-4" />

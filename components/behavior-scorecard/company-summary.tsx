@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -124,16 +124,19 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
           
           <CollapsibleContent>
             <CardContent className="pt-2 pb-3">
-              {/* Compact Progress Bar */}
+              {/* Enhanced Progress Bar with Animation */}
               <div className="mb-3 space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-m8bs-muted">Overall Performance</span>
+                  <span className="text-m8bs-muted font-medium">Overall Performance</span>
                   <span className="text-white font-semibold">{companySummary.companyAverage.toFixed(1)}%</span>
                 </div>
-                <div className="h-2 bg-m8bs-card-alt rounded-full overflow-hidden">
+                <div className="h-2.5 bg-m8bs-card-alt rounded-full overflow-hidden shadow-inner">
                   <div
-                    className={`h-full ${getProgressColor(companySummary.companyAverage)} transition-all duration-500 rounded-full`}
-                    style={{ width: `${Math.min(companySummary.companyAverage, 100)}%` }}
+                    className={`h-full ${getProgressColor(companySummary.companyAverage)} transition-all duration-700 ease-out rounded-full shadow-sm`}
+                    style={{ 
+                      width: `${Math.min(companySummary.companyAverage, 100)}%`,
+                      animation: 'slideIn 0.7s ease-out'
+                    }}
                   />
                 </div>
               </div>
@@ -169,10 +172,17 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
                 </div>
               </div>
 
-              {/* Compact Role Scorecards - Single Row */}
+              {/* Compact Role Scorecards - Single Row with Animation */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {organizedRoles.sorted.map((roleScorecard) => (
-                  <RoleCard key={roleScorecard.roleId} roleScorecard={roleScorecard} getGradeColor={getGradeColor} getProgressColor={getProgressColor} />
+                {organizedRoles.sorted.map((roleScorecard, index) => (
+                  <div
+                    key={roleScorecard.roleId}
+                    style={{
+                      animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
+                    }}
+                  >
+                    <RoleCard roleScorecard={roleScorecard} getGradeColor={getGradeColor} getProgressColor={getProgressColor} />
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -183,8 +193,8 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
   )
 }
 
-// Compact role card component
-function RoleCard({ 
+// Compact role card component - memoized for performance
+const RoleCard = memo(function RoleCard({ 
   roleScorecard, 
   getGradeColor, 
   getProgressColor 
@@ -197,25 +207,64 @@ function RoleCard({
     <div className="bg-m8bs-card-alt border border-m8bs-border rounded-lg p-2 hover:border-m8bs-blue/50 transition-colors">
       <div className="flex items-center justify-between mb-1.5">
         <h4 className="font-semibold text-white text-xs truncate pr-1">{roleScorecard.roleName}</h4>
-        <Badge className={`${getGradeColor(roleScorecard.averageGrade)} border px-1.5 py-0.5 text-xs font-bold flex-shrink-0`}>
-          {roleScorecard.averageGrade}
+        <Badge className={`${getGradeColor(roleScorecard.combinedGrade || roleScorecard.averageGrade)} border px-1.5 py-0.5 text-xs font-bold flex-shrink-0`}>
+          {roleScorecard.combinedGrade || roleScorecard.averageGrade}
         </Badge>
       </div>
-      <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-m8bs-muted">Perf</span>
-          <span className="text-white font-semibold">{roleScorecard.averageGradePercentage.toFixed(0)}%</span>
-        </div>
-        <div className="h-1.5 bg-m8bs-card rounded-full overflow-hidden">
-          <div
-            className={`h-full ${getProgressColor(roleScorecard.averageGradePercentage)} transition-all duration-300 rounded-full`}
-            style={{ width: `${Math.min(roleScorecard.averageGradePercentage, 100)}%` }}
-          />
-        </div>
+      <div className="space-y-1.5">
+        {/* Core Behaviors Grade */}
+        {roleScorecard.defaultMetricsGrade !== undefined && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-m8bs-muted">Core</span>
+            <div className="flex items-center gap-1">
+              <span className="text-white font-semibold text-[10px]">
+                {roleScorecard.defaultMetricsAverage?.toFixed(0) || '0'}%
+              </span>
+              <Badge className={`${getGradeColor(roleScorecard.defaultMetricsGrade)} border px-1 py-0 text-[10px]`}>
+                {roleScorecard.defaultMetricsGrade}
+              </Badge>
+            </div>
+          </div>
+        )}
+        {/* Role-Specific Grade */}
+        {roleScorecard.userMetricsGrade !== undefined && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-m8bs-muted">Role</span>
+            <div className="flex items-center gap-1">
+              <span className="text-white font-semibold text-[10px]">
+                {roleScorecard.userMetricsAverage?.toFixed(0) || '0'}%
+              </span>
+              <Badge className={`${getGradeColor(roleScorecard.userMetricsGrade)} border px-1 py-0 text-[10px]`}>
+                {roleScorecard.userMetricsGrade}
+              </Badge>
+            </div>
+          </div>
+        )}
+        {/* Combined Grade */}
+        {roleScorecard.combinedGrade !== undefined && (
+          <div className="flex items-center justify-between text-xs pt-0.5 border-t border-m8bs-border">
+            <span className="text-m8bs-muted font-semibold">Combined</span>
+            <div className="flex items-center gap-1">
+              <span className="text-white font-semibold text-[10px]">
+                {roleScorecard.combinedAverage?.toFixed(0) || '0'}%
+              </span>
+              <Badge className={`${getGradeColor(roleScorecard.combinedGrade)} border px-1 py-0 text-[10px] font-bold`}>
+                {roleScorecard.combinedGrade}
+              </Badge>
+            </div>
+          </div>
+        )}
+        {/* Fallback to overall performance if no separated scores */}
+        {roleScorecard.combinedGrade === undefined && roleScorecard.defaultMetricsGrade === undefined && roleScorecard.userMetricsGrade === undefined && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-m8bs-muted">Perf</span>
+            <span className="text-white font-semibold">{roleScorecard.averageGradePercentage.toFixed(0)}%</span>
+          </div>
+        )}
       </div>
     </div>
   )
-}
+})
 
 
 
