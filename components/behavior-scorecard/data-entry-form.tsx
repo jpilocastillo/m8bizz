@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { behaviorScorecardService, type ScorecardRole, type ScorecardMetric, calculatePercentageOfGoal, calculateGrade, isDefaultMetric } from '@/lib/behavior-scorecard'
-import { Save, Calendar, Calculator, Plus, Trash2, Edit2, Check, X, AlertCircle, Loader2, CheckCircle2, RefreshCw, Copy, Clipboard, RotateCcw, ArrowDown, HelpCircle, Zap, Search } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { behaviorScorecardService, type ScorecardRole, type ScorecardMetric, type MetricType, calculatePercentageOfGoal, calculateGrade, isDefaultMetric } from '@/lib/behavior-scorecard'
+import { Save, Calendar, Calculator, Plus, Trash2, Edit2, Check, X, AlertCircle, Loader2, CheckCircle2, RefreshCw, Copy, Clipboard, RotateCcw, ArrowDown, HelpCircle, Zap, Search, Settings } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
@@ -41,6 +42,9 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
   const [focusedInput, setFocusedInput] = useState<string | null>(null)
   const inputRefs = useRef<Record<string, HTMLInputElement>>({})
   const originalValuesRef = useRef<Record<string, { goal: number; value: number }>>({})
+  const [editingMetricProperties, setEditingMetricProperties] = useState<string | null>(null)
+  const [metricEditData, setMetricEditData] = useState<Record<string, { name: string; type: MetricType; isInverted: boolean }>>({})
+  const [updatingMetric, setUpdatingMetric] = useState<string | null>(null)
 
   // Generate localStorage key based on role, year, and month
   const getStorageKey = useCallback(() => {
@@ -756,32 +760,196 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                       }`}
                     >
                       <TableCell className="font-medium text-white sticky left-0 bg-inherit z-10 border-r border-m8bs-border">
-                        <div className="group relative">
-                          <div className="font-semibold flex items-center gap-2">
-                            {metric.metricName}
-                            {isDefaultMetric(metric.metricName) && (
-                              <Badge variant="outline" className="text-xs border-m8bs-blue/50 text-m8bs-blue">
-                                Core
-                              </Badge>
-                            )}
-                            <HelpCircle className="h-3 w-3 text-m8bs-muted opacity-50 cursor-help" />
-                          </div>
-                          <div className="text-xs text-m8bs-muted mt-1">
-                            {metric.metricType}
-                            {metric.isInverted && ' • (lower is better)'}
-                          </div>
-                          {/* Tooltip */}
-                          <div className="hidden">
-                            <div className="text-xs text-white">
-                              <div className="font-semibold mb-1">{metric.metricName}</div>
-                              <div className="text-m8bs-muted">
-                                Type: {metric.metricType}
-                                {metric.isInverted && <div className="mt-1">Lower values are better</div>}
-                                <div className="mt-1">Goal: {formatValue(goalValue, metric.metricType)}</div>
-                              </div>
+                        {editingMetricProperties === metric.id ? (
+                          <div className="space-y-2">
+                            <Input
+                              value={metricEditData[metric.id]?.name || metric.metricName}
+                              onChange={(e) => setMetricEditData(prev => ({
+                                ...prev,
+                                [metric.id]: {
+                                  ...prev[metric.id],
+                                  name: e.target.value,
+                                  type: prev[metric.id]?.type || metric.metricType,
+                                  isInverted: prev[metric.id]?.isInverted ?? metric.isInverted
+                                }
+                              }))}
+                              disabled={isDefaultMetric(metric.metricName)}
+                              placeholder="Metric name"
+                              className="bg-m8bs-card border-m8bs-border text-white text-sm"
+                            />
+                            <Select
+                              value={metricEditData[metric.id]?.type || metric.metricType}
+                              onValueChange={(value: MetricType) => setMetricEditData(prev => ({
+                                ...prev,
+                                [metric.id]: {
+                                  ...prev[metric.id],
+                                  name: prev[metric.id]?.name || metric.metricName,
+                                  type: value,
+                                  isInverted: prev[metric.id]?.isInverted ?? metric.isInverted
+                                }
+                              }))}
+                            >
+                              <SelectTrigger className="bg-m8bs-card border-m8bs-border text-white text-sm h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-m8bs-card border-m8bs-border">
+                                <SelectItem value="count">Count</SelectItem>
+                                <SelectItem value="currency">Currency</SelectItem>
+                                <SelectItem value="percentage">Percentage</SelectItem>
+                                <SelectItem value="time">Time</SelectItem>
+                                <SelectItem value="rating_1_5">Rating (1-5)</SelectItem>
+                                <SelectItem value="rating_scale">Rating Scale</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id={`inverted-${metric.id}`}
+                                checked={metricEditData[metric.id]?.isInverted ?? metric.isInverted}
+                                onChange={(e) => setMetricEditData(prev => ({
+                                  ...prev,
+                                  [metric.id]: {
+                                    ...prev[metric.id],
+                                    name: prev[metric.id]?.name || metric.metricName,
+                                    type: prev[metric.id]?.type || metric.metricType,
+                                    isInverted: e.target.checked
+                                  }
+                                }))}
+                                className="w-4 h-4 rounded border-m8bs-border bg-m8bs-card text-m8bs-blue focus:ring-m8bs-blue"
+                              />
+                              <Label htmlFor={`inverted-${metric.id}`} className="text-xs text-m8bs-muted cursor-pointer">
+                                Lower is better
+                              </Label>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={async () => {
+                                  const editData = metricEditData[metric.id]
+                                  if (!editData) {
+                                    setEditingMetricProperties(null)
+                                    return
+                                  }
+                                  
+                                  setUpdatingMetric(metric.id)
+                                  try {
+                                    const updates: {
+                                      metricName?: string
+                                      metricType?: MetricType
+                                      isInverted?: boolean
+                                    } = {}
+                                    
+                                    if (!isDefaultMetric(metric.metricName) && editData.name !== metric.metricName) {
+                                      updates.metricName = editData.name
+                                    }
+                                    if (editData.type !== metric.metricType) {
+                                      updates.metricType = editData.type
+                                    }
+                                    if (editData.isInverted !== metric.isInverted) {
+                                      updates.isInverted = editData.isInverted
+                                    }
+                                    
+                                    if (Object.keys(updates).length > 0) {
+                                      const result = await behaviorScorecardService.updateMetric(metric.id, updates)
+                                      if (result.success) {
+                                        toast({
+                                          title: "Metric updated",
+                                          description: "Metric properties have been updated.",
+                                        })
+                                        setEditingMetricProperties(null)
+                                        setMetricEditData(prev => {
+                                          const newData = { ...prev }
+                                          delete newData[metric.id]
+                                          return newData
+                                        })
+                                        if (onSave) {
+                                          await onSave()
+                                        }
+                                      } else {
+                                        toast({
+                                          title: "Error",
+                                          description: result.error || "Failed to update metric",
+                                          variant: "destructive",
+                                        })
+                                      }
+                                    } else {
+                                      setEditingMetricProperties(null)
+                                    }
+                                  } catch (error) {
+                                    console.error('Error updating metric:', error)
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to update metric",
+                                      variant: "destructive",
+                                    })
+                                  } finally {
+                                    setUpdatingMetric(null)
+                                  }
+                                }}
+                                disabled={updatingMetric === metric.id}
+                                className="h-6 w-6 p-0 text-green-400"
+                              >
+                                {updatingMetric === metric.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Check className="h-3 w-3" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setEditingMetricProperties(null)
+                                  setMetricEditData(prev => {
+                                    const newData = { ...prev }
+                                    delete newData[metric.id]
+                                    return newData
+                                  })
+                                }}
+                                disabled={updatingMetric === metric.id}
+                                className="h-6 w-6 p-0 text-red-400"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="group relative">
+                            <div className="font-semibold flex items-center gap-2">
+                              {metric.metricName}
+                              {isDefaultMetric(metric.metricName) && (
+                                <Badge variant="outline" className="text-xs border-m8bs-blue/50 text-m8bs-blue">
+                                  Core
+                                </Badge>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setEditingMetricProperties(metric.id)
+                                  setMetricEditData(prev => ({
+                                    ...prev,
+                                    [metric.id]: {
+                                      name: metric.metricName,
+                                      type: metric.metricType,
+                                      isInverted: metric.isInverted
+                                    }
+                                  }))
+                                }}
+                                className="h-5 w-5 p-0 text-m8bs-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Edit metric properties"
+                              >
+                                <Settings className="h-3 w-3" />
+                              </Button>
+                              <HelpCircle className="h-3 w-3 text-m8bs-muted opacity-50 cursor-help" />
+                            </div>
+                            <div className="text-xs text-m8bs-muted mt-1">
+                              {metric.metricType}
+                              {metric.isInverted && ' • (lower is better)'}
+                            </div>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="p-2">
                         <Input

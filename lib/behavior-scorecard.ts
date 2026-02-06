@@ -38,6 +38,7 @@ export interface MetricScore {
 export interface RoleScorecard {
   roleId: string
   roleName: ScorecardRole
+  personName?: string | null
   metrics: MetricScore[]
   averageGradePercentage: number
   averageGrade: Grade
@@ -255,7 +256,7 @@ export class BehaviorScorecardService {
       // Check if roles already exist
       const { data: existingRoles } = await supabase
         .from('scorecard_roles')
-        .select('id, role_name')
+        .select('id, role_name, person_name')
         .eq('user_id', user.id)
 
       const existingRoleNames = new Set(existingRoles?.map((r: { role_name: string }) => r.role_name) || [])
@@ -355,7 +356,7 @@ export class BehaviorScorecardService {
       // Get all existing roles for the user
       const { data: existingRoles } = await supabase
         .from('scorecard_roles')
-        .select('id, role_name')
+        .select('id, role_name, person_name')
         .eq('user_id', user.id)
 
       if (!existingRoles || existingRoles.length === 0) {
@@ -438,7 +439,7 @@ export class BehaviorScorecardService {
   }
 
   // Create a new role
-  async createRole(roleName: string): Promise<{ success: boolean; error?: string; roleId?: string }> {
+  async createRole(roleName: string, personName?: string): Promise<{ success: boolean; error?: string; roleId?: string }> {
     try {
       const supabase = this.getSupabase()
       const { data: { user } } = await supabase.auth.getUser()
@@ -489,6 +490,7 @@ export class BehaviorScorecardService {
         .insert({
           user_id: user.id,
           role_name: trimmedRoleName,
+          person_name: personName?.trim() || null,
         })
         .select('id')
         .single()
@@ -542,8 +544,8 @@ export class BehaviorScorecardService {
     }
   }
 
-  // Update a role name
-  async updateRole(roleId: string, newRoleName: string): Promise<{ success: boolean; error?: string }> {
+  // Update a role name and/or person name
+  async updateRole(roleId: string, newRoleName: string, personName?: string): Promise<{ success: boolean; error?: string }> {
     try {
       const supabase = this.getSupabase()
       const { data: { user } } = await supabase.auth.getUser()
@@ -561,7 +563,7 @@ export class BehaviorScorecardService {
       // Verify the role belongs to the user
       const { data: role, error: roleError } = await supabase
         .from('scorecard_roles')
-        .select('id, role_name')
+        .select('id, role_name, person_name')
         .eq('id', roleId)
         .eq('user_id', user.id)
         .single()
@@ -570,24 +572,30 @@ export class BehaviorScorecardService {
         return { success: false, error: 'Role not found or access denied' }
       }
 
-      // Check if the new name is the same as the current name (exact match)
-      if (role.role_name === trimmedRoleName) {
+      // Check if role name or person name has changed
+      const roleNameChanged = role.role_name !== trimmedRoleName
+      const currentPersonName = role.person_name || null
+      const newPersonName = personName !== undefined ? (personName?.trim() || null) : currentPersonName
+      const personNameChanged = currentPersonName !== newPersonName
+      
+      // If nothing has changed, return early
+      if (!roleNameChanged && !personNameChanged) {
         return { success: true } // No change needed
       }
 
       // Check if it's just a case change of the current role name
-      const isCaseChangeOnly = role.role_name.toLowerCase() === trimmedRoleName.toLowerCase()
+      const isCaseChangeOnly = !roleNameChanged || role.role_name.toLowerCase() === trimmedRoleName.toLowerCase()
       
-      // If it's just a case change, allow it without duplicate check
-      if (isCaseChangeOnly) {
-        // Allow the update - it's just changing the case of the current role
+      // If it's just a case change or only person name changed, allow it without duplicate check
+      if (isCaseChangeOnly || !roleNameChanged) {
+        // Allow the update - it's just changing the case of the current role or only person name
         // Continue to the update below
       } else {
         // Check if another role with the same name already exists (case-insensitive)
         // First, get all roles for the user to check case-insensitively
         const { data: allRoles, error: fetchError } = await supabase
           .from('scorecard_roles')
-          .select('id, role_name')
+          .select('id, role_name, person_name')
           .eq('user_id', user.id)
 
         if (fetchError) {
@@ -597,7 +605,7 @@ export class BehaviorScorecardService {
 
         // Check for case-insensitive duplicate (excluding the current role)
         const duplicateRole = allRoles?.find(
-          r => r.id !== roleId && r.role_name.toLowerCase() === trimmedRoleName.toLowerCase()
+          (r: { id: string; role_name: string }) => r.id !== roleId && r.role_name.toLowerCase() === trimmedRoleName.toLowerCase()
         )
 
         if (duplicateRole) {
@@ -605,10 +613,14 @@ export class BehaviorScorecardService {
         }
       }
 
-      // Update the role name
+      // Update the role name and/or person name
+      const updateData: { role_name: string; person_name?: string | null } = { role_name: trimmedRoleName }
+      if (personName !== undefined) {
+        updateData.person_name = personName?.trim() || null
+      }
       const { data: updatedRole, error: updateError } = await supabase
         .from('scorecard_roles')
-        .update({ role_name: trimmedRoleName })
+        .update(updateData)
         .eq('id', roleId)
         .select()
         .single()
@@ -868,7 +880,7 @@ export class BehaviorScorecardService {
       // Get all roles for user
       const { data: roles } = await supabase
         .from('scorecard_roles')
-        .select('id, role_name')
+        .select('id, role_name, person_name')
         .eq('user_id', user.id)
 
       if (!roles || roles.length === 0) {
@@ -1197,7 +1209,7 @@ export class BehaviorScorecardService {
       // Get all roles
       const { data: roles } = await supabase
         .from('scorecard_roles')
-        .select('id, role_name')
+        .select('id, role_name, person_name')
         .eq('user_id', user.id)
         .order('role_name', { ascending: true })
 
@@ -1370,6 +1382,7 @@ export class BehaviorScorecardService {
           roleScorecards.push({
             roleId: role.id,
             roleName: role.role_name as ScorecardRole,
+            personName: role.person_name || null,
             metrics: metricScores,
             averageGradePercentage,
             averageGrade,
@@ -1441,6 +1454,7 @@ export class BehaviorScorecardService {
         roleScorecards.push({
           roleId: role.id,
           roleName: role.role_name as ScorecardRole,
+          personName: role.person_name || null,
           metrics: scores,
           averageGradePercentage: avgPercentage,
           averageGrade: (summary.average_grade_letter as Grade) || 'F',
@@ -1743,7 +1757,7 @@ export class BehaviorScorecardService {
       // Get all roles
       const { data: roles } = await supabase
         .from('scorecard_roles')
-        .select('id, role_name')
+        .select('id, role_name, person_name')
         .eq('user_id', user.id)
         .order('role_name', { ascending: true })
 
@@ -1832,6 +1846,7 @@ export class BehaviorScorecardService {
         roleScorecards.push({
           roleId: role.id,
           roleName: role.role_name as ScorecardRole,
+          personName: role.person_name || null,
           metrics: metricScores,
           averageGradePercentage,
           averageGrade,
@@ -1892,7 +1907,7 @@ export class BehaviorScorecardService {
       // Get all roles
       const { data: roles } = await supabase
         .from('scorecard_roles')
-        .select('id, role_name')
+        .select('id, role_name, person_name')
         .eq('user_id', user.id)
         .order('role_name', { ascending: true })
 
@@ -1981,6 +1996,7 @@ export class BehaviorScorecardService {
         roleScorecards.push({
           roleId: role.id,
           roleName: role.role_name as ScorecardRole,
+          personName: role.person_name || null,
           metrics: metricScores,
           averageGradePercentage,
           averageGrade,
@@ -2285,6 +2301,91 @@ export class BehaviorScorecardService {
     } catch (error) {
       console.error('Error creating metric:', error)
       return { success: false, error: 'Failed to create metric' }
+    }
+  }
+
+  // Update a metric (name, type, isInverted)
+  async updateMetric(
+    metricId: string,
+    updates: {
+      metricName?: string
+      metricType?: MetricType
+      isInverted?: boolean
+    }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const supabase = this.getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Verify the metric belongs to a role owned by the user
+      const { data: metric, error: metricError } = await supabase
+        .from('scorecard_metrics')
+        .select('id, role_id')
+        .eq('id', metricId)
+        .single()
+
+      if (metricError || !metric) {
+        return { success: false, error: 'Metric not found' }
+      }
+
+      // Verify the role belongs to the user
+      const { data: role, error: roleError } = await supabase
+        .from('scorecard_roles')
+        .select('id, user_id')
+        .eq('id', metric.role_id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (roleError || !role) {
+        return { success: false, error: 'Access denied. You can only update metrics for your own roles.' }
+      }
+
+      // Build update object
+      const updateData: {
+        metric_name?: string
+        metric_type?: MetricType
+        is_inverted?: boolean
+      } = {}
+
+      if (updates.metricName !== undefined) {
+        if (!updates.metricName.trim()) {
+          return { success: false, error: 'Metric name cannot be empty' }
+        }
+        updateData.metric_name = updates.metricName.trim()
+      }
+
+      if (updates.metricType !== undefined) {
+        updateData.metric_type = updates.metricType
+      }
+
+      if (updates.isInverted !== undefined) {
+        updateData.is_inverted = updates.isInverted
+      }
+
+      // If no updates, return success
+      if (Object.keys(updateData).length === 0) {
+        return { success: true }
+      }
+
+      // Update the metric
+      const { error } = await supabase
+        .from('scorecard_metrics')
+        .update(updateData)
+        .eq('id', metricId)
+
+      if (error) {
+        console.error('Error updating metric:', error)
+        return { success: false, error: error.message || 'Failed to update metric' }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating metric:', error)
+      return { success: false, error: 'Failed to update metric' }
     }
   }
 

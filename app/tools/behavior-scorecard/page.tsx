@@ -32,7 +32,7 @@ export default function BehaviorScorecardPage() {
   const [selectedQuarter, setSelectedQuarter] = useState(Math.ceil((new Date().getMonth() + 1) / 3))
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [periodType, setPeriodType] = useState<PeriodType>('month')
-  const [roles, setRoles] = useState<Array<{ id: string; name: ScorecardRole; metrics: ScorecardMetric[] }>>([])
+  const [roles, setRoles] = useState<Array<{ id: string; name: ScorecardRole; personName?: string | null; metrics: ScorecardMetric[] }>>([])
   const [selectedRole, setSelectedRole] = useState<ScorecardRole | null>(null)
   const [profile, setProfile] = useState<any>(null)
   const [isInitialized, setIsInitialized] = useState(false)
@@ -89,7 +89,7 @@ export default function BehaviorScorecardPage() {
 
       const { data: rolesData, error: rolesError } = await supabase
         .from('scorecard_roles')
-        .select('id, role_name')
+        .select('id, role_name, person_name')
         .eq('user_id', authUser.id)
         .order('role_name', { ascending: true })
 
@@ -128,7 +128,7 @@ export default function BehaviorScorecardPage() {
           // Reload roles after initialization
           const { data: newRolesData } = await supabase
             .from('scorecard_roles')
-            .select('id, role_name')
+            .select('id, role_name, person_name')
             .eq('user_id', authUser.id)
             .order('role_name', { ascending: true })
           
@@ -169,9 +169,9 @@ export default function BehaviorScorecardPage() {
           })()
         ])
         
-        const rolesWithMetrics: Array<{ id: string; name: ScorecardRole; metrics: ScorecardMetric[] }> = []
+        const rolesWithMetrics: Array<{ id: string; name: ScorecardRole; personName?: string | null; metrics: ScorecardMetric[] }> = []
         
-        finalRolesData.forEach((role: { id: string; role_name: string }) => {
+        finalRolesData.forEach((role: { id: string; role_name: string; person_name?: string | null }) => {
           // Skip if role is null or undefined
           if (!role || !role.id) {
             console.warn('Skipping invalid role:', role)
@@ -182,6 +182,7 @@ export default function BehaviorScorecardPage() {
           rolesWithMetrics.push({
             id: role.id,
             name: role.role_name as ScorecardRole,
+            personName: role.person_name || null,
             metrics: metrics,
           })
         })
@@ -251,6 +252,7 @@ export default function BehaviorScorecardPage() {
           roleScorecards: roles.map(role => ({
             roleId: role.id,
             roleName: role.name,
+            personName: role.personName || null,
             metrics: role.metrics.map(metric => ({
               metricId: metric.id,
               metricName: metric.metricName,
@@ -604,36 +606,48 @@ export default function BehaviorScorecardPage() {
                 <Card className="bg-m8bs-card border-m8bs-card-alt shadow-xl hover:shadow-2xl transition-shadow duration-300">
                   <CardContent className="p-0">
                     <Tabs defaultValue={scorecardData.roleScorecards[0]?.roleId || ""} className="w-full">
-                      <TabsList className="w-full bg-m8bs-card-alt/90 backdrop-blur-sm p-2 border-b border-m8bs-border/50 rounded-t-xl rounded-b-none grid grid-cols-2 lg:grid-cols-4 gap-2 relative overflow-hidden">
+                      <div className="relative bg-m8bs-card-alt/90 backdrop-blur-sm border-b border-m8bs-border/50 rounded-t-xl rounded-b-none overflow-hidden">
                         {/* Subtle background gradient */}
                         <div className="absolute inset-0 bg-gradient-to-b from-m8bs-blue/5 via-transparent to-transparent pointer-events-none" />
                         
-                        {scorecardData.roleScorecards.map((roleScorecard, index) => (
-                          <TabsTrigger
-                            key={roleScorecard.roleId}
-                            value={roleScorecard.roleId}
-                            className="relative flex items-center gap-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue/90 data-[state=active]:to-m8bs-blue-dark/90 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-m8bs-blue/20 data-[state=active]:scale-[1.02] text-white/60 hover:text-white hover:bg-m8bs-card/70 hover:scale-[1.01] py-3 px-3 text-sm font-semibold transition-all duration-300 rounded-lg group overflow-hidden"
-                            style={{
-                              animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
-                            }}
-                          >
-                            <Users className="h-4 w-4 relative z-10 group-hover:scale-110 transition-transform duration-300 flex-shrink-0" />
-                            <span className="truncate relative z-10 flex-1 min-w-0">{roleScorecard.roleName}</span>
-                            <Badge 
-                              variant="outline" 
-                              className={`relative z-10 ml-auto text-xs font-bold px-2 py-0.5 flex-shrink-0 transition-all duration-300 data-[state=active]:scale-105 ${
-                                roleScorecard.averageGrade === 'A' ? 'border-green-500/50 text-green-400 bg-green-500/10 data-[state=active]:bg-green-500/20 data-[state=active]:border-green-500/70' :
-                                roleScorecard.averageGrade === 'B' ? 'border-blue-500/50 text-blue-400 bg-blue-500/10 data-[state=active]:bg-blue-500/20 data-[state=active]:border-blue-500/70' :
-                                roleScorecard.averageGrade === 'C' ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10 data-[state=active]:bg-yellow-500/20 data-[state=active]:border-yellow-500/70' :
-                                roleScorecard.averageGrade === 'D' ? 'border-orange-500/50 text-orange-400 bg-orange-500/10 data-[state=active]:bg-orange-500/20 data-[state=active]:border-orange-500/70' :
-                                'border-red-500/50 text-red-400 bg-red-500/10 data-[state=active]:bg-red-500/20 data-[state=active]:border-red-500/70'
-                              }`}
-                            >
-                              {roleScorecard.averageGrade}
-                            </Badge>
-                          </TabsTrigger>
-                        ))}
-                      </TabsList>
+                        {/* Scrollable tabs container */}
+                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-m8bs-border scrollbar-track-transparent">
+                          <TabsList className="w-full min-w-max bg-transparent p-2 gap-2 flex flex-nowrap h-auto">
+                            {scorecardData.roleScorecards.map((roleScorecard, index) => (
+                              <TabsTrigger
+                                key={roleScorecard.roleId}
+                                value={roleScorecard.roleId}
+                                className="relative flex flex-col items-start gap-0.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-m8bs-blue/90 data-[state=active]:to-m8bs-blue-dark/90 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-m8bs-blue/20 data-[state=active]:scale-[1.02] text-white/60 hover:text-white hover:bg-m8bs-card/70 hover:scale-[1.01] py-2.5 px-3 text-sm font-semibold transition-all duration-300 rounded-lg group overflow-hidden min-w-[140px] max-w-[200px] flex-shrink-0"
+                                style={{
+                                  animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
+                                }}
+                              >
+                                <div className="flex items-center gap-2 w-full">
+                                  <Users className="h-3.5 w-3.5 relative z-10 group-hover:scale-110 transition-transform duration-300 flex-shrink-0" />
+                                  <span className="truncate relative z-10 flex-1 min-w-0 text-xs font-bold leading-tight">{roleScorecard.roleName}</span>
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`relative z-10 ml-auto text-[10px] font-bold px-1.5 py-0 flex-shrink-0 transition-all duration-300 data-[state=active]:scale-105 ${
+                                      roleScorecard.averageGrade === 'A' ? 'border-green-500/50 text-green-400 bg-green-500/10 data-[state=active]:bg-green-500/20 data-[state=active]:border-green-500/70' :
+                                      roleScorecard.averageGrade === 'B' ? 'border-blue-500/50 text-blue-400 bg-blue-500/10 data-[state=active]:bg-blue-500/20 data-[state=active]:border-blue-500/70' :
+                                      roleScorecard.averageGrade === 'C' ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10 data-[state=active]:bg-yellow-500/20 data-[state=active]:border-yellow-500/70' :
+                                      roleScorecard.averageGrade === 'D' ? 'border-orange-500/50 text-orange-400 bg-orange-500/10 data-[state=active]:bg-orange-500/20 data-[state=active]:border-orange-500/70' :
+                                      'border-red-500/50 text-red-400 bg-red-500/10 data-[state=active]:bg-red-500/20 data-[state=active]:border-red-500/70'
+                                    }`}
+                                  >
+                                    {roleScorecard.averageGrade}
+                                  </Badge>
+                                </div>
+                                {roleScorecard.personName && (
+                                  <span className="text-[9px] text-white/40 data-[state=active]:text-white/70 truncate w-full relative z-10 ml-[22px] leading-tight">
+                                    {roleScorecard.personName}
+                                  </span>
+                                )}
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+                        </div>
+                      </div>
                       {scorecardData.roleScorecards.map((roleScorecard, index) => (
                         <TabsContent
                           key={roleScorecard.roleId}

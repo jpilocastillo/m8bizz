@@ -180,7 +180,12 @@ const RoleCard = memo(function RoleCard({
   return (
     <div className="bg-m8bs-card-alt border border-m8bs-border rounded-lg p-2 hover:border-m8bs-blue/50 transition-colors">
       <div className="flex items-center justify-between mb-1.5">
-        <h4 className="font-semibold text-white text-xs truncate pr-1">{roleScorecard.roleName}</h4>
+        <div className="flex-1 min-w-0 pr-1">
+          <h4 className="font-semibold text-white text-xs truncate">{roleScorecard.roleName}</h4>
+          {roleScorecard.personName && (
+            <p className="text-m8bs-muted text-[10px] truncate mt-0.5">{roleScorecard.personName}</p>
+          )}
+        </div>
         <Badge className={`${getGradeColor(roleScorecard.combinedGrade || roleScorecard.averageGrade)} border px-1.5 py-0.5 text-xs font-bold flex-shrink-0`}>
           {roleScorecard.combinedGrade || roleScorecard.averageGrade}
         </Badge>

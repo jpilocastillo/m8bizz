@@ -92,6 +92,9 @@ export const ScorecardDisplay = memo(function ScorecardDisplay({ roleScorecard }
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base font-bold text-white">{roleScorecard.roleName}</CardTitle>
+            {roleScorecard.personName && (
+              <CardDescription className="text-m8bs-muted text-sm mt-0.5">{roleScorecard.personName}</CardDescription>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Badge className={`${getGradeColor(combinedGrade)} border px-2 py-0.5 text-sm font-bold shadow-sm`}>

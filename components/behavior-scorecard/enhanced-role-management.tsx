@@ -22,18 +22,20 @@ import {
 } from '@/components/ui/alert-dialog'
 
 interface EnhancedRoleManagementProps {
-  roles: Array<{ id: string; name: ScorecardRole; metrics: any[] }>
+  roles: Array<{ id: string; name: ScorecardRole; personName?: string | null; metrics: any[] }>
   onRoleChange?: () => void
 }
 
 export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleManagementProps) {
   const { toast } = useToast()
   const [newRoleName, setNewRoleName] = useState('')
+  const [newPersonName, setNewPersonName] = useState('')
   const [adding, setAdding] = useState(false)
   const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
   const [editingRoleName, setEditingRoleName] = useState('')
+  const [editingPersonName, setEditingPersonName] = useState('')
   const [updating, setUpdating] = useState(false)
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set())
 
@@ -64,13 +66,14 @@ export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleMana
 
     setAdding(true)
     try {
-      const result = await behaviorScorecardService.createRole(newRoleName.trim())
+      const result = await behaviorScorecardService.createRole(newRoleName.trim(), newPersonName.trim() || undefined)
       if (result.success) {
         toast({
           title: "Role added",
           description: `Role "${newRoleName.trim()}" has been created successfully.`,
         })
         setNewRoleName('')
+        setNewPersonName('')
         if (onRoleChange) {
           await onRoleChange()
         }
@@ -93,14 +96,16 @@ export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleMana
     }
   }
 
-  const handleEditRole = (role: { id: string; name: ScorecardRole }) => {
+  const handleEditRole = (role: { id: string; name: ScorecardRole; personName?: string | null }) => {
     setEditingRoleId(role.id)
     setEditingRoleName(role.name)
+    setEditingPersonName(role.personName || '')
   }
 
   const handleCancelEdit = () => {
     setEditingRoleId(null)
     setEditingRoleName('')
+    setEditingPersonName('')
   }
 
   const handleSaveEdit = async () => {
@@ -114,16 +119,24 @@ export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleMana
     }
 
     const trimmedName = editingRoleName.trim()
+    const trimmedPersonName = editingPersonName.trim() || null
     const currentRole = roles.find(r => r.id === editingRoleId)
-    if (currentRole && currentRole.name === trimmedName) {
+    
+    // Check if anything has changed
+    const roleNameChanged = currentRole && currentRole.name !== trimmedName
+    const personNameChanged = (currentRole?.personName || null) !== trimmedPersonName
+    
+    // If nothing changed, just exit edit mode
+    if (currentRole && !roleNameChanged && !personNameChanged) {
       setEditingRoleId(null)
       setEditingRoleName('')
+      setEditingPersonName('')
       return
     }
 
     setUpdating(true)
     try {
-      const result = await behaviorScorecardService.updateRole(editingRoleId, trimmedName)
+      const result = await behaviorScorecardService.updateRole(editingRoleId, trimmedName, trimmedPersonName || undefined)
       if (result.success) {
         toast({
           title: "Role updated",
@@ -131,6 +144,7 @@ export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleMana
         })
         setEditingRoleId(null)
         setEditingRoleName('')
+        setEditingPersonName('')
         if (onRoleChange) {
           await onRoleChange()
         }
@@ -207,30 +221,44 @@ export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleMana
         <CardContent className="space-y-6">
           {/* Add Role Section */}
           <div className="space-y-4 pb-4 border-b border-m8bs-border">
-            <div className="flex items-end gap-2">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="new-role" className="text-white">Add New Role</Label>
-                <Input
-                  id="new-role"
-                  placeholder="Enter role name (e.g., Sales Manager)"
-                  value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !adding) {
-                      handleAddRole()
-                    }
-                  }}
-                  className="bg-m8bs-card-alt border-m8bs-border text-white placeholder:text-m8bs-muted"
-                />
+            <div className="space-y-2">
+              <Label className="text-white">Add New Role</Label>
+              <div className="flex items-end gap-2">
+                <div className="flex-1 space-y-2">
+                  <Input
+                    id="new-role"
+                    placeholder="Enter role name (e.g., Sales Manager)"
+                    value={newRoleName}
+                    onChange={(e) => setNewRoleName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !adding) {
+                        handleAddRole()
+                      }
+                    }}
+                    className="bg-m8bs-card-alt border-m8bs-border text-white placeholder:text-m8bs-muted"
+                  />
+                  <Input
+                    id="new-person"
+                    placeholder="Person name (optional)"
+                    value={newPersonName}
+                    onChange={(e) => setNewPersonName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !adding) {
+                        handleAddRole()
+                      }
+                    }}
+                    className="bg-m8bs-card-alt border-m8bs-border text-white placeholder:text-m8bs-muted"
+                  />
+                </div>
+                <Button
+                  onClick={handleAddRole}
+                  disabled={adding || !newRoleName.trim()}
+                  className="bg-m8bs-blue text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {adding ? 'Adding...' : 'Add Role'}
+                </Button>
               </div>
-              <Button
-                onClick={handleAddRole}
-                disabled={adding || !newRoleName.trim()}
-                className="bg-m8bs-blue text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {adding ? 'Adding...' : 'Add Role'}
-              </Button>
             </div>
           </div>
 
@@ -290,8 +318,9 @@ export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleMana
                             <div className="flex items-center gap-3 flex-1">
                               <Users className="h-4 w-4 text-m8bs-muted" />
                               {isEditing ? (
-                                <div className="flex items-center gap-2 flex-1">
+                                <div className="flex flex-col gap-2 flex-1">
                                   <Input
+                                    placeholder="Role name"
                                     value={editingRoleName}
                                     onChange={(e) => setEditingRoleName(e.target.value)}
                                     onKeyDown={(e) => {
@@ -302,33 +331,49 @@ export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleMana
                                       }
                                     }}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="bg-m8bs-card border-m8bs-border text-white flex-1"
+                                    className="bg-m8bs-card border-m8bs-border text-white"
                                     autoFocus
                                   />
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleSaveEdit()
+                                  <Input
+                                    placeholder="Person name (optional)"
+                                    value={editingPersonName}
+                                    onChange={(e) => setEditingPersonName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !updating) {
+                                        handleSaveEdit()
+                                      } else if (e.key === 'Escape') {
+                                        handleCancelEdit()
+                                      }
                                     }}
-                                    disabled={updating}
-                                    className="text-green-400"
-                                  >
-                                    <Check className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleCancelEdit()
-                                    }}
-                                    disabled={updating}
-                                    className="text-m8bs-muted"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-m8bs-card border-m8bs-border text-white"
+                                  />
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleSaveEdit()
+                                      }}
+                                      disabled={updating}
+                                      className="text-green-400"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleCancelEdit()
+                                      }}
+                                      disabled={updating}
+                                      className="text-m8bs-muted"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="flex-1">
@@ -336,7 +381,11 @@ export function EnhancedRoleManagement({ roles, onRoleChange }: EnhancedRoleMana
                                     {role.name}
                                   </CardTitle>
                                   <CardDescription className="text-m8bs-muted text-sm mt-1">
-                                    {role.metrics.length} {role.metrics.length === 1 ? 'metric' : 'metrics'}
+                                    {role.personName ? (
+                                      <span>{role.personName} • {role.metrics.length} {role.metrics.length === 1 ? 'metric' : 'metrics'}</span>
+                                    ) : (
+                                      <span>{role.metrics.length} {role.metrics.length === 1 ? 'metric' : 'metrics'}</span>
+                                    )}
                                   </CardDescription>
                                 </div>
                               )}
