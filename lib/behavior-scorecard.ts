@@ -141,13 +141,17 @@ const DEFAULT_METRICS: Record<ScorecardRole, Array<{
   ],
 }
 
-// Calculate grade based on percentage of goal
+// Calculate grade based on percentage of goal using 5-point scale
+// 5 = A, 4 = B, 3 = C, 2 = D, 1 = F
 export function calculateGrade(percentageOfGoal: number): Grade {
-  if (percentageOfGoal >= 90) return 'A'
-  if (percentageOfGoal >= 80) return 'B'
-  if (percentageOfGoal >= 70) return 'C'
-  if (percentageOfGoal >= 60) return 'D'
-  return 'F'
+  // Convert percentage to 5-point scale
+  // 100% = 5, 80% = 4, 60% = 3, 40% = 2, 20% = 1, below 20% = 1
+  // Using thresholds: 100%→5, 80%→4, 60%→3, 40%→2, 20%→1
+  if (percentageOfGoal >= 100) return 'A' // 5
+  if (percentageOfGoal >= 80) return 'B'  // 4
+  if (percentageOfGoal >= 60) return 'C'  // 3
+  if (percentageOfGoal >= 40) return 'D'  // 2
+  return 'F' // 1 (0-39%)
 }
 
 // Default metric names that should be scored separately
