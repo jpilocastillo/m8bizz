@@ -71,10 +71,23 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Handle login page - redirect if already authenticated
+  // Allow password reset and forgot password pages - these need to work even with recovery sessions
+  if (req.nextUrl.pathname === '/reset-password' || req.nextUrl.pathname === '/forgot-password') {
+    return res
+  }
+
+  // Handle login page - redirect if already authenticated (but not if it's a recovery session)
   if (req.nextUrl.pathname === '/login') {
+    // Check if this is a recovery session by looking at the session type
+    // Recovery sessions should be allowed to stay on login/reset pages
     if (session) {
-      return NextResponse.redirect(new URL('/', req.url))
+      // Only redirect if it's not a recovery session
+      // Recovery sessions have a specific flow, so we allow them
+      const isRecovery = req.nextUrl.searchParams.get('type') === 'recovery' || 
+                        req.nextUrl.hash.includes('type=recovery')
+      if (!isRecovery) {
+        return NextResponse.redirect(new URL('/', req.url))
+      }
     }
   }
 
@@ -94,5 +107,7 @@ export const config = {
     '/business-dashboard/:path*',
     '/admin/:path*',
     '/login',
+    '/reset-password',
+    '/forgot-password',
   ],
 }

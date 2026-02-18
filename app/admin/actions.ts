@@ -358,3 +358,51 @@ export async function resetUserPassword(userId: string, newPassword: string) {
     return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
+
+export async function resetPasswordByEmail(email: string, newPassword: string) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase environment variables")
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+
+    // Find user by email
+    const { data: users, error: listError } = await adminClient.auth.admin.listUsers()
+    
+    if (listError) {
+      console.error("Error listing users:", listError)
+      return { success: false, error: listError.message }
+    }
+
+    const user = users.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+
+    if (!user) {
+      // Don't reveal if email exists for security
+      return { success: false, error: "If an account exists with this email, the password has been reset." }
+    }
+
+    // Reset password directly without sending email
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(user.id, {
+      password: newPassword
+    })
+
+    if (updateError) {
+      console.error("Error resetting password:", updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error in resetPasswordByEmail:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
+  }
+}

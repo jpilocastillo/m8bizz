@@ -28,6 +28,7 @@ export default function ResetPassword() {
   const [isValidToken, setIsValidToken] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isProcessingRecovery, setIsProcessingRecovery] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -42,6 +43,18 @@ export default function ResetPassword() {
   // Verify the reset token when component mounts
   useEffect(() => {
     async function verifyToken() {
+      // Prevent any redirects while processing recovery
+      setIsProcessingRecovery(true)
+      
+      // CRITICAL: Prevent any navigation away from this page during recovery processing
+      const preventNavigation = (e: BeforeUnloadEvent) => {
+        if (isProcessingRecovery) {
+          e.preventDefault()
+          e.returnValue = ''
+        }
+      }
+      window.addEventListener('beforeunload', preventNavigation)
+      
       try {
         const supabase = createClient()
         
@@ -50,8 +63,20 @@ export default function ResetPassword() {
         console.log("Hash:", window.location.hash)
         console.log("Search:", window.location.search)
         
-        // Check for code parameter (PKCE flow) - Supabase sends this in query string
+        // IMPORTANT: Check if we're being redirected from Supabase
+        // If the URL doesn't have reset parameters, we might have been redirected incorrectly
         const urlParams = new URLSearchParams(window.location.search)
+        const code = urlParams.get('code')
+        const hash = window.location.hash
+        
+        // If we're on reset-password but have no code/hash, we might have been redirected
+        // Check if we should stay here or if Supabase redirected us incorrectly
+        if (!code && !hash && window.location.pathname === '/reset-password') {
+          console.warn("On reset-password page but no reset token found. Checking for recovery session...")
+        }
+        
+        // Check for code parameter (PKCE flow) - Supabase sends this in query string
+        // Note: urlParams was already created above
         const code = urlParams.get('code')
         const type = urlParams.get('type')
         
@@ -221,11 +246,18 @@ export default function ResetPassword() {
         })
       } finally {
         setIsVerifying(false)
+        setIsProcessingRecovery(false)
+        window.removeEventListener('beforeunload', preventNavigation)
       }
     }
 
     verifyToken()
-  }, [toast])
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('beforeunload', preventNavigation)
+    }
+  }, [toast, router, isProcessingRecovery])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
