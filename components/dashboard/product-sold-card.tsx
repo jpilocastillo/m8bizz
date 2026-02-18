@@ -5,8 +5,7 @@ import type React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
-import { CheckCircle2, Info, TrendingUp } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { CheckCircle2 } from "lucide-react"
 
 interface ProductDetail {
   label: string
@@ -106,26 +105,25 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
     <motion.div
       whileHover={{ y: -5, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="h-full"
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
     >
       <Card
-        className="bg-m8bs-card rounded-lg overflow-hidden shadow-sm h-full relative"
+        className="bg-m8bs-card rounded-lg overflow-hidden shadow-sm relative"
       >
-        <CardHeader className="bg-m8bs-card px-6 py-4">
-          <CardTitle className="text-xl font-extrabold text-white flex items-center tracking-tight">
-            <div className={`p-2 rounded-lg mr-3 ${colorClasses.light}`}>{icon}</div>
+        <CardHeader className="bg-m8bs-card px-4 py-2">
+          <CardTitle className="text-base font-extrabold text-white flex items-center tracking-tight">
+            <div className={`p-1 rounded-lg mr-2 ${colorClasses.light}`}>{icon}</div>
             {title}
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="p-5">
-          <div className="flex flex-col h-full">
+        <CardContent className="p-3">
+          <div className="flex flex-col">
             {/* Main count with animation */}
-            <div className="flex items-center justify-center mb-4 relative">
+            <div className="flex items-center justify-center mb-2 relative">
               <div className="relative">
-                <svg className="w-32 h-32" viewBox="0 0 100 100">
+                <svg className="w-28 h-28" viewBox="0 0 100 100">
                   {/* Background circle */}
                   <circle cx="50" cy="50" r="45" fill="none" stroke="#1f2937" strokeWidth="8" />
 
@@ -169,8 +167,8 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
 
                 {/* Centered count */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-4xl font-extrabold tracking-tight text-white">{animatedCount.toLocaleString()}</span>
-                  <span className={`text-sm font-medium ${colorClasses.text}`}>{
+                  <span className="text-3xl font-extrabold tracking-tight text-white">{animatedCount.toLocaleString()}</span>
+                  <span className={`text-xs font-medium ${colorClasses.text}`}>{
                     title === "AUM Households"
                       ? (animatedCount === 1 ? "Account" : "Accounts")
                       : (animatedCount === 1 ? "Policy" : "Policies")
@@ -180,7 +178,7 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
             </div>
 
             {/* Mini chart */}
-            <div className="h-12 mb-4 flex items-end justify-between px-2">
+            <div className="h-12 mb-2 flex items-end justify-between px-2">
               {chartData.map((value, index) => (
                 <motion.div
                   key={index}
@@ -192,16 +190,18 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
               ))}
             </div>
 
-            {/* Details section */}
-            <div className="space-y-2 mb-4">
-              {details
-                .filter(detail => detail.label.toLowerCase() !== 'commission rate')
-                .map((detail, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
-                    <span className="text-white/80 font-medium">{detail.label}</span>
-                    <span className="text-white font-extrabold">{detail.value}</span>
-                  </div>
-                ))}
+            {/* Details section - fixed height for alignment */}
+            <div className="min-h-[60px] mb-2 flex flex-col justify-start">
+              <div className="space-y-1.5">
+                {details
+                  .filter(detail => detail.label.toLowerCase() !== 'commission rate')
+                  .map((detail, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <span className="text-white/80 font-medium">{detail.label}</span>
+                      <span className="text-white font-extrabold">{detail.value}</span>
+                    </div>
+                  ))}
+              </div>
             </div>
 
             {/* Benefits section */}
@@ -216,28 +216,6 @@ export function ProductSoldCard({ title, count, icon, color, details, benefits, 
                 ))}
               </div>
             )}
-
-            {/* Trend indicator */}
-            <div className="mt-4 pt-3 border-t border-m8bs-border flex items-center justify-between">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 cursor-help">
-                      <Info className="h-3.5 w-3.5 text-white/60" />
-                      <span className="text-xs text-white/60 font-medium">Performance</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
-                    <p className="text-sm">Performance compared to previous events</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <div className="flex items-center gap-1">
-                <TrendingUp className={`h-4 w-4 ${colorClasses.text}`} />
-                <span className={`text-xs font-medium ${colorClasses.text}`}>+12% vs last event</span>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>

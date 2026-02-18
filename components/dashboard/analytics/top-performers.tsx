@@ -36,7 +36,7 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
             return 0
         }
       })
-      .slice(0, 5) // Get top 5
+      .slice(0, 10) // Get top 10
   }, [data, activeMetric])
 
   // Get the top value for progress scaling
@@ -119,7 +119,7 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
   )
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 flex flex-col h-full">
       {/* Metric Selector */}
       <div className="flex flex-wrap gap-1.5">
         {(["ROI", "Conversion", "Revenue", "Attendees", "Clients"] as MetricType[]).map((metric) => {
@@ -151,7 +151,7 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
       </div>
 
       {/* Events List */}
-      <div className="space-y-2">
+      <div className="space-y-2.5 flex-1 overflow-y-auto">
         {sortedEvents.length > 0 ? (
           sortedEvents.map((event, index) => {
             const value = getMetricValue(event)
@@ -190,12 +190,12 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
                         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-current to-transparent rounded-full -translate-y-16 translate-x-16"></div>
                       </div>
 
-                      <div className="relative p-3">
+                      <div className="relative p-4">
                         <div className="flex items-center justify-between">
                           {/* Left Section - Rank and Event Info */}
                           <div className="flex items-center gap-4 flex-1 min-w-0">
                             {/* Rank Badge */}
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-base ${
+                            <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
                               isTop 
                                 ? "bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg" 
                                 : "bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark text-white"
@@ -205,20 +205,20 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
 
                             {/* Event Details */}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-bold text-white text-base truncate">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-bold text-white text-lg truncate">
                                   {event.name || "Unnamed Event"}
                                 </h3>
                                 {isTop && (
-                                  <div className="flex-shrink-0 px-2 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full">
+                                  <div className="flex-shrink-0 px-2.5 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full">
                                     <span className="text-xs font-semibold text-emerald-400">TOP</span>
                                   </div>
                                 )}
                               </div>
                               
-                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-m8bs-muted">
-                                <span className="flex items-center gap-1">
-                                  <span className="w-2 h-2 bg-m8bs-blue rounded-full"></span>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-m8bs-muted mb-2">
+                                <span className="flex items-center gap-1.5">
+                                  <span className="w-2.5 h-2.5 bg-m8bs-blue rounded-full"></span>
                                   {event.date ? (() => {
                                     try {
                                       const [year, month, day] = event.date.split('-').map(Number)
@@ -229,45 +229,40 @@ export const TopPerformers = memo(function TopPerformers({ data, activeMetric, o
                                     }
                                   })() : "No date"}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                <span className="flex items-center gap-1.5">
+                                  <span className="w-2.5 h-2.5 bg-purple-400 rounded-full"></span>
                                   {event.location || "Unknown location"}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                <span className="flex items-center gap-1.5">
+                                  <span className="w-2.5 h-2.5 bg-green-400 rounded-full"></span>
                                   {event.type || "Unknown type"}
                                 </span>
+                              </div>
+
+                              {/* Additional Metrics - Always visible */}
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-m8bs-muted">
+                                <span>Attendees: <span className="text-white font-semibold">{(event.attendees || 0).toLocaleString()}</span></span>
+                                <span>Clients: <span className="text-white font-semibold">{(event.clients || 0).toLocaleString()}</span></span>
+                                <span>Revenue: <span className="text-white font-semibold">{formatCurrency(event.revenue || 0)}</span></span>
+                                {event.roi?.value !== undefined && (
+                                  <span>ROI: <span className="text-white font-semibold">{event.roi.value.toFixed(1)}%</span></span>
+                                )}
                               </div>
                             </div>
                           </div>
 
                           {/* Right Section - Metric Value and Progress */}
-                          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                            {/* Key Metrics - Hidden on mobile, shown on larger screens */}
-                            <div className="hidden lg:flex flex-col items-end gap-1 text-sm">
-                              <div className="text-m8bs-muted">
-                                Attendees: <span className="text-white font-semibold">{(event.attendees || 0).toLocaleString()}</span>
-                              </div>
-                              <div className="text-m8bs-muted">
-                                Clients: <span className="text-white font-semibold">{(event.clients || 0).toLocaleString()}</span>
-                              </div>
-                              <div className="text-m8bs-muted">
-                                Revenue: <span className="text-white font-semibold">
-                                  {formatCurrency(event.revenue || 0)}
-                                </span>
-                              </div>
-                            </div>
-
+                          <div className="flex items-center gap-3 flex-shrink-0">
                             {/* Main Metric Value */}
                             <div className="text-right">
-                              <div className={`text-lg sm:text-xl font-extrabold ${
+                              <div className={`text-xl sm:text-2xl font-extrabold ${
                                 isTop ? "text-emerald-400" : "text-white"
                               }`}>
                                 {formatValue(event, activeMetric)}
                               </div>
                               
                               {/* Progress Bar */}
-                              <div className="w-16 sm:w-20 h-1.5 bg-m8bs-card-alt rounded-full overflow-hidden mt-1.5">
+                              <div className="w-20 sm:w-24 h-2 bg-m8bs-card-alt rounded-full overflow-hidden mt-2">
                                 <motion.div
                                   className={`h-full rounded-full ${
                                     isTop 

@@ -1233,7 +1233,14 @@ export default function Overview() {
                           Your Current Marketing Campaigns
                         </CardDescription>
                       </div>
-                      <Link href="/business-dashboard">
+                      <Link 
+                        href="/business-dashboard"
+                        onClick={() => {
+                          if (user && typeof window !== 'undefined') {
+                            localStorage.setItem(`advisor-basecamp-tab-${user.id}`, 'campaigns')
+                          }
+                        }}
+                      >
                         <Button variant="ghost" size="sm" className="text-m8bs-muted hover:text-white">
                           View All <ArrowRight className="h-4 w-4 ml-1" />
                         </Button>
