@@ -34,7 +34,7 @@ export function ViewAsLayoutClient({ children }: { children: React.ReactNode }) 
         router.replace("/admin/dashboard")
         return
       }
-      setProfile(result.data)
+      setProfile(result.data ?? null)
       setError(null)
     }).finally(() => {
       if (!cancelled) setLoading(false)
