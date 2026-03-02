@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import type { Session, User, AuthChangeEvent } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { LoadingScreen } from "@/components/loading-screen"
+import { logger } from "@/lib/logger"
 
 type AuthContextType = {
   user: User | null
@@ -49,15 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Refresh the session proactively before it expires
             const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
             if (error) {
-              console.error("Error refreshing session in keep-alive:", error)
+              logger.error("Error refreshing session in keep-alive:", error)
             } else if (refreshedSession) {
               setSession(refreshedSession)
               setUser(refreshedSession.user ?? null)
-              console.log("Session refreshed via keep-alive")
+              logger.debug("Session refreshed via keep-alive", { userId: refreshedSession.user?.id })
             }
           }
         } catch (error) {
-          console.error("Error in keep-alive refresh:", error)
+          logger.error("Error in keep-alive refresh:", error)
         }
       }, 45 * 60 * 1000) // 45 minutes
     }
@@ -84,17 +85,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 // Refresh token proactively
                 const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
                 if (error) {
-                  console.error("Error refreshing token:", error)
+                  logger.error("Error refreshing token:", error)
                 } else if (refreshedSession) {
                   setSession(refreshedSession)
                   setUser(refreshedSession.user ?? null)
-                  console.log("Token refreshed proactively")
+                  logger.debug("Token refreshed proactively", { userId: refreshedSession.user?.id })
                 }
               }
             }
           }
         } catch (error) {
-          console.error("Error in token refresh check:", error)
+          logger.error("Error in token refresh check:", error)
         }
       }, 5 * 60 * 1000) // Check every 5 minutes
     }
@@ -109,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return
 
         if (error) {
-          console.error("Error getting session:", error)
+          logger.error("Error getting session:", error)
           // Try to refresh the session if it's expired
           if (error.message?.includes('expired') || error.message?.includes('invalid')) {
             try {
@@ -124,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return
               }
             } catch (refreshError) {
-              console.error("Error refreshing session:", refreshError)
+              logger.error("Error refreshing session:", refreshError)
             }
           }
           // Clear any invalid session state
@@ -138,6 +139,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         setIsLoading(false)
         
+        // Set user context in Sentry for error tracking
+        if (session?.user) {
+          logger.setUser({
+            id: session.user.id,
+            email: session.user.email || undefined,
+          })
+        } else {
+          logger.setUser(null)
+        }
+        
         // Set up keep-alive if we have a session
         if (session) {
           setupKeepAlive()
@@ -145,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         if (!mounted) return
-        console.error("Exception getting session:", error)
+        logger.error("Exception getting session:", error)
         setSession(null)
         setUser(null)
         setIsLoading(false)
@@ -158,20 +169,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return
       
       if (event === 'TOKEN_REFRESHED' && session) {
-        console.log("Session token refreshed via auth state change")
+        logger.debug("Session token refreshed via auth state change", { userId: session.user?.id })
         setSession(session)
         setUser(session.user ?? null)
         setIsLoading(false)
+        
+        // Update Sentry user context
+        if (session.user) {
+          logger.setUser({
+            id: session.user.id,
+            email: session.user.email || undefined,
+          })
+        }
       } else if (event === 'SIGNED_OUT') {
         setSession(null)
         setUser(null)
         setIsLoading(false)
+        
+        // Clear Sentry user context
+        logger.setUser(null)
+        
         if (keepAliveInterval) clearInterval(keepAliveInterval)
         if (refreshInterval) clearInterval(refreshInterval)
       } else {
         setSession(session)
         setUser(session?.user ?? null)
         setIsLoading(false)
+        
+        // Update Sentry user context
+        if (session?.user) {
+          logger.setUser({
+            id: session.user.id,
+            email: session.user.email || undefined,
+          })
+        } else {
+          logger.setUser(null)
+        }
         
         // Set up keep-alive when session is established
         if (session) {
@@ -213,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Force a hard navigation to the login page
       window.location.href = "/"
     } catch (error) {
-      console.error("Error signing out:", error)
+      logger.error("Error signing out:", error)
       // Even if there's an error, try to redirect to login
       window.location.href = "/"
     } finally {

@@ -118,7 +118,9 @@ export function CurrentBookOpportunitiesForm({ user, onComplete }: CurrentBookOp
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     try {
       // Save Financial Book Values
+      const currentYear = new Date().getFullYear()
       const financialBookSuccess = await updateFinancialBook({
+        year: currentYear,
         annuity_book_value: Number.parseFloat(values.annuityBookValue),
         aum_book_value: Number.parseFloat(values.aumBookValue),
         qualified_money_value: Number.parseFloat(values.qualifiedMoneyValue),
@@ -126,6 +128,7 @@ export function CurrentBookOpportunitiesForm({ user, onComplete }: CurrentBookOp
 
       // Save Financial Options
       const financialOptionsSuccess = await updateFinancialOptions({
+        year: currentYear,
         surrender_percent: Number.parseFloat(values.surrenderPercent),
         income_rider_percent: Number.parseFloat(values.incomeRiderPercent),
         free_withdrawal_percent: Number.parseFloat(values.freeWithdrawalPercent),

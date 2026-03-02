@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
+import { logger } from "@/lib/logger"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -42,31 +43,33 @@ export default function ResetPassword() {
 
   // Verify the reset token when component mounts
   useEffect(() => {
+    // CRITICAL: Prevent any navigation away from this page during recovery processing
+    const preventNavigation = (e: BeforeUnloadEvent) => {
+      if (isProcessingRecovery) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    
     async function verifyToken() {
       // Prevent any redirects while processing recovery
       setIsProcessingRecovery(true)
       
-      // CRITICAL: Prevent any navigation away from this page during recovery processing
-      const preventNavigation = (e: BeforeUnloadEvent) => {
-        if (isProcessingRecovery) {
-          e.preventDefault()
-          e.returnValue = ''
-        }
-      }
       window.addEventListener('beforeunload', preventNavigation)
       
       try {
         const supabase = createClient()
         
         // Log the full URL for debugging
-        console.log("Full URL:", window.location.href)
-        console.log("Hash:", window.location.hash)
-        console.log("Search:", window.location.search)
+        logger.log("Full URL:", window.location.href)
+        logger.log("Hash:", window.location.hash)
+        logger.log("Search:", window.location.search)
         
         // IMPORTANT: Check if we're being redirected from Supabase
         // If the URL doesn't have reset parameters, we might have been redirected incorrectly
         const urlParams = new URLSearchParams(window.location.search)
         const code = urlParams.get('code')
+        const type = urlParams.get('type')
         const hash = window.location.hash
         
         // If we're on reset-password but have no code/hash, we might have been redirected
@@ -75,15 +78,10 @@ export default function ResetPassword() {
           console.warn("On reset-password page but no reset token found. Checking for recovery session...")
         }
         
-        // Check for code parameter (PKCE flow) - Supabase sends this in query string
-        // Note: urlParams was already created above
-        const code = urlParams.get('code')
-        const type = urlParams.get('type')
-        
         // Check if we have hash fragments in the URL (from email link)
         // Supabase may send the reset link with hash fragments like: #access_token=xxx&type=recovery
-        const hash = window.location.hash.substring(1) // Remove the #
-        const hashParams = new URLSearchParams(hash)
+        const hashString = hash.substring(1) // Remove the #
+        const hashParams = new URLSearchParams(hashString)
         const accessToken = hashParams.get('access_token')
         const hashType = hashParams.get('type')
         const refreshToken = hashParams.get('refresh_token')
@@ -92,23 +90,23 @@ export default function ResetPassword() {
         const queryToken = urlParams.get('token')
         const queryType = urlParams.get('type')
 
-        console.log("Code parameter:", code)
-        console.log("Type parameter:", type || hashType)
-        console.log("Hash params - access_token:", !!accessToken, "type:", hashType)
-        console.log("Query params - token:", !!queryToken, "type:", queryType)
+        logger.log("Code parameter:", code)
+        logger.log("Type parameter:", type || hashType)
+        logger.log("Hash params - access_token:", !!accessToken, "type:", hashType)
+        logger.log("Query params - token:", !!queryToken, "type:", queryType)
 
         // Handle PKCE flow with code parameter (most common in newer Supabase versions)
         if (code) {
-          console.log("Found code parameter, exchanging for session...")
+          logger.log("Found code parameter, exchanging for session...")
           
           try {
             // Exchange the code for a session
             const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
             
-            console.log("Code exchange response:", { hasSession: !!data?.session, error: exchangeError })
+            logger.log("Code exchange response:", { hasSession: !!data?.session, error: exchangeError })
             
             if (exchangeError) {
-              console.error("Code exchange error:", exchangeError)
+              logger.error("Code exchange error:", exchangeError)
               
               let errorMessage = "This password reset link is invalid or has expired. Please request a new one."
               if (exchangeError.message?.includes("expired") || exchangeError.message?.includes("invalid")) {
@@ -124,7 +122,7 @@ export default function ResetPassword() {
                 description: errorMessage,
               })
             } else if (data?.session) {
-              console.log("Session created successfully from code")
+              logger.log("Session created successfully from code")
               setIsValidToken(true)
               // Clear the code from URL for security
               window.history.replaceState(null, '', window.location.pathname)
@@ -140,7 +138,7 @@ export default function ResetPassword() {
               return // Exit early
             }
           } catch (error: any) {
-            console.error("Error exchanging code:", error)
+            logger.error("Error exchanging code:", error)
             setIsValidToken(false)
             toast({
               variant: "destructive",
@@ -153,7 +151,7 @@ export default function ResetPassword() {
         // If we have hash fragments with access_token and type=recovery, Supabase should auto-process them
         // But we need to wait a moment for Supabase to process the hash
         else if (hash && accessToken && hashType === 'recovery') {
-          console.log("Found recovery token in hash, waiting for Supabase to process...")
+          logger.log("Found recovery token in hash, waiting for Supabase to process...")
           
           // Give Supabase a moment to process the hash fragments
           await new Promise(resolve => setTimeout(resolve, 500))
@@ -161,10 +159,10 @@ export default function ResetPassword() {
           // Now check for session
           const { data: { session }, error: sessionError } = await supabase.auth.getSession()
           
-          console.log("Session after hash processing:", !!session, "Error:", sessionError)
+          logger.log("Session after hash processing:", !!session, "Error:", sessionError)
           
           if (sessionError) {
-            console.error("Session error:", sessionError)
+            logger.error("Session error:", sessionError)
             setIsValidToken(false)
             toast({
               variant: "destructive",
@@ -172,21 +170,21 @@ export default function ResetPassword() {
               description: "This password reset link is invalid or has expired. Please request a new one.",
             })
           } else if (session) {
-            console.log("Valid session found from hash")
+            logger.log("Valid session found from hash")
             setIsValidToken(true)
             // Clear the hash from URL for security
             window.history.replaceState(null, '', window.location.pathname)
           } else {
             // Try to manually set the session using the tokens from hash
             if (accessToken && refreshToken) {
-              console.log("Attempting to set session manually...")
+              logger.log("Attempting to set session manually...")
               const { data: { session: newSession }, error: setError } = await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken,
               })
               
               if (newSession && !setError) {
-                console.log("Session set successfully")
+                logger.log("Session set successfully")
                 setIsValidToken(true)
                 window.history.replaceState(null, '', window.location.pathname)
               } else {

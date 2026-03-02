@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/components/ui/use-toast"
+import { logger } from "@/lib/logger"
 import { Plus, Trash2, CheckCircle, ChevronRight, ChevronLeft, RotateCcw, Loader2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
@@ -157,7 +158,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         const allYears = [...new Set([...years, currentYear])].sort((a, b) => b - a)
         setAvailableYears(allYears)
       } catch (error) {
-        console.error('Error loading available years:', error)
+        logger.error('Error loading available years:', error)
         setAvailableYears([new Date().getFullYear()])
       } finally {
         setLoadingYears(false)
@@ -295,7 +296,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         try {
           localStorage.setItem(tabStorageKey, nextTab)
         } catch (error) {
-          console.error('Error saving tab to localStorage:', error)
+          logger.error('Error saving tab to localStorage:', error)
         }
       }
     }
@@ -312,7 +313,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         try {
           localStorage.setItem(tabStorageKey, prevTab)
         } catch (error) {
-          console.error('Error saving tab to localStorage:', error)
+          logger.error('Error saving tab to localStorage:', error)
         }
       }
     }
@@ -328,7 +329,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
       try {
         localStorage.setItem(tabStorageKey, newTab)
       } catch (error) {
-        console.error('Error saving tab to localStorage:', error)
+        logger.error('Error saving tab to localStorage:', error)
       }
     }
   }
@@ -361,7 +362,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
               setActiveTab(savedTab)
             }
           } catch (error) {
-            console.error('Error loading tab from localStorage:', error)
+            logger.error('Error loading tab from localStorage:', error)
           }
         }
         return
@@ -400,7 +401,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         (data.commissionRates && data.commissionRates.year !== selectedYear)
       
       if (dataYearMismatch) {
-        console.warn('Data year mismatch detected:', {
+        logger.warn('Data year mismatch detected:', {
           selectedYear,
           businessGoalsYear: data.businessGoals?.year,
           currentValuesYear: data.currentValues?.year,
@@ -416,7 +417,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         })
       }
       
-      console.log('Resetting form with data for year:', selectedYear, {
+      logger.log('Resetting form with data for year:', selectedYear, {
         yearChanged,
         isEditMode,
         dataInitialized: dataInitializedRef.current,
@@ -522,7 +523,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
           // This ensures React Hook Form's internal state is updated
           const currentYear = form.getValues('year')
           if (currentYear !== selectedYear.toString()) {
-            console.warn('Form year field mismatch after reset, correcting immediately...', {
+            logger.warn('Form year field mismatch after reset, correcting immediately...', {
               expected: selectedYear.toString(),
               actual: currentYear
             })
@@ -538,7 +539,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
           setTimeout(() => {
             const verifyYear = form.getValues('year')
             if (verifyYear !== selectedYear.toString()) {
-              console.warn('Form year field still incorrect after delay, forcing final update...', {
+              logger.warn('Form year field still incorrect after delay, forcing final update...', {
                 expected: selectedYear.toString(),
                 actual: verifyYear
               })
@@ -548,11 +549,11 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                 shouldTouch: false
               })
             } else {
-              console.log('Year field verified correctly after delay:', verifyYear)
+              logger.log('Year field verified correctly after delay:', verifyYear)
             }
           }, 100)
           
-          console.log('Form reset completed for year:', selectedYear, {
+          logger.log('Form reset completed for year:', selectedYear, {
             formYearValue: form.getValues('year'),
             businessGoal: form.getValues('businessGoal'),
             currentAUM: form.getValues('currentAUM'),
@@ -577,7 +578,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
           dataInitializedRef.current = true
           // Don't reset active tab when loading from database - keep current tab
         } catch (error) {
-          console.error('Error resetting form with data:', error)
+          logger.error('Error resetting form with data:', error)
           toast({
             title: "Error Loading Data",
             description: `Failed to load data for ${selectedYear}. Please try again.`,
@@ -586,7 +587,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
           })
         }
       } else {
-        console.log('Skipping form reset - unsaved localStorage data exists')
+        logger.log('Skipping form reset - unsaved localStorage data exists')
       }
     }
   }, [data, loading, form, hasLoadedFromStorage, isEditMode, selectedYear])
@@ -611,7 +612,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
     // Always ensure form year field matches selectedYear
     // This is critical for the Select component to display the correct value
     if (currentYearValue !== expectedYearValue) {
-      console.log('Syncing form year field with selectedYear:', { 
+      logger.log('Syncing form year field with selectedYear:', { 
         currentYearValue, 
         expectedYearValue, 
         selectedYear,
@@ -628,7 +629,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
     const timeoutId = setTimeout(() => {
       const verifyValue = form.getValues('year')
       if (verifyValue !== expectedYearValue) {
-        console.warn('Year field still incorrect after sync, forcing update:', {
+        logger.warn('Year field still incorrect after sync, forcing update:', {
           expected: expectedYearValue,
           actual: verifyValue
         })
@@ -965,7 +966,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
             form.reset(storedData as z.infer<typeof formSchema>)
           }
         } catch (error) {
-          console.error('Error handling storage change:', error)
+          logger.error('Error handling storage change:', error)
         }
       }
     }
@@ -984,7 +985,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
             }
           }
         } catch (error) {
-          console.error('Error handling broadcast message:', error)
+          logger.error('Error handling broadcast message:', error)
         }
       }
     }
@@ -1153,34 +1154,35 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
           year: Number.parseInt(values.year),
           annuity_book_value: 0,
           aum_book_value: 0,
-          qualified_money_value: Number.parseFloat(values.qualifiedMoneyValue || "0"),
+          qualified_money_value: 0, // Not in form schema, using default
         },
         financialOptions: {
           year: Number.parseInt(values.year),
-          surrender_percent: Number.parseFloat(values.surrenderPercent || "0"),
-          income_rider_percent: Number.parseFloat(values.incomeRiderPercent || "0"),
-          free_withdrawal_percent: Number.parseFloat(values.freeWithdrawalPercent || "0"),
-          life_insurance_percent: Number.parseFloat(values.lifeInsurancePercent || "0"),
-          life_strategy1_percent: Number.parseFloat(values.lifeStrategy1Percent || "0"),
-          life_strategy2_percent: Number.parseFloat(values.lifeStrategy2Percent || "0"),
-          ira_to_7702_percent: Number.parseFloat(values.iraTo7702Percent || "0"),
-          approval_rate_percent: Number.parseFloat(values.approvalRatePercent || "0"),
-          surrender_rate: Number.parseFloat(values.surrenderRate || "0"),
-          income_rider_rate: Number.parseFloat(values.incomeRiderRate || "0"),
-          free_withdrawal_rate: Number.parseFloat(values.freeWithdrawalRate || "0"),
-          life_insurance_rate: Number.parseFloat(values.lifeInsuranceRate || "0"),
-          life_strategy1_rate: Number.parseFloat(values.lifeStrategy1Rate || "0"),
-          life_strategy2_rate: Number.parseFloat(values.lifeStrategy2Rate || "0"),
-          ira_to_7702_rate: Number.parseFloat(values.iraTo7702Rate || "0"),
+          // Financial options not in form schema, using defaults
+          surrender_percent: 0,
+          income_rider_percent: 0,
+          free_withdrawal_percent: 0,
+          life_insurance_percent: 0,
+          life_strategy1_percent: 0,
+          life_strategy2_percent: 0,
+          ira_to_7702_percent: 0,
+          approval_rate_percent: 0,
+          surrender_rate: 0,
+          income_rider_rate: 0,
+          free_withdrawal_rate: 0,
+          life_insurance_rate: 0,
+          life_strategy1_rate: 0,
+          life_strategy2_rate: 0,
+          ira_to_7702_rate: 0,
         },
       }
 
-      console.log('Submitting advisor data:', advisorData)
+      logger.log('Submitting advisor data:', advisorData)
       const success = await saveAllData(advisorData)
-      console.log('Save result:', success)
+      logger.log('Save result:', success)
       
       if (success) {
-        console.log('Form submission successful, calling onComplete...')
+        logger.log('Form submission successful, calling onComplete...')
         
         // Clear localStorage after successful submission
         clearFormDataFromStorage()
@@ -1198,10 +1200,10 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
         
         if (onComplete) {
           const savedYear = Number.parseInt(values.year)
-          console.log('Calling onComplete callback with saved year:', savedYear)
+          logger.log('Calling onComplete callback with saved year:', savedYear)
           onComplete(savedYear)
         } else {
-          console.log('No onComplete callback provided')
+          logger.log('No onComplete callback provided')
         }
       } else {
         toast({
@@ -1209,7 +1211,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
           description: "Failed to save data. Please check the console for details and try again.",
           variant: "destructive",
         })
-        console.error('Failed to save advisor data')
+        logger.error('Failed to save advisor data')
       }
     } catch (error) {
       console.error("Error submitting form:", error)
@@ -1250,7 +1252,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
   // In edit mode, always render the form - data will populate when ready
   // Log for debugging
   if (loading && isEditMode) {
-    console.log('Form is loading in edit mode - rendering form anyway, data will populate when ready')
+    logger.log('Form is loading in edit mode - rendering form anyway, data will populate when ready')
   }
 
   return (
@@ -1326,7 +1328,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                           onValueChange={(value) => {
                             const selectedYearNum = Number.parseInt(value)
                             if (!isNaN(selectedYearNum)) {
-                              console.log('Year dropdown changed:', {
+                              logger.log('Year dropdown changed:', {
                                 newValue: value,
                                 selectedYearNum,
                                 currentSelectedYear: selectedYear,
@@ -1346,7 +1348,7 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                               
                               // Always update selectedYear state to ensure sync
                               if (selectedYearNum !== selectedYear) {
-                                console.log('Updating selectedYear state from', selectedYear, 'to', selectedYearNum)
+                                logger.log('Updating selectedYear state from', selectedYear, 'to', selectedYearNum)
                                 // Update the selected year state, which will trigger the hook to reload
                                 setSelectedYear(selectedYearNum)
                                 // Reset the initialization flag so form will reload with new data
@@ -2294,30 +2296,30 @@ export function DataEntryFormV2({ user, year = new Date().getFullYear(), onCompl
                 size="lg"
                 className="bg-m8bs-blue hover:bg-m8bs-blue-dark text-white transition-all duration-300 shadow-md hover:shadow-lg"
                 onClick={async () => {
-                  console.log('🔘 Submit button clicked!')
-                  console.log('Form is valid:', form.formState.isValid)
-                  console.log('Form errors:', form.formState.errors)
-                  console.log('Form values:', form.getValues())
+                  logger.log('🔘 Submit button clicked!')
+                  logger.log('Form is valid:', form.formState.isValid)
+                  logger.log('Form errors:', form.formState.errors)
+                  logger.log('Form values:', form.getValues())
                   
                   // Force validation check
-                  console.log('🔍 Triggering validation...')
+                  logger.log('🔍 Triggering validation...')
                   const isValid = await form.trigger()
-                  console.log('🔍 Validation result:', isValid)
-                  console.log('🔍 Form errors after trigger:', form.formState.errors)
+                  logger.log('🔍 Validation result:', isValid)
+                  logger.log('🔍 Form errors after trigger:', form.formState.errors)
                   
                   // Check if form is valid before submission
                   if (!isValid) {
-                    console.log('❌ Form is not valid, preventing submission')
-                    console.log('❌ Validation errors:', JSON.stringify(form.formState.errors, null, 2))
+                    logger.log('❌ Form is not valid, preventing submission')
+                    logger.log('❌ Validation errors:', JSON.stringify(form.formState.errors, null, 2))
                     
                     // Show specific field errors
                     Object.keys(form.formState.errors).forEach(field => {
-                      console.log(`❌ Field "${field}":`, form.formState.errors[field])
+                      logger.log(`❌ Field "${field}":`, form.formState.errors[field as keyof typeof form.formState.errors])
                     })
                     
                     return
                   }
-                  console.log('✅ Form is valid, proceeding with submission')
+                  logger.log('✅ Form is valid, proceeding with submission')
                 }}
               >
                 {isEditMode ? "Update Data" : "Complete Setup"}

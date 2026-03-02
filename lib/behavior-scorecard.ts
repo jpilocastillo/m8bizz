@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 
 export type ScorecardRole = string
 
@@ -286,7 +287,7 @@ export class BehaviorScorecardService {
           if (roleError) {
             // Only log if it's not a duplicate/RLS error (42501 = insufficient_privilege, 23505 = unique_violation)
             if (roleError.code !== '42501' && roleError.code !== '23505') {
-              console.error(`Error creating role ${roleName}:`, roleError)
+              logger.error(`Error creating role ${roleName}:`, roleError)
             }
             // Try to get the role ID anyway in case it was created by another request
             const { data: existingRole } = await supabase
@@ -330,7 +331,7 @@ export class BehaviorScorecardService {
               })
 
             if (metricError) {
-              console.error(`Error creating metric ${metric.metricName}:`, metricError)
+              logger.error(`Error creating metric ${metric.metricName}:`, metricError)
             }
           }
         }
@@ -338,7 +339,7 @@ export class BehaviorScorecardService {
 
       return { success: true }
     } catch (error) {
-      console.error('Error initializing scorecard:', error)
+      logger.error('Error initializing scorecard:', error)
       return { success: false, error: 'Failed to initialize scorecard' }
     }
   }
@@ -399,9 +400,9 @@ export class BehaviorScorecardService {
                 })
 
               if (metricError) {
-                console.error(`Error adding metric ${metric.metricName} to role ${roleName}:`, metricError)
+                logger.error(`Error adding metric ${metric.metricName} to role ${roleName}:`, metricError)
               } else {
-                console.log(`Added missing metric ${metric.metricName} to role ${roleName}`)
+                logger.log(`Added missing metric ${metric.metricName} to role ${roleName}`)
               }
             }
           }
@@ -423,9 +424,9 @@ export class BehaviorScorecardService {
               })
 
             if (metricError) {
-              console.error(`Error adding core behavior ${coreMetric.metricName} to role ${roleName}:`, metricError)
+              logger.error(`Error adding core behavior ${coreMetric.metricName} to role ${roleName}:`, metricError)
             } else {
-              console.log(`Added core behavior ${coreMetric.metricName} to role ${roleName}`)
+              logger.log(`Added core behavior ${coreMetric.metricName} to role ${roleName}`)
             }
           }
         }
@@ -433,7 +434,7 @@ export class BehaviorScorecardService {
 
       return { success: true }
     } catch (error) {
-      console.error('Error ensuring default metrics:', error)
+      logger.error('Error ensuring default metrics:', error)
       return { success: false, error: 'Failed to ensure default metrics' }
     }
   }
@@ -463,7 +464,7 @@ export class BehaviorScorecardService {
         .maybeSingle()
 
       if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Error checking for existing role:', checkError)
+        logger.error('Error checking for existing role:', checkError)
         return { success: false, error: checkError.message || 'Failed to check for existing role' }
       }
 
@@ -474,17 +475,17 @@ export class BehaviorScorecardService {
       // Verify session is active before inserting
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        console.error('No active session found')
+        logger.error('No active session found')
         return { success: false, error: 'No active session. Please refresh the page and try again.' }
       }
       
       if (session.user.id !== user.id) {
-        console.error('Session user ID mismatch:', { sessionUserId: session.user.id, userUserId: user.id })
+        logger.error('Session user ID mismatch:', { sessionUserId: session.user.id, userUserId: user.id })
         return { success: false, error: 'Session mismatch. Please refresh the page and try again.' }
       }
 
       // Create new role - ensure user_id matches auth.uid() for RLS
-      console.log('Creating role with user_id:', user.id, 'role_name:', trimmedRoleName, 'session_user_id:', session.user.id)
+      logger.log('Creating role with user_id:', user.id, 'role_name:', trimmedRoleName, 'session_user_id:', session.user.id)
       const { data: newRole, error: roleError } = await supabase
         .from('scorecard_roles')
         .insert({
@@ -496,7 +497,7 @@ export class BehaviorScorecardService {
         .single()
 
       if (roleError) {
-        console.error('Error creating role:', roleError)
+        logger.error('Error creating role:', roleError)
         // Check if it's a constraint violation (custom roles might not be allowed)
         if (roleError.code === '23514' || roleError.message?.includes('check constraint')) {
           return { success: false, error: 'Custom role names are not allowed. Please use one of the predefined roles.' }
@@ -531,14 +532,14 @@ export class BehaviorScorecardService {
           })
 
         if (metricError) {
-          console.error(`Error adding core behavior ${coreMetric.metricName} to new role:`, metricError)
+          logger.error(`Error adding core behavior ${coreMetric.metricName} to new role:`, metricError)
         }
       }
 
-      console.log('Role created successfully:', { roleId: newRole.id, roleName: trimmedRoleName })
+      logger.log('Role created successfully:', { roleId: newRole.id, roleName: trimmedRoleName })
       return { success: true, roleId: newRole.id }
     } catch (error) {
-      console.error('Error creating role:', error)
+      logger.error('Error creating role:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create role'
       return { success: false, error: errorMessage }
     }
@@ -599,7 +600,7 @@ export class BehaviorScorecardService {
           .eq('user_id', user.id)
 
         if (fetchError) {
-          console.error('Error fetching roles for duplicate check:', fetchError)
+          logger.error('Error fetching roles for duplicate check:', fetchError)
           return { success: false, error: fetchError.message || 'Failed to check for existing role' }
         }
 
@@ -626,18 +627,18 @@ export class BehaviorScorecardService {
         .single()
 
       if (updateError) {
-        console.error('Error updating role:', updateError)
+        logger.error('Error updating role:', updateError)
         return { success: false, error: updateError.message || 'Failed to update role' }
       }
 
       if (!updatedRole) {
-        console.error('Update succeeded but no data returned')
+        logger.error('Update succeeded but no data returned')
         return { success: false, error: 'Update succeeded but role not found' }
       }
 
       return { success: true }
     } catch (error) {
-      console.error('Error updating role:', error)
+      logger.error('Error updating role:', error)
       return { success: false, error: 'Failed to update role' }
     }
   }
@@ -671,13 +672,13 @@ export class BehaviorScorecardService {
         .eq('id', roleId)
 
       if (deleteError) {
-        console.error('Error deleting role:', deleteError)
+        logger.error('Error deleting role:', deleteError)
         return { success: false, error: deleteError.message || 'Failed to delete role' }
       }
 
       return { success: true }
     } catch (error) {
-      console.error('Error deleting role:', error)
+      logger.error('Error deleting role:', error)
       return { success: false, error: 'Failed to delete role' }
     }
   }
@@ -715,7 +716,7 @@ export class BehaviorScorecardService {
 
       return { success: true }
     } catch (error) {
-      console.error('Error saving weekly data:', error)
+      logger.error('Error saving weekly data:', error)
       return { success: false, error: 'Failed to save weekly data' }
     }
   }
@@ -766,7 +767,7 @@ export class BehaviorScorecardService {
 
       return { success: true }
     } catch (error) {
-      console.error('Error batch saving weekly data:', error)
+      logger.error('Error batch saving weekly data:', error)
       return { 
         success: false, 
         errors: weeklyDataEntries.map(entry => ({ 
@@ -806,7 +807,7 @@ export class BehaviorScorecardService {
         })) || [],
       }
     } catch (error) {
-      console.error('Error fetching weekly data:', error)
+      logger.error('Error fetching weekly data:', error)
       return { success: false, error: 'Failed to fetch weekly data' }
     }
   }
@@ -859,7 +860,7 @@ export class BehaviorScorecardService {
 
       return { success: true, data: dataMap }
     } catch (error) {
-      console.error('Error fetching batch weekly data:', error)
+      logger.error('Error fetching batch weekly data:', error)
       return { success: false, error: 'Failed to fetch batch weekly data' }
     }
   }
@@ -925,11 +926,11 @@ export class BehaviorScorecardService {
           .eq('year', year)
         
         if (weeklyDataError) {
-          console.error('[calculateMonthlySummary] Error fetching weekly data:', weeklyDataError)
+          logger.error('[calculateMonthlySummary] Error fetching weekly data:', weeklyDataError)
         }
         
         allWeeklyData = weeklyData || []
-        console.log(`[calculateMonthlySummary] Fetched ${allWeeklyData.length} weekly data records for month ${month}, year ${year}, week range ${monthStartWeek}-${monthEndWeek}`)
+        logger.log(`[calculateMonthlySummary] Fetched ${allWeeklyData.length} weekly data records for month ${month}, year ${year}, week range ${monthStartWeek}-${monthEndWeek}`)
       }
 
       // Create a map: metricId -> weekNumber -> actualValue for fast lookup
@@ -968,7 +969,7 @@ export class BehaviorScorecardService {
           
           // Debug logging
           if (hasWeek1Data || hasWeek2Data || hasWeek3Data || hasWeek4Data) {
-            console.log(`[calculateMonthlySummary] Metric ${metric.metric_name} (${metric.id}):`, {
+            logger.log(`[calculateMonthlySummary] Metric ${metric.metric_name} (${metric.id}):`, {
               monthStartWeek,
               week1Value,
               week2Value,
@@ -985,7 +986,7 @@ export class BehaviorScorecardService {
           if (hasWeek1Data && (!hasWeek2Data || week2Value === 0) && (!hasWeek3Data || week3Value === 0) && (!hasWeek4Data || week4Value === 0)) {
             // Monthly data entry - use week 1 value directly
             actualValue = week1Value
-            console.log(`[calculateMonthlySummary] Using monthly data for ${metric.metric_name}: ${actualValue}`)
+            logger.log(`[calculateMonthlySummary] Using monthly data for ${metric.metric_name}: ${actualValue}`)
           } else if (hasWeek1Data || hasWeek2Data || hasWeek3Data || hasWeek4Data) {
             // This is actual weekly data - sum all weeks
             const totalActual = week1Value + week2Value + week3Value + week4Value
@@ -993,9 +994,9 @@ export class BehaviorScorecardService {
             actualValue = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
               ? totalActual / 4
               : totalActual
-            console.log(`[calculateMonthlySummary] Using weekly data for ${metric.metric_name}: ${actualValue} (sum: ${totalActual})`)
+            logger.log(`[calculateMonthlySummary] Using weekly data for ${metric.metric_name}: ${actualValue} (sum: ${totalActual})`)
           } else {
-            console.log(`[calculateMonthlySummary] No data found for ${metric.metric_name} (${metric.id}) for month ${month}`)
+            logger.log(`[calculateMonthlySummary] No data found for ${metric.metric_name} (${metric.id}) for month ${month}`)
           }
 
           const goalValue = Number(metric.goal_value)
@@ -1035,7 +1036,7 @@ export class BehaviorScorecardService {
           .maybeSingle()
 
         if (existingSummaryError) {
-          console.error(`[calculateMonthlySummary] Error checking existing summary for role ${role.role_name}:`, existingSummaryError)
+          logger.error(`[calculateMonthlySummary] Error checking existing summary for role ${role.role_name}:`, existingSummaryError)
         }
 
         const summaryData = {
@@ -1057,7 +1058,7 @@ export class BehaviorScorecardService {
             .single()
 
           if (updateError) {
-            console.error(`[calculateMonthlySummary] Error updating summary for role ${role.role_name}:`, updateError)
+            logger.error(`[calculateMonthlySummary] Error updating summary for role ${role.role_name}:`, updateError)
           } else {
             savedSummaryId = updatedSummary?.id || null
           }
@@ -1069,8 +1070,8 @@ export class BehaviorScorecardService {
             .single()
 
           if (insertError) {
-            console.error(`[calculateMonthlySummary] Error inserting summary for role ${role.role_name}:`, insertError)
-            console.error(`[calculateMonthlySummary] Summary data:`, summaryData)
+            logger.error(`[calculateMonthlySummary] Error inserting summary for role ${role.role_name}:`, insertError)
+            logger.error(`[calculateMonthlySummary] Summary data:`, summaryData)
           } else {
             savedSummaryId = insertedSummary?.id || null
           }
@@ -1085,7 +1086,7 @@ export class BehaviorScorecardService {
             .eq('monthly_summary_id', savedSummaryId)
 
           if (deleteError) {
-            console.error(`[calculateMonthlySummary] Error deleting metric scores:`, deleteError)
+            logger.error(`[calculateMonthlySummary] Error deleting metric scores:`, deleteError)
           }
 
           // Insert new metric scores
@@ -1103,11 +1104,11 @@ export class BehaviorScorecardService {
             .insert(scoresToInsert)
 
           if (insertScoresError) {
-            console.error(`[calculateMonthlySummary] Error inserting metric scores for role ${role.role_name}:`, insertScoresError)
-            console.error(`[calculateMonthlySummary] Scores to insert:`, scoresToInsert)
+            logger.error(`[calculateMonthlySummary] Error inserting metric scores for role ${role.role_name}:`, insertScoresError)
+            logger.error(`[calculateMonthlySummary] Scores to insert:`, scoresToInsert)
           }
         } else {
-          console.warn(`[calculateMonthlySummary] Could not save summary for role ${role.role_name} - no summary ID available`)
+          logger.warn(`[calculateMonthlySummary] Could not save summary for role ${role.role_name} - no summary ID available`)
         }
       }
 
@@ -1129,7 +1130,7 @@ export class BehaviorScorecardService {
         .maybeSingle()
 
       if (existingCompanyError) {
-        console.error(`[calculateMonthlySummary] Error checking existing company summary:`, existingCompanyError)
+        logger.error(`[calculateMonthlySummary] Error checking existing company summary:`, existingCompanyError)
       }
 
       const companySummaryData = {
@@ -1147,8 +1148,8 @@ export class BehaviorScorecardService {
           .eq('id', existingCompanySummary.id)
 
         if (updateCompanyError) {
-          console.error(`[calculateMonthlySummary] Error updating company summary:`, updateCompanyError)
-          console.error(`[calculateMonthlySummary] Company summary data:`, companySummaryData)
+          logger.error(`[calculateMonthlySummary] Error updating company summary:`, updateCompanyError)
+          logger.error(`[calculateMonthlySummary] Company summary data:`, companySummaryData)
         }
       } else {
         const { error: insertCompanyError } = await supabase
@@ -1156,14 +1157,14 @@ export class BehaviorScorecardService {
           .insert(companySummaryData)
 
         if (insertCompanyError) {
-          console.error(`[calculateMonthlySummary] Error inserting company summary:`, insertCompanyError)
-          console.error(`[calculateMonthlySummary] Company summary data:`, companySummaryData)
+          logger.error(`[calculateMonthlySummary] Error inserting company summary:`, insertCompanyError)
+          logger.error(`[calculateMonthlySummary] Company summary data:`, companySummaryData)
         }
       }
 
       return { success: true }
     } catch (error) {
-      console.error('Error calculating monthly summary:', error)
+      logger.error('Error calculating monthly summary:', error)
       return { success: false, error: 'Failed to calculate monthly summary' }
     }
   }
@@ -1273,7 +1274,7 @@ export class BehaviorScorecardService {
           .order('scorecard_metrics(display_order)', { ascending: true })
         
         if (metricScoresError) {
-          console.error('Error fetching metric scores:', metricScoresError)
+          logger.error('Error fetching metric scores:', metricScoresError)
         }
         allMetricScores = metricScoresData || []
       }
@@ -1294,7 +1295,7 @@ export class BehaviorScorecardService {
           .eq('year', year)
         
         if (weeklyDataError) {
-          console.error('Error fetching weekly data in getMonthlyScorecard:', weeklyDataError)
+          logger.error('Error fetching weekly data in getMonthlyScorecard:', weeklyDataError)
         } else if (weeklyData) {
           weeklyData.forEach((wd: { metric_id: string; week_number: number; actual_value: number }) => {
             if (!weeklyDataMap.has(wd.metric_id)) {
@@ -1448,7 +1449,7 @@ export class BehaviorScorecardService {
         
         // Debug: Log to help identify issues with core behaviors
         if (separatedScores.defaultMetrics.length === 0 && scores.length > 0) {
-          console.warn(`No core behaviors found for role ${role.role_name}. Metric names:`, scores.map(s => s.metricName))
+          logger.warn(`No core behaviors found for role ${role.role_name}. Metric names:`, scores.map(s => s.metricName))
         }
         
         roleScorecards.push({
@@ -1492,7 +1493,7 @@ export class BehaviorScorecardService {
         },
       }
     } catch (error) {
-      console.error('Error fetching monthly scorecard:', error)
+      logger.error('Error fetching monthly scorecard:', error)
       return { success: false, error: 'Failed to fetch monthly scorecard' }
     }
   }
@@ -1572,7 +1573,7 @@ export class BehaviorScorecardService {
         data: metrics,
       }
     } catch (error) {
-      console.error('Error fetching role metrics:', error)
+      logger.error('Error fetching role metrics:', error)
       return { success: false, error: 'Failed to fetch role metrics' }
     }
   }
@@ -1594,7 +1595,7 @@ export class BehaviorScorecardService {
         .order('display_order', { ascending: true })
 
       if (error) {
-        console.error('Error fetching all role metrics:', error)
+        logger.error('Error fetching all role metrics:', error)
         return metricsMap
       }
 
@@ -1688,7 +1689,7 @@ export class BehaviorScorecardService {
 
       return metricsMap
     } catch (error) {
-      console.error('Error fetching all role metrics:', error)
+      logger.error('Error fetching all role metrics:', error)
       return metricsMap
     }
   }
@@ -1728,12 +1729,12 @@ export class BehaviorScorecardService {
             })
 
           if (error) {
-            console.error(`Error adding core behavior ${coreMetric.metricName} to role:`, error)
+            logger.error(`Error adding core behavior ${coreMetric.metricName} to role:`, error)
           }
         }
       }
     } catch (error) {
-      console.error('Error ensuring core behaviors for role:', error)
+      logger.error('Error ensuring core behaviors for role:', error)
     }
   }
 
@@ -1884,7 +1885,7 @@ export class BehaviorScorecardService {
         },
       }
     } catch (error) {
-      console.error('Error fetching quarterly scorecard:', error)
+      logger.error('Error fetching quarterly scorecard:', error)
       return { success: false, error: 'Failed to fetch quarterly scorecard' }
     }
   }
@@ -2033,7 +2034,7 @@ export class BehaviorScorecardService {
         },
       }
     } catch (error) {
-      console.error('Error fetching yearly scorecard:', error)
+      logger.error('Error fetching yearly scorecard:', error)
       return { success: false, error: 'Failed to fetch yearly scorecard' }
     }
   }
@@ -2083,13 +2084,13 @@ export class BehaviorScorecardService {
         .eq('id', metricId)
 
       if (error) {
-        console.error('Error updating metric goal:', error)
+        logger.error('Error updating metric goal:', error)
         return { success: false, error: error.message || 'Failed to update metric goal' }
       }
 
       return { success: true }
     } catch (error) {
-      console.error('Error updating metric goal:', error)
+      logger.error('Error updating metric goal:', error)
       return { success: false, error: 'Failed to update metric goal' }
     }
   }
@@ -2191,7 +2192,7 @@ export class BehaviorScorecardService {
 
       return { success: true }
     } catch (error) {
-      console.error('Error batch updating metric goals:', error)
+      logger.error('Error batch updating metric goals:', error)
       return {
         success: false,
         errors: goalUpdates.map(update => ({ 
@@ -2224,14 +2225,14 @@ export class BehaviorScorecardService {
           .eq('id', update.metricId)
 
         if (error) {
-          console.error(`Error updating visibility for metric ${update.metricId}:`, error)
+          logger.error(`Error updating visibility for metric ${update.metricId}:`, error)
           return { success: false, error: error.message || 'Failed to update metric visibility' }
         }
       }
 
       return { success: true }
     } catch (error) {
-      console.error('Error updating metric visibilities:', error)
+      logger.error('Error updating metric visibilities:', error)
       return { success: false, error: 'Failed to update metric visibilities' }
     }
   }
@@ -2293,13 +2294,13 @@ export class BehaviorScorecardService {
         .single()
 
       if (metricError) {
-        console.error('Error creating metric:', metricError)
+        logger.error('Error creating metric:', metricError)
         return { success: false, error: metricError.message || 'Failed to create metric' }
       }
 
       return { success: true, metricId: newMetric.id }
     } catch (error) {
-      console.error('Error creating metric:', error)
+      logger.error('Error creating metric:', error)
       return { success: false, error: 'Failed to create metric' }
     }
   }
@@ -2378,13 +2379,13 @@ export class BehaviorScorecardService {
         .eq('id', metricId)
 
       if (error) {
-        console.error('Error updating metric:', error)
+        logger.error('Error updating metric:', error)
         return { success: false, error: error.message || 'Failed to update metric' }
       }
 
       return { success: true }
     } catch (error) {
-      console.error('Error updating metric:', error)
+      logger.error('Error updating metric:', error)
       return { success: false, error: 'Failed to update metric' }
     }
   }
@@ -2429,13 +2430,13 @@ export class BehaviorScorecardService {
         .eq('id', metricId)
 
       if (deleteError) {
-        console.error('Error deleting metric:', deleteError)
+        logger.error('Error deleting metric:', deleteError)
         return { success: false, error: deleteError.message || 'Failed to delete metric' }
       }
 
       return { success: true }
     } catch (error) {
-      console.error('Error deleting metric:', error)
+      logger.error('Error deleting metric:', error)
       return { success: false, error: 'Failed to delete metric' }
     }
   }

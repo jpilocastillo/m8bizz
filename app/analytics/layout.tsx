@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
 import { DatabaseStatus } from "@/components/database-status"
+import { logger } from "@/lib/logger"
 
 export default async function AnalyticsLayout({
   children,
@@ -23,12 +24,12 @@ export default async function AnalyticsLayout({
     } = await supabase.auth.getUser()
 
     if (userError) {
-      console.error("Auth error:", userError)
+      logger.error("Auth error:", userError)
     } else {
       user = userData
     }
   } catch (error) {
-    console.error("Error in analytics layout:", error)
+    logger.error("Error in analytics layout:", error)
   }
 
   // Only redirect if we're certain the user is not authenticated

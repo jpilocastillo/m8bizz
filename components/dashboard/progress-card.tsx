@@ -1,6 +1,6 @@
 import type React from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { CircularProgressIndicator } from "@/components/ui/circular-progress"
+import { CircularProgress } from "@/components/ui/circular-progress"
 import { cn } from "@/lib/utils"
 
 interface ProgressCardProps {
@@ -61,7 +61,7 @@ export function ProgressCard({
           )}
         </div>
         <div className="flex justify-center">
-          <CircularProgressIndicator
+          <CircularProgress
             value={percentage}
             size={size}
             strokeWidth={strokeWidth}
@@ -72,7 +72,7 @@ export function ProgressCard({
               <div className="text-3xl font-bold text-white">{valueLabel || value}</div>
               {subtitle && <div className="text-xs text-m8bs-muted mt-1">{subtitle}</div>}
             </div>
-          </CircularProgressIndicator>
+          </CircularProgress>
         </div>
         <div className="text-center mt-4">
           <div className="text-sm text-m8bs-muted">{maxValue !== 100 ? `${value} of ${maxValue}` : `${percentage}%`}</div>

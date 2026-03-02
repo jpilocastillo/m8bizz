@@ -404,7 +404,6 @@ export function EventComparison({ events }: EventComparisonProps) {
                 axisLine={false}
                 width={45}
                 interval={0}
-                angle={0}
                 textAnchor="end"
               />
               <Bar
@@ -414,7 +413,6 @@ export function EventComparison({ events }: EventComparisonProps) {
                 radius={[0, 8, 8, 0]}
                 barSize={40}
                 animationBegin={0}
-                animationEnd={1}
               >
                 {chartData.map((entry, index) => (
                   <Cell

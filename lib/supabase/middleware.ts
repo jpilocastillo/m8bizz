@@ -9,7 +9,7 @@ export async function createMiddlewareClient(request: NextRequest, response: Nex
     {
       cookies: {
         get(name: string) {
-          return request.cookies.get(name)?.value
+          return request.cookies?.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
           // If the cookie is updated, update the cookies for the request and response

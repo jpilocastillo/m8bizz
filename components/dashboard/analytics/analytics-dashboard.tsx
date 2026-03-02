@@ -86,11 +86,11 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
     }) || []
     
     // Calculate summary for current year only
-    const totalAttendees = currentYearEvents.reduce((sum, event) => sum + (event.attendees || 0), 0)
-    const totalRevenue = currentYearEvents.reduce((sum, event) => sum + (event.revenue || 0), 0)
-    const totalExpenses = currentYearEvents.reduce((sum, event) => sum + (event.expenses || 0), 0)
-    const totalClients = currentYearEvents.reduce((sum, event) => sum + (event.clients || 0), 0)
-    const totalRegistrants = currentYearEvents.reduce((sum, event) => sum + (event.registrants || 0), 0)
+    const totalAttendees = currentYearEvents.reduce((sum: number, event: any) => sum + (event.attendees || 0), 0)
+    const totalRevenue = currentYearEvents.reduce((sum: number, event: any) => sum + (event.revenue || 0), 0)
+    const totalExpenses = currentYearEvents.reduce((sum: number, event: any) => sum + (event.expenses || 0), 0)
+    const totalClients = currentYearEvents.reduce((sum: number, event: any) => sum + (event.clients || 0), 0)
+    const totalRegistrants = currentYearEvents.reduce((sum: number, event: any) => sum + (event.registrants || 0), 0)
     
     return {
       ...analyticsData,
@@ -110,12 +110,12 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
             : 0,
         totalClients,
         overallConversionRate: totalAttendees > 0 ? (totalClients / totalAttendees) * 100 : 0,
-        totalAppointmentsSet: currentYearEvents.reduce((sum, event) => sum + (event.appointmentsSet || 0), 0),
-        totalAppointmentsMade: currentYearEvents.reduce((sum, event) => sum + (event.appointmentsMade || 0), 0),
+        totalAppointmentsSet: currentYearEvents.reduce((sum: number, event: any) => sum + (event.appointmentsSet || 0), 0),
+        totalAppointmentsMade: currentYearEvents.reduce((sum: number, event: any) => sum + (event.appointmentsMade || 0), 0),
         totalRegistrants,
-        totalPlateLickers: currentYearEvents.reduce((sum, event) => sum + (event.plateLickers || 0), 0),
-        totalFirstAppointmentNoShows: currentYearEvents.reduce((sum, event) => sum + (event.firstAppointmentNoShows || 0), 0),
-        totalNotQualified: currentYearEvents.reduce((sum, event) => sum + (event.notQualified || 0), 0),
+        totalPlateLickers: currentYearEvents.reduce((sum: number, event: any) => sum + (event.plateLickers || 0), 0),
+        totalFirstAppointmentNoShows: currentYearEvents.reduce((sum: number, event: any) => sum + (event.firstAppointmentNoShows || 0), 0),
+        totalNotQualified: currentYearEvents.reduce((sum: number, event: any) => sum + (event.notQualified || 0), 0),
       }
     }
   }
@@ -260,11 +260,11 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   // Update filtered data when filters change
   useEffect(() => {
     if (analyticsData) {
-      const totalAttendees = filteredEvents.reduce((sum, event) => sum + (event.attendees || 0), 0)
-      const totalRevenue = filteredEvents.reduce((sum, event) => sum + (event.revenue || 0), 0)
-      const totalExpenses = filteredEvents.reduce((sum, event) => sum + (event.expenses || 0), 0)
-      const totalClients = filteredEvents.reduce((sum, event) => sum + (event.clients || 0), 0)
-      const totalRegistrants = filteredEvents.reduce((sum, event) => sum + (event.registrants || 0), 0)
+      const totalAttendees = filteredEvents.reduce((sum: number, event: any) => sum + (event.attendees || 0), 0)
+      const totalRevenue = filteredEvents.reduce((sum: number, event: any) => sum + (event.revenue || 0), 0)
+      const totalExpenses = filteredEvents.reduce((sum: number, event: any) => sum + (event.expenses || 0), 0)
+      const totalClients = filteredEvents.reduce((sum: number, event: any) => sum + (event.clients || 0), 0)
+      const totalRegistrants = filteredEvents.reduce((sum: number, event: any) => sum + (event.registrants || 0), 0)
       
       const updatedData = {
         ...analyticsData,
@@ -284,12 +284,12 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
               : 0,
           totalClients,
           overallConversionRate: totalAttendees > 0 ? (totalClients / totalAttendees) * 100 : 0,
-          totalAppointmentsSet: filteredEvents.reduce((sum, event) => sum + (event.appointmentsSet || 0), 0),
-          totalAppointmentsMade: filteredEvents.reduce((sum, event) => sum + (event.appointmentsMade || 0), 0),
+          totalAppointmentsSet: filteredEvents.reduce((sum: number, event: any) => sum + (event.appointmentsSet || 0), 0),
+          totalAppointmentsMade: filteredEvents.reduce((sum: number, event: any) => sum + (event.appointmentsMade || 0), 0),
           totalRegistrants,
-          totalPlateLickers: filteredEvents.reduce((sum, event) => sum + (event.plateLickers || 0), 0),
-          totalFirstAppointmentNoShows: filteredEvents.reduce((sum, event) => sum + (event.firstAppointmentNoShows || 0), 0),
-          totalNotQualified: filteredEvents.reduce((sum, event) => sum + (event.notQualified || 0), 0),
+          totalPlateLickers: filteredEvents.reduce((sum: number, event: any) => sum + (event.plateLickers || 0), 0),
+          totalFirstAppointmentNoShows: filteredEvents.reduce((sum: number, event: any) => sum + (event.firstAppointmentNoShows || 0), 0),
+          totalNotQualified: filteredEvents.reduce((sum: number, event: any) => sum + (event.notQualified || 0), 0),
         }
       }
       setFilteredData(updatedData)
@@ -529,7 +529,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                         const monthlyData: { [key: string]: any[] } = {}
                         const events = filteredData?.events || []
                         
-                        events.forEach(event => {
+                        events.forEach((event: any) => {
                           const eventDate = new Date(event.date)
                           const monthKey = eventDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
                           
@@ -600,7 +600,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
                   const monthlyData: { [key: string]: any[] } = {}
                   const events = filteredData?.events || []
                   
-                  events.forEach(event => {
+                  events.forEach((event: any) => {
                     const eventDate = new Date(event.date)
                     const monthKey = eventDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
                     

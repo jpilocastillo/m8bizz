@@ -22,9 +22,9 @@ export function PredictiveInsights({ data }: PredictiveInsightsProps) {
     // Use simple moving average for prediction
     const recentMonths = data.monthlyData.slice(-3)
 
-    const avgAttendees = recentMonths.reduce((sum, month) => sum + month.attendees, 0) / recentMonths.length
-    const avgRevenue = recentMonths.reduce((sum, month) => sum + month.revenue, 0) / recentMonths.length
-    const avgExpenses = recentMonths.reduce((sum, month) => sum + month.expenses, 0) / recentMonths.length
+    const avgAttendees = recentMonths.reduce((sum: number, month: any) => sum + month.attendees, 0) / recentMonths.length
+    const avgRevenue = recentMonths.reduce((sum: number, month: any) => sum + month.revenue, 0) / recentMonths.length
+    const avgExpenses = recentMonths.reduce((sum: number, month: any) => sum + month.expenses, 0) / recentMonths.length
 
     // Apply growth factor based on trend
     const growthFactor = 1.05 // 5% growth assumption

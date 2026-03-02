@@ -48,7 +48,7 @@ export function CSVExport({ data, profile }: CSVExportProps) {
         csvData.push(['CURRENT VALUES'])
         csvData.push(['Current AUM', formatCurrency(data.currentValues.current_aum || 0)])
         csvData.push(['Current Annuity', formatCurrency(data.currentValues.current_annuity || 0)])
-        csvData.push(['Life Insurance Cash Value', formatCurrency(data.currentValues.life_insurance_cash_value || 0)])
+        csvData.push(['Life Insurance Cash Value', formatCurrency(data.currentValues.current_life_production || 0)])
         csvData.push([])
       }
       
@@ -93,10 +93,10 @@ export function CSVExport({ data, profile }: CSVExportProps) {
         csvData.push(['Campaign Name', 'Marketing Costs', 'Number of Events', 'Leads Generated', 'Status', 'Food Costs'])
         data.campaigns.forEach(campaign => {
           csvData.push([
-            campaign.campaign_name || '',
-            formatCurrency(campaign.marketing_costs || 0),
-            formatNumber(campaign.number_of_events || 0),
-            formatNumber(campaign.leads_generated || 0),
+            campaign.name || '',
+            formatCurrency(campaign.budget || 0),
+            formatNumber(campaign.events || 0),
+            formatNumber(campaign.leads || 0),
             campaign.status || '',
             formatCurrency(campaign.food_costs || 0)
           ])

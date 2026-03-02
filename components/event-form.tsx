@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { formatCurrency as formatCurrencyUtil } from "@/lib/utils"
+import { logger } from "@/lib/logger"
 import { 
   Calendar, 
   MapPin, 
@@ -283,15 +284,15 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submission started')
+    logger.log('Form submission started')
     setIsSubmitting(true)
 
     try {
       const currentUserId = userId || user?.id
-      console.log('Current user ID:', currentUserId)
+      logger.log('Current user ID:', currentUserId)
       
       if (!currentUserId) {
-        console.error("No user ID available")
+        logger.error("No user ID available")
         toast({
           variant: "destructive",
           title: "Error",
@@ -309,7 +310,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         topic
       }
 
-      console.log('Validating required fields:', requiredFields)
+      logger.log('Validating required fields:', requiredFields)
 
       const missingFields = Object.entries(requiredFields)
         .filter(([_, value]) => !value)
@@ -325,7 +326,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         })
 
       if (missingFields.length > 0) {
-        console.log('Missing required fields:', missingFields)
+        logger.log('Missing required fields:', missingFields)
         toast({
           variant: "destructive",
           title: "Missing Required Fields",
@@ -375,7 +376,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         }
       }
 
-      console.log('Submitting event data with plate lickers:', {
+      logger.log('Submitting event data with plate lickers:', {
         plateLickers,
         parsedPlateLickers: parseInt(plateLickers) || 0,
         fullEventData: eventData
@@ -383,10 +384,10 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
       let result;
       if (isEditing && initialData?.eventId) {
-        console.log('Updating existing event:', initialData.eventId)
+        logger.log('Updating existing event:', initialData.eventId)
         result = await updateEvent(initialData.eventId, eventData)
       } else {
-        console.log('Creating new event...')
+        logger.log('Creating new event...')
         result = await createEvent(currentUserId, eventData)
       }
 
@@ -400,7 +401,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         return
       }
 
-      console.log('Event operation completed successfully')
+      logger.log('Event operation completed successfully')
 
       toast({
         title: "Success",
@@ -408,9 +409,9 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       })
 
       // Get the event ID - for new events it's in result.eventId, for updates use initialData.eventId
-      const eventId = isEditing ? initialData?.eventId : result.eventId
+      const eventId = isEditing ? initialData?.eventId : ('eventId' in result ? result.eventId : undefined)
       
-      console.log('Redirecting to single event dashboard...')
+      logger.log('Redirecting to single event dashboard...')
       router.push("/single-event")
       router.refresh()
     } catch (error) {
@@ -443,12 +444,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   }
 
   const handleUpdateEvent = async () => {
-    console.log('Update event triggered from tab:', activeTab)
+    logger.log('Update event triggered from tab:', activeTab)
     setIsSubmitting(true)
 
     try {
       const currentUserId = userId || user?.id
-      console.log('Current user ID:', currentUserId)
+      logger.log('Current user ID:', currentUserId)
       
       if (!currentUserId) {
         console.error("No user ID available")
@@ -469,7 +470,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         topic
       }
 
-      console.log('Validating required fields:', requiredFields)
+      logger.log('Validating required fields:', requiredFields)
 
       const missingFields = Object.entries(requiredFields)
         .filter(([_, value]) => !value)
@@ -485,7 +486,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         })
 
       if (missingFields.length > 0) {
-        console.log('Missing required fields:', missingFields)
+        logger.log('Missing required fields:', missingFields)
         toast({
           variant: "destructive",
           title: "Missing Required Fields",
@@ -535,7 +536,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         }
       }
 
-      console.log('Updating event data:', eventData);
+      logger.log('Updating event data:', eventData);
 
       if (!initialData?.eventId) {
         console.error("No event ID available for update")
@@ -559,7 +560,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         return
       }
 
-      console.log('Event updated successfully')
+      logger.log('Event updated successfully')
 
       toast({
         title: "Success",
@@ -588,20 +589,16 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
   // Calculate total revenue
   const calculateTotalRevenue = () => {
-    const annuityValue = parseFloat(annuityPremium) || 0
-    const lifeValue = parseFloat(lifeInsurancePremium) || 0
-    const aumValue = parseFloat(aum) || 0
-    const planningValue = parseFloat(financialPlanning) || 0
-    return annuityValue + lifeValue + aumValue + planningValue
+    // These variables are not defined in this component - function may be unused
+    // If needed, add state variables or pass as parameters
+    return 0
   }
 
   // Calculate total commissions
   const calculateTotalCommissions = () => {
-    const annuityCommissionValue = parseFloat(annuityCommission) || 0
-    const lifeCommissionValue = parseFloat(lifeInsuranceCommission) || 0
-    const aumFeesValue = parseFloat(aumFees) || 0
-    const planningValue = parseFloat(financialPlanning) || 0
-    return annuityCommissionValue + lifeCommissionValue + aumFeesValue + planningValue
+    // These variables are not defined in this component - function may be unused
+    // If needed, add state variables or pass as parameters
+    return 0
   }
 
   return (

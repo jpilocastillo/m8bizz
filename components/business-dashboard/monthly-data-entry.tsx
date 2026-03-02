@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { useAuth } from "@/components/auth-provider"
-import { MonthlyDataEntry } from "@/lib/advisor-basecamp"
+import { MonthlyDataEntry, type AdvisorBasecampData } from "@/lib/advisor-basecamp"
 import { format, parseISO } from "date-fns"
 import { aggregateEventDataByMonth } from "@/lib/client-tracking"
 import { RefreshCw, Info } from "lucide-react"
@@ -59,16 +59,22 @@ const parseCurrency = (value: string): string => {
 
 interface MonthlyDataEntryComponentProps {
   selectedYear?: string
+  /** When set, show read-only view (e.g. admin view-as) with same layout as user. */
+  viewOnlyData?: AdvisorBasecampData
+  viewOnlyYear?: number
 }
 
-export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComponentProps = {}) {
+export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnlyYear }: MonthlyDataEntryComponentProps = {}) {
   const { user } = useAuth()
-  const year = selectedYear ? Number.parseInt(selectedYear) : new Date().getFullYear()
-  const { data, addMonthlyDataEntry, updateMonthlyDataEntry, deleteMonthlyDataEntry, loadData, error: basecampError } = useAdvisorBasecamp(user, year)
+  const isViewOnly = !!(viewOnlyData != null && viewOnlyYear != null)
+  const year = isViewOnly ? viewOnlyYear! : (selectedYear ? Number.parseInt(selectedYear) : new Date().getFullYear())
+  const { data: basecampData, addMonthlyDataEntry, updateMonthlyDataEntry, deleteMonthlyDataEntry, loadData, error: basecampError } = useAdvisorBasecamp(user, year)
+  const viewOnly = isViewOnly
+  const data = viewOnly ? viewOnlyData! : basecampData
+  const currentYear = String(year)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<MonthlyDataEntry | null>(null)
   const [selectedMonthForComparison, setSelectedMonthForComparison] = useState<string>("")
-  const currentYear = selectedYear || new Date().getFullYear().toString()
 
   // Create a unique storage key based on user and year
   const storageKey = useMemo(() => {
@@ -760,8 +766,9 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
       : null
   }, [selectedMonthForComparison, monthlyEntries])
 
-  // Fetch event data for all months when entries or user changes
+  // Fetch event data for all months when entries or user changes (skip when view-only)
   useEffect(() => {
+    if (viewOnly) return
     const fetchAllEventData = async () => {
       if (!user || monthlyEntries.length === 0) {
         setEventDataForAllMonths({})
@@ -846,9 +853,10 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
         <div>
           <h2 className="text-2xl font-extrabold text-white tracking-tight">Monthly Data Entry</h2>
           <p className="text-m8bs-muted mt-2">
-            Track Your Monthly Performance And Compare Against Your Annual Goals From The Advisor Basecamp
+            {viewOnly ? "View only — monthly performance data for the selected year." : "Track Your Monthly Performance And Compare Against Your Annual Goals From The Advisor Basecamp"}
           </p>
         </div>
+        {!viewOnly && (
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open)
           if (!open) {
@@ -1190,6 +1198,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
             </Form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Month Selection for Comparison */}
@@ -1447,12 +1456,14 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
             <div className="text-center">
               <h3 className="text-lg font-semibold text-white mb-2">No Monthly Entries Yet</h3>
               <p className="text-m8bs-muted mb-4">
-                Start tracking your monthly performance by adding your first entry.
+                {viewOnly ? "No monthly entries for this year." : "Start tracking your monthly performance by adding your first entry."}
               </p>
+              {!viewOnly && (
               <Button onClick={() => setIsDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add First Entry
               </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1605,7 +1616,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   {(data.clientMetrics?.clients_needed || 0) > 0 && (
                     <>
                       <span>/</span>
-                      <span>{data.clientMetrics.clients_needed}</span>
+                      <span>{data.clientMetrics?.clients_needed || 0}</span>
                     </>
                   )}
                 </div>
@@ -1613,12 +1624,12 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   <div className="space-y-1">
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-m8bs-muted font-medium">Progress</span>
-                      <span className="text-white font-semibold">{calculateProgress(yearToDate.totalClients, data.clientMetrics.clients_needed).toFixed(0)}%</span>
+                      <span className="text-white font-semibold">{calculateProgress(yearToDate.totalClients, data.clientMetrics?.clients_needed || 0).toFixed(0)}%</span>
                     </div>
                     <div className="w-full bg-m8bs-border/40 rounded-full h-1.5 overflow-hidden">
                       <div 
                         className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(calculateProgress(yearToDate.totalClients, data.clientMetrics.clients_needed), 100)}%` }}
+                        style={{ width: `${Math.min(calculateProgress(yearToDate.totalClients, data.clientMetrics?.clients_needed || 0), 100)}%` }}
                       ></div>
                     </div>
                   </div>
@@ -1640,7 +1651,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                   {data.clientMetrics?.monthly_ideal_prospects && (
                     <>
                       <span>/</span>
-                      <span>{Math.ceil((data.clientMetrics.monthly_ideal_prospects * 3) * 12)}</span>
+                      <span>{Math.ceil((data.clientMetrics?.monthly_ideal_prospects || 0) * 3 * 12)}</span>
                     </>
                   )}
                 </div>
@@ -1649,13 +1660,13 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-m8bs-muted font-medium">Progress</span>
                       <span className="text-white font-semibold">
-                        {Math.min((yearToDate.totalAppointments / ((data.clientMetrics.monthly_ideal_prospects * 3) * 12)) * 100, 100).toFixed(0)}%
+                        {Math.min((yearToDate.totalAppointments / ((data.clientMetrics?.monthly_ideal_prospects || 0) * 3 * 12)) * 100, 100).toFixed(0)}%
                       </span>
                     </div>
                     <div className="w-full bg-m8bs-border/40 rounded-full h-1.5 overflow-hidden">
                       <div 
                         className="bg-gradient-to-r from-green-500 to-green-600 h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((yearToDate.totalAppointments / ((data.clientMetrics.monthly_ideal_prospects * 3) * 12)) * 100, 100)}%` }}
+                        style={{ width: `${Math.min((yearToDate.totalAppointments / ((data.clientMetrics?.monthly_ideal_prospects || 0) * 3 * 12)) * 100, 100)}%` }}
                       ></div>
                     </div>
                   </div>
@@ -1984,7 +1995,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                       <TableHead className="text-white font-semibold">New Leads</TableHead>
                       <TableHead className="text-white font-semibold">Total Sales</TableHead>
                       <TableHead className="text-white font-semibold">Marketing ROI</TableHead>
-                      <TableHead className="text-white font-semibold">Actions</TableHead>
+                      {!viewOnly && <TableHead className="text-white font-semibold">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -2079,7 +2090,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                             )}
                             {data.clientMetrics?.monthly_ideal_prospects && (
                               <Badge variant="outline" className="text-xs border-m8bs-border text-m8bs-muted">
-                                vs {Math.ceil(data.clientMetrics.monthly_ideal_prospects * 3)}
+                                vs {Math.ceil((data.clientMetrics?.monthly_ideal_prospects || 0) * 3)}
                               </Badge>
                             )}
                           </div>
@@ -2103,6 +2114,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                             {roi.toFixed(0)}%
                           </Badge>
                         </TableCell>
+                        {!viewOnly && (
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Button
@@ -2121,6 +2133,7 @@ export function MonthlyDataEntryComponent({ selectedYear }: MonthlyDataEntryComp
                             </Button>
                           </div>
                         </TableCell>
+                        )}
                       </TableRow>
                     )
                   })}

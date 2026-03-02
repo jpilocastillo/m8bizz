@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Bell, HelpCircle, Menu, MessageSquare, Moon, Sun } from "lucide-react"
 import Image from "next/image"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { MainNav } from "@/components/main-nav"
+import { MainNav } from "@/components/business-dashboard/main-nav"
 import { useTheme } from "next-themes"
 import {
   DropdownMenu,

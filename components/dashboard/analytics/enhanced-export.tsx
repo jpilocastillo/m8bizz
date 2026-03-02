@@ -18,7 +18,7 @@ export function EnhancedExport({ data }: EnhancedExportProps) {
 
     try {
       // Process events data for export
-      const events = data.events.map((event) => ({
+      const events = data.events.map((event: any) => ({
         Name: event.name,
         Date: (() => {
           try {
@@ -41,7 +41,7 @@ export function EnhancedExport({ data }: EnhancedExportProps) {
 
       // Convert to CSV
       const headers = Object.keys(events[0]).join(",")
-      const rows = events.map((event) => Object.values(event).join(","))
+      const rows = events.map((event: any) => Object.values(event).join(","))
       const csv = [headers, ...rows].join("\n")
 
       // Create download link

@@ -81,7 +81,7 @@ export default function BehaviorScorecardPage() {
         .select("*")
         .eq("id", authUser.id)
         .single()
-        .then(({ data }) => {
+        .then(({ data }: { data: any }) => {
           setProfile(data)
           return data
         })

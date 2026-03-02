@@ -11,6 +11,7 @@ export async function middleware(req: NextRequest) {
     {
       cookies: {
         get(name: string) {
+          if (!req.cookies) return undefined
           return req.cookies.get(name)?.value
         },
         set(name: string, value: string, options: any) {
@@ -76,16 +77,41 @@ export async function middleware(req: NextRequest) {
     return res
   }
 
-  // Handle login page - redirect if already authenticated (but not if it's a recovery session)
+  // Allow auth callback route
+  if (req.nextUrl.pathname === '/auth/callback') {
+    return res
+  }
+
+  // Handle login page - check for recovery parameters and redirect to reset-password
   if (req.nextUrl.pathname === '/login') {
-    // Check if this is a recovery session by looking at the session type
-    // Recovery sessions should be allowed to stay on login/reset pages
+    // Check if URL has recovery parameters (code, type=recovery, or hash with recovery tokens)
+    const code = req.nextUrl.searchParams.get('code')
+    const type = req.nextUrl.searchParams.get('type')
+    const hash = req.nextUrl.hash
+    
+    // If we have recovery parameters, redirect to reset-password
+    if (code && type === 'recovery') {
+      const resetUrl = new URL('/reset-password', req.url)
+      resetUrl.searchParams.set('code', code)
+      resetUrl.searchParams.set('type', type)
+      return NextResponse.redirect(resetUrl)
+    }
+    
+    // Check hash for recovery tokens
+    if (hash && hash.includes('type=recovery')) {
+      const resetUrl = new URL('/reset-password', req.url)
+      resetUrl.hash = hash
+      return NextResponse.redirect(resetUrl)
+    }
+    
+    // If user has a session but no recovery indicators, redirect to home
     if (session) {
-      // Only redirect if it's not a recovery session
-      // Recovery sessions have a specific flow, so we allow them
-      const isRecovery = req.nextUrl.searchParams.get('type') === 'recovery' || 
-                        req.nextUrl.hash.includes('type=recovery')
-      if (!isRecovery) {
+      // Check if this might be a recovery session by checking if it's very new
+      // Recovery sessions are typically created just before this redirect
+      // We'll let the client component handle this more accurately
+      // For now, only redirect if we're sure it's not a recovery session
+      const hasRecoveryParams = code || type === 'recovery' || hash.includes('recovery')
+      if (!hasRecoveryParams) {
         return NextResponse.redirect(new URL('/', req.url))
       }
     }

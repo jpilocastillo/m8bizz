@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CircularProgressIndicator } from "@/components/ui/circular-progress"
+import { CircularProgress } from "@/components/ui/circular-progress"
 import {
   Calendar,
   DollarSign,
@@ -276,7 +276,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
           </CardHeader>
           <CardContent className="p-6">
             <div className="flex justify-center mb-6">
-              <CircularProgressIndicator
+              <CircularProgress
                 value={100}
                 size={180}
                 strokeWidth={24}
@@ -294,7 +294,7 @@ export function DashboardOverview({ data }: { data: DashboardData }) {
                     ${data.marketingExpenses.total.toLocaleString()}
                   </span>
                 </div>
-              </CircularProgressIndicator>
+              </CircularProgress>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">

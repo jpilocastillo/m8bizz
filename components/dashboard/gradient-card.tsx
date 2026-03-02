@@ -39,7 +39,7 @@ const gradientVariants = cva("relative overflow-hidden", {
   },
 })
 
-interface GradientCardProps extends React.ComponentProps<typeof Card> {
+interface GradientCardProps extends Omit<React.ComponentProps<typeof Card>, 'title'> {
   variant?: "blue" | "green" | "purple" | "orange" | "default"
   glow?: boolean
   glowColor?: "blue" | "green" | "purple" | "orange" | "default"

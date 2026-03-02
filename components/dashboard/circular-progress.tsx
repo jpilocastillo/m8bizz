@@ -1,7 +1,7 @@
 "use client"
 import type * as React from "react"
 
-interface CircularProgressProps extends React.HTMLAttributes<HTMLSpanElement> {
+interface CircularProgressProps extends React.SVGProps<SVGSVGElement> {
   value: number
   max?: number
   size?: number

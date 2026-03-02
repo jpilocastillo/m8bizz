@@ -36,7 +36,7 @@ interface DashboardContentProps {
   userId: string
 }
 
-interface DashboardData {
+export interface DashboardData {
   eventId: string;
   eventDetails: {
     name: string;
@@ -468,7 +468,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             format="percent"
             icon={<TrendingUp className="h-5 w-5 text-gray-400" />}
             description="Return On Investment From Marketing Expenses"
-            color="gray"
+            color="blue"
           />
         </motion.div>
 
@@ -613,7 +613,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             title="Annuities Sold"
             count={dashboardData.financialProduction?.annuities_sold || 0}
             icon={<Award className="h-5 w-5 text-gray-400" />}
-            color="gray"
+            color="blue"
             details={[
               {
                 label: "Average Premium",

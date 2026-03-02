@@ -33,7 +33,7 @@ interface ClientPlan {
   user_id: string
   client_name: string
   plan_name: string
-  plan_data: PlanData
+  plan_data: PlanData | null
   created_at: string
   updated_at: string
 }
@@ -78,7 +78,8 @@ export default function ClientPlansPage() {
       const result = await clientPlanService.getPlans()
       
       if (result.success && result.plans) {
-        setPlans(result.plans)
+        // Type assertion: plan_data from database is Json, but we expect PlanData | null
+        setPlans(result.plans as ClientPlan[])
       } else {
         setError(result.error || 'Failed to load plans')
       }
@@ -131,6 +132,10 @@ export default function ClientPlansPage() {
     try {
       // For saved plans, we don't have access to the chart elements
       // So we'll generate a PDF without charts
+      if (!plan.plan_data) {
+        setError('Plan data is missing')
+        return
+      }
       await pdfGenerator.downloadPDF(
         plan.plan_data,
         plan.client_name,
@@ -146,6 +151,10 @@ export default function ClientPlansPage() {
 
   const handleEditPlan = (plan: ClientPlan) => {
     // Store the plan data in sessionStorage to load in the bucket plan tool
+    if (!plan.plan_data) {
+      setError('Plan data is missing')
+      return
+    }
     sessionStorage.setItem('editingPlan', JSON.stringify({
       id: plan.id,
       clientData: plan.plan_data.clientData,
@@ -256,42 +265,46 @@ export default function ClientPlansPage() {
                         </CardDescription>
                       </div>
                       <Badge variant="outline" className="text-xs">
-                        {plan.plan_data.buckets.length} Bucket{plan.plan_data.buckets.length !== 1 ? 's' : ''}
+                        {plan.plan_data?.buckets?.length || 0} Bucket{(plan.plan_data?.buckets?.length || 0) !== 1 ? 's' : ''}
                       </Badge>
                     </div>
                   </CardHeader>
                   
                   <CardContent className="space-y-4">
                     {/* Plan Summary */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Total Investment</span>
-                        <span className="font-semibold text-green-300">
-                          {formatCurrency(getTotalAssets(plan.plan_data))}
-                        </span>
+                    {plan.plan_data ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Total Investment</span>
+                          <span className="font-semibold text-green-300">
+                            {formatCurrency(getTotalAssets(plan.plan_data))}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Annual Income</span>
+                          <span className="font-semibold text-blue-300">
+                            {formatCurrency(getTotalIncome(plan.plan_data))}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Risk Level</span>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${
+                              plan.plan_data.clientData.riskTolerance === 'conservative' 
+                                ? 'border-green-500 text-green-400' 
+                                : plan.plan_data.clientData.riskTolerance === 'moderate'
+                                ? 'border-yellow-500 text-yellow-400'
+                                : 'border-red-500 text-red-400'
+                            }`}
+                          >
+                            {plan.plan_data.clientData.riskTolerance}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Annual Income</span>
-                        <span className="font-semibold text-blue-300">
-                          {formatCurrency(getTotalIncome(plan.plan_data))}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Risk Level</span>
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${
-                            plan.plan_data.clientData.riskTolerance === 'conservative' 
-                              ? 'border-green-500 text-green-400' 
-                              : plan.plan_data.clientData.riskTolerance === 'moderate'
-                              ? 'border-yellow-500 text-yellow-400'
-                              : 'border-red-500 text-red-400'
-                          }`}
-                        >
-                          {plan.plan_data.clientData.riskTolerance}
-                        </Badge>
-                      </div>
-                    </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">Plan data not available</div>
+                    )}
 
                     <Separator />
 

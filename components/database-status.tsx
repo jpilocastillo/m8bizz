@@ -6,6 +6,8 @@ import { AlertCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 export function DatabaseStatus() {
+  // Show in both development and production for debugging
+
   const [error, setError] = useState<string | null>(null)
   const [checking, setChecking] = useState(true)
 
@@ -14,7 +16,6 @@ export function DatabaseStatus() {
       try {
         // First check if environment variables are defined
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          console.error("Missing Supabase environment variables")
           setError("Missing Supabase environment variables")
           setChecking(false)
           return
@@ -27,15 +28,12 @@ export function DatabaseStatus() {
           const { error: queryError } = await supabase.from("profiles").select("id").limit(1)
 
           if (queryError) {
-            console.error("Database query error:", queryError.message)
             setError(`Database query error: ${queryError.message}`)
           }
         } catch (queryErr) {
-          console.error("Database query failed:", queryErr)
           setError("Failed to query database")
         }
       } catch (err) {
-        console.error("Supabase client error:", err)
         setError("Failed to initialize Supabase client")
       } finally {
         setChecking(false)

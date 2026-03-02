@@ -77,7 +77,7 @@ export function TrendAnalysisChart({ monthlyData }: TrendAnalysisChartProps) {
     if (metrics.includes("revenue") || metrics.includes("expenses") || metrics.includes("profit")) {
       return (value: number) => `$${value >= 1000 ? `${value / 1000}k` : value}`
     }
-    return (value: number) => value
+    return (value: number) => value.toString()
   }
 
   return (

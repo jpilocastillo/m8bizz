@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/client"
 import { advisorBasecampService } from "@/lib/advisor-basecamp"
 import type { User } from "@supabase/supabase-js"
+import { logger } from "@/lib/logger"
 
 export interface EventClient {
   id?: string
@@ -92,7 +93,7 @@ export async function getClientsByEvent(eventId: string): Promise<EventClient[]>
     if (error) throw error
     return data || []
   } catch (error) {
-    console.error("Error fetching clients by event:", error)
+    logger.error("Error fetching clients by event:", error)
     throw error
   }
 }
@@ -117,7 +118,7 @@ export async function getClientsByUser(
     if (eventsError) throw eventsError
     if (!events || events.length === 0) return []
 
-    const eventIds = events.map(e => e.id)
+    const eventIds = events.map((e: any) => e.id)
 
     // Build query for clients
     let query = supabase
@@ -149,14 +150,14 @@ export async function getClientsByUser(
     // Apply event type filter
     if (filters?.eventType) {
       const filteredEventIds = events
-        .filter(e => e.marketing_type === filters.eventType)
-        .map(e => e.id)
-      clients = clients.filter(c => filteredEventIds.includes(c.event_id))
+        .filter((e: any) => e.marketing_type === filters.eventType)
+        .map((e: any) => e.id)
+      clients = clients.filter((c: any) => filteredEventIds.includes(c.event_id))
     }
 
     // Apply product type filter
     if (filters?.productType) {
-      clients = clients.filter(c => {
+      clients = clients.filter((c: any) => {
         switch (filters.productType) {
           case 'annuity':
             return c.annuity_premium > 0
@@ -174,7 +175,7 @@ export async function getClientsByUser(
 
     return clients
   } catch (error) {
-    console.error("Error fetching clients by user:", error)
+    logger.error("Error fetching clients by user:", error)
     throw error
   }
 }
@@ -204,16 +205,16 @@ export async function addClient(clientData: EventClientInsert): Promise<EventCli
 
     // Sync to monthly entry
     try {
-      console.log("Syncing client to monthly entry:", { eventId: clientData.event_id, closeDate: clientData.close_date })
+      logger.log("Syncing client to monthly entry:", { eventId: clientData.event_id, closeDate: clientData.close_date })
       await syncClientToMonthlyEntry(clientData.event_id, clientData.close_date)
-      console.log("Successfully synced client to monthly entry")
+      logger.log("Successfully synced client to monthly entry")
     } catch (syncError) {
-      console.error("Error syncing to monthly entry (non-blocking):", syncError)
+      logger.error("Error syncing to monthly entry (non-blocking):", syncError)
     }
 
     return data
   } catch (error) {
-    console.error("Error adding client:", error)
+    logger.error("Error adding client:", error)
     throw error
   }
 }
@@ -250,13 +251,13 @@ export async function updateClient(
       try {
         await syncClientToMonthlyEntry(currentClient.event_id, closeDate)
       } catch (syncError) {
-        console.error("Error syncing to monthly entry (non-blocking):", syncError)
+        logger.error("Error syncing to monthly entry (non-blocking):", syncError)
       }
     }
 
     return data
   } catch (error) {
-    console.error("Error updating client:", error)
+    logger.error("Error updating client:", error)
     throw error
   }
 }
@@ -287,11 +288,11 @@ export async function deleteClient(clientId: string): Promise<void> {
       try {
         await syncClientToMonthlyEntry(client.event_id, client.close_date)
       } catch (syncError) {
-        console.error("Error syncing to monthly entry (non-blocking):", syncError)
+        logger.error("Error syncing to monthly entry (non-blocking):", syncError)
       }
     }
   } catch (error) {
-    console.error("Error deleting client:", error)
+    logger.error("Error deleting client:", error)
     throw error
   }
 }
@@ -315,7 +316,7 @@ export async function syncClientToMonthlyEntry(
       .single()
 
     if (eventError || !event) {
-      console.error("Error fetching event:", eventError)
+      logger.error("Error fetching event:", eventError)
       return
     }
 
@@ -324,7 +325,7 @@ export async function syncClientToMonthlyEntry(
     // Get the current user to pass to advisorBasecampService
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.id !== userId) {
-      console.error("User mismatch or not authenticated")
+      logger.error("User mismatch or not authenticated")
       return
     }
 
@@ -339,7 +340,7 @@ export async function syncClientToMonthlyEntry(
     }
     
     if (isNaN(closeDate.getTime())) {
-      console.error("Invalid close_date format:", clientCloseDate)
+      logger.error("Invalid close_date format:", clientCloseDate)
       return
     }
     
@@ -361,11 +362,11 @@ export async function syncClientToMonthlyEntry(
       .eq("user_id", userId)
 
     if (eventsError || !userEvents) {
-      console.error("Error fetching user events:", eventsError)
+      logger.error("Error fetching user events:", eventsError)
       return
     }
 
-    const eventIds = userEvents.map(e => e.id)
+    const eventIds = userEvents.map((e: any) => e.id)
 
     // Get all clients for this month from these events
     const { data: allClients, error: clientsError } = await supabase
@@ -389,20 +390,20 @@ export async function syncClientToMonthlyEntry(
       .in("event_id", eventIds)
 
     if (clientsError) {
-      console.error("Error fetching clients for month:", clientsError)
+      logger.error("Error fetching clients for month:", clientsError)
       return
     }
 
     // Aggregate the data
     const aggregated = {
       new_clients: allClients?.length || 0,
-      annuity_sales: allClients?.reduce((sum, c) => sum + (c.annuity_premium || 0), 0) || 0,
-      aum_sales: allClients?.reduce((sum, c) => sum + (c.aum_amount || 0), 0) || 0,
-      life_sales: allClients?.reduce((sum, c) => sum + (c.life_insurance_premium || 0), 0) || 0,
+      annuity_sales: allClients?.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0) || 0,
+      aum_sales: allClients?.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0) || 0,
+      life_sales: allClients?.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0) || 0,
     }
 
     // Build client names and notes list
-    const clientEntries = allClients?.map(c => {
+    const clientEntries = allClients?.map((c: any) => {
       const parts = [c.client_name]
       if (c.notes) {
         parts.push(`(${c.notes})`)
@@ -466,7 +467,7 @@ export async function syncClientToMonthlyEntry(
         ? existingLifeSales 
         : aggregated.life_sales,
       marketing_expenses: parseFloat(String(existingEntry?.marketing_expenses || 0)) || 0,
-      notes: notesText || null
+      notes: notesText || undefined
     }
 
     console.log("Syncing monthly entry:", { month_year, entryData, clientCount: aggregated.new_clients })
@@ -476,13 +477,13 @@ export async function syncClientToMonthlyEntry(
     const result = await advisorBasecampService.createMonthlyDataEntry(user as User, entryData)
     
     if (result.error) {
-      console.error("Error syncing to monthly entry:", result.error)
+      logger.error("Error syncing to monthly entry:", result.error)
       // Don't throw - this is non-blocking
     } else {
-      console.log("Successfully synced client data to monthly entry:", result.data)
+      logger.log("Successfully synced client data to monthly entry:", result.data)
     }
   } catch (error) {
-    console.error("Error in syncClientToMonthlyEntry:", error)
+    logger.error("Error in syncClientToMonthlyEntry:", error)
     // Don't throw - this is non-blocking, errors are logged
   }
 }
@@ -524,7 +525,7 @@ export async function recalculateMonthlyEntryFromEvents(
       .maybeSingle()
     
     if (entryError) {
-      console.error("Error fetching existing entry:", entryError)
+      logger.error("Error fetching existing entry:", entryError)
       return { success: false, error: entryError.message }
     }
     
@@ -571,7 +572,7 @@ export async function recalculateMonthlyEntryFromEvents(
         .eq("user_id", userId)
       
       if (updateError) {
-        console.error("Error updating monthly entry:", updateError)
+        logger.error("Error updating monthly entry:", updateError)
         return { success: false, error: updateError.message }
       }
       
@@ -580,13 +581,16 @@ export async function recalculateMonthlyEntryFromEvents(
     
     return { success: true }
   } catch (error) {
-    console.error("Error recalculating monthly entry:", error)
+    logger.error("Error recalculating monthly entry:", error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
 
 /**
- * Aggregate all event data (appointments, expenses, clients) for a specific month
+ * Aggregate all event data (appointments, expenses, clients) for a specific month.
+ * - Appointments and marketing_expenses: tied to events that occurred in this month.
+ * - Client sales/commissions (annuity_sales, aum_sales, life_sales, new_clients): tied to close_date,
+ *   so they appear in the month the client was closed in the basecamp monthly data tab.
  */
 export async function aggregateEventDataByMonth(
   userId: string,
@@ -600,8 +604,17 @@ export async function aggregateEventDataByMonth(
     const monthStart = `${year}-${String(month).padStart(2, '0')}-01`
     const monthEnd = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`
 
-    // Get all events for the user in this month
-    const { data: events, error: eventsError } = await supabase
+    // Get all events for the user (for client-by-close-date aggregation)
+    const { data: allUserEvents, error: allEventsError } = await supabase
+      .from("marketing_events")
+      .select("id")
+      .eq("user_id", userId)
+
+    if (allEventsError) throw allEventsError
+    const allEventIds = (allUserEvents || []).map((e: any) => e.id)
+
+    // Get events that occurred in this month (for appointments and expenses only)
+    const { data: eventsThisMonth, error: eventsError } = await supabase
       .from("marketing_events")
       .select("id")
       .eq("user_id", userId)
@@ -609,60 +622,49 @@ export async function aggregateEventDataByMonth(
       .lte("date", monthEnd)
 
     if (eventsError) throw eventsError
-    if (!events || events.length === 0) {
-      return {
-        appointments_booked: 0,
-        marketing_expenses: 0,
-        annuity_sales: 0,
-        aum_sales: 0,
-        life_sales: 0,
-        new_clients: 0,
-        client_names: []
-      }
+    const eventIdsThisMonth = (eventsThisMonth || []).map((e: any) => e.id)
+
+    // Appointments and expenses: only from events that occurred in this month
+    let appointments_booked = 0
+    let marketing_expenses = 0
+    if (eventIdsThisMonth.length > 0) {
+      const { data: appointments } = await supabase
+        .from("event_appointments")
+        .select("set_at_event, set_after_event")
+        .in("event_id", eventIdsThisMonth)
+      appointments_booked = (appointments || []).reduce((sum: number, apt: any) => {
+        return sum + (apt.set_at_event || 0) + (apt.set_after_event || 0)
+      }, 0)
+
+      const { data: expenses } = await supabase
+        .from("marketing_expenses")
+        .select("total_cost")
+        .in("event_id", eventIdsThisMonth)
+      marketing_expenses = (expenses || []).reduce((sum: number, exp: any) => {
+        return sum + (exp.total_cost || 0)
+      }, 0)
     }
 
-    const eventIds = events.map(e => e.id)
+    // Client data (sales/commissions): by close_date so they go to the month closed in basecamp monthly tab
+    let annuity_sales = 0
+    let aum_sales = 0
+    let life_sales = 0
+    let client_names: string[] = []
+    if (allEventIds.length > 0) {
+      const { data: clients, error: clientsError } = await supabase
+        .from("event_clients")
+        .select("client_name, annuity_premium, life_insurance_premium, aum_amount")
+        .in("event_id", allEventIds)
+        .gte("close_date", monthStart)
+        .lte("close_date", monthEnd)
 
-    // Aggregate appointments booked
-    const { data: appointments, error: appointmentsError } = await supabase
-      .from("event_appointments")
-      .select("set_at_event, set_after_event")
-      .in("event_id", eventIds)
-
-    if (appointmentsError) throw appointmentsError
-
-    const appointments_booked = (appointments || []).reduce((sum, apt) => {
-      return sum + (apt.set_at_event || 0) + (apt.set_after_event || 0)
-    }, 0)
-
-    // Aggregate marketing expenses
-    const { data: expenses, error: expensesError } = await supabase
-      .from("marketing_expenses")
-      .select("total_cost")
-      .in("event_id", eventIds)
-
-    if (expensesError) throw expensesError
-
-    const marketing_expenses = (expenses || []).reduce((sum, exp) => {
-      return sum + (exp.total_cost || 0)
-    }, 0)
-
-    // Aggregate client data for the month (based on close_date)
-    const { data: clients, error: clientsError } = await supabase
-      .from("event_clients")
-      .select("client_name, annuity_premium, life_insurance_premium, aum_amount")
-      .in("event_id", eventIds)
-      .gte("close_date", monthStart)
-      .lte("close_date", monthEnd)
-
-    if (clientsError) throw clientsError
-
-    const annuity_sales = (clients || []).reduce((sum, c) => sum + (c.annuity_premium || 0), 0)
-    const aum_sales = (clients || []).reduce((sum, c) => sum + (c.aum_amount || 0), 0)
-    const life_sales = (clients || []).reduce((sum, c) => sum + (c.life_insurance_premium || 0), 0)
-    
-    // Get unique client names
-    const client_names = Array.from(new Set((clients || []).map(c => c.client_name).filter(Boolean)))
+      if (clientsError) throw clientsError
+      const clientList = clients || []
+      annuity_sales = clientList.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0)
+      aum_sales = clientList.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0)
+      life_sales = clientList.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0)
+      client_names = Array.from(new Set(clientList.map((c: any) => c.client_name).filter(Boolean))) as string[]
+    }
     const new_clients = client_names.length
 
     return {
@@ -675,7 +677,7 @@ export async function aggregateEventDataByMonth(
       client_names
     }
   } catch (error) {
-    console.error("Error aggregating event data by month:", error)
+    logger.error("Error aggregating event data by month:", error)
     throw error
   }
 }
@@ -745,7 +747,7 @@ export async function getYTDSummary(userId: string, year: number): Promise<{
       monthly_breakdown
     }
   } catch (error) {
-    console.error("Error getting YTD summary:", error)
+    logger.error("Error getting YTD summary:", error)
     throw error
   }
 }

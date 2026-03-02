@@ -129,7 +129,8 @@ export function EnhancedChart({ title, type, data, height = 300, className, opti
                     size: 11,
                   },
                   callback: function (value: any) {
-                    if (this.chart.data.datasets[0].label?.includes("$")) {
+                    const chart = (this as any).chart
+                    if (chart?.data?.datasets?.[0]?.label?.includes("$")) {
                       return "$" + value.toLocaleString()
                     }
                     return value

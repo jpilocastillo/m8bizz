@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr"
 import type { Database } from "@/types/supabase"
+import { logger } from "@/lib/logger"
 
 // Create a new client instance each time to ensure fresh session
 // createBrowserClient automatically handles cookies and sessions
@@ -9,7 +10,10 @@ export function createClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Missing Supabase environment variables in client")
+    logger.error("Missing Supabase environment variables in client", {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseAnonKey
+    })
     // Return a mock client to prevent runtime errors
     return {
       from: () => ({
@@ -34,9 +38,11 @@ export function createClient() {
     // - Automatic token refresh
     // - Session persistence
     // We create a singleton instance to ensure consistent session handling
-    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+    const client = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+    logger.debug("Supabase client created successfully")
+    return client
   } catch (error) {
-    console.error("Error creating Supabase client:", error)
+    logger.error("Error creating Supabase client:", error)
     throw error
   }
 }

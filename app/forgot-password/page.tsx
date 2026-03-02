@@ -64,9 +64,12 @@ export default function ForgotPassword() {
       
       // Use production site URL if available, otherwise fall back to current origin
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
-      // IMPORTANT: The redirect URL must match exactly what's configured in Supabase dashboard
-      // Make sure this URL is added to "Redirect URLs" in Supabase > Authentication > URL Configuration
-      const redirectUrl = `${siteUrl}/reset-password`
+      // IMPORTANT: Use auth callback route to handle the redirect properly
+      // This ensures recovery sessions are processed correctly before redirecting to reset-password
+      // Make sure these URLs are added to "Redirect URLs" in Supabase > Authentication > URL Configuration:
+      // - ${siteUrl}/auth/callback
+      // - ${siteUrl}/reset-password
+      const redirectUrl = `${siteUrl}/auth/callback?next=/reset-password&expected_type=recovery`
       
       // Log only in development for debugging
       if (process.env.NODE_ENV === 'development') {

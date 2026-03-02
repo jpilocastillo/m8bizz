@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Eye, Edit, Trash2, ArrowUpDown, Search } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { deleteEvent } from "@/lib/data"
@@ -60,9 +61,13 @@ interface MarketingEvent {
 
 interface EventsTableProps {
   events: MarketingEvent[]
+  /** When true, hide Edit and Delete actions (e.g. admin view-as). */
+  readOnly?: boolean
+  /** Optional base path for View link (e.g. `/admin/users/xxx/single-event`). When set with readOnly, View links here with ?event=id. */
+  viewHrefPrefix?: string
 }
 
-export function EventsTable({ events: initialEvents }: EventsTableProps) {
+export function EventsTable({ events: initialEvents, readOnly, viewHrefPrefix }: EventsTableProps) {
   const [sortColumn, setSortColumn] = useState<keyof MarketingEvent>("date")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -288,50 +293,60 @@ export function EventsTable({ events: initialEvents }: EventsTableProps) {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.push(`/?event=${event.id}`)}
-                            className="h-8 w-8 text-white hover:bg-m8bs-blue/20"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          {viewHrefPrefix ? (
+                            <Link href={`${viewHrefPrefix}?event=${event.id}`}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-m8bs-blue/20">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => router.push(`/?event=${event.id}`)}
+                              className="h-8 w-8 text-white hover:bg-m8bs-blue/20"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
                         </TooltipTrigger>
                         <TooltipContent>View Details</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.push(`/events/edit/${event.id}`)}
-                            className="h-8 w-8 text-white hover:bg-m8bs-blue/20"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Edit Event</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(event.id)}
-                            className="h-8 w-8 text-white hover:bg-red-500/20"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete Event</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    {!readOnly && (
+                      <>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => router.push(`/events/edit/${event.id}`)}
+                                className="h-8 w-8 text-white hover:bg-m8bs-blue/20"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit Event</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(event.id)}
+                                className="h-8 w-8 text-white hover:bg-red-500/20"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete Event</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

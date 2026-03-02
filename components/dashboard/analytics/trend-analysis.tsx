@@ -140,8 +140,8 @@ export function TrendAnalysis({ events }: TrendAnalysisProps) {
     const latest = processedData[processedData.length - 1]
     const previous = processedData[processedData.length - 2]
     
-    const latestValue = Number(latest[metric]) || 0
-    const previousValue = Number(previous[metric]) || 0
+    const latestValue = Number((latest as any)[metric]) || 0
+    const previousValue = Number((previous as any)[metric]) || 0
     
     // Handle zero cases
     if (previousValue === 0) {

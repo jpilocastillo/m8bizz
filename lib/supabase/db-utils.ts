@@ -69,7 +69,7 @@ export async function getDatabaseSchema(): Promise<any> {
     }
 
     // Organize the data by table
-    const schema = data.reduce((acc, column) => {
+    const schema = data.reduce((acc: any, column: any) => {
       const tableName = column.table_name
 
       if (!acc[tableName]) {

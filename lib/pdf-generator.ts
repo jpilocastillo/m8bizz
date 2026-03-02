@@ -744,7 +744,7 @@ export class PDFGenerator {
           planData.buckets.forEach((bucket) => {
             checkNewPage(8)
             const bucketData = planData.calculationResults[bucket.id]
-            const grossIncome = bucketData?.payments || 0
+            const grossIncome = bucketData?.annuityPayment || 0
             const netIncome = bucketData?.incomeSolve || 0
             yPosition = addTableRow(
               [bucket.name, formatCurrency(grossIncome), formatCurrency(netIncome)],
@@ -870,7 +870,7 @@ export class PDFGenerator {
                 const yearsSinceStart = year - incomeStartYear + 1
                 const maxIncomePeriods = bucket.incomePeriods || 999
                 const yearsOfIncome = Math.min(yearsSinceStart, maxIncomePeriods)
-                const bucketAnnualIncome = bucketData?.incomeSolve || bucketData?.payments || 0
+                const bucketAnnualIncome = bucketData?.incomeSolve || bucketData?.annuityPayment || 0
                 return sum + (bucketAnnualIncome * yearsOfIncome)
               }
               return sum

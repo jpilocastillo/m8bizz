@@ -46,7 +46,7 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
         description: "Set your annual revenue and client acquisition targets",
         icon: Target,
         completed: !!(data.businessGoals?.annualRevenue && data.businessGoals?.clientAcquisition),
-        missing: [],
+        missing: [] as string[],
         link: "/business-dashboard",
         color: "blue"
       },
@@ -56,7 +56,7 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
         description: "Enter your current business metrics and performance",
         icon: TrendingUp,
         completed: !!(data.currentValues?.currentRevenue && data.currentValues?.currentClients),
-        missing: [],
+        missing: [] as string[],
         link: "/business-dashboard",
         color: "green"
       },
@@ -66,7 +66,7 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
         description: "Define your client acquisition and retention metrics",
         icon: Users,
         completed: !!(data.clientMetrics?.averageClientValue && data.clientMetrics?.retentionRate),
-        missing: [],
+        missing: [] as string[],
         link: "/business-dashboard",
         color: "purple"
       },
@@ -76,7 +76,7 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
         description: "Create and manage your marketing events",
         icon: Calendar,
         completed: !!(data.campaigns && data.campaigns.length > 0),
-        missing: [],
+        missing: [] as string[],
         link: "/events",
         color: "orange"
       },
@@ -86,7 +86,7 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
         description: "Set up your commission and fee structures",
         icon: DollarSign,
         completed: !!(data.commissionRates?.annuityCommission && data.commissionRates?.lifeInsuranceCommission),
-        missing: [],
+        missing: [] as string[],
         link: "/business-dashboard",
         color: "emerald"
       },
@@ -96,7 +96,7 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
         description: "Track your financial planning and advisory services",
         icon: FileText,
         completed: !!(data.financialBook?.financialPlans && data.financialBook?.advisoryServices),
-        missing: [],
+        missing: [] as string[],
         link: "/business-dashboard",
         color: "cyan"
       }
@@ -107,27 +107,27 @@ export function DataCompletionGuide({ data, onNavigate }: DataCompletionGuidePro
       if (!section.completed) {
         switch (section.id) {
           case "business-goals":
-            if (!data.businessGoals?.annualRevenue) section.missing.push("Annual Revenue Target")
-            if (!data.businessGoals?.clientAcquisition) section.missing.push("Client Acquisition Goal")
+            if (!data.businessGoals?.annualRevenue) (section.missing as string[]).push("Annual Revenue Target")
+            if (!data.businessGoals?.clientAcquisition) (section.missing as string[]).push("Client Acquisition Goal")
             break
           case "current-values":
-            if (!data.currentValues?.currentRevenue) section.missing.push("Current Revenue")
-            if (!data.currentValues?.currentClients) section.missing.push("Current Client Count")
+            if (!data.currentValues?.currentRevenue) (section.missing as string[]).push("Current Revenue")
+            if (!data.currentValues?.currentClients) (section.missing as string[]).push("Current Client Count")
             break
           case "client-metrics":
-            if (!data.clientMetrics?.averageClientValue) section.missing.push("Average Client Value")
-            if (!data.clientMetrics?.retentionRate) section.missing.push("Client Retention Rate")
+            if (!data.clientMetrics?.averageClientValue) (section.missing as string[]).push("Average Client Value")
+            if (!data.clientMetrics?.retentionRate) (section.missing as string[]).push("Client Retention Rate")
             break
           case "campaigns":
-            section.missing.push("Create at least one marketing event")
+            (section.missing as string[]).push("Create at least one marketing event")
             break
           case "commission-rates":
-            if (!data.commissionRates?.annuityCommission) section.missing.push("Annuity Commission Rate")
-            if (!data.commissionRates?.lifeInsuranceCommission) section.missing.push("Life Insurance Commission Rate")
+            if (!data.commissionRates?.annuityCommission) (section.missing as string[]).push("Annuity Commission Rate")
+            if (!data.commissionRates?.lifeInsuranceCommission) (section.missing as string[]).push("Life Insurance Commission Rate")
             break
           case "financial-book":
-            if (!data.financialBook?.financialPlans) section.missing.push("Financial Plans Sold")
-            if (!data.financialBook?.advisoryServices) section.missing.push("Advisory Services Revenue")
+            if (!data.financialBook?.financialPlans) (section.missing as string[]).push("Financial Plans Sold")
+            if (!data.financialBook?.advisoryServices) (section.missing as string[]).push("Advisory Services Revenue")
             break
         }
       }

@@ -127,7 +127,7 @@ export function InteractiveChart({
               }
 
               // Format the value if it exists
-              if (value !== null && value !== undefined) {
+              if (value !== null && value !== undefined && typeof value === 'number') {
                 if (
                   context.dataset.label?.toLowerCase().includes("revenue") ||
                   context.dataset.label?.toLowerCase().includes("profit") ||
@@ -138,7 +138,7 @@ export function InteractiveChart({
                   context.dataset.label?.toLowerCase().includes("rate") ||
                   context.dataset.label?.toLowerCase().includes("percentage")
                 ) {
-                  label += Number.parseFloat(value).toFixed(1) + "%"
+                  label += (typeof value === 'number' ? value : Number.parseFloat(String(value))).toFixed(1) + "%"
                 } else {
                   // Make sure value is a number before calling toLocaleString
                   label += typeof value === "number" ? value.toLocaleString() : value
@@ -156,7 +156,6 @@ export function InteractiveChart({
               x: {
                 grid: {
                   display: false,
-                  drawBorder: false,
                   color: "rgba(75, 85, 99, 0.2)",
                 },
                 ticks: {
@@ -171,7 +170,6 @@ export function InteractiveChart({
               y: {
                 grid: {
                   color: "rgba(75, 85, 99, 0.2)",
-                  drawBorder: false,
                 },
                 ticks: {
                   color: "#9ca3af",

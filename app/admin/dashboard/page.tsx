@@ -2,22 +2,22 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  Users, 
-  User, 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Users,
+  User,
+  Calendar,
+  DollarSign,
   LogOut,
   Search,
   Eye,
+  LayoutDashboard,
   Shield,
   Plus,
   Edit,
@@ -25,16 +25,18 @@ import {
   Key,
   AlertTriangle,
   Settings,
-  MapPin,
-  Clock,
-  Tag,
-  FileText,
-  BarChart3,
-  Wallet
+  Mail,
+  Building2,
+  UserCheck,
+  ArrowRight,
+  UserCircle,
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { UserManagementModal } from "@/components/admin/user-management-modal"
-import { getAdminUsers, getUserDetails } from "@/app/admin/actions"
+import { AdminNav } from "@/components/admin/admin-nav"
+import { getAdminUsers } from "@/app/admin/actions"
+import { logger } from "@/lib/logger"
+import { cn } from "@/lib/utils"
 
 interface UserProfile {
   id: string
@@ -63,8 +65,6 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterRole, setFilterRole] = useState("all")
-  const [userDetails, setUserDetails] = useState<any>(null)
-  const [loadingDetails, setLoadingDetails] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit" | "delete" | "reset-password">("create")
   const [selectedUserForAction, setSelectedUserForAction] = useState<UserProfile | null>(null)
@@ -100,12 +100,12 @@ export default function AdminDashboard() {
   const loadUsers = async () => {
     try {
       setLoading(true)
-      console.log("Loading users...")
+      logger.log("Loading users...")
       
       const result = await getAdminUsers()
       
       if (!result.success) {
-        console.error("Error loading users:", result.error)
+        logger.error("Error loading users:", result.error)
         toast({
           variant: "destructive",
           title: "Error",
@@ -114,10 +114,10 @@ export default function AdminDashboard() {
         return
       }
 
-      console.log("Users loaded:", result.data?.length || 0)
+      logger.log("Users loaded:", result.data?.length || 0)
       setUsers(result.data || [])
     } catch (error) {
-      console.error("Error loading users:", error)
+      logger.error("Error loading users:", error)
       toast({
         variant: "destructive",
         title: "Error",
@@ -128,39 +128,8 @@ export default function AdminDashboard() {
     }
   }
 
-  const loadUserDetails = async (userId: string) => {
-    try {
-      setLoadingDetails(true)
-      console.log("Loading details for user:", userId)
-      
-      const result = await getUserDetails(userId)
-      
-      if (!result.success) {
-        console.error("Error loading user details:", result.error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load user details.",
-        })
-        return
-      }
-
-      setUserDetails(result.data)
-    } catch (error) {
-      console.error("Error loading user details:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load user details.",
-      })
-    } finally {
-      setLoadingDetails(false)
-    }
-  }
-
   const handleUserSelect = (userData: UserData) => {
     setSelectedUser(userData)
-    loadUserDetails(userData.profile.id)
   }
 
   const filteredUsers = users.filter(user => {
@@ -202,17 +171,25 @@ export default function AdminDashboard() {
   }
 
   const handleModalSuccess = () => {
-    loadUsers() // Refresh the users list
+    loadUsers()
     if (selectedUser?.profile.id === selectedUserForAction?.id) {
       setSelectedUser(null)
-      setUserDetails(null)
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center space-y-6 animate-fade-in">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-20 w-20 border-4 border-m8bs-blue/20 border-t-m8bs-blue mx-auto"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-m8bs-blue/40 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-white font-semibold text-lg">Loading admin dashboard</p>
+            <p className="text-m8bs-muted text-sm">Preparing your workspace...</p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -220,66 +197,66 @@ export default function AdminDashboard() {
   if (configError) {
     return (
       <div className="min-h-screen bg-black">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center space-x-3">
-                <Shield className="h-8 w-8 text-blue-600" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                  <p className="text-sm text-gray-500">Manage users and view system data</p>
-                </div>
-              </div>
-              <Button variant="outline" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Back to Login
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Card className="border-red-200 bg-red-50">
+        <AdminNav />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <Card className="border-red-500/50 bg-gradient-to-br from-red-950/50 to-red-900/30 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-red-800">
-                <AlertTriangle className="h-5 w-5" />
+              <CardTitle className="flex items-center space-x-2 text-red-400">
+                <AlertTriangle className="h-6 w-6" />
                 <span>Configuration Required</span>
               </CardTitle>
-              <CardDescription className="text-red-600">
+              <CardDescription className="text-red-300">
                 The admin dashboard requires Supabase configuration to function properly.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-white p-4 rounded-lg border border-red-200">
-                <h3 className="font-semibold text-gray-900 mb-2">Setup Instructions:</h3>
-                <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
-                  <li>Create a <code className="bg-gray-100 px-1 rounded">.env.local</code> file in your project root</li>
+            <CardContent className="space-y-6">
+              <div className="bg-m8bs-card p-6 rounded-lg border border-red-500/30 shadow-sm">
+                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Setup Instructions
+                </h3>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-m8bs-muted">
+                  <li>Create a <code className="bg-black px-2 py-1 rounded font-mono text-m8bs-blue">.env.local</code> file in your project root</li>
                   <li>Add your Supabase configuration:</li>
                 </ol>
-                <div className="mt-3 bg-gray-900 text-green-400 p-3 rounded-lg font-mono text-xs overflow-x-auto">
+                <div className="mt-4 bg-black text-green-400 p-4 rounded-lg font-mono text-xs overflow-x-auto shadow-inner border border-m8bs-border">
                   <div>NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url</div>
                   <div>NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key</div>
                   <div>SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key</div>
                 </div>
-                <div className="mt-3 text-sm text-gray-600">
-                  <p><strong>Get these values from:</strong> Supabase Dashboard → Settings → API</p>
+                <div className="mt-4 text-sm text-m8bs-muted bg-m8bs-card-alt p-3 rounded border border-m8bs-blue/30">
+                  <p><strong className="text-white">Get these values from:</strong> Supabase Dashboard → Settings → API</p>
                 </div>
               </div>
               
-              <div className="bg-white p-4 rounded-lg border border-blue-200">
-                <h3 className="font-semibold text-gray-900 mb-2">Quick Setup:</h3>
-                <div className="space-y-2 text-sm">
-                  <p>1. Visit your Supabase project dashboard</p>
-                  <p>2. Go to Settings → API</p>
-                  <p>3. Copy the Project URL, anon key, and service_role key</p>
-                  <p>4. Create the <code className="bg-gray-100 px-1 rounded">.env.local</code> file with these values</p>
-                  <p>5. Restart your development server</p>
+              <div className="bg-m8bs-card p-6 rounded-lg border border-m8bs-blue/30 shadow-sm">
+                <h3 className="font-semibold text-white mb-3">Quick Setup Steps:</h3>
+                <div className="space-y-2 text-sm text-m8bs-muted">
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-m8bs-blue">1.</span>
+                    <p>Visit your Supabase project dashboard</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-m8bs-blue">2.</span>
+                    <p>Go to Settings → API</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-m8bs-blue">3.</span>
+                    <p>Copy the Project URL, anon key, and service_role key</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-m8bs-blue">4.</span>
+                    <p>Create the <code className="bg-black px-2 py-1 rounded font-mono text-m8bs-blue">.env.local</code> file with these values</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-m8bs-blue">5.</span>
+                    <p>Restart your development server</p>
+                  </div>
                 </div>
               </div>
 
               <div className="flex space-x-3">
-                <Button onClick={() => window.location.reload()}>
+                <Button onClick={() => window.location.reload()} className="shadow-md">
                   <Settings className="h-4 w-4 mr-2" />
                   Reload After Setup
                 </Button>
@@ -295,60 +272,50 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <Shield className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-500">Manage users and view system data</p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-black">
+      <AdminNav />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Users List */}
           <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
+            <Card className="shadow-xl border-m8bs-border bg-m8bs-card hover:shadow-2xl transition-all duration-300">
+              <CardHeader className="bg-gradient-to-r from-m8bs-card to-m8bs-card-alt border-b border-m8bs-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Users className="h-5 w-5" />
-                      <span>Users ({filteredUsers.length})</span>
+                    <CardTitle className="flex items-center space-x-2 text-white">
+                      <div className="p-1.5 rounded-lg bg-m8bs-blue/20 border border-m8bs-blue/30">
+                        <Users className="h-4 w-4 text-m8bs-blue" />
+                      </div>
+                      <span className="font-bold">Users</span>
+                      <Badge variant="secondary" className="ml-2 bg-m8bs-blue/20 text-m8bs-blue border border-m8bs-blue/30 font-semibold">{filteredUsers.length}</Badge>
                     </CardTitle>
-                    <CardDescription>Select a user to view their data</CardDescription>
+                    <CardDescription className="mt-2 text-m8bs-muted text-sm">Select a user to view their data</CardDescription>
                   </div>
-                  <Button onClick={handleCreateUser} size="sm">
+                  <Button 
+                    onClick={handleCreateUser} 
+                    size="sm" 
+                    className="shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark hover:from-m8bs-blue-dark hover:to-m8bs-blue text-white font-semibold"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add User
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 {/* Search and Filter */}
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <div className="space-y-3">
+                  <div className="relative group">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-m8bs-muted group-focus-within:text-m8bs-blue transition-colors" />
                     <Input
                       placeholder="Search users..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 border-m8bs-border bg-black/50 text-white placeholder:text-m8bs-muted/50 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/20 focus:bg-black transition-all duration-200"
                     />
                   </div>
                   <Select value={filterRole} onValueChange={setFilterRole}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-m8bs-border bg-black/50 text-white hover:bg-black hover:border-m8bs-blue/50 transition-all duration-200">
                       <SelectValue placeholder="Filter by role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -360,90 +327,122 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Users List */}
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {filteredUsers.map((userData) => (
-                    <div
-                      key={userData.profile.id}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                        selectedUser?.profile.id === userData.profile.id
-                          ? "bg-blue-50 border-blue-500 border-2 shadow-md"
-                          : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-                      }`}
-                      onClick={() => handleUserSelect(userData)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">
-                            {userData.profile.full_name || "Unnamed User"}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {userData.profile.email}
-                          </div>
-                          {userData.profile.company && (
-                            <div className="text-xs text-gray-400">
-                              {userData.profile.company}
+                <div className="space-y-3 max-h-[calc(100vh-500px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-m8bs-border scrollbar-track-transparent">
+                  {filteredUsers.length === 0 ? (
+                    <div className="text-center py-16 animate-fade-in">
+                      <div className="h-16 w-16 rounded-full bg-m8bs-card-alt border border-m8bs-border flex items-center justify-center mx-auto mb-4">
+                        <Users className="h-8 w-8 text-m8bs-muted/40" />
+                      </div>
+                      <p className="font-semibold text-white mb-1">No users found</p>
+                      <p className="text-sm text-m8bs-muted">Try adjusting your search or filters</p>
+                    </div>
+                  ) : (
+                    filteredUsers.map((userData, index) => (
+                      <div
+                        key={userData.profile.id}
+                        className={cn(
+                          "p-4 rounded-xl border cursor-pointer transition-all duration-300 group animate-fade-in",
+                          selectedUser?.profile.id === userData.profile.id
+                            ? "bg-gradient-to-br from-m8bs-blue/30 to-m8bs-blue/10 border-m8bs-blue border-2 shadow-xl ring-2 ring-m8bs-blue/40 scale-[1.02]"
+                            : "bg-m8bs-card border-m8bs-border hover:bg-m8bs-card-alt hover:border-m8bs-blue/60 hover:shadow-lg hover:scale-[1.01]"
+                        )}
+                        onClick={() => handleUserSelect(userData)}
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <UserCircle className="h-4 w-4 text-m8bs-muted flex-shrink-0" />
+                              <div className="font-semibold text-white truncate">
+                                {userData.profile.full_name || "Unnamed User"}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={userData.profile.role === "admin" ? "destructive" : "secondary"}>
+                            <div className="flex items-center gap-2 text-sm text-m8bs-muted mb-1">
+                              <Mail className="h-3 w-3 text-m8bs-muted flex-shrink-0" />
+                              <span className="truncate">{userData.profile.email}</span>
+                            </div>
+                            {userData.profile.company && (
+                              <div className="flex items-center gap-2 text-xs text-m8bs-muted/70">
+                                <Building2 className="h-3 w-3 text-m8bs-muted/70 flex-shrink-0" />
+                                <span className="truncate">{userData.profile.company}</span>
+                              </div>
+                            )}
+                          </div>
+                          <Badge 
+                            variant={userData.profile.role === "admin" ? "destructive" : "secondary"}
+                            className="ml-2 flex-shrink-0 bg-m8bs-card-alt text-m8bs-muted"
+                          >
                             {userData.profile.role}
                           </Badge>
                         </div>
-                      </div>
+                        
+                        {/* Stats */}
+                        <div className="grid grid-cols-3 gap-2 mb-3 pt-3 border-t border-m8bs-border">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 text-xs text-m8bs-muted mb-1">
+                              <Calendar className="h-3 w-3" />
+                            </div>
+                            <div className="font-semibold text-white">{userData.events_count}</div>
+                            <div className="text-xs text-m8bs-muted">Events</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 text-xs text-m8bs-muted mb-1">
+                              <Users className="h-3 w-3" />
+                            </div>
+                            <div className="font-semibold text-white">{userData.total_clients}</div>
+                            <div className="text-xs text-m8bs-muted">Clients</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 text-xs text-m8bs-muted mb-1">
+                              <DollarSign className="h-3 w-3 text-green-400" />
+                            </div>
+                            <div className="font-semibold text-green-400">${(userData.total_revenue / 1000).toFixed(0)}k</div>
+                            <div className="text-xs text-m8bs-muted">Revenue</div>
+                          </div>
+                        </div>
                       
-                      {/* Action Buttons */}
-                      <div className="flex items-center justify-end space-x-1 mt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleEditUser(userData.profile)
-                          }}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleResetPassword(userData.profile)
-                          }}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Key className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteUser(userData.profile)
-                          }}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <div className="mt-2 flex items-center space-x-4 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-gray-400" />
-                          <span className="text-gray-600 font-medium">{userData.events_count} events</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3 text-gray-400" />
-                          <span className="text-gray-600 font-medium">{userData.total_clients} clients</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 text-green-600" />
-                          <span className="text-green-600 font-semibold">${userData.total_revenue.toLocaleString()}</span>
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-end space-x-2 pt-3 border-t border-m8bs-border opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditUser(userData.profile)
+                            }}
+                            className="h-8 w-8 p-0 hover:bg-m8bs-blue/20 text-m8bs-muted hover:text-m8bs-blue hover:scale-110 transition-all duration-200"
+                            title="Edit user"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleResetPassword(userData.profile)
+                            }}
+                            className="h-8 w-8 p-0 hover:bg-amber-500/20 text-m8bs-muted hover:text-amber-400 hover:scale-110 transition-all duration-200"
+                            title="Reset password"
+                          >
+                            <Key className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteUser(userData.profile)
+                            }}
+                            className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:scale-110 transition-all duration-200"
+                            title="Delete user"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -452,545 +451,88 @@ export default function AdminDashboard() {
           {/* User Details */}
           <div className="lg:col-span-2">
             {selectedUser ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <User className="h-5 w-5" />
-                    <span>{selectedUser.profile.full_name || "Unnamed User"}</span>
-                  </CardTitle>
-                  <CardDescription>
-                    {selectedUser.profile.email} • {selectedUser.profile.company || "No company"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loadingDetails ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    </div>
-                  ) : (
-                    <Tabs defaultValue="overview" className="w-full">
-                      <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="advisor">Advisor Data</TabsTrigger>
-                        <TabsTrigger value="events">Events</TabsTrigger>
-                        <TabsTrigger value="financial">Financial</TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="overview" className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-2xl font-bold">{selectedUser.events_count}</div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Marketing events created
-                              </p>
-                            </CardContent>
-                          </Card>
-                          <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-2xl font-bold">{selectedUser.total_clients}</div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Clients acquired from events
-                              </p>
-                            </CardContent>
-                          </Card>
-                          <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                              <div className="text-2xl font-bold text-green-600">
-                                ${selectedUser.total_revenue.toLocaleString()}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                From all events
-                              </p>
-                            </CardContent>
-                          </Card>
+              <Card className="shadow-lg border-m8bs-border bg-m8bs-card">
+                <CardHeader className="bg-gradient-to-r from-m8bs-card to-m8bs-card-alt border-b border-m8bs-border">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="flex items-center space-x-2 text-white mb-2">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-m8bs-blue to-m8bs-blue-dark flex items-center justify-center text-white font-bold">
+                          {selectedUser.profile.full_name?.charAt(0)?.toUpperCase() || "U"}
                         </div>
-
-                        {/* User Profile Info */}
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>Profile Information</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <Label className="text-xs text-gray-500">User ID</Label>
-                                <p className="text-sm font-mono">{selectedUser.profile.id}</p>
-                              </div>
-                              <div>
-                                <Label className="text-xs text-gray-500">Role</Label>
-                                <div className="mt-1">
-                                  <Badge variant={selectedUser.profile.role === "admin" ? "destructive" : "secondary"}>
-                                    {selectedUser.profile.role}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <div>
-                                <Label className="text-xs text-gray-500">Created</Label>
-                                <p className="text-sm">
-                                  {new Date(selectedUser.profile.created_at).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <div>
-                                <Label className="text-xs text-gray-500">Last Updated</Label>
-                                <p className="text-sm">
-                                  {new Date(selectedUser.profile.updated_at).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      <TabsContent value="advisor" className="space-y-4">
-                        {userDetails ? (
-                          <div className="space-y-4">
-                            {userDetails.advisorData && (
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle>Business Goals</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label>Business Goal</Label>
-                                      <div className="text-lg font-semibold">
-                                        ${userDetails.advisorData.business_goal?.toLocaleString()}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label>AUM Goal %</Label>
-                                      <div className="text-lg font-semibold">
-                                        {userDetails.advisorData.aum_goal_percentage}%
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
-
-                            {userDetails.currentValues && (
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle>Current Values</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label>Current AUM</Label>
-                                      <div className="text-lg font-semibold">
-                                        ${userDetails.currentValues.current_aum?.toLocaleString()}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label>Current Annuity</Label>
-                                      <div className="text-lg font-semibold">
-                                        ${userDetails.currentValues.current_annuity?.toLocaleString()}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
-
-                            {userDetails.campaigns && userDetails.campaigns.length > 0 && (
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle>Marketing Campaigns</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="space-y-2">
-                                    {userDetails.campaigns.map((campaign: any, index: number) => (
-                                      <div key={index} className="flex justify-between items-center p-2 border rounded">
-                                        <span className="font-medium">{campaign.name}</span>
-                                        <Badge variant="outline">{campaign.status}</Badge>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
+                        <div>
+                          <div className="text-xl text-white">{selectedUser.profile.full_name || "Unnamed User"}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant={selectedUser.profile.role === "admin" ? "destructive" : "secondary"} className="text-xs bg-m8bs-card-alt text-m8bs-muted">
+                              {selectedUser.profile.role}
+                            </Badge>
                           </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            No advisor data available for this user.
-                          </div>
+                        </div>
+                      </CardTitle>
+                      <CardDescription className="flex items-center gap-4 text-sm text-m8bs-muted">
+                        <span className="flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {selectedUser.profile.email}
+                        </span>
+                        {selectedUser.profile.company && (
+                          <span className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            {selectedUser.profile.company}
+                          </span>
                         )}
-                      </TabsContent>
-
-                      <TabsContent value="events" className="space-y-4">
-                        {userDetails?.events && userDetails.events.length > 0 ? (
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <h3 className="text-lg font-semibold">Marketing Events ({userDetails.events.length})</h3>
-                            </div>
-                            <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                              {userDetails.events.map((event: any) => (
-                                <Card key={event.id} className="border-l-4 border-l-blue-500">
-                                  <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <CardTitle className="text-lg">{event.name}</CardTitle>
-                                        <CardDescription className="mt-1">
-                                          <div className="flex flex-wrap items-center gap-4 mt-2">
-                                            <div className="flex items-center gap-1 text-sm">
-                                              <Calendar className="h-4 w-4" />
-                                              {new Date(event.date).toLocaleDateString()}
-                                            </div>
-                                            {event.time && (
-                                              <div className="flex items-center gap-1 text-sm">
-                                                <Clock className="h-4 w-4" />
-                                                {event.time}
-                                              </div>
-                                            )}
-                                            <div className="flex items-center gap-1 text-sm">
-                                              <MapPin className="h-4 w-4" />
-                                              {event.location}
-                                            </div>
-                                            <div className="flex items-center gap-1 text-sm">
-                                              <Tag className="h-4 w-4" />
-                                              {event.marketing_type}
-                                            </div>
-                                          </div>
-                                        </CardDescription>
-                                      </div>
-                                      <Badge variant={event.status === 'active' ? 'default' : 'secondary'}>
-                                        {event.status}
-                                      </Badge>
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent className="space-y-4">
-                                    {event.topic && (
-                                      <div>
-                                        <Label className="text-xs text-gray-500">Topic</Label>
-                                        <p className="text-sm font-medium">{event.topic}</p>
-                                      </div>
-                                    )}
-                                    
-                                    {event.event_attendance && event.event_attendance.length > 0 && (
-                                      <Card>
-                                        <CardHeader className="pb-3">
-                                          <CardTitle className="text-sm">Attendance</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Registrants</Label>
-                                              <p className="text-lg font-semibold">{event.event_attendance[0]?.registrant_responses || 0}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Confirmations</Label>
-                                              <p className="text-lg font-semibold">{event.event_attendance[0]?.confirmations || 0}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Attendees</Label>
-                                              <p className="text-lg font-semibold">{event.event_attendance[0]?.attendees || 0}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Clients</Label>
-                                              <p className="text-lg font-semibold text-green-600">{event.event_attendance[0]?.clients_from_event || 0}</p>
-                                            </div>
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    )}
-
-                                    {event.event_appointments && event.event_appointments.length > 0 && (
-                                      <Card>
-                                        <CardHeader className="pb-3">
-                                          <CardTitle className="text-sm">Appointments</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Set at Event</Label>
-                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.set_at_event || 0}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Set After</Label>
-                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.set_after_event || 0}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">1st Attended</Label>
-                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.first_appointment_attended || 0}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">1st No Shows</Label>
-                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.first_appointment_no_shows || 0}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">2nd Attended</Label>
-                                              <p className="text-lg font-semibold">{event.event_appointments[0]?.second_appointment_attended || 0}</p>
-                                            </div>
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    )}
-
-                                    {event.marketing_expenses && event.marketing_expenses.length > 0 && (
-                                      <Card>
-                                        <CardHeader className="pb-3">
-                                          <CardTitle className="text-sm">Expenses</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Advertising</Label>
-                                              <p className="text-lg font-semibold">${Number(event.marketing_expenses[0]?.advertising_cost || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Food/Venue</Label>
-                                              <p className="text-lg font-semibold">${Number(event.marketing_expenses[0]?.food_venue_cost || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Other</Label>
-                                              <p className="text-lg font-semibold">${Number(event.marketing_expenses[0]?.other_costs || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Total</Label>
-                                              <p className="text-lg font-semibold text-red-600">${Number(event.marketing_expenses[0]?.total_cost || 0).toLocaleString()}</p>
-                                            </div>
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    )}
-
-                                    {event.financial_production && event.financial_production.length > 0 && (
-                                      <Card>
-                                        <CardHeader className="pb-3">
-                                          <CardTitle className="text-sm">Financial Production</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Annuity Premium</Label>
-                                              <p className="text-lg font-semibold">${Number(event.financial_production[0]?.annuity_premium || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Life Premium</Label>
-                                              <p className="text-lg font-semibold">${Number(event.financial_production[0]?.life_insurance_premium || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">AUM</Label>
-                                              <p className="text-lg font-semibold">${Number(event.financial_production[0]?.aum || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div>
-                                              <Label className="text-xs text-gray-500">Total</Label>
-                                              <p className="text-lg font-semibold text-green-600">${Number(event.financial_production[0]?.total || 0).toLocaleString()}</p>
-                                            </div>
-                                          </div>
-                                        </CardContent>
-                                      </Card>
-                                    )}
-                                  </CardContent>
-                                </Card>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            No events found for this user.
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      <TabsContent value="financial" className="space-y-4">
-                        {userDetails ? (
-                          <div className="space-y-4">
-                            {userDetails.financialBook && (
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle className="flex items-center gap-2">
-                                    <Wallet className="h-5 w-5" />
-                                    Financial Book Values
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                      <Label className="text-xs text-gray-500">Annuity Book Value</Label>
-                                      <div className="text-2xl font-bold">
-                                        ${Number(userDetails.financialBook.annuity_book_value || 0).toLocaleString()}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs text-gray-500">AUM Book Value</Label>
-                                      <div className="text-2xl font-bold">
-                                        ${Number(userDetails.financialBook.aum_book_value || 0).toLocaleString()}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs text-gray-500">Qualified Money Value</Label>
-                                      <div className="text-2xl font-bold">
-                                        ${Number(userDetails.financialBook.qualified_money_value || 0).toLocaleString()}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
-
-                            {userDetails.commissionRates && (
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle className="flex items-center gap-2">
-                                    <BarChart3 className="h-5 w-5" />
-                                    Commission Rates
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <div>
-                                      <Label className="text-xs text-gray-500">Planning Fee Rate</Label>
-                                      <div className="text-lg font-semibold">
-                                        ${Number(userDetails.commissionRates.planning_fee_rate || 0).toLocaleString()}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs text-gray-500">Planning Fees Count</Label>
-                                      <div className="text-lg font-semibold">
-                                        {userDetails.commissionRates.planning_fees_count || 0}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs text-gray-500">Annuity Commission</Label>
-                                      <div className="text-lg font-semibold">
-                                        {userDetails.commissionRates.annuity_commission || 0}%
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs text-gray-500">AUM Commission</Label>
-                                      <div className="text-lg font-semibold">
-                                        {userDetails.commissionRates.aum_commission || 0}%
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs text-gray-500">Life Commission</Label>
-                                      <div className="text-lg font-semibold">
-                                        {userDetails.commissionRates.life_commission || 0}%
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs text-gray-500">Trail Income %</Label>
-                                      <div className="text-lg font-semibold">
-                                        {userDetails.commissionRates.trail_income_percentage || 0}%
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
-
-                            {userDetails.events && userDetails.events.length > 0 && (
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle className="flex items-center gap-2">
-                                    <DollarSign className="h-5 w-5" />
-                                    Total Financial Production from Events
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="space-y-2">
-                                    {userDetails.events
-                                      .filter((e: any) => e.financial_production && e.financial_production.length > 0)
-                                      .map((event: any) => {
-                                        const fp = event.financial_production[0]
-                                        return (
-                                          <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                            <div>
-                                              <p className="font-medium">{event.name}</p>
-                                              <p className="text-sm text-gray-500">{new Date(event.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <div className="text-right">
-                                              <p className="text-lg font-bold text-green-600">
-                                                ${Number(fp?.total || 0).toLocaleString()}
-                                              </p>
-                                              <div className="text-xs text-gray-500 space-x-2">
-                                                <span>Annuity: ${Number(fp?.annuity_premium || 0).toLocaleString()}</span>
-                                                <span>Life: ${Number(fp?.life_insurance_premium || 0).toLocaleString()}</span>
-                                                <span>AUM: ${Number(fp?.aum || 0).toLocaleString()}</span>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        )
-                                      })}
-                                    {userDetails.events.filter((e: any) => e.financial_production && e.financial_production.length > 0).length === 0 && (
-                                      <p className="text-sm text-gray-500">No financial production data available</p>
-                                    )}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
-
-                            {userDetails.monthlyData && userDetails.monthlyData.length > 0 && (
-                              <Card>
-                                <CardHeader>
-                                  <CardTitle className="flex items-center gap-2">
-                                    <FileText className="h-5 w-5" />
-                                    Monthly Data Entries
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                                    {userDetails.monthlyData.map((month: any) => (
-                                      <div key={month.id} className="p-3 border rounded-lg">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <h4 className="font-semibold">{month.month_year}</h4>
-                                        </div>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                                          <div>
-                                            <Label className="text-xs text-gray-500">Current AUM</Label>
-                                            <p className="font-medium">${Number(month.current_aum || 0).toLocaleString()}</p>
-                                          </div>
-                                          <div>
-                                            <Label className="text-xs text-gray-500">Current Annuity</Label>
-                                            <p className="font-medium">${Number(month.current_annuity || 0).toLocaleString()}</p>
-                                          </div>
-                                          <div>
-                                            <Label className="text-xs text-gray-500">New Clients</Label>
-                                            <p className="font-medium">{month.new_clients || 0}</p>
-                                          </div>
-                                          <div>
-                                            <Label className="text-xs text-gray-500">Marketing Expenses</Label>
-                                            <p className="font-medium">${Number(month.marketing_expenses || 0).toLocaleString()}</p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            No financial data available for this user.
-                          </div>
-                        )}
-                      </TabsContent>
-                    </Tabs>
-                  )}
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link href={`/admin/users/${selectedUser.profile.id}`}>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="shadow-sm bg-m8bs-blue hover:bg-m8bs-blue-dark text-white"
+                        >
+                          <LayoutDashboard className="h-4 w-4 mr-2" />
+                          View dashboard
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditUser(selectedUser.profile)}
+                        className="shadow-sm border-m8bs-border bg-m8bs-card-alt text-m8bs-muted hover:bg-m8bs-blue/20 hover:text-m8bs-blue hover:border-m8bs-blue"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <p className="text-m8bs-muted text-sm mb-4">View this user&apos;s full dashboard or manage their account.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleResetPassword(selectedUser.profile)} className="border-m8bs-border text-m8bs-muted hover:bg-amber-500/20 hover:text-amber-400">
+                      <Key className="h-4 w-4 mr-2" />
+                      Update password
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDeleteUser(selectedUser.profile)} className="border-red-500/50 text-red-400 hover:bg-red-500/20">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete user
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
-              <Card>
-                <CardContent className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Select a User</h3>
-                    <p className="text-gray-500">Choose a user from the list to view their data</p>
+              <Card className="shadow-xl border-m8bs-border border-dashed bg-m8bs-card hover:border-m8bs-blue/30 transition-all duration-300">
+                <CardContent className="flex items-center justify-center py-24 animate-fade-in">
+                  <div className="text-center max-w-md space-y-4">
+                    <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-m8bs-blue/20 to-m8bs-blue/10 flex items-center justify-center mx-auto mb-6 border-2 border-m8bs-blue/30 shadow-lg">
+                      <User className="h-12 w-12 text-m8bs-blue" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold text-white">Select a User</h3>
+                      <p className="text-m8bs-muted leading-relaxed">Choose a user from the list to view their dashboard or manage their account (edit, update password, delete).</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-sm text-m8bs-muted/70 pt-2">
+                      <Eye className="h-4 w-4 animate-pulse" />
+                      <span>User details and actions will appear here</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1004,7 +546,7 @@ export default function AdminDashboard() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         mode={modalMode}
-        user={selectedUserForAction}
+        user={selectedUserForAction ?? undefined}
         onSuccess={handleModalSuccess}
       />
     </div>

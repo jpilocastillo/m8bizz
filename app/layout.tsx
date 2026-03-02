@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/components/auth-provider"
 import { SessionWarning } from "@/components/session-warning"
+import { DebugPanel } from "@/components/debug-panel"
+import { ErrorBoundary } from "@/components/error-boundary"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -20,12 +22,13 @@ export const metadata: Metadata = {
       { url: "/logo.png", type: "image/png" }
     ]
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  }
+}
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
@@ -37,11 +40,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="bg-black">
       <body className={`${inter.className} bg-black`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          <AuthProvider>
-            {children}
-            <SessionWarning />
-            <Toaster />
-          </AuthProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              {children}
+              <SessionWarning />
+              <DebugPanel />
+              <Toaster />
+            </AuthProvider>
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

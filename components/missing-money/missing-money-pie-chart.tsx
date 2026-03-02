@@ -66,7 +66,7 @@ export function MissingMoneyPieChart({ data }: MissingMoneyPieChartProps) {
             height={36}
             formatter={(value, entry) => (
               <span style={{ color: entry.color }}>
-                {value}: {entry.payload.difference < 0 ? '+' : ''}{formatCurrency(Math.abs(entry.payload.difference))}
+                {value}: {((entry.payload as any)?.difference && (entry.payload as any).difference < 0) ? '+' : ''}{formatCurrency(Math.abs((entry.payload as any)?.difference || 0))}
               </span>
             )}
           />

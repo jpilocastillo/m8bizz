@@ -1,5 +1,6 @@
 "use server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { logger } from "@/lib/logger"
 
 // Improved fetchWithRetry function with better error handling
 async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3, delay = 1000): Promise<T> {
@@ -10,30 +11,28 @@ async function fetchWithRetry<T>(fn: () => Promise<T>, maxRetries = 3, delay = 1
       const result = await fn()
 
       // For debugging, log the result structure (not the full data)
-      if (process.env.NODE_ENV !== "production") {
-        console.log(`Fetch successful, result structure:`, {
-          status: (result as any)?.status,
-          statusText: (result as any)?.statusText,
-          hasData: (result as any)?.data !== undefined,
-          hasError: (result as any)?.error !== undefined,
-          errorMessage: (result as any)?.error?.message,
-        })
-      }
+      logger.log(`Fetch successful, result structure:`, {
+        status: (result as any)?.status,
+        statusText: (result as any)?.statusText,
+        hasData: (result as any)?.data !== undefined,
+        hasError: (result as any)?.error !== undefined,
+        errorMessage: (result as any)?.error?.message,
+      })
 
       return result
     } catch (error) {
       lastError = error
       const errorMessage = error instanceof Error ? error.message : String(error)
-      console.log(`Error during fetch attempt ${attempt + 1}/${maxRetries}:`, errorMessage)
+        logger.log(`Error during fetch attempt ${attempt + 1}/${maxRetries}:`, errorMessage)
 
       // Check if it's a rate limiting error
       if (errorMessage.includes("Too Many R")) {
-        console.log(`Rate limit hit, retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`)
+        logger.log(`Rate limit hit, retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`)
         await new Promise((resolve) => setTimeout(resolve, delay))
         delay *= 2
       } else if (errorMessage.includes("Failed to fetch") || errorMessage.includes("network")) {
         // Handle network errors with retry
-        console.log(`Network error, retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`)
+        logger.log(`Network error, retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`)
         await new Promise((resolve) => setTimeout(resolve, delay))
         delay *= 2
       } else {
@@ -56,6 +55,7 @@ export type MarketingEvent = {
   id: string
   name: string
   date: string
+  dayOfWeek?: string
   location: string
   marketing_type: string
   topic: string
@@ -74,6 +74,7 @@ export type MarketingEvent = {
     confirmations: number
     attendees: number
     clients_from_event: number
+    plate_lickers?: number
   }
   marketing_expenses?: {
     advertising_cost: number
@@ -117,6 +118,7 @@ export type EventAttendance = {
   confirmations: number
   attendees: number
   clients_from_event: number // Added new field
+  plate_lickers?: number // Plate lickers count
 }
 
 export type EventAppointments = {
@@ -270,6 +272,7 @@ export type EventWithRelations = {
     clients_from_event: number;
     registrant_responses: number;
     confirmations: number;
+    plate_lickers?: number;
   };
   financial_production?: {
     total: number;
@@ -462,7 +465,8 @@ export async function fetchAllEvents(userId: string, year?: number): Promise<Mar
           }
           return sum
         }, 0),
-        aum_accounts_opened: clients.filter((c: any) => (c.aum_amount || 0) > 0).length
+        aum_accounts_opened: clients.filter((c: any) => (c.aum_amount || 0) > 0).length,
+        financial_plans_sold: clients.filter((c: any) => (c.financial_planning_fee || 0) > 0).length
       }
 
       // Use aggregated client data if available, otherwise fall back to financial_production
@@ -476,7 +480,8 @@ export async function fetchAllEvents(userId: string, year?: number): Promise<Mar
         annuities_sold: 0,
         life_policies_sold: 0,
         aum_fees: 0,
-        aum_accounts_opened: 0
+        aum_accounts_opened: 0,
+        financial_plans_sold: 0
       })
 
       // Calculate revenue from commissions and fees (not premiums)
@@ -848,10 +853,8 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         life_insurance_commission: financialData.life_insurance_commission || 0,
         aum_fees: financialData.aum_fees || 0,
         aum_accounts_opened: financialData.aum_accounts_opened || 0,
-        total: totalIncome,
-        aum_fees: financial.aum_fees || 0,
-        aum_accounts_opened: financial.aum_accounts_opened || 0,
-        financial_plans_sold: financial.financial_plans_sold || 0
+        financial_plans_sold: financialData.financial_plans_sold || 0,
+        total: totalIncome
       }
     }
 
@@ -974,8 +977,7 @@ export async function createEvent(userId: string, eventData: any) {
       console.error("Error creating related records:", {
         attendance: attendanceResult.error,
         expenses: expensesResult.error,
-        appointments: appointmentsResult.error,
-        financial: financialResult.error
+        appointments: appointmentsResult.error
       })
       return { success: false, error: "Failed to create some event details" }
     }

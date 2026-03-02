@@ -7,27 +7,16 @@ import { Card, CardContent } from "@/components/ui/card"
 import { 
   Users, 
   Shield, 
-  LogOut,
-  BarChart3,
-  Settings,
-  Moon,
-  Sun
+  LogOut
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
-import { useTheme } from "next-themes"
-import { useEffect } from "react"
 import { cn } from "@/lib/utils"
 
 export function AdminNav() {
   const { signOut } = useAuth()
   const router = useRouter()
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState("users")
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const handleSignOut = async () => {
     await signOut()
@@ -40,18 +29,6 @@ export function AdminNav() {
       label: "Users",
       icon: Users,
       description: "Manage user accounts"
-    },
-    {
-      id: "analytics",
-      label: "Analytics",
-      icon: BarChart3,
-      description: "System-wide analytics"
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      icon: Settings,
-      description: "System configuration"
     }
   ]
 
@@ -93,17 +70,6 @@ export function AdminNav() {
           </div>
           
           <div className="flex items-center space-x-2">
-            {mounted && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="h-9 w-9 rounded-lg text-m8bs-muted hover:text-m8bs-blue hover:bg-m8bs-card-alt transition-all duration-200"
-                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
-            )}
             <Button 
               variant="outline" 
               onClick={handleSignOut}

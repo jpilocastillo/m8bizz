@@ -93,6 +93,7 @@ async function simulateUserOperations(testUser: TestUser, userIndex: number) {
 
     // Create business goals
     const businessGoals = {
+      year: new Date().getFullYear(),
       business_goal: 1000000 * (userIndex + 1),
       aum_goal: 5000000 * (userIndex + 1),
       aum_goal_percentage: 50,
@@ -107,6 +108,7 @@ async function simulateUserOperations(testUser: TestUser, userIndex: number) {
 
     // Create current values
     const currentValues = {
+      year: new Date().getFullYear(),
       current_aum: 2500000 * (userIndex + 1),
       current_annuity: 1000000 * (userIndex + 1),
       current_life_production: 500000 * (userIndex + 1),
@@ -128,8 +130,8 @@ async function simulateUserOperations(testUser: TestUser, userIndex: number) {
     console.log(`  ${savedCampaign ? '✅' : '❌'} Campaign ${savedCampaign ? 'created' : 'failed'}`)
 
     // Verify data isolation - try to read own data
-    const retrievedGoals = await advisorBasecampService.getBusinessGoals(user)
-    const retrievedValues = await advisorBasecampService.getCurrentValues(user)
+    const retrievedGoals = await advisorBasecampService.getBusinessGoals(user, new Date().getFullYear())
+    const retrievedValues = await advisorBasecampService.getCurrentValues(user, new Date().getFullYear())
     const retrievedCampaigns = await advisorBasecampService.getMarketingCampaigns(user)
 
     console.log(`  ✅ Retrieved own data:`)
@@ -196,7 +198,7 @@ async function verifyDataIsolation() {
 
     try {
       const { user } = await createUserClient(testUser.email, testUser.password)
-      const userGoals = await advisorBasecampService.getBusinessGoals(user)
+      const userGoals = await advisorBasecampService.getBusinessGoals(user, new Date().getFullYear())
       const adminGoals = goalsByUser.get(testUser.id) || []
 
       if (userGoals && adminGoals.length > 0) {

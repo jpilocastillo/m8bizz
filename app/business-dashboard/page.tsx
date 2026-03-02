@@ -430,11 +430,7 @@ export default function BusinessDashboard() {
         <TabsContent value="clients" className="space-y-4">
           <ClientAcquisition 
             key={`clients-${selectedYear}-${JSON.stringify(data)}`}
-            data={data} 
-            businessGoals={data.businessGoals}
-            commissionRates={data.commissionRates}
-            monthlyDataEntries={filteredMonthlyData}
-            selectedYear={selectedYear.toString()}
+            data={data}
           />
         </TabsContent>
 
@@ -450,7 +446,7 @@ export default function BusinessDashboard() {
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-4">
-          <CampaignTable key={`campaigns-${selectedYear}-${JSON.stringify(data.campaigns)}`} selectedYear={selectedYear} />
+          <CampaignTable key={`campaigns-${selectedYear}-${JSON.stringify(data.campaigns)}`} />
         </TabsContent>
 
         <TabsContent value="monthly" className="space-y-4">

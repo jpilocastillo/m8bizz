@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 export interface BusinessGoals {
   id?: string
@@ -150,7 +151,7 @@ class AdvisorBasecampService {
       .maybeSingle()
 
     if (error) {
-      console.error('Error fetching business goals:', error)
+      logger.error('Error fetching business goals:', error)
       return null
     }
 
@@ -181,7 +182,7 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error updating business goals:', error)
+          logger.error('Error updating business goals:', error)
           return null
         }
 
@@ -198,14 +199,14 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error inserting business goals:', error)
+          logger.error('Error inserting business goals:', error)
           return null
         }
 
         return data
       }
     } catch (error) {
-      console.error('Error in upsertBusinessGoals:', error)
+      logger.error('Error in upsertBusinessGoals:', error)
       return null
     }
   }
@@ -220,7 +221,7 @@ class AdvisorBasecampService {
       .maybeSingle()
 
     if (error) {
-      console.error('Error fetching current values:', error)
+      logger.error('Error fetching current values:', error)
       return null
     }
 
@@ -251,7 +252,7 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error updating current values:', error)
+          logger.error('Error updating current values:', error)
           return null
         }
 
@@ -268,14 +269,14 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error inserting current values:', error)
+          logger.error('Error inserting current values:', error)
           return null
         }
 
         return data
       }
     } catch (error) {
-      console.error('Error in upsertCurrentValues:', error)
+      logger.error('Error in upsertCurrentValues:', error)
       return null
     }
   }
@@ -290,7 +291,7 @@ class AdvisorBasecampService {
       .maybeSingle()
 
     if (error) {
-      console.error('Error fetching client metrics:', error)
+      logger.error('Error fetching client metrics:', error)
       return null
     }
 
@@ -321,7 +322,7 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error updating client metrics:', error)
+          logger.error('Error updating client metrics:', error)
           return null
         }
 
@@ -338,14 +339,14 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error inserting client metrics:', error)
+          logger.error('Error inserting client metrics:', error)
           return null
         }
 
         return data
       }
     } catch (error) {
-      console.error('Error in upsertClientMetrics:', error)
+      logger.error('Error in upsertClientMetrics:', error)
       return null
     }
   }
@@ -359,7 +360,7 @@ class AdvisorBasecampService {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching marketing campaigns:', error)
+      logger.error('Error fetching marketing campaigns:', error)
       return []
     }
 
@@ -377,7 +378,7 @@ class AdvisorBasecampService {
       .single()
 
     if (error) {
-      console.error('Error creating marketing campaign:', error)
+      logger.error('Error creating marketing campaign:', error)
       return null
     }
 
@@ -394,7 +395,7 @@ class AdvisorBasecampService {
       .single()
 
     if (error) {
-      console.error('Error updating marketing campaign:', error)
+      logger.error('Error updating marketing campaign:', error)
       return null
     }
 
@@ -409,7 +410,7 @@ class AdvisorBasecampService {
       .eq('user_id', user.id)
 
     if (error) {
-      console.error('Error deleting marketing campaign:', error)
+      logger.error('Error deleting marketing campaign:', error)
       return false
     }
 
@@ -426,7 +427,7 @@ class AdvisorBasecampService {
       .maybeSingle()
 
     if (error) {
-      console.error('Error fetching commission rates:', error)
+      logger.error('Error fetching commission rates:', error)
       return null
     }
 
@@ -457,7 +458,7 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error updating commission rates:', error)
+          logger.error('Error updating commission rates:', error)
           return null
         }
 
@@ -474,14 +475,14 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error inserting commission rates:', error)
+          logger.error('Error inserting commission rates:', error)
           return null
         }
 
         return data
       }
     } catch (error) {
-      console.error('Error in upsertCommissionRates:', error)
+      logger.error('Error in upsertCommissionRates:', error)
       return null
     }
   }
@@ -496,7 +497,7 @@ class AdvisorBasecampService {
       .maybeSingle()
 
     if (error) {
-      console.error('Error fetching financial book:', error)
+      logger.error('Error fetching financial book:', error)
       return null
     }
 
@@ -527,7 +528,7 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error updating financial book:', error)
+          logger.error('Error updating financial book:', error)
           return null
         }
 
@@ -544,14 +545,14 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error inserting financial book:', error)
+          logger.error('Error inserting financial book:', error)
           return null
         }
 
         return data
       }
     } catch (error) {
-      console.error('Error in upsertFinancialBook:', error)
+      logger.error('Error in upsertFinancialBook:', error)
       return null
     }
   }
@@ -566,7 +567,7 @@ class AdvisorBasecampService {
       .maybeSingle()
 
     if (error) {
-      console.error('Error fetching financial options:', error)
+      logger.error('Error fetching financial options:', error)
       return null
     }
 
@@ -597,7 +598,7 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error updating financial options:', error)
+          logger.error('Error updating financial options:', error)
           return null
         }
 
@@ -614,14 +615,14 @@ class AdvisorBasecampService {
           .single()
 
         if (error) {
-          console.error('Error inserting financial options:', error)
+          logger.error('Error inserting financial options:', error)
           return null
         }
 
         return data
       }
     } catch (error) {
-      console.error('Error in upsertFinancialOptions:', error)
+      logger.error('Error in upsertFinancialOptions:', error)
       return null
     }
   }
@@ -635,7 +636,7 @@ class AdvisorBasecampService {
       .order('month_year', { ascending: false })
 
     if (error) {
-      console.error('Error fetching monthly data entries:', error)
+      logger.error('Error fetching monthly data entries:', error)
       return []
     }
 
@@ -680,7 +681,7 @@ class AdvisorBasecampService {
 
       // If entry exists, update it instead of creating a new one
       if (existingEntry) {
-        console.log('Entry already exists for this month, updating instead:', existingEntry.id)
+        logger.log('Entry already exists for this month, updating instead:', existingEntry.id)
         return await this.updateMonthlyDataEntry(user, existingEntry.id, entry)
       }
 
@@ -702,7 +703,7 @@ class AdvisorBasecampService {
         .single()
 
       if (error) {
-        console.error('Error creating monthly data entry:', error)
+        logger.error('Error creating monthly data entry:', error)
         // Handle 409 conflict specifically
         if (error.code === '23505' || error.message?.includes('unique') || error.message?.includes('duplicate')) {
           // Try to find and update the existing entry
@@ -714,7 +715,7 @@ class AdvisorBasecampService {
             .single()
           
           if (existing) {
-            console.log('Found existing entry, updating instead:', existing.id)
+            logger.log('Found existing entry, updating instead:', existing.id)
             return await this.updateMonthlyDataEntry(user, existing.id, entry)
           }
           return { data: null, error: `An entry for ${entry.month_year} already exists. Please edit the existing entry instead.` }
@@ -724,7 +725,7 @@ class AdvisorBasecampService {
 
       return { data, error: null }
     } catch (error) {
-      console.error('Error in createMonthlyDataEntry:', error)
+      logger.error('Error in createMonthlyDataEntry:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       return { data: null, error: errorMessage }
     }
@@ -791,13 +792,13 @@ class AdvisorBasecampService {
         .single()
 
       if (error) {
-        console.error('Error updating monthly data entry:', error)
+        logger.error('Error updating monthly data entry:', error)
         return { data: null, error: error.message || 'Failed to update monthly data entry' }
       }
 
       return { data, error: null }
     } catch (error) {
-      console.error('Error in updateMonthlyDataEntry:', error)
+      logger.error('Error in updateMonthlyDataEntry:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       return { data: null, error: errorMessage }
     }
@@ -812,13 +813,13 @@ class AdvisorBasecampService {
         .eq('user_id', user.id)
 
       if (error) {
-        console.error('Error deleting monthly data entry:', error)
+        logger.error('Error deleting monthly data entry:', error)
         return false
       }
 
       return true
     } catch (error) {
-      console.error('Error in deleteMonthlyDataEntry:', error)
+      logger.error('Error in deleteMonthlyDataEntry:', error)
       return false
     }
   }
@@ -866,11 +867,11 @@ class AdvisorBasecampService {
       .order('year', { ascending: false })
 
     if (error) {
-      console.error('Error fetching available years:', error)
+      logger.error('Error fetching available years:', error)
       return [new Date().getFullYear()]
     }
 
-    const years = data?.map(row => row.year).filter((year, index, self) => self.indexOf(year) === index) || []
+    const years = data?.map((row: any) => row.year).filter((year: any, index: number, self: any[]) => self.indexOf(year) === index) || []
     return years.length > 0 ? years : [new Date().getFullYear()]
   }
 
@@ -881,55 +882,55 @@ class AdvisorBasecampService {
       
       // Save all data sequentially to avoid race conditions
       if (data.businessGoals) {
-        console.log('Saving business goals...')
+        logger.log('Saving business goals...')
         const savedGoals = await this.upsertBusinessGoals(user, data.businessGoals)
         if (!savedGoals) {
-          console.error('Failed to save business goals')
+          logger.error('Failed to save business goals')
           return false
         }
       }
 
       if (data.currentValues) {
-        console.log('Saving current values...')
+        logger.log('Saving current values...')
         const savedValues = await this.upsertCurrentValues(user, data.currentValues)
         if (!savedValues) {
-          console.error('Failed to save current values')
+          logger.error('Failed to save current values')
           return false
         }
       }
 
       if (data.clientMetrics) {
-        console.log('Saving client metrics...')
+        logger.log('Saving client metrics...')
         const savedMetrics = await this.upsertClientMetrics(user, data.clientMetrics)
         if (!savedMetrics) {
-          console.error('Failed to save client metrics')
+          logger.error('Failed to save client metrics')
           return false
         }
       }
 
       if (data.commissionRates) {
-        console.log('Saving commission rates...')
+        logger.log('Saving commission rates...')
         const savedRates = await this.upsertCommissionRates(user, data.commissionRates)
         if (!savedRates) {
-          console.error('Failed to save commission rates')
+          logger.error('Failed to save commission rates')
           return false
         }
       }
 
       if (data.financialBook) {
-        console.log('Saving financial book...')
+        logger.log('Saving financial book...')
         const savedBook = await this.upsertFinancialBook(user, data.financialBook)
         if (!savedBook) {
-          console.error('Failed to save financial book')
+          logger.error('Failed to save financial book')
           return false
         }
       }
 
       if (data.financialOptions) {
-        console.log('Saving financial options...')
+        logger.log('Saving financial options...')
         const savedOptions = await this.upsertFinancialOptions(user, data.financialOptions)
         if (!savedOptions) {
-          console.error('Failed to save financial options')
+          logger.error('Failed to save financial options')
           return false
         }
       }
@@ -945,22 +946,22 @@ class AdvisorBasecampService {
 
       // Then create new ones if provided
       if (data.campaigns && data.campaigns.length > 0) {
-        console.log('Creating new campaigns:', data.campaigns.length)
+        logger.log('Creating new campaigns:', data.campaigns.length)
         for (const campaign of data.campaigns) {
           const savedCampaign = await this.createMarketingCampaign(user, campaign)
           if (!savedCampaign) {
-            console.error('Failed to save campaign:', campaign.name)
+            logger.error('Failed to save campaign:', campaign.name)
             return false
           }
         }
       } else {
-        console.log('No campaigns to save (empty array)')
+        logger.log('No campaigns to save (empty array)')
       }
 
       console.log('All advisor basecamp data saved successfully')
       return true
     } catch (error) {
-      console.error('Error saving all advisor basecamp data:', error)
+      logger.error('Error saving all advisor basecamp data:', error)
       return false
     }
   }
