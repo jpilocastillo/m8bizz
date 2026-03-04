@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Server,
   Globe,
+  Database as DatabaseIcon,
 } from "lucide-react"
 import { logger } from "@/lib/logger"
 import type { Database } from "@/types/supabase"
@@ -148,7 +149,7 @@ export default async function DebugPage() {
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
+                <DatabaseIcon className="h-5 w-5" />
                 Database Connection
               </CardTitle>
             </CardHeader>
