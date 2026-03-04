@@ -329,11 +329,12 @@ export async function checkUserManagerRole(userId: string) {
   try {
     const supabase = await createClient()
     
-    const { data: profile, error } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", userId)
       .single()
+    const profile = data as { role: string | null } | null
 
     if (error) {
       console.error("Error checking user role:", error)
