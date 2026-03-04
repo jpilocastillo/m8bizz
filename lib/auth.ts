@@ -184,10 +184,11 @@ export async function deleteUser(userId: string) {
     console.log("Deleting user:", userId)
 
     // 1. First, get all events for this user
-    const { data: marketingEvents, error: eventsError } = await adminClient
+    const { data, error: eventsError } = await adminClient
       .from("marketing_events")
       .select("id")
       .eq("user_id", userId)
+    const marketingEvents = data as { id: string }[] | null
 
     if (eventsError) {
       console.error("Error fetching user events:", eventsError)
