@@ -1,10 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
-  Database, 
   User, 
   Settings, 
   CheckCircle2,
@@ -12,9 +10,11 @@ import {
   AlertCircle,
   Server,
   Globe,
-  Key
 } from "lucide-react"
 import { logger } from "@/lib/logger"
+import type { Database } from "@/types/supabase"
+
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
 
 export default async function DebugPage() {
   const supabase = await createClient()
@@ -26,13 +26,13 @@ export default async function DebugPage() {
   let profileData: any = null
   
   if (user) {
-    const { data: profile, error: profileError } = await supabase
+    const { data, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single()
-    
-    role = profile?.role || null
+    const profile = data as ProfileRow | null
+    role = profile?.role ?? null
     profileData = profile
     
     if (profileError) {
