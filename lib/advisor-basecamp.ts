@@ -116,6 +116,7 @@ export interface MonthlyDataEntry {
   user_id?: string
   month_year: string // Format: "YYYY-MM"
   new_clients: number
+  current_book_closes?: number
   new_appointments: number
   new_leads: number
   annuity_sales: number
@@ -691,6 +692,7 @@ class AdvisorBasecampService {
           user_id: user.id,
           month_year: entry.month_year,
           new_clients: entry.new_clients,
+          current_book_closes: entry.current_book_closes ?? 0,
           new_appointments: entry.new_appointments,
           new_leads: entry.new_leads,
           annuity_sales: entry.annuity_sales,
@@ -744,6 +746,12 @@ class AdvisorBasecampService {
           return { data: null, error: 'Invalid new_clients value: must be non-negative' }
         }
         updateData.new_clients = entry.new_clients
+      }
+      if (entry.current_book_closes !== undefined) {
+        if (entry.current_book_closes < 0) {
+          return { data: null, error: 'Invalid current_book_closes value: must be non-negative' }
+        }
+        updateData.current_book_closes = entry.current_book_closes
       }
       if (entry.new_appointments !== undefined) {
         if (entry.new_appointments < 0) {

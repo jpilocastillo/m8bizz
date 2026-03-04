@@ -81,6 +81,8 @@ interface ClientClosedListProps {
   userId?: string
   year?: number
   showYTD?: boolean
+  /** Called after clients are added, updated, or deleted so parent can refresh dashboard data */
+  onClientsChange?: () => void | Promise<void>
 }
 
 type SortField = "client_name" | "close_date" | "total_value" | "annuity_premium" | "aum_amount" | "life_insurance_premium"
@@ -91,6 +93,7 @@ export function ClientClosedList({
   userId,
   year,
   showYTD = false,
+  onClientsChange,
 }: ClientClosedListProps) {
   const { user } = useAuth()
   const [clients, setClients] = useState<EventClient[]>([])
@@ -302,6 +305,7 @@ export function ClientClosedList({
       if (showYTD && currentUserId && year) {
         await loadYTDSummary()
       }
+      await onClientsChange?.()
     } catch (error) {
       console.error("Error adding client:", error)
       toast({
@@ -326,6 +330,7 @@ export function ClientClosedList({
         await loadYTDSummary()
       }
       setEditingClient(null)
+      await onClientsChange?.()
     } catch (error) {
       console.error("Error updating client:", error)
       toast({
@@ -351,6 +356,7 @@ export function ClientClosedList({
       }
       setClientToDelete(null)
       setDeleteDialogOpen(false)
+      await onClientsChange?.()
     } catch (error) {
       console.error("Error deleting client:", error)
       toast({

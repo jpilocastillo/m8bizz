@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { AnalyticsSummary } from "@/components/dashboard/analytics/analytics-summary"
 import { TopPerformers } from "@/components/dashboard/analytics/top-performers"
 import { EventComparison } from "@/components/dashboard/analytics/event-comparison"
@@ -9,6 +10,7 @@ import { PerformanceHeatmap } from "@/components/dashboard/analytics/performance
 import { AnalyticsFilters } from "@/components/dashboard/analytics/analytics-filters"
 import { TrendAnalysis } from "@/components/dashboard/analytics/trend-analysis"
 import { ConversionBreakdown } from "@/components/dashboard/analytics/conversion-breakdown"
+import { CultivationReferralCard } from "@/components/dashboard/analytics/cultivation-referral-card"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import { BarChart3, TrendingUp, Activity, AlertCircle, RefreshCw, DollarSign, Users, Target, Calendar } from "lucide-react"
@@ -64,6 +66,7 @@ interface FilterState {
 
 export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
   const { user } = useAuth()
+  const router = useRouter()
   const currentYear = new Date().getFullYear()
   const [selectedYear, setSelectedYear] = useState<number>(currentYear)
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear, 2025])
@@ -452,6 +455,11 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
           />
         </div>
 
+        {/* Cultivation & Referral - only when such events exist */}
+        <div className="w-full">
+          <CultivationReferralCard events={filteredData?.events || []} />
+        </div>
+
         {/* Top Performing Events and Event Comparison - Side by Side */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
           <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col h-full">
@@ -704,7 +712,12 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
 
         <TabsContent value="clients" className="space-y-6">
           {user?.id ? (
-            <ClientClosedList userId={user.id} year={selectedYear} showYTD={true} />
+            <ClientClosedList
+              userId={user.id}
+              year={selectedYear}
+              showYTD={true}
+              onClientsChange={() => router.refresh()}
+            />
           ) : (
             <div className="text-center py-12 text-m8bs-muted">
               <p>Please log in to view client tracking.</p>

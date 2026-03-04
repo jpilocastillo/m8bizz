@@ -6,11 +6,14 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import { createEvent, createEventExpenses, createEventAttendance, createEventAppointments, createEventFinancialProduction, updateEvent } from "@/lib/data"
 import { useAuth } from "@/components/auth-provider"
+import { EVENT_TYPES, getCanonicalEventType, getMarketingTypeForStorage, type EventType } from "@/lib/event-types"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -67,6 +70,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [date, setDate] = useState("")
   const [location, setLocation] = useState("")
   const [marketingType, setMarketingType] = useState("")
+  const [eventType, setEventType] = useState<EventType>("Seminar")
   const [topic, setTopic] = useState("")
   const [time, setTime] = useState("")
   const [ageRange, setAgeRange] = useState("")
@@ -99,6 +103,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
   const [hour, setHour] = useState("");
   const [minute, setMinute] = useState("");
   const [ampm, setAmpm] = useState("AM");
+
+  // Cultivation-only fields (Current Clients / Cultivation)
+  const CULTIVATION_ACTIVITY_TYPES = ["Client check-in", "Review meeting", "Touch base call", "Client event", "Other"] as const
+  const [cultivationActivityType, setCultivationActivityType] = useState("")
+  const [cultivationClientTouches, setCultivationClientTouches] = useState("")
+  const [cultivationNotes, setCultivationNotes] = useState("")
 
   // Form validation and progress tracking
   const validateField = (field: string, value: string | number) => {
@@ -202,12 +212,13 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
   // Check if required fields are complete
   const requiredFieldsComplete = useMemo(() => {
+    const typeOk = eventType === "Other" ? (marketingType && marketingType.trim().length > 0) : !!eventType
     return name && name.trim().length >= 2 &&
            date &&
            location && location.trim().length >= 2 &&
-           marketingType && marketingType.trim().length > 0 &&
+           typeOk &&
            topic && topic.trim().length >= 2
-  }, [name, date, location, marketingType, topic])
+  }, [name, date, location, marketingType, topic, eventType])
 
 
   useEffect(() => {
@@ -217,6 +228,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       setDate(initialData.eventDetails?.date || "")
       setLocation(initialData.eventDetails?.location || "")
       setMarketingType(initialData.eventDetails?.marketing_type || "")
+      setEventType(getCanonicalEventType(initialData.eventDetails?.marketing_type))
       setTopic(initialData.eventDetails?.topic || "")
       setTime(initialData.eventDetails?.time || "")
       setAgeRange(initialData.eventDetails?.age_range || "")
@@ -228,6 +240,11 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
           ? initialData.eventDetails.marketing_audience.toString()
           : ""
       )
+
+      // Cultivation fields
+      setCultivationActivityType(initialData.eventDetails?.cultivation_activity_type || "")
+      setCultivationClientTouches(initialData.eventDetails?.cultivation_client_touches?.toString() || "")
+      setCultivationNotes(initialData.eventDetails?.cultivation_notes || "")
 
       // Expenses
       setAdvertisingCost(initialData.marketingExpenses?.advertising?.toString() || "")
@@ -267,6 +284,13 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
     }
   }, [initialData])
 
+  // When switching to Cultivation/Referral, leave attendance/appointments tabs
+  useEffect(() => {
+    if ((eventType === "Current Clients / Cultivation" || eventType === "Referrals") && (activeTab === "attendance" || activeTab === "appointments")) {
+      setActiveTab("expenses")
+    }
+  }, [eventType, activeTab])
+
   const calculateTotalCost = () => {
     const adCost = Number.parseFloat(advertisingCost) || 0
     const foodCost = Number.parseFloat(foodVenueCost) || 0
@@ -305,9 +329,9 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       const requiredFields = {
         name,
         date,
-        location,
-        marketingType,
-        topic
+        location: (eventType === "Current Clients / Cultivation" || eventType === "Referrals") ? "(skip)" : location,
+        marketingType: eventType === "Other" ? marketingType : eventType,
+        topic: (eventType === "Current Clients / Cultivation" || eventType === "Referrals") ? "(skip)" : topic
       }
 
       logger.log('Validating required fields:', requiredFields)
@@ -319,7 +343,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             case 'name': return 'Event Name'
             case 'date': return 'Date'
             case 'location': return 'Location'
-            case 'marketingType': return 'Marketing Type'
+            case 'marketingType': return 'Event Type / Marketing Type'
             case 'topic': return 'Topic'
             default: return key
           }
@@ -337,12 +361,16 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
       // Prepare the event data
       const time24 = hour && minute ? to24HourFormat(hour, minute, ampm) : null;
+      const isSeminarOrOther = eventType === "Seminar" || eventType === "Other";
+      const isCultivation = eventType === "Current Clients / Cultivation";
+      const isReferral = eventType === "Referrals";
+      const useSimpleDetails = isCultivation || isReferral;
       const eventData = {
         name,
         date,
-        location,
-        marketing_type: marketingType,
-        topic,
+        location: useSimpleDetails ? "—" : location,
+        marketing_type: getMarketingTypeForStorage(eventType, marketingType),
+        topic: useSimpleDetails ? "—" : topic,
         time: time24,
         age_range: ageRange,
         mile_radius: mileRadius,
@@ -352,13 +380,18 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             ? null
             : parseInt(marketingAudience, 10),
         status: 'active',
+        ...(isCultivation && {
+          cultivation_activity_type: cultivationActivityType || null,
+          cultivation_client_touches: cultivationClientTouches ? parseInt(cultivationClientTouches, 10) : null,
+          cultivation_notes: cultivationNotes || null,
+        }),
         relatedData: {
           attendance: {
-            registrant_responses: parseInt(registrantResponses) || 0,
-            confirmations: parseInt(confirmations) || 0,
-            attendees: parseInt(attendees) || 0,
-            clients_from_event: parseInt(clientsFromEvent) || 0,
-            plate_lickers: parseInt(plateLickers) || 0
+            registrant_responses: isSeminarOrOther ? (parseInt(registrantResponses) || 0) : 0,
+            confirmations: isSeminarOrOther ? (parseInt(confirmations) || 0) : 0,
+            attendees: isSeminarOrOther ? (parseInt(attendees) || 0) : 0,
+            clients_from_event: isSeminarOrOther ? (parseInt(clientsFromEvent) || 0) : 0,
+            plate_lickers: isSeminarOrOther ? (parseInt(plateLickers) || 0) : 0
           },
           expenses: {
             advertising_cost: parseFloat(advertisingCost) || 0,
@@ -366,12 +399,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             other_costs: parseFloat(otherCosts) || 0
           },
           appointments: {
-            set_at_event: parseInt(setAtEvent) || 0,
-            set_after_event: parseInt(setAfterEvent) || 0,
-            first_appointment_attended: parseInt(firstAppointmentAttended) || 0,
-            first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
-            second_appointment_attended: parseInt(secondAppointmentAttended) || 0,
-            not_qualified: parseInt(notQualified) || 0
+            set_at_event: isSeminarOrOther ? (parseInt(setAtEvent) || 0) : 0,
+            set_after_event: isSeminarOrOther ? (parseInt(setAfterEvent) || 0) : 0,
+            first_appointment_attended: isSeminarOrOther ? (parseInt(firstAppointmentAttended) || 0) : 0,
+            first_appointment_no_shows: isSeminarOrOther ? (parseInt(firstAppointmentNoShows) || 0) : 0,
+            second_appointment_attended: isSeminarOrOther ? (parseInt(secondAppointmentAttended) || 0) : 0,
+            not_qualified: isSeminarOrOther ? (parseInt(notQualified) || 0) : 0
           }
         }
       }
@@ -465,9 +498,9 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       const requiredFields = {
         name,
         date,
-        location,
-        marketingType,
-        topic
+        location: (eventType === "Current Clients / Cultivation" || eventType === "Referrals") ? "(skip)" : location,
+        marketingType: eventType === "Other" ? marketingType : eventType,
+        topic: (eventType === "Current Clients / Cultivation" || eventType === "Referrals") ? "(skip)" : topic
       }
 
       logger.log('Validating required fields:', requiredFields)
@@ -479,7 +512,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             case 'name': return 'Event Name'
             case 'date': return 'Date'
             case 'location': return 'Location'
-            case 'marketingType': return 'Marketing Type'
+            case 'marketingType': return 'Event Type / Marketing Type'
             case 'topic': return 'Topic'
             default: return key
           }
@@ -497,12 +530,16 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
 
       // Prepare the event data
       const time24 = hour && minute ? to24HourFormat(hour, minute, ampm) : null;
+      const isSeminarOrOther = eventType === "Seminar" || eventType === "Other";
+      const isCultivation = eventType === "Current Clients / Cultivation";
+      const isReferral = eventType === "Referrals";
+      const useSimpleDetails = isCultivation || isReferral;
       const eventData = {
         name,
         date,
-        location,
-        marketing_type: marketingType,
-        topic,
+        location: useSimpleDetails ? "—" : location,
+        marketing_type: getMarketingTypeForStorage(eventType, marketingType),
+        topic: useSimpleDetails ? "—" : topic,
         time: time24,
         age_range: ageRange,
         mile_radius: mileRadius,
@@ -512,13 +549,18 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             ? null
             : parseInt(marketingAudience, 10),
         status: 'active',
+        ...(isCultivation && {
+          cultivation_activity_type: cultivationActivityType || null,
+          cultivation_client_touches: cultivationClientTouches ? parseInt(cultivationClientTouches, 10) : null,
+          cultivation_notes: cultivationNotes || null,
+        }),
         relatedData: {
           attendance: {
-            registrant_responses: parseInt(registrantResponses) || 0,
-            confirmations: parseInt(confirmations) || 0,
-            attendees: parseInt(attendees) || 0,
-            clients_from_event: parseInt(clientsFromEvent) || 0,
-            plate_lickers: parseInt(plateLickers) || 0
+            registrant_responses: isSeminarOrOther ? (parseInt(registrantResponses) || 0) : 0,
+            confirmations: isSeminarOrOther ? (parseInt(confirmations) || 0) : 0,
+            attendees: isSeminarOrOther ? (parseInt(attendees) || 0) : 0,
+            clients_from_event: isSeminarOrOther ? (parseInt(clientsFromEvent) || 0) : 0,
+            plate_lickers: isSeminarOrOther ? (parseInt(plateLickers) || 0) : 0
           },
           expenses: {
             advertising_cost: parseFloat(advertisingCost) || 0,
@@ -526,12 +568,12 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             other_costs: parseFloat(otherCosts) || 0
           },
           appointments: {
-            set_at_event: parseInt(setAtEvent) || 0,
-            set_after_event: parseInt(setAfterEvent) || 0,
-            first_appointment_attended: parseInt(firstAppointmentAttended) || 0,
-            first_appointment_no_shows: parseInt(firstAppointmentNoShows) || 0,
-            second_appointment_attended: parseInt(secondAppointmentAttended) || 0,
-            not_qualified: parseInt(notQualified) || 0
+            set_at_event: isSeminarOrOther ? (parseInt(setAtEvent) || 0) : 0,
+            set_after_event: isSeminarOrOther ? (parseInt(setAfterEvent) || 0) : 0,
+            first_appointment_attended: isSeminarOrOther ? (parseInt(firstAppointmentAttended) || 0) : 0,
+            first_appointment_no_shows: isSeminarOrOther ? (parseInt(firstAppointmentNoShows) || 0) : 0,
+            second_appointment_attended: isSeminarOrOther ? (parseInt(secondAppointmentAttended) || 0) : 0,
+            not_qualified: isSeminarOrOther ? (parseInt(notQualified) || 0) : 0
           }
         }
       }
@@ -659,6 +701,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               <DollarSign className="h-4 w-4" />
               Expenses
             </TabsTrigger>
+            {(eventType === "Seminar" || eventType === "Other") && (
+              <>
             <TabsTrigger value="attendance" className="data-[state=active]:bg-m8bs-blue data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-m8bs-blue/20 flex items-center gap-2 transition-all duration-200">
               <Users className="h-4 w-4" />
               Attendance
@@ -667,6 +711,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
               <Target className="h-4 w-4" />
               Appointments
             </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
         <TabsContent value="event" className="space-y-4">
@@ -674,17 +720,25 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
             <CardHeader className="pb-4">
               <CardTitle className="text-xl text-white flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-m8bs-blue" />
-                Event Information
+                {eventType === "Current Clients / Cultivation"
+                  ? "Current Clients / Cultivation"
+                  : eventType === "Referrals"
+                    ? "Referrals"
+                    : "Event Information"}
               </CardTitle>
               <CardDescription className="text-m8bs-muted">
-                Enter The Basic Details About Your Marketing Event. Fields Marked With * Are Required. All Other Fields Are Optional.
+                {eventType === "Current Clients / Cultivation"
+                  ? "Track cultivation or client-relationship activity. Only a name and date are required."
+                  : eventType === "Referrals"
+                    ? "Track referral activity. Only a name and date are required."
+                    : "Enter The Basic Details About Your Marketing Event. Fields Marked With * Are Required. All Other Fields Are Optional."}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-white font-semibold flex items-center gap-1 text-sm">
-                    Event Name <span className="text-red-400">*</span>
+                    {(eventType === "Current Clients / Cultivation" || eventType === "Referrals") ? "Activity Name" : "Event Name"} <span className="text-red-400">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -696,7 +750,9 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     className={`bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md ${
                       formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/30' : ''
                     }`}
-                    placeholder="Enter Event Name (E.g., Retirement Planning Seminar)"
+                    placeholder={(eventType === "Current Clients / Cultivation" || eventType === "Referrals")
+                      ? (eventType === "Referrals" ? "E.g., CPA Referral Program" : "E.g., Q1 Client Check-ins")
+                      : "Enter Event Name (E.g., Retirement Planning Seminar)"}
                     required
                   />
                   {formErrors.name && (
@@ -708,7 +764,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="date" className="text-white font-medium flex items-center gap-1">
-                    Event Date <span className="text-red-400">*</span>
+                    {(eventType === "Current Clients / Cultivation" || eventType === "Referrals") ? "Date" : "Event Date"} <span className="text-red-400">*</span>
                   </Label>
                   <Input
                     id="date"
@@ -730,6 +786,111 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     </p>
                   )}
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventType" className="text-white font-medium flex items-center gap-1">
+                    Event Type <span className="text-red-400">*</span>
+                  </Label>
+                  <Select
+                    value={eventType}
+                    onValueChange={(value: EventType) => {
+                      setEventType(value)
+                      if (value !== "Other") setMarketingType(value)
+                      validateField("marketingType", value)
+                    }}
+                  >
+                    <SelectTrigger
+                      id="eventType"
+                      className={`bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 ${
+                        formErrors.marketingType ? "border-red-500" : ""
+                      }`}
+                    >
+                      <SelectValue placeholder="Select event type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black border-m8bs-border">
+                      {EVENT_TYPES.map((type) => (
+                        <SelectItem key={type} value={type} className="text-white focus:bg-m8bs-blue/20">
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {eventType === "Other" && (
+                    <Input
+                      id="marketingType"
+                      value={marketingType}
+                      onChange={(e) => {
+                        setMarketingType(e.target.value)
+                        validateField("marketingType", e.target.value)
+                      }}
+                      className="mt-2 bg-black border-m8bs-border text-white placeholder:text-gray-500"
+                      placeholder="E.g. MBI Mailer, Facebook Ads"
+                    />
+                  )}
+                  {formErrors.marketingType && (
+                    <p className="text-red-400 text-sm flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {formErrors.marketingType}
+                    </p>
+                  )}
+                </div>
+
+                {eventType === "Current Clients / Cultivation" && (
+                  <>
+                <div className="space-y-2">
+                  <Label htmlFor="cultivationActivityType" className="text-white font-medium">
+                    Activity type
+                  </Label>
+                  <Select
+                    value={cultivationActivityType}
+                    onValueChange={setCultivationActivityType}
+                  >
+                    <SelectTrigger
+                      id="cultivationActivityType"
+                      className="bg-black border-m8bs-border text-white focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30"
+                    >
+                      <SelectValue placeholder="Select activity type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black border-m8bs-border">
+                      {CULTIVATION_ACTIVITY_TYPES.map((type) => (
+                        <SelectItem key={type} value={type} className="text-white focus:bg-m8bs-blue/20">
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cultivationClientTouches" className="text-white font-medium">
+                    Number of clients / touches
+                  </Label>
+                  <Input
+                    id="cultivationClientTouches"
+                    type="number"
+                    min="0"
+                    value={cultivationClientTouches}
+                    onChange={(e) => setCultivationClientTouches(e.target.value)}
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 rounded-md"
+                    placeholder="E.g. 12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cultivationNotes" className="text-white font-medium">
+                    Notes
+                  </Label>
+                  <Textarea
+                    id="cultivationNotes"
+                    value={cultivationNotes}
+                    onChange={(e) => setCultivationNotes(e.target.value)}
+                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 rounded-md min-h-[80px]"
+                    placeholder="Optional context (e.g. Q1 check-ins – retirement review)"
+                    rows={3}
+                  />
+                </div>
+                  </>
+                )}
+
+                {(eventType !== "Current Clients / Cultivation" && eventType !== "Referrals") && (
+                  <>
                 <div className="space-y-2">
                   <Label htmlFor="location" className="text-white font-medium flex items-center gap-1">
                     Location <span className="text-red-400">*</span>
@@ -785,18 +946,6 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                       <option value="PM">PM</option>
                     </select>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="marketingType" className="text-white font-medium">
-                    Marketing Type
-                  </Label>
-                  <Input
-                    id="marketingType"
-                    value={marketingType}
-                    onChange={(e) => setMarketingType(e.target.value)}
-                    className="bg-black border-m8bs-border text-white placeholder:text-gray-500 focus:border-m8bs-blue focus:ring-2 focus:ring-m8bs-blue/30 transition-all duration-200 rounded-md"
-                    placeholder="E.g. MBI Mailer, Facebook Ads"
-                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="topic" className="text-white font-medium">
@@ -860,6 +1009,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                     placeholder="Enter Total Number Of People"
                   />
                 </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -937,6 +1088,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
           </Card>
         </TabsContent>
 
+        {(eventType === "Seminar" || eventType === "Other") && (
+          <>
         <TabsContent value="attendance" className="space-y-4">
           <Card className="bg-black border-m8bs-border shadow-xl">
             <CardHeader className="pb-4">
@@ -1129,6 +1282,9 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
           </Card>
         </TabsContent>
 
+          </>
+        )}
+
       </Tabs>
 
 
@@ -1166,7 +1322,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
                   Previous
                 </Button>
               )}
-              {activeTab !== "appointments" && (
+              {activeTab !== "appointments" && (eventType === "Seminar" || eventType === "Other" ? true : activeTab === "event") && (
                 <Button
                   type="button"
                   variant="outline"

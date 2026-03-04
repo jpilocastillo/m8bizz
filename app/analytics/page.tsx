@@ -4,6 +4,7 @@ import { AnalyticsDashboard } from "@/components/dashboard/analytics/analytics-d
 import { AnalyticsSkeleton } from "@/components/dashboard/analytics/analytics-skeleton"
 import { DashboardError } from "@/components/dashboard/dashboard-error"
 import { fetchAllEvents } from "@/lib/data"
+import { getCanonicalEventType } from "@/lib/event-types"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Suspense } from "react"
 
@@ -127,7 +128,7 @@ export default async function AnalyticsPage() {
           date: event.date,
           dayOfWeek: event.dayOfWeek, // Use the dayOfWeek already calculated in fetchAllEvents
           location: event.location,
-          type: event.marketing_type || 'Other',
+          type: getCanonicalEventType(event.marketing_type),
           topic: event.topic || 'N/A',
           time: event.time || 'N/A',
           revenue: totalProduction,
@@ -156,6 +157,13 @@ export default async function AnalyticsPage() {
             const clients = event.attendance?.clients_from_event || 0;
             return attendees > 0 ? (clients / attendees) * 100 : 0;
           })(),
+          // Cultivation/referral fields for analytics cards
+          cultivationActivityType: event.cultivation_activity_type ?? undefined,
+          cultivationClientTouches:
+            event.cultivation_client_touches != null
+              ? Number(event.cultivation_client_touches)
+              : undefined,
+          cultivationNotes: event.cultivation_notes ?? undefined,
         };
       }),
       monthlyData: (() => {
@@ -212,7 +220,7 @@ export default async function AnalyticsPage() {
         const typeStats = new Map()
         
         events.forEach(event => {
-          const type = event.marketing_type || 'Other'
+          const type = getCanonicalEventType(event.marketing_type)
           
           if (!typeStats.has(type)) {
             typeStats.set(type, {

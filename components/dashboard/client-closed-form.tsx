@@ -23,12 +23,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { EventClient, EventClientInsert, EventClientUpdate } from "@/lib/client-tracking"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { EventClient, EventClientInsert, EventClientUpdate, type ClientSource } from "@/lib/client-tracking"
 import { formatCurrency, parseCurrency } from "@/lib/utils"
 
 const clientFormSchema = z.object({
   client_name: z.string().min(1, "Client name is required"),
   close_date: z.string().min(1, "Close date is required"),
+  client_source: z.enum(["new", "current_book", "referral"]).optional(),
   annuity_premium: z.string().optional(),
   annuity_commission: z.string().optional(),
   annuity_commission_percentage: z.string().optional(),
@@ -68,6 +76,7 @@ export function ClientClosedForm({
     defaultValues: {
       client_name: client?.client_name || "",
       close_date: client?.close_date || new Date().toISOString().split("T")[0],
+      client_source: (client?.client_source as "new" | "current_book" | "referral") || "new",
       annuity_premium: client?.annuity_premium
         ? formatCurrency(client.annuity_premium)
         : "",
@@ -104,6 +113,7 @@ export function ClientClosedForm({
       form.reset({
         client_name: client.client_name || "",
         close_date: client.close_date || new Date().toISOString().split("T")[0],
+        client_source: (client.client_source as "new" | "current_book" | "referral") || "new",
         annuity_premium: client.annuity_premium != null && client.annuity_premium !== 0
           ? formatCurrency(client.annuity_premium)
           : "",
@@ -141,6 +151,7 @@ export function ClientClosedForm({
       form.reset({
         client_name: "",
         close_date: new Date().toISOString().split("T")[0],
+        client_source: "new",
         annuity_premium: "",
         annuity_commission: "",
         annuity_commission_percentage: "",
@@ -242,6 +253,7 @@ export function ClientClosedForm({
       const formData: EventClientInsert | EventClientUpdate = {
         ...(mode === "add" && { event_id: eventId }),
         client_name: values.client_name,
+        client_source: (values.client_source as ClientSource) || "new",
         close_date: values.close_date,
         annuity_premium: values.annuity_premium
           ? parseFloat(parseCurrency(values.annuity_premium))
@@ -333,6 +345,41 @@ export function ClientClosedForm({
                       className="bg-m8bs-card-alt border-m8bs-border text-white"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="client_source"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">Client type</FormLabel>
+                  <Select
+                    value={field.value || "new"}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="bg-m8bs-card-alt border-m8bs-border text-white">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-m8bs-card-alt border-m8bs-border z-[200]" position="popper">
+                      <SelectItem value="new" className="text-white focus:bg-m8bs-blue/20">
+                        New client (from event)
+                      </SelectItem>
+                      <SelectItem value="current_book" className="text-white focus:bg-m8bs-blue/20">
+                        Current book (existing client)
+                      </SelectItem>
+                      <SelectItem value="referral" className="text-white focus:bg-m8bs-blue/20">
+                        From referral
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-m8bs-muted">
+                    Use &quot;Current book&quot; when an existing client closes; they will count as business from current book in monthly data, not as a new client.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

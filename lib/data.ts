@@ -65,6 +65,10 @@ export type MarketingEvent = {
   time: string | null
   status: string
   marketing_audience: number | null
+  // Cultivation-only (Current Clients / Cultivation event type)
+  cultivation_activity_type?: string | null
+  cultivation_client_touches?: number | null
+  cultivation_notes?: string | null
   // Top-level fields for summary and dashboard
   revenue?: number
   attendees?: number
@@ -351,6 +355,9 @@ export async function fetchAllEvents(userId: string, year?: number): Promise<Mar
         mile_radius,
         income_assets,
         marketing_audience,
+        cultivation_activity_type,
+        cultivation_client_touches,
+        cultivation_notes,
         created_at,
         updated_at,
         marketing_expenses (
@@ -539,7 +546,10 @@ export async function fetchAllEvents(userId: string, year?: number): Promise<Mar
         financial_production: financialData ? { ...financialData, total } : undefined,
         marketing_expenses: latestExpenses,
         event_appointments: latestAppointments,
-        marketing_audience: event.marketing_audience
+        marketing_audience: event.marketing_audience,
+        cultivation_activity_type: event.cultivation_activity_type ?? undefined,
+        cultivation_client_touches: event.cultivation_client_touches ?? undefined,
+        cultivation_notes: event.cultivation_notes ?? undefined
       };
     });
   } catch (error) {
@@ -576,6 +586,9 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         mile_radius,
         income_assets,
         marketing_audience,
+        cultivation_activity_type,
+        cultivation_client_touches,
+        cultivation_notes,
         marketing_expenses (
           id,
           advertising_cost,
@@ -775,7 +788,10 @@ export async function fetchDashboardData(userId: string, eventId?: string) {
         income_assets: event.income_assets,
         time: event.time,
         status: event.status,
-        marketing_audience: event.marketing_audience
+        marketing_audience: event.marketing_audience,
+        cultivation_activity_type: event.cultivation_activity_type ?? undefined,
+        cultivation_client_touches: event.cultivation_client_touches ?? undefined,
+        cultivation_notes: event.cultivation_notes ?? undefined,
       },
       roi: {
         value: roi,
@@ -1024,10 +1040,10 @@ export async function updateEvent(eventId: string, eventData: any) {
 
     // Update event core data
     if (Object.keys(coreEventData).length > 0) {
-      // Map type to marketing_type if provided
+      // Form sends marketing_type; fall back to type for backwards compatibility
       const marketingEventData = {
         ...coreEventData,
-        marketing_type: coreEventData.type, // Map type to marketing_type
+        marketing_type: coreEventData.marketing_type ?? coreEventData.type,
       }
 
       // Remove type from the data to avoid conflicts

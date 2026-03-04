@@ -29,6 +29,7 @@ const monthlyEntrySchema = z.object({
   month: z.string().min(1, "Month Is Required"),
   year: z.string().min(1, "Year Is Required"),
   new_clients: z.string().min(1, "New Clients Is Required"),
+  current_book_closes: z.string().optional(),
   new_appointments: z.string().min(1, "New Appointments Is Required"),
   new_leads: z.string().min(1, "New Leads Is Required"),
   annuity_sales: z.string().min(1, "Annuity Sales Is Required"),
@@ -125,6 +126,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
       month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
       year: new Date().getFullYear().toString(),
       new_clients: "",
+      current_book_closes: "0",
       new_appointments: "",
       new_leads: "",
       annuity_sales: "",
@@ -169,6 +171,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
       // Parse and validate numeric values
       // Handle empty strings and ensure proper parsing
       const new_clients = parseInt(values.new_clients || "0") || 0
+      const current_book_closes = parseInt(values.current_book_closes || "0") || 0
       const new_appointments = parseInt(values.new_appointments || "0") || 0
       const new_leads = parseInt(values.new_leads || "0") || 0
       const annuity_sales = parseFloat(parseCurrency(values.annuity_sales || "0")) || 0
@@ -243,10 +246,19 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
         })
         return
       }
+      if (isNaN(current_book_closes) || current_book_closes < 0) {
+        toast({
+          title: "Validation Error",
+          description: "Business from current book must be a valid non-negative number.",
+          variant: "destructive",
+        })
+        return
+      }
 
       const entryData = {
         month_year: month_year,
         new_clients: new_clients,
+        current_book_closes,
         new_appointments: new_appointments,
         new_leads: new_leads,
         annuity_sales: annuity_sales,
@@ -305,6 +317,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
       month: month,
       year: year,
       new_clients: entry.new_clients.toString(),
+      current_book_closes: (entry.current_book_closes ?? 0).toString(),
       new_appointments: entry.new_appointments.toString(),
       new_leads: entry.new_leads.toString(),
       annuity_sales: entry.annuity_sales.toString(),
@@ -343,6 +356,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
       month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
       year: new Date().getFullYear().toString(),
       new_clients: "",
+      current_book_closes: "0",
       new_appointments: "",
       new_leads: "",
       annuity_sales: "",
@@ -365,6 +379,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
       month: currentMonth,
       year: currentYear,
       new_clients: "",
+      current_book_closes: "0",
       new_appointments: "",
       new_leads: "",
       annuity_sales: "",
@@ -417,6 +432,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
         form.setValue('aum_sales', (eventData.aum_sales || 0).toString(), { shouldValidate: false })
         form.setValue('life_sales', (eventData.life_sales || 0).toString(), { shouldValidate: false })
         form.setValue('new_clients', (eventData.new_clients || 0).toString(), { shouldValidate: false })
+        form.setValue('current_book_closes', (eventData.current_book_closes || 0).toString(), { shouldValidate: false })
         
         // Add client names to notes if they exist (always add/update, don't duplicate)
         if (eventData.client_names && eventData.client_names.length > 0) {
@@ -457,6 +473,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
         month: month,
         year: year,
         new_clients: existing.new_clients.toString(),
+        current_book_closes: (existing.current_book_closes ?? 0).toString(),
         new_appointments: existing.new_appointments.toString(),
         new_leads: existing.new_leads.toString(),
         annuity_sales: existing.annuity_sales.toString(),
@@ -822,6 +839,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
     if (!selectedMonthData || !eventDataForMonth) {
       return {
         new_clients: selectedMonthData?.new_clients || 0,
+        current_book_closes: selectedMonthData?.current_book_closes ?? 0,
         new_appointments: selectedMonthData?.new_appointments || 0,
         annuity_sales: selectedMonthData?.annuity_sales || 0,
         aum_sales: selectedMonthData?.aum_sales || 0,
@@ -831,6 +849,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
     }
     return {
       new_clients: getManualValue(selectedMonthData.new_clients, eventDataForMonth.new_clients || 0),
+      current_book_closes: getManualValue(selectedMonthData.current_book_closes ?? 0, eventDataForMonth.current_book_closes || 0),
       new_appointments: getManualValue(selectedMonthData.new_appointments, eventDataForMonth.appointments_booked || 0),
       annuity_sales: getManualValue(selectedMonthData.annuity_sales, eventDataForMonth.annuity_sales || 0),
       aum_sales: getManualValue(selectedMonthData.aum_sales, eventDataForMonth.aum_sales || 0),
@@ -967,6 +986,27 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
                         <FormControl>
                           <Input type="number" placeholder="0" {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="current_book_closes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white font-medium flex items-center gap-2">
+                          Business from current book
+                          {autoPopulatedData && !editingEntry && (autoPopulatedData.current_book_closes ?? 0) > 0 && (
+                            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
+                              From Events: {autoPopulatedData.current_book_closes ?? 0}
+                            </Badge>
+                          )}
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="0" {...field} />
+                        </FormControl>
+                        <p className="text-xs text-m8bs-muted">Existing clients who closed; not counted as new clients.</p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1268,6 +1308,17 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
                 {(manualValues.new_clients > 0 || (eventDataForMonth && eventDataForMonth.new_clients > 0)) && (
                   <div className="text-xs text-blue-400 mt-1">
                     ({manualValues.new_clients} manual + {(eventDataForMonth?.new_clients || 0)} from events)
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 p-4 bg-m8bs-card-alt border border-m8bs-border rounded-lg">
+                <div className="text-sm font-medium text-m8bs-muted">Business from current book</div>
+                <div className="text-2xl font-bold text-white">
+                  {(manualValues.current_book_closes + (eventDataForMonth?.current_book_closes || 0)).toLocaleString()}
+                </div>
+                {(manualValues.current_book_closes > 0 || (eventDataForMonth?.current_book_closes || 0) > 0) && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    ({manualValues.current_book_closes} manual + {(eventDataForMonth?.current_book_closes || 0)} from events)
                   </div>
                 )}
               </div>
@@ -1990,6 +2041,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
                     <TableRow className="border-m8bs-border bg-m8bs-card-alt">
                       <TableHead className="text-white font-semibold">Month</TableHead>
                       <TableHead className="text-white font-semibold">New Clients</TableHead>
+                      <TableHead className="text-white font-semibold">Current Book</TableHead>
                       <TableHead className="text-white font-semibold">Client Names</TableHead>
                       <TableHead className="text-white font-semibold">Monthly New Appointments Booked</TableHead>
                       <TableHead className="text-white font-semibold">New Leads</TableHead>
@@ -2008,6 +2060,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
                     const eventLife = eventData.life_sales || 0
                     const eventExpenses = eventData.marketing_expenses || 0
                     const eventClients = eventData.new_clients || 0
+                    const eventCurrentBook = eventData.current_book_closes || 0
                     const eventAppointments = eventData.appointments_booked || 0
                     
                     // Calculate true manual values to prevent double-counting
@@ -2016,6 +2069,7 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
                     const manualLife = getManualValue(entry.life_sales, eventLife)
                     const manualExpenses = getManualValue(entry.marketing_expenses, eventExpenses)
                     const manualClients = getManualValue(entry.new_clients, eventClients)
+                    const manualCurrentBook = getManualValue(entry.current_book_closes ?? 0, eventCurrentBook)
                     const manualAppointments = getManualValue(entry.new_appointments, eventAppointments)
                     
                     // Total = manual + event
@@ -2063,6 +2117,16 @@ export function MonthlyDataEntryComponent({ selectedYear, viewOnlyData, viewOnly
                             {eventClients > 0 && (
                               <span className="text-xs text-blue-400">
                                 (+{eventClients})
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-white">
+                          <div className="flex items-center gap-2">
+                            {manualCurrentBook + eventCurrentBook}
+                            {eventCurrentBook > 0 && (
+                              <span className="text-xs text-blue-400">
+                                (+{eventCurrentBook})
                               </span>
                             )}
                           </div>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { EventDetailsCard } from "@/components/dashboard/event-details-card"
 import { EventSelector } from "@/components/dashboard/event-selector"
 import { fetchDashboardData } from "@/lib/data"
 import { MarketingROICard } from "@/components/dashboard/marketing-roi-card"
@@ -27,6 +26,7 @@ import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { fetchUserEvents, getAvailableYears } from "@/lib/data"
+import { getCanonicalEventType } from "@/lib/event-types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ClientClosedList } from "./client-closed-list"
 
@@ -51,6 +51,9 @@ export interface DashboardData {
     time: string;
     status: string;
     marketing_audience: number;
+    cultivation_activity_type?: string;
+    cultivation_client_touches?: number;
+    cultivation_notes?: string;
   };
   roi: {
     value: number;
@@ -219,7 +222,10 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           status: data.eventDetails.status || "N/A",
           marketing_audience: typeof data.eventDetails.marketing_audience === 'number'
             ? data.eventDetails.marketing_audience
-            : 0
+            : 0,
+          cultivation_activity_type: data.eventDetails.cultivation_activity_type ?? undefined,
+          cultivation_client_touches: data.eventDetails.cultivation_client_touches ?? undefined,
+          cultivation_notes: data.eventDetails.cultivation_notes ?? undefined
         },
         roi: {
           value: data.roi?.value || 0,
@@ -375,6 +381,10 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   }
   const formattedDate = dashboardData.eventDetails?.date ? formatEventDate(dashboardData.eventDetails.date) : "Date not available"
 
+  // Event type for conditional dashboard sections
+  const canonicalEventType = getCanonicalEventType(dashboardData.eventDetails?.marketing_type)
+  const isSeminarOrOther = canonicalEventType === "Seminar" || canonicalEventType === "Other"
+
   // Section divider component
   const SectionDivider = ({ title }: { title: string }) => (
     <div className="flex items-center gap-3 my-8">
@@ -493,6 +503,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           />
         </motion.div>
 
+        {isSeminarOrOther ? (
         <motion.div variants={item}>
           <ThreeDMetricCard
             title="Conversion Rate"
@@ -503,24 +514,19 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             color="amber"
           />
         </motion.div>
+        ) : (
+        <motion.div variants={item}>
+          <ThreeDMetricCard
+            title="Conversion Rate"
+            value={0}
+            format="percent"
+            icon={<Percent className="h-5 w-5 text-amber-400" />}
+            description={canonicalEventType === "Current Clients / Cultivation" ? "Cultivation event — track outcomes in financial metrics" : "Referral event — track outcomes in financial metrics"}
+            color="amber"
+          />
+        </motion.div>
+        )}
       </motion.div>
-
-      {/* Event Information Section */}
-      <SectionDivider title="Event Information" />
-
-      {/* Event details - Full width */}
-      <div className="grid grid-cols-1 gap-6">
-        <EventDetailsCard
-          dayOfWeek={dashboardData.eventDetails?.dayOfWeek || "N/A"}
-          location={dashboardData.eventDetails?.location || "N/A"}
-          time={dashboardData.eventDetails?.time || "N/A"}
-          ageRange={dashboardData.eventDetails?.age_range || "N/A"}
-          mileRadius={String(dashboardData.eventDetails?.mile_radius || 0)}
-          incomeAssets={dashboardData.eventDetails?.income_assets || "N/A"}
-          topic={dashboardData.eventDetails?.topic || "N/A"}
-          marketingAudienceSize={String(dashboardData.eventDetails?.marketing_audience || 0)}
-        />
-      </div>
 
       {/* Performance Metrics Section */}
       <SectionDivider title="Performance Metrics" />
@@ -530,7 +536,8 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
         <MarketingROICard roi={roi} totalIncome={totalIncome} totalCost={totalExpenses} />
       </div>
 
-      {/* Conversion metrics */}
+      {/* Conversion metrics - Seminar/Other only */}
+      {isSeminarOrOther && (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Updated Conversion Efficiency Card */}
         <ConversionEfficiencyCard
@@ -555,6 +562,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           />
         </motion.div>
       </div>
+      )}
 
       {/* Plate Lickers Card */}
       {/* <div className="grid grid-cols-1 gap-6">
@@ -569,6 +577,71 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           />
         </motion.div>
       </div> */}
+
+      {/* Cultivation / Referral metrics card - same data as analytics cultivation card */}
+      {!isSeminarOrOther && (
+        <>
+        <SectionDivider title={canonicalEventType === "Current Clients / Cultivation" ? "Cultivation Metrics" : "Referral Metrics"} />
+        <div className="grid grid-cols-1 gap-6">
+          <div className="rounded-xl border border-m8bs-border bg-m8bs-card p-6 space-y-4">
+            <p className="text-xs text-m8bs-muted">
+              {canonicalEventType === "Current Clients / Cultivation"
+                ? "Client touch and cultivation activity for this event."
+                : "Referral activity — track outcomes in financial sections below."}
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {canonicalEventType === "Current Clients / Cultivation" && (
+                <>
+                  <div className="bg-m8bs-card-alt/50 rounded-lg p-3 border border-m8bs-border/50">
+                    <p className="text-m8bs-muted text-xs font-medium mb-0.5">Activity type</p>
+                    <p className="text-white font-semibold">
+                      {dashboardData.eventDetails?.cultivation_activity_type?.trim() || "—"}
+                    </p>
+                  </div>
+                  <div className="bg-m8bs-card-alt/50 rounded-lg p-3 border border-m8bs-border/50">
+                    <p className="text-m8bs-muted text-xs font-medium mb-0.5">Client touches</p>
+                    <p className="text-white font-semibold">
+                      {dashboardData.eventDetails?.cultivation_client_touches != null
+                        ? (Number.isFinite(Number(dashboardData.eventDetails.cultivation_client_touches))
+                            ? Number(dashboardData.eventDetails.cultivation_client_touches)
+                            : "—")
+                        : "—"}
+                    </p>
+                  </div>
+                </>
+              )}
+              <div className="bg-m8bs-card-alt/50 rounded-lg p-3 border border-m8bs-border/50">
+                <p className="text-m8bs-muted text-xs font-medium mb-0.5">Revenue</p>
+                <p className="text-white font-semibold">{formatCurrency(totalIncome)}</p>
+              </div>
+              <div className="bg-m8bs-card-alt/50 rounded-lg p-3 border border-m8bs-border/50">
+                <p className="text-m8bs-muted text-xs font-medium mb-0.5">Expenses</p>
+                <p className="text-white font-semibold">{formatCurrency(totalExpenses)}</p>
+              </div>
+              <div className="bg-m8bs-card-alt/50 rounded-lg p-3 border border-m8bs-border/50 sm:col-span-2 sm:col-start-1">
+                <p className="text-m8bs-muted text-xs font-medium mb-0.5">ROI</p>
+                <p className={`font-semibold ${roi > 0 ? "text-green-400" : roi < 0 ? "text-red-400" : "text-white"}`}>
+                  {roi === 9999 ? "999%+" : `${roi}%`}
+                </p>
+              </div>
+            </div>
+            {canonicalEventType === "Current Clients / Cultivation" && (
+              <div className="pt-2 border-t border-m8bs-border/50">
+                <p className="text-m8bs-muted text-xs font-medium mb-1">Notes</p>
+                <p className="text-white text-sm whitespace-pre-wrap">
+                  {dashboardData.eventDetails?.cultivation_notes?.trim() || "—"}
+                </p>
+              </div>
+            )}
+            {canonicalEventType === "Referrals" && (
+              <p className="text-sm text-m8bs-muted pt-2 border-t border-m8bs-border/50">
+                Track referral source, number of referrals, meetings set, and conversions in the financial sections below.
+              </p>
+            )}
+          </div>
+        </div>
+        </>
+      )}
 
       {/* Financial Section */}
       <SectionDivider title="Financial Performance" />
@@ -675,7 +748,9 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
         </motion.div>
       </div>
 
-      {/* Client Acquisition Section */}
+      {/* Client Acquisition Section - Seminar/Other only */}
+      {isSeminarOrOther && (
+      <>
       <SectionDivider title="Client Acquisition" />
 
       {/* Client Acquisition Cost */}
@@ -694,8 +769,12 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           />
         </motion.div>
       </div>
+      </>
+      )}
 
-      {/* Appointment Insights Section */}
+      {/* Appointment Insights Section - Seminar/Other only */}
+      {isSeminarOrOther && (
+      <>
       <SectionDivider title="Appointment Insights" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -728,11 +807,16 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           />
         </motion.div>
       </div>
+      </>
+      )}
         </TabsContent>
 
         <TabsContent value="clients" className="space-y-6">
           {selectedEventId ? (
-            <ClientClosedList eventId={selectedEventId} />
+            <ClientClosedList
+              eventId={selectedEventId}
+              onClientsChange={() => loadEventData(selectedEventId)}
+            />
           ) : (
             <div className="text-center py-12 text-m8bs-muted">
               <p>Please select an event to view client tracking.</p>

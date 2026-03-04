@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth-provider"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { createClient } from "@/lib/supabase/client"
 import { fetchAllEvents } from "@/lib/data"
+import { getCanonicalEventType } from "@/lib/event-types"
 import { aggregateEventDataByMonth, recalculateMonthlyEntryFromEvents } from "@/lib/client-tracking"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
@@ -336,7 +337,7 @@ export default function Overview() {
           name: event.name,
           date: event.date,
           location: event.location,
-          type: event.marketing_type || 'Other',
+          type: getCanonicalEventType(event.marketing_type),
           topic: event.topic || 'N/A',
           revenue,
           expenses,
@@ -817,7 +818,14 @@ export default function Overview() {
                             {index + 1}
                           </div>
                           <div>
-                            <div className="font-semibold text-white">{event.name}</div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-white">{event.name}</span>
+                              {event.type && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-m8bs-blue/20 text-m8bs-blue border border-m8bs-blue/30">
+                                  {event.type}
+                                </span>
+                              )}
+                            </div>
                             <div className="text-sm text-m8bs-muted">
                               {event.date ? (() => {
                                 try {
@@ -1312,7 +1320,14 @@ export default function Overview() {
                           <Calendar className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white truncate">{event.name}</p>
+                          <p className="text-sm font-medium text-white truncate flex items-center gap-1.5 flex-wrap">
+                            {event.name}
+                            {event.type && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-m8bs-blue/20 text-m8bs-blue border border-m8bs-blue/30 shrink-0">
+                                {event.type}
+                              </span>
+                            )}
+                          </p>
                           <p className="text-xs text-m8bs-muted">
                             {event.date ? (() => {
                               try {

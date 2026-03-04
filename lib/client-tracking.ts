@@ -5,6 +5,8 @@ import { advisorBasecampService } from "@/lib/advisor-basecamp"
 import type { User } from "@supabase/supabase-js"
 import { logger } from "@/lib/logger"
 
+export type ClientSource = "new" | "current_book" | "referral"
+
 export interface EventClient {
   id?: string
   event_id: string
@@ -21,6 +23,7 @@ export interface EventClient {
   aum_fees: number
   financial_planning_fee: number
   notes?: string | null
+  client_source?: ClientSource | null
   created_at?: string
   updated_at?: string
 }
@@ -40,6 +43,7 @@ export interface EventClientInsert {
   aum_fees?: number
   financial_planning_fee?: number
   notes?: string | null
+  client_source?: ClientSource | null
 }
 
 export interface EventClientUpdate {
@@ -56,6 +60,7 @@ export interface EventClientUpdate {
   aum_fees?: number
   financial_planning_fee?: number
   notes?: string | null
+  client_source?: ClientSource | null
 }
 
 export interface AggregatedEventData {
@@ -65,6 +70,7 @@ export interface AggregatedEventData {
   aum_sales: number
   life_sales: number
   new_clients: number
+  current_book_closes: number
   client_names: string[]
 }
 
@@ -197,6 +203,7 @@ export async function addClient(clientData: EventClientInsert): Promise<EventCli
         aum_amount: clientData.aum_amount || 0,
         aum_fees: clientData.aum_fees || 0,
         financial_planning_fee: clientData.financial_planning_fee || 0,
+        client_source: clientData.client_source ?? "new",
       })
       .select()
       .single()
@@ -383,7 +390,8 @@ export async function syncClientToMonthlyEntry(
         aum_fees,
         financial_planning_fee,
         notes,
-        event_id
+        event_id,
+        client_source
       `)
       .gte("close_date", startDate)
       .lte("close_date", endDate)
@@ -394,16 +402,21 @@ export async function syncClientToMonthlyEntry(
       return
     }
 
+    const clientList = allClients || []
+    const newCount = clientList.filter((c: any) => (c.client_source || "new").toString().toLowerCase() !== "current_book").length
+    const currentBookCount = clientList.filter((c: any) => (c.client_source || "").toString().toLowerCase() === "current_book").length
+
     // Aggregate the data
     const aggregated = {
-      new_clients: allClients?.length || 0,
-      annuity_sales: allClients?.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0) || 0,
-      aum_sales: allClients?.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0) || 0,
-      life_sales: allClients?.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0) || 0,
+      new_clients: newCount,
+      current_book_closes: currentBookCount,
+      annuity_sales: clientList.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0) || 0,
+      aum_sales: clientList.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0) || 0,
+      life_sales: clientList.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0) || 0,
     }
 
     // Build client names and notes list
-    const clientEntries = allClients?.map((c: any) => {
+    const clientEntries = clientList.map((c: any) => {
       const parts = [c.client_name]
       if (c.notes) {
         parts.push(`(${c.notes})`)
@@ -443,28 +456,29 @@ export async function syncClientToMonthlyEntry(
     // This prevents overwriting manual entries with event data, but populates from events when appropriate
     // Convert existing values to numbers to handle string "0" cases
     const existingNewClients = Number(existingEntry?.new_clients || 0)
+    const existingCurrentBookCloses = Number((existingEntry as any)?.current_book_closes ?? 0)
     const existingAnnuitySales = parseFloat(String(existingEntry?.annuity_sales || 0)) || 0
     const existingAumSales = parseFloat(String(existingEntry?.aum_sales || 0)) || 0
     const existingLifeSales = parseFloat(String(existingEntry?.life_sales || 0)) || 0
-    
+
     const entryData = {
       month_year,
-      // Use aggregated data if no existing entry or if existing value is 0 (no manual entry)
-      // Check if value is > 0 to determine if it's a manual entry
-      new_clients: (existingEntry && existingNewClients > 0) 
-        ? existingNewClients 
+      new_clients: (existingEntry && existingNewClients > 0)
+        ? existingNewClients
         : aggregated.new_clients,
+      current_book_closes: (existingEntry && existingCurrentBookCloses > 0)
+        ? existingCurrentBookCloses
+        : aggregated.current_book_closes,
       new_appointments: Number(existingEntry?.new_appointments || 0) || 0,
       new_leads: Number(existingEntry?.new_leads || 0) || 0,
-      // Use aggregated data if no existing entry or if existing value is 0 (no manual entry)
-      annuity_sales: (existingEntry && existingAnnuitySales > 0) 
-        ? existingAnnuitySales 
+      annuity_sales: (existingEntry && existingAnnuitySales > 0)
+        ? existingAnnuitySales
         : aggregated.annuity_sales,
-      aum_sales: (existingEntry && existingAumSales > 0) 
-        ? existingAumSales 
+      aum_sales: (existingEntry && existingAumSales > 0)
+        ? existingAumSales
         : aggregated.aum_sales,
-      life_sales: (existingEntry && existingLifeSales > 0) 
-        ? existingLifeSales 
+      life_sales: (existingEntry && existingLifeSales > 0)
+        ? existingLifeSales
         : aggregated.life_sales,
       marketing_expenses: parseFloat(String(existingEntry?.marketing_expenses || 0)) || 0,
       notes: notesText || undefined
@@ -544,8 +558,12 @@ export async function recalculateMonthlyEntryFromEvents(
       updated_at: new Date().toISOString()
     }
     
+    const existingCurrentBookCloses = Number((existingEntry as any)?.current_book_closes ?? 0)
     if (existingNewClients === 0 && eventData.new_clients > 0) {
       updateData.new_clients = eventData.new_clients
+    }
+    if (existingCurrentBookCloses === 0 && eventData.current_book_closes > 0) {
+      updateData.current_book_closes = eventData.current_book_closes
     }
     if (existingAnnuitySales === 0 && eventData.annuity_sales > 0) {
       updateData.annuity_sales = eventData.annuity_sales
@@ -646,14 +664,17 @@ export async function aggregateEventDataByMonth(
     }
 
     // Client data (sales/commissions): by close_date so they go to the month closed in basecamp monthly tab
+    // Split by client_source: new = new clients, current_book = business from current book (existing clients)
     let annuity_sales = 0
     let aum_sales = 0
     let life_sales = 0
+    let new_clients = 0
+    let current_book_closes = 0
     let client_names: string[] = []
     if (allEventIds.length > 0) {
       const { data: clients, error: clientsError } = await supabase
         .from("event_clients")
-        .select("client_name, annuity_premium, life_insurance_premium, aum_amount")
+        .select("client_name, annuity_premium, life_insurance_premium, aum_amount, client_source")
         .in("event_id", allEventIds)
         .gte("close_date", monthStart)
         .lte("close_date", monthEnd)
@@ -664,8 +685,12 @@ export async function aggregateEventDataByMonth(
       aum_sales = clientList.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0)
       life_sales = clientList.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0)
       client_names = Array.from(new Set(clientList.map((c: any) => c.client_name).filter(Boolean))) as string[]
+      clientList.forEach((c: any) => {
+        const source = (c.client_source || "new").toLowerCase()
+        if (source === "current_book") current_book_closes += 1
+        else new_clients += 1
+      })
     }
-    const new_clients = client_names.length
 
     return {
       appointments_booked,
@@ -674,6 +699,7 @@ export async function aggregateEventDataByMonth(
       aum_sales,
       life_sales,
       new_clients,
+      current_book_closes,
       client_names
     }
   } catch (error) {

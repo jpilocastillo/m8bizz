@@ -18,6 +18,7 @@ interface Event {
   name: string
   date: string
   location: string
+  marketing_type?: string
 }
 
 interface EventSelectorProps {
@@ -67,7 +68,12 @@ export function EventSelector({ events, selectedEventId, onSelect, isLoading = f
         >
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Calendar className="mr-2 h-4 w-4" />}
           {selectedEvent ? (
-            <span className="flex-1 text-left mr-2 truncate">{selectedEvent.name}</span>
+            <span className="flex-1 text-left mr-2 truncate">
+              {selectedEvent.name}
+              {selectedEvent.marketing_type && (
+                <span className="ml-1.5 text-xs text-gray-400 font-normal">({selectedEvent.marketing_type})</span>
+              )}
+            </span>
           ) : (
             <span className="flex-1 text-left mr-2">Select Event</span>
           )}
@@ -94,6 +100,9 @@ export function EventSelector({ events, selectedEventId, onSelect, isLoading = f
                 <div className="text-xs text-gray-400 flex items-center gap-2">
                   <Calendar className="h-3 w-3" />
                   {formatEventDate(event.date)} • {event.location}
+                  {event.marketing_type && (
+                    <span className="text-m8bs-blue/80">• {event.marketing_type}</span>
+                  )}
                 </div>
               </DropdownMenuItem>
             ))

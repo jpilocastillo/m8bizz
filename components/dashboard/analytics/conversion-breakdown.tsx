@@ -232,7 +232,7 @@ export const ConversionBreakdown = memo(function ConversionBreakdown({
           Conversion Funnel
         </CardTitle>
         <p className="text-xs text-m8bs-muted mt-0.5">
-          Complete journey from registrants to clients with detailed metrics
+          Seminar/workshop funnel: registrants to clients with detailed metrics
         </p>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col overflow-hidden">
