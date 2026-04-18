@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type ScorecardRole = string
 
@@ -62,15 +63,298 @@ export interface CompanySummary {
   roleScorecards: RoleScorecard[]
 }
 
-export type PeriodType = 'month' | 'quarter' | 'year'
+export type PeriodType = 'month' | 'quarter' | 'semiAnnual' | 'year'
 
 export interface MonthlyScorecardData {
   month?: number
   quarter?: number
+  semiAnnual?: number
   year: number
   periodType: PeriodType
   roleScorecards: RoleScorecard[]
   companySummary: CompanySummary
+}
+
+/** 4-week buckets per month (matches weekly data entry). */
+function monthWeekRange(month: number): { start: number; end: number } {
+  const start = (month - 1) * 4 + 1
+  return { start, end: start + 3 }
+}
+
+/** Same rules as calculateMonthlySummary / getMonthlyScorecard weekly fallback. */
+export function computeMonthlyActualFromWeeklyData(
+  month: number,
+  metricType: MetricType,
+  weekMap: Map<number, number> | undefined
+): { value: number; hasData: boolean } {
+  const monthStartWeek = (month - 1) * 4 + 1
+  const m = weekMap || new Map()
+  const week1Value = m.get(monthStartWeek) ?? 0
+  const week2Value = m.get(monthStartWeek + 1) ?? 0
+  const week3Value = m.get(monthStartWeek + 2) ?? 0
+  const week4Value = m.get(monthStartWeek + 3) ?? 0
+  const hasWeek1Data = m.has(monthStartWeek)
+  const hasWeek2Data = m.has(monthStartWeek + 1)
+  const hasWeek3Data = m.has(monthStartWeek + 2)
+  const hasWeek4Data = m.has(monthStartWeek + 3)
+  if (!hasWeek1Data && !hasWeek2Data && !hasWeek3Data && !hasWeek4Data) {
+    return { value: 0, hasData: false }
+  }
+  let value = 0
+  if (hasWeek1Data && (!hasWeek2Data || week2Value === 0) && (!hasWeek3Data || week3Value === 0) && (!hasWeek4Data || week4Value === 0)) {
+    value = week1Value
+  } else if (hasWeek1Data || hasWeek2Data || hasWeek3Data || hasWeek4Data) {
+    const totalActual = week1Value + week2Value + week3Value + week4Value
+    value =
+      metricType === 'rating_1_5' || metricType === 'rating_scale'
+        ? totalActual / 4
+        : totalActual
+  }
+  return { value, hasData: true }
+}
+
+/** Ratings, inverted metrics, and level-style %/time use a monthly average across the period; counts/currency sum. */
+function shouldAverageMonthlyActualsAcrossPeriod(metric: { metric_type: string; is_inverted: boolean }): boolean {
+  const t = metric.metric_type as MetricType
+  if (t === 'rating_1_5' || t === 'rating_scale') return true
+  if (metric.is_inverted) return true
+  if (t === 'percentage' || t === 'time') return true
+  return false
+}
+
+export type AggregatedPeriodType = 'quarter' | 'semiAnnual' | 'year'
+
+/**
+ * Shared quarterly / semi-annual / yearly aggregation with weekly-data fallback when monthly summaries are missing.
+ */
+export async function buildAggregatedScorecardPeriod(
+  supabase: SupabaseClient,
+  userId: string,
+  options: {
+    year: number
+    months: number[]
+    periodType: AggregatedPeriodType
+    quarter?: number
+    semiAnnual?: number
+  }
+): Promise<{ success: boolean; data?: MonthlyScorecardData; error?: string }> {
+  try {
+    const year = options.year
+    const months = [...new Set(options.months)].sort((a, b) => a - b)
+    if (months.length === 0) {
+      return { success: false, error: 'No months in period' }
+    }
+
+    const { data: roles } = await supabase
+      .from('scorecard_roles')
+      .select('id, role_name, person_name')
+      .eq('user_id', userId)
+      .order('role_name', { ascending: true })
+
+    if (!roles || roles.length === 0) {
+      const empty: MonthlyScorecardData = {
+        year,
+        periodType: options.periodType === 'quarter' ? 'quarter' : options.periodType === 'semiAnnual' ? 'semiAnnual' : 'year',
+        quarter: options.quarter,
+        semiAnnual: options.semiAnnual,
+        roleScorecards: [],
+        companySummary: { companyAverage: 0, companyGrade: 'F', roleScorecards: [] },
+      }
+      return { success: true, data: empty }
+    }
+
+    const roleIds = roles.map((r: { id: string }) => r.id)
+    const { data: allMetrics } = await supabase
+      .from('scorecard_metrics')
+      .select('*')
+      .in('role_id', roleIds)
+      .order('display_order', { ascending: true })
+
+    const metricsByRole = new Map<string, NonNullable<typeof allMetrics>>()
+    if (allMetrics) {
+      allMetrics.forEach((metric: { role_id: string }) => {
+        if (!metricsByRole.has(metric.role_id)) metricsByRole.set(metric.role_id, [])
+        metricsByRole.get(metric.role_id)!.push(metric)
+      })
+    }
+
+    const metricIds = allMetrics?.map((m: { id: string }) => m.id) || []
+
+    const { data: allSummaries } = await supabase
+      .from('scorecard_monthly_summaries')
+      .select('id, role_id, month')
+      .in('role_id', roleIds)
+      .in('month', months)
+      .eq('year', year)
+
+    const summaryKey = (roleId: string, month: number) => `${roleId}_${month}`
+    const summariesByRoleMonth = new Map<string, { id: string }>()
+    if (allSummaries) {
+      allSummaries.forEach((s: { id: string; role_id: string; month: number }) => {
+        summariesByRoleMonth.set(summaryKey(s.role_id, s.month), { id: s.id })
+      })
+    }
+
+    const summaryIds = allSummaries?.map((s: { id: string }) => s.id) || []
+    const scoresBySummaryMetric = new Map<string, number>()
+    if (summaryIds.length > 0 && metricIds.length > 0) {
+      const { data: allScores } = await supabase
+        .from('scorecard_metric_scores')
+        .select('monthly_summary_id, metric_id, actual_value')
+        .in('monthly_summary_id', summaryIds)
+        .in('metric_id', metricIds)
+
+      allScores?.forEach((row: { monthly_summary_id: string; metric_id: string; actual_value: number }) => {
+        scoresBySummaryMetric.set(`${row.monthly_summary_id}_${row.metric_id}`, Number(row.actual_value))
+      })
+    }
+
+    const minMonth = months[0]
+    const maxMonth = months[months.length - 1]
+    const minWeek = monthWeekRange(minMonth).start
+    const maxWeek = monthWeekRange(maxMonth).end
+
+    const weeklyByMetric = new Map<string, Map<number, number>>()
+    if (metricIds.length > 0) {
+      const { data: weeklyRows, error: weeklyErr } = await supabase
+        .from('scorecard_weekly_data')
+        .select('metric_id, week_number, actual_value')
+        .in('metric_id', metricIds)
+        .eq('year', year)
+        .gte('week_number', minWeek)
+        .lte('week_number', maxWeek)
+
+      if (weeklyErr) {
+        logger.error('[buildAggregatedScorecardPeriod] weekly data:', weeklyErr)
+      } else if (weeklyRows) {
+        weeklyRows.forEach((wd: { metric_id: string; week_number: number; actual_value: number }) => {
+          if (!weeklyByMetric.has(wd.metric_id)) weeklyByMetric.set(wd.metric_id, new Map())
+          weeklyByMetric.get(wd.metric_id)!.set(wd.week_number, Number(wd.actual_value))
+        })
+      }
+    }
+
+    const resolveMonthlyActual = (
+      roleId: string,
+      metric: NonNullable<typeof allMetrics>[0],
+      month: number
+    ): { value: number; hasData: boolean } => {
+      const s = summariesByRoleMonth.get(summaryKey(roleId, month))
+      if (s) {
+        const stored = scoresBySummaryMetric.get(`${s.id}_${metric.id}`)
+        if (stored !== undefined && !Number.isNaN(stored)) {
+          return { value: stored, hasData: true }
+        }
+      }
+      const weekMap = weeklyByMetric.get(metric.id)
+      return computeMonthlyActualFromWeeklyData(month, metric.metric_type as MetricType, weekMap)
+    }
+
+    const roleScorecards: RoleScorecard[] = []
+    const roleAverages: number[] = []
+    const periodMonthCount = months.length
+
+    for (const role of roles) {
+      const metrics = metricsByRole.get(role.id) || []
+      if (metrics.length === 0) continue
+
+      const metricScores: MetricScore[] = []
+      const percentages: number[] = []
+
+      for (const metric of metrics) {
+        const goalValue = Number(metric.goal_value)
+        const useAverage = shouldAverageMonthlyActualsAcrossPeriod(metric)
+
+        const monthlyResolved = months.map((m) => resolveMonthlyActual(role.id, metric, m))
+        const withData = monthlyResolved.filter((x) => x.hasData)
+
+        let actualValue = 0
+        if (useAverage) {
+          actualValue =
+            withData.length > 0
+              ? withData.reduce((sum, x) => sum + x.value, 0) / withData.length
+              : 0
+        } else {
+          actualValue = monthlyResolved.reduce((sum, x) => sum + (x.hasData ? x.value : 0), 0)
+        }
+
+        const periodGoal = useAverage ? goalValue : goalValue * periodMonthCount
+
+        const percentageOfGoal = calculatePercentageOfGoal(actualValue, periodGoal, metric.is_inverted)
+        const grade = calculateGrade(percentageOfGoal)
+
+        metricScores.push({
+          metricId: metric.id,
+          metricName: metric.metric_name,
+          metricType: metric.metric_type as MetricType,
+          goalValue: periodGoal,
+          actualValue,
+          percentageOfGoal,
+          grade,
+        })
+        percentages.push(percentageOfGoal)
+      }
+
+      const averageGradePercentage =
+        percentages.length > 0 ? percentages.reduce((sum, p) => sum + p, 0) / percentages.length : 0
+      const averageGrade = calculateGrade(averageGradePercentage)
+
+      if (isFinite(averageGradePercentage) && !isNaN(averageGradePercentage)) {
+        roleAverages.push(averageGradePercentage)
+      }
+
+      const separatedScores = calculateSeparateScores(metricScores)
+      roleScorecards.push({
+        roleId: role.id,
+        roleName: role.role_name as ScorecardRole,
+        personName: role.person_name || null,
+        metrics: metricScores,
+        averageGradePercentage,
+        averageGrade,
+        defaultMetrics: separatedScores.defaultMetrics,
+        defaultMetricsAverage: separatedScores.defaultAverage,
+        defaultMetricsGrade: separatedScores.defaultGrade,
+        userMetrics: separatedScores.userMetrics,
+        userMetricsAverage: separatedScores.userAverage,
+        userMetricsGrade: separatedScores.userGrade,
+        combinedAverage: separatedScores.combinedAverage,
+        combinedGrade: separatedScores.combinedGrade,
+      })
+    }
+
+    const validRoleAverages = roleAverages.filter((avg) => isFinite(avg) && !isNaN(avg))
+    const companyAverage =
+      validRoleAverages.length > 0
+        ? validRoleAverages.reduce((sum, avg) => sum + avg, 0) / validRoleAverages.length
+        : 0
+    const companyGrade = calculateGrade(companyAverage)
+
+    const pt: PeriodType =
+      options.periodType === 'quarter'
+        ? 'quarter'
+        : options.periodType === 'semiAnnual'
+          ? 'semiAnnual'
+          : 'year'
+
+    return {
+      success: true,
+      data: {
+        year,
+        periodType: pt,
+        quarter: options.quarter,
+        semiAnnual: options.semiAnnual,
+        roleScorecards,
+        companySummary: {
+          companyAverage,
+          companyGrade,
+          roleScorecards,
+        },
+      },
+    }
+  } catch (error) {
+    logger.error('Error in buildAggregatedScorecardPeriod:', error)
+    return { success: false, error: 'Failed to build aggregated scorecard' }
+  }
 }
 
 // Default metrics configuration based on Excel structure
@@ -1179,7 +1463,7 @@ export class BehaviorScorecardService {
     return [(quarter - 1) * 3 + 1, (quarter - 1) * 3 + 2, (quarter - 1) * 3 + 3]
   }
 
-  // Get scorecard data for a period (month, quarter, or year)
+  // Get scorecard data for a period (month, quarter, semi-annual, or year)
   async getScorecardData(
     periodType: PeriodType,
     monthOrQuarter: number,
@@ -1189,6 +1473,8 @@ export class BehaviorScorecardService {
       return this.getMonthlyScorecard(monthOrQuarter, year)
     } else if (periodType === 'quarter') {
       return this.getQuarterlyScorecard(monthOrQuarter, year)
+    } else if (periodType === 'semiAnnual') {
+      return this.getSemiAnnualScorecard(monthOrQuarter, year)
     } else {
       return this.getYearlyScorecard(year)
     }
@@ -1738,7 +2024,7 @@ export class BehaviorScorecardService {
     }
   }
 
-  // Get quarterly scorecard data
+  // Get quarterly scorecard data (uses shared aggregation + weekly fallback)
   async getQuarterlyScorecard(
     quarter: number,
     year: number
@@ -1746,293 +2032,71 @@ export class BehaviorScorecardService {
     try {
       const supabase = this.getSupabase()
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (!user) {
         return { success: false, error: 'User not authenticated' }
       }
 
       const months = this.getMonthsInQuarter(quarter)
-      const roleScorecards: RoleScorecard[] = []
-      const roleAverages: number[] = []
-
-      // Get all roles
-      const { data: roles } = await supabase
-        .from('scorecard_roles')
-        .select('id, role_name, person_name')
-        .eq('user_id', user.id)
-        .order('role_name', { ascending: true })
-
-      if (!roles || roles.length === 0) {
-        return { success: true, data: { quarter, year, periodType: 'quarter' as PeriodType, roleScorecards: [], companySummary: { companyAverage: 0, companyGrade: 'F', roleScorecards: [] } } }
-      }
-
-        // Aggregate data for each role across the quarter
-        for (const role of roles) {
-          const { data: metrics } = await supabase
-            .from('scorecard_metrics')
-            .select('*')
-            .eq('role_id', role.id)
-            .order('display_order', { ascending: true })
-
-        if (!metrics || metrics.length === 0) continue
-
-        const metricScores: MetricScore[] = []
-        const percentages: number[] = []
-
-        // Aggregate data for each metric across all months in the quarter
-        for (const metric of metrics) {
-          let totalActual = 0
-          let monthCount = 0
-          const goalValue = Number(metric.goal_value)
-
-          // Sum or average across all months in the quarter
-          for (const month of months) {
-            const { data: summary } = await supabase
-              .from('scorecard_monthly_summaries')
-              .select('id')
-              .eq('role_id', role.id)
-              .eq('month', month)
-              .eq('year', year)
-              .maybeSingle()
-
-            if (summary) {
-              const { data: metricScore } = await supabase
-                .from('scorecard_metric_scores')
-                .select('actual_value')
-                .eq('monthly_summary_id', summary.id)
-                .eq('metric_id', metric.id)
-                .maybeSingle()
-
-              if (metricScore) {
-                totalActual += Number(metricScore.actual_value)
-                monthCount++
-              }
-            }
-          }
-
-          // For ratings, average across months; for others, sum
-          const actualValue = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
-            ? (monthCount > 0 ? totalActual / monthCount : 0)
-            : totalActual
-
-          // For quarterly goals, multiply monthly goal by 3 (or use average for ratings)
-          const quarterlyGoal = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
-            ? goalValue
-            : goalValue * 3
-
-          const percentageOfGoal = calculatePercentageOfGoal(actualValue, quarterlyGoal, metric.is_inverted)
-          const grade = calculateGrade(percentageOfGoal)
-
-          metricScores.push({
-            metricId: metric.id,
-            metricName: metric.metric_name,
-            metricType: metric.metric_type as MetricType,
-            goalValue: quarterlyGoal,
-            actualValue,
-            percentageOfGoal,
-            grade,
-          })
-
-          percentages.push(percentageOfGoal)
-        }
-
-        const averageGradePercentage = percentages.length > 0
-          ? percentages.reduce((sum, p) => sum + p, 0) / percentages.length
-          : 0
-        const averageGrade = calculateGrade(averageGradePercentage)
-
-        roleAverages.push(averageGradePercentage)
-
-        const separatedScores = calculateSeparateScores(metricScores)
-        roleScorecards.push({
-          roleId: role.id,
-          roleName: role.role_name as ScorecardRole,
-          personName: role.person_name || null,
-          metrics: metricScores,
-          averageGradePercentage,
-          averageGrade,
-          defaultMetrics: separatedScores.defaultMetrics,
-          defaultMetricsAverage: separatedScores.defaultAverage,
-          defaultMetricsGrade: separatedScores.defaultGrade,
-          userMetrics: separatedScores.userMetrics,
-          userMetricsAverage: separatedScores.userAverage,
-          userMetricsGrade: separatedScores.userGrade,
-          combinedAverage: separatedScores.combinedAverage,
-          combinedGrade: separatedScores.combinedGrade,
-        })
-      }
-
-      // Calculate company summary
-      // Filter out Infinity and NaN values
-      const validRoleAverages = roleAverages.filter(avg => isFinite(avg) && !isNaN(avg))
-      const companyAverage = validRoleAverages.length > 0
-        ? validRoleAverages.reduce((sum, avg) => sum + avg, 0) / validRoleAverages.length
-        : 0
-      const companyGrade = calculateGrade(companyAverage)
-
-      return {
-        success: true,
-        data: {
-          quarter,
-          year,
-          periodType: 'quarter' as PeriodType,
-          roleScorecards,
-          companySummary: {
-            companyAverage,
-            companyGrade,
-            roleScorecards,
-          },
-        },
-      }
+      return buildAggregatedScorecardPeriod(supabase, user.id, {
+        year,
+        months,
+        periodType: 'quarter',
+        quarter,
+      })
     } catch (error) {
       logger.error('Error fetching quarterly scorecard:', error)
       return { success: false, error: 'Failed to fetch quarterly scorecard' }
     }
   }
 
-  // Get yearly scorecard data
+  // Semi-annual: half 1 = Jan–Jun, half 2 = Jul–Dec
+  async getSemiAnnualScorecard(
+    half: number,
+    year: number
+  ): Promise<{ success: boolean; data?: MonthlyScorecardData; error?: string }> {
+    try {
+      const supabase = this.getSupabase()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      if (half !== 1 && half !== 2) {
+        return { success: false, error: 'Semi-annual period must be 1 (H1) or 2 (H2)' }
+      }
+      const months = half === 1 ? [1, 2, 3, 4, 5, 6] : [7, 8, 9, 10, 11, 12]
+      return buildAggregatedScorecardPeriod(supabase, user.id, {
+        year,
+        months,
+        periodType: 'semiAnnual',
+        semiAnnual: half,
+      })
+    } catch (error) {
+      logger.error('Error fetching semi-annual scorecard:', error)
+      return { success: false, error: 'Failed to fetch semi-annual scorecard' }
+    }
+  }
+
+  // Get yearly scorecard data (uses shared aggregation + weekly fallback)
   async getYearlyScorecard(
     year: number
   ): Promise<{ success: boolean; data?: MonthlyScorecardData; error?: string }> {
     try {
       const supabase = this.getSupabase()
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (!user) {
         return { success: false, error: 'User not authenticated' }
       }
 
-      const roleScorecards: RoleScorecard[] = []
-      const roleAverages: number[] = []
-
-      // Get all roles
-      const { data: roles } = await supabase
-        .from('scorecard_roles')
-        .select('id, role_name, person_name')
-        .eq('user_id', user.id)
-        .order('role_name', { ascending: true })
-
-      if (!roles || roles.length === 0) {
-        return { success: true, data: { year, periodType: 'year' as PeriodType, roleScorecards: [], companySummary: { companyAverage: 0, companyGrade: 'F', roleScorecards: [] } } }
-      }
-
-      // Aggregate data for each role across the year
-      for (const role of roles) {
-        const { data: metrics } = await supabase
-          .from('scorecard_metrics')
-          .select('*')
-          .eq('role_id', role.id)
-          .order('display_order', { ascending: true })
-
-        if (!metrics || metrics.length === 0) continue
-
-        const metricScores: MetricScore[] = []
-        const percentages: number[] = []
-
-        // Aggregate data for each metric across all months in the year
-        for (const metric of metrics) {
-          let totalActual = 0
-          let monthCount = 0
-          const goalValue = Number(metric.goal_value)
-
-          // Sum or average across all 12 months
-          for (let month = 1; month <= 12; month++) {
-            const { data: summary } = await supabase
-              .from('scorecard_monthly_summaries')
-              .select('id')
-              .eq('role_id', role.id)
-              .eq('month', month)
-              .eq('year', year)
-              .maybeSingle()
-
-            if (summary) {
-              const { data: metricScore } = await supabase
-                .from('scorecard_metric_scores')
-                .select('actual_value')
-                .eq('monthly_summary_id', summary.id)
-                .eq('metric_id', metric.id)
-                .maybeSingle()
-
-              if (metricScore) {
-                totalActual += Number(metricScore.actual_value)
-                monthCount++
-              }
-            }
-          }
-
-          // For ratings, average across months; for others, sum
-          const actualValue = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
-            ? (monthCount > 0 ? totalActual / monthCount : 0)
-            : totalActual
-
-          // For yearly goals, multiply monthly goal by 12 (or use average for ratings)
-          const yearlyGoal = metric.metric_type === 'rating_1_5' || metric.metric_type === 'rating_scale'
-            ? goalValue
-            : goalValue * 12
-
-          const percentageOfGoal = calculatePercentageOfGoal(actualValue, yearlyGoal, metric.is_inverted)
-          const grade = calculateGrade(percentageOfGoal)
-
-          metricScores.push({
-            metricId: metric.id,
-            metricName: metric.metric_name,
-            metricType: metric.metric_type as MetricType,
-            goalValue: yearlyGoal,
-            actualValue,
-            percentageOfGoal,
-            grade,
-          })
-
-          percentages.push(percentageOfGoal)
-        }
-
-        const averageGradePercentage = percentages.length > 0
-          ? percentages.reduce((sum, p) => sum + p, 0) / percentages.length
-          : 0
-        const averageGrade = calculateGrade(averageGradePercentage)
-
-        roleAverages.push(averageGradePercentage)
-
-        const separatedScores = calculateSeparateScores(metricScores)
-        roleScorecards.push({
-          roleId: role.id,
-          roleName: role.role_name as ScorecardRole,
-          personName: role.person_name || null,
-          metrics: metricScores,
-          averageGradePercentage,
-          averageGrade,
-          defaultMetrics: separatedScores.defaultMetrics,
-          defaultMetricsAverage: separatedScores.defaultAverage,
-          defaultMetricsGrade: separatedScores.defaultGrade,
-          userMetrics: separatedScores.userMetrics,
-          userMetricsAverage: separatedScores.userAverage,
-          userMetricsGrade: separatedScores.userGrade,
-          combinedAverage: separatedScores.combinedAverage,
-          combinedGrade: separatedScores.combinedGrade,
-        })
-      }
-
-      // Calculate company summary
-      // Filter out Infinity and NaN values
-      const validRoleAverages = roleAverages.filter(avg => isFinite(avg) && !isNaN(avg))
-      const companyAverage = validRoleAverages.length > 0
-        ? validRoleAverages.reduce((sum, avg) => sum + avg, 0) / validRoleAverages.length
-        : 0
-      const companyGrade = calculateGrade(companyAverage)
-
-      return {
-        success: true,
-        data: {
-          year,
-          periodType: 'year' as PeriodType,
-          roleScorecards,
-          companySummary: {
-            companyAverage,
-            companyGrade,
-            roleScorecards,
-          },
-        },
-      }
+      const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      return buildAggregatedScorecardPeriod(supabase, user.id, {
+        year,
+        months,
+        periodType: 'year',
+      })
     } catch (error) {
       logger.error('Error fetching yearly scorecard:', error)
       return { success: false, error: 'Failed to fetch yearly scorecard' }

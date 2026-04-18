@@ -461,7 +461,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
         </div>
 
         {/* Top Performing Events and Event Comparison - Side by Side */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
           <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
@@ -505,7 +505,7 @@ export function AnalyticsDashboard({ analyticsData }: AnalyticsDashboardProps) {
         </Card>
 
         {/* Monthly Summary and Performance Heatmap - Side by Side */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
 
           {/* Monthly Summary Card */}
           <Card className="bg-m8bs-card border-m8bs-card-alt shadow-lg flex flex-col h-full">

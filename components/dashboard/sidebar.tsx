@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { User as SupabaseUser, Session } from "@supabase/supabase-js"
 import { hasFullAccess, isPageVisible } from "@/lib/page-visibility"
+import { isBrandNewUser } from "@/lib/onboarding-eligibility"
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -154,7 +155,7 @@ export function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
-        <nav className="space-y-1 px-2">
+        <nav className="space-y-1 px-2" data-tour="tour-sidebar-nav">
           {/* Overview - Standalone */}
           {isPageVisible("/", user?.email || null) && (
             <Link
@@ -169,6 +170,25 @@ export function Sidebar() {
             >
               <LayoutDashboard className={cn("h-5 w-5 transition-transform duration-200", pathname === "/" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
               {!isCollapsed && <span>Overview</span>}
+            </Link>
+          )}
+
+          {user &&
+            isBrandNewUser(user) &&
+            isPageVisible("/getting-started", user?.email || null) && (
+            <Link
+              href="/getting-started"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 group",
+                pathname === "/getting-started"
+                  ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
+                  : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
+                isCollapsed && "justify-center px-2",
+              )}
+              title={isCollapsed ? "How it works" : undefined}
+            >
+              <HelpCircle className={cn("h-5 w-5 transition-transform duration-200", pathname === "/getting-started" ? "text-white" : "text-m8bs-muted group-hover:text-m8bs-blue")} />
+              {!isCollapsed && <span>How it works</span>}
             </Link>
           )}
 

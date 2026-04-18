@@ -94,7 +94,7 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
                   <div>
                     <CardTitle className="text-base font-bold text-white">Company Summary</CardTitle>
                     <CardDescription className="text-m8bs-muted text-xs">
-                      {companySummary.companyAverage.toFixed(1)}% Average
+                      {companySummary.companyAverage.toFixed(2)}% Average
                     </CardDescription>
                   </div>
                 </div>
@@ -118,7 +118,7 @@ export function CompanySummary({ companySummary }: CompanySummaryProps) {
               <div className="mb-3 space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-m8bs-muted font-medium">Overall Performance</span>
-                  <span className="text-white font-semibold">{companySummary.companyAverage.toFixed(1)}%</span>
+                  <span className="text-white font-semibold">{companySummary.companyAverage.toFixed(2)}%</span>
                 </div>
                 <div className="h-2.5 bg-m8bs-card-alt rounded-full overflow-hidden shadow-inner">
                   <div
@@ -197,7 +197,7 @@ const RoleCard = memo(function RoleCard({
             <span className="text-m8bs-muted">Core</span>
             <div className="flex items-center gap-1">
               <span className="text-white font-semibold text-[10px]">
-                {roleScorecard.defaultMetricsAverage?.toFixed(0) || '0'}%
+                {roleScorecard.defaultMetricsAverage?.toFixed(2) || '0.00'}%
               </span>
               <Badge className={`${getGradeColor(roleScorecard.defaultMetricsGrade)} border px-1 py-0 text-[10px]`}>
                 {roleScorecard.defaultMetricsGrade}
@@ -211,7 +211,7 @@ const RoleCard = memo(function RoleCard({
             <span className="text-m8bs-muted">Role</span>
             <div className="flex items-center gap-1">
               <span className="text-white font-semibold text-[10px]">
-                {roleScorecard.userMetricsAverage?.toFixed(0) || '0'}%
+                {roleScorecard.userMetricsAverage?.toFixed(2) || '0.00'}%
               </span>
               <Badge className={`${getGradeColor(roleScorecard.userMetricsGrade)} border px-1 py-0 text-[10px]`}>
                 {roleScorecard.userMetricsGrade}
@@ -225,7 +225,7 @@ const RoleCard = memo(function RoleCard({
             <span className="text-m8bs-muted font-semibold">Combined</span>
             <div className="flex items-center gap-1">
               <span className="text-white font-semibold text-[10px]">
-                {roleScorecard.combinedAverage?.toFixed(0) || '0'}%
+                {roleScorecard.combinedAverage?.toFixed(2) || '0.00'}%
               </span>
               <Badge className={`${getGradeColor(roleScorecard.combinedGrade)} border px-1 py-0 text-[10px] font-bold`}>
                 {roleScorecard.combinedGrade}
@@ -237,7 +237,7 @@ const RoleCard = memo(function RoleCard({
         {roleScorecard.combinedGrade === undefined && roleScorecard.defaultMetricsGrade === undefined && roleScorecard.userMetricsGrade === undefined && (
           <div className="flex items-center justify-between text-xs">
             <span className="text-m8bs-muted">Perf</span>
-            <span className="text-white font-semibold">{roleScorecard.averageGradePercentage.toFixed(0)}%</span>
+            <span className="text-white font-semibold">{roleScorecard.averageGradePercentage.toFixed(2)}%</span>
           </div>
         )}
       </div>

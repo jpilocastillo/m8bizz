@@ -1,7 +1,12 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
-import { calculateGrade, calculatePercentageOfGoal, isDefaultMetric } from "@/lib/behavior-scorecard"
+import {
+  buildAggregatedScorecardPeriod,
+  calculateGrade,
+  calculatePercentageOfGoal,
+  isDefaultMetric,
+} from "@/lib/behavior-scorecard"
 import type { MonthlyScorecardData, RoleScorecard, MetricScore, Grade } from "@/lib/behavior-scorecard"
 
 export async function getAdminUsers() {
@@ -369,8 +374,8 @@ export async function getAdvisorBasecampDataForViewAs(
 
 export async function getScorecardDataForViewAs(
   userId: string,
-  periodType: "month" | "quarter" | "year",
-  monthOrQuarter: number,
+  periodType: "month" | "quarter" | "semiAnnual" | "year",
+  monthOrQuarterOrHalf: number,
   year: number
 ): Promise<{ success: boolean; data?: MonthlyScorecardData; error?: string }> {
   try {
@@ -383,7 +388,37 @@ export async function getScorecardDataForViewAs(
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    const month = periodType === "month" ? monthOrQuarter : periodType === "quarter" ? (monthOrQuarter - 1) * 3 + 1 : 1
+    if (periodType === "quarter") {
+      const quarter = monthOrQuarterOrHalf
+      const months = [(quarter - 1) * 3 + 1, (quarter - 1) * 3 + 2, (quarter - 1) * 3 + 3]
+      return buildAggregatedScorecardPeriod(adminClient, userId, {
+        year,
+        months,
+        periodType: "quarter",
+        quarter,
+      })
+    }
+
+    if (periodType === "semiAnnual") {
+      const half = monthOrQuarterOrHalf
+      const months = half === 1 ? [1, 2, 3, 4, 5, 6] : [7, 8, 9, 10, 11, 12]
+      return buildAggregatedScorecardPeriod(adminClient, userId, {
+        year,
+        months,
+        periodType: "semiAnnual",
+        semiAnnual: half,
+      })
+    }
+
+    if (periodType === "year") {
+      return buildAggregatedScorecardPeriod(adminClient, userId, {
+        year,
+        months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        periodType: "year",
+      })
+    }
+
+    const month = monthOrQuarterOrHalf
 
     const { data: roles, error: rolesError } = await adminClient
       .from("scorecard_roles")
@@ -394,10 +429,9 @@ export async function getScorecardDataForViewAs(
     if (rolesError) return { success: false, error: rolesError.message }
     if (!roles || roles.length === 0) {
       const empty: MonthlyScorecardData = {
-        month: periodType === "month" ? monthOrQuarter : undefined,
-        quarter: periodType === "quarter" ? monthOrQuarter : undefined,
+        month,
         year,
-        periodType,
+        periodType: "month",
         roleScorecards: [],
         companySummary: { companyAverage: 0, companyGrade: "F", roleScorecards: [] },
       }
@@ -611,10 +645,9 @@ export async function getScorecardDataForViewAs(
     const companySummary = { companyAverage, companyGrade, roleScorecards }
 
     const data: MonthlyScorecardData = {
-      month: periodType === "month" ? monthOrQuarter : undefined,
-      quarter: periodType === "quarter" ? monthOrQuarter : undefined,
+      month,
       year,
-      periodType,
+      periodType: "month",
       roleScorecards,
       companySummary,
     }

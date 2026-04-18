@@ -9,9 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { fetchAllEvents } from "@/lib/data"
 import { getCanonicalEventType } from "@/lib/event-types"
 import { aggregateEventDataByMonth, recalculateMonthlyEntryFromEvents } from "@/lib/client-tracking"
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { AnimatedBackground } from "@/components/dashboard/animated-background"
-import { DatabaseStatus } from "@/components/database-status"
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Suspense } from "react"
 import { 
   BarChart3, 
@@ -586,13 +584,7 @@ export default function Overview() {
   }
 
   return (
-    <div className="flex h-screen bg-black text-white overflow-hidden">
-      <AnimatedBackground />
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <main className="flex-1 overflow-y-auto px-4 sm:px-5 lg:px-6 xl:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 bg-black">
-          <DatabaseStatus />
-          <div className="max-w-5xl mx-auto">
+    <DashboardShell>
             <Suspense fallback={<div>Loading...</div>}>
               <motion.div 
                 className="space-y-4"
@@ -601,7 +593,7 @@ export default function Overview() {
                 animate="show"
               >
       {/* Enhanced Hero Section */}
-      <motion.div variants={item} className="space-y-6 py-6">
+      <motion.div variants={item} className="space-y-6 py-6" data-tour="tour-overview-hero">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-2">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-m8bs-blue via-m8bs-purple to-m8bs-pink bg-clip-text text-transparent">
@@ -611,7 +603,7 @@ export default function Overview() {
               Your Business Overview At A Glance
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-tour="tour-overview-actions">
             <div className="flex items-center gap-2 bg-m8bs-card border border-m8bs-border rounded-lg px-3 py-2">
               <Calendar className="h-4 w-4 text-m8bs-muted" />
               <Select 
@@ -725,6 +717,7 @@ export default function Overview() {
       <motion.div 
         variants={item}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+        data-tour="tour-overview-metrics"
       >
         <ThreeDMetricCard
           title="Total Marketing Events"
@@ -1454,9 +1447,6 @@ export default function Overview() {
       </motion.div>
             </motion.div>
             </Suspense>
-          </div>
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   )
 } 

@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Loader2, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { createClient } from "@/lib/supabase/client"
+import { PageGuide } from "@/components/onboarding/page-guide"
 
 const formSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
@@ -382,6 +383,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex flex-col md:flex-row bg-m8bs-bg">
       <div className="flex-1 bg-m8bs-bg p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full">
+          <PageGuide />
           <Link 
             href="/login" 
             className="inline-flex items-center gap-2 text-m8bs-muted hover:text-m8bs-blue mb-6 transition-colors"

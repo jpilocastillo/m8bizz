@@ -30,6 +30,10 @@ export default function BehaviorScorecardPage() {
   const [scorecardData, setScorecardData] = useState<MonthlyScorecardData | null>(null)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedQuarter, setSelectedQuarter] = useState(Math.ceil((new Date().getMonth() + 1) / 3))
+  const [selectedSemiAnnual, setSelectedSemiAnnual] = useState(() => {
+    const m = new Date().getMonth() + 1
+    return m <= 6 ? 1 : 2
+  })
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [periodType, setPeriodType] = useState<PeriodType>('month')
   const [roles, setRoles] = useState<Array<{ id: string; name: ScorecardRole; personName?: string | null; metrics: ScorecardMetric[] }>>([])
@@ -56,7 +60,7 @@ export default function BehaviorScorecardPage() {
       }, 300)
       return () => clearTimeout(timeoutId)
     }
-  }, [periodType, selectedMonth, selectedQuarter, selectedYear, user, roles.length])
+  }, [periodType, selectedMonth, selectedQuarter, selectedSemiAnnual, selectedYear, user, roles.length])
 
   const initializeAndLoad = async (skipInitialization = false) => {
     setLoading(true)
@@ -159,6 +163,8 @@ export default function BehaviorScorecardPage() {
                 return await behaviorScorecardService.getScorecardData('month', selectedMonth, selectedYear)
               } else if (periodType === 'quarter') {
                 return await behaviorScorecardService.getScorecardData('quarter', selectedQuarter, selectedYear)
+              } else if (periodType === 'semiAnnual') {
+                return await behaviorScorecardService.getScorecardData('semiAnnual', selectedSemiAnnual, selectedYear)
               } else {
                 return await behaviorScorecardService.getScorecardData('year', 0, selectedYear)
               }
@@ -236,6 +242,8 @@ export default function BehaviorScorecardPage() {
         result = await behaviorScorecardService.getScorecardData('month', selectedMonth, selectedYear)
       } else if (periodType === 'quarter') {
         result = await behaviorScorecardService.getScorecardData('quarter', selectedQuarter, selectedYear)
+      } else if (periodType === 'semiAnnual') {
+        result = await behaviorScorecardService.getScorecardData('semiAnnual', selectedSemiAnnual, selectedYear)
       } else {
         result = await behaviorScorecardService.getScorecardData('year', 0, selectedYear)
       }
@@ -244,9 +252,12 @@ export default function BehaviorScorecardPage() {
         setScorecardData(result.data)
       } else {
         // Create empty scorecard structure
+        const periodMonths =
+          periodType === 'quarter' ? 3 : periodType === 'semiAnnual' ? 6 : periodType === 'year' ? 12 : 1
         const emptyData: MonthlyScorecardData = {
           month: periodType === 'month' ? selectedMonth : undefined,
           quarter: periodType === 'quarter' ? selectedQuarter : undefined,
+          semiAnnual: periodType === 'semiAnnual' ? selectedSemiAnnual : undefined,
           year: selectedYear,
           periodType,
           roleScorecards: roles.map(role => ({
@@ -257,7 +268,7 @@ export default function BehaviorScorecardPage() {
               metricId: metric.id,
               metricName: metric.metricName,
               metricType: metric.metricType,
-              goalValue: metric.goalValue * (periodType === 'quarter' ? 3 : periodType === 'year' ? 12 : 1),
+              goalValue: metric.goalValue * periodMonths,
               actualValue: 0,
               percentageOfGoal: 0,
               grade: 'F',
@@ -337,10 +348,12 @@ export default function BehaviorScorecardPage() {
       return `${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
     } else if (periodType === 'quarter') {
       return `Q${selectedQuarter} ${selectedYear}`
+    } else if (periodType === 'semiAnnual') {
+      return `${selectedSemiAnnual === 1 ? 'H1 (Jan–Jun)' : 'H2 (Jul–Dec)'} ${selectedYear}`
     } else {
       return `${selectedYear}`
     }
-  }, [periodType, selectedMonth, selectedQuarter, selectedYear, months])
+  }, [periodType, selectedMonth, selectedQuarter, selectedSemiAnnual, selectedYear, months])
 
   // Show skeleton loading state (non-blocking, allows UI to render)
   const isLoading = loading && roles.length === 0
@@ -472,6 +485,7 @@ export default function BehaviorScorecardPage() {
                 <SelectContent>
                   <SelectItem value="month">Month</SelectItem>
                   <SelectItem value="quarter">Quarter</SelectItem>
+                  <SelectItem value="semiAnnual">Semi-annual</SelectItem>
                   <SelectItem value="year">Year</SelectItem>
                 </SelectContent>
               </Select>
@@ -515,6 +529,25 @@ export default function BehaviorScorecardPage() {
                     <SelectItem value="2">Q2 (Apr-Jun)</SelectItem>
                     <SelectItem value="3">Q3 (Jul-Sep)</SelectItem>
                     <SelectItem value="4">Q4 (Oct-Dec)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+
+              {periodType === 'semiAnnual' && (
+                <Select 
+                  value={selectedSemiAnnual.toString()} 
+                  onValueChange={(v) => {
+                    setSelectedSemiAnnual(parseInt(v))
+                    loadScorecard(true)
+                  }}
+                  disabled={loadingFilters}
+                >
+                  <SelectTrigger className={`w-[160px] bg-m8bs-card border-m8bs-border hover:border-m8bs-blue/50 transition-colors ${loadingFilters ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <SelectValue placeholder="Half" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">H1 (Jan–Jun)</SelectItem>
+                    <SelectItem value="2">H2 (Jul–Dec)</SelectItem>
                   </SelectContent>
                 </Select>
               )}

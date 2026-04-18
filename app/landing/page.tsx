@@ -6,6 +6,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageGuide } from "@/components/onboarding/page-guide"
 import {
   BarChart3,
   Building2,
@@ -119,6 +120,9 @@ export default function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
+          <div className="w-full max-w-3xl mx-auto mb-10 text-left">
+            <PageGuide />
+          </div>
           {/* Logo */}
           <motion.div
             className="mb-8 flex justify-center"

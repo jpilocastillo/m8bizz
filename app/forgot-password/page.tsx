@@ -14,6 +14,7 @@ import { Loader2, Mail, ArrowLeft, CheckCircle2, Key } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { createClient } from "@/lib/supabase/client"
 import { resetPasswordByEmail } from "@/app/admin/actions"
+import { PageGuide } from "@/components/onboarding/page-guide"
 
 const emailFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -221,6 +222,7 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex flex-col md:flex-row bg-m8bs-bg">
       <div className="flex-1 bg-m8bs-bg p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full">
+          <PageGuide />
           <Link 
             href="/login" 
             className="inline-flex items-center gap-2 text-m8bs-muted hover:text-m8bs-blue mb-6 transition-colors"

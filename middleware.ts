@@ -124,12 +124,19 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  if (req.nextUrl.pathname === '/getting-started') {
+    if (!session) {
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
+  }
+
   return res
 }
 
 export const config = {
   matcher: [
     '/',
+    '/getting-started',
     '/business-dashboard/:path*',
     '/admin/:path*',
     '/login',

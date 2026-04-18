@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { AnimatedBackground } from "@/components/dashboard/animated-background"
+import { PageGuide } from "@/components/onboarding/page-guide"
 
 export function ViewAsLayoutClient({ children }: { children: React.ReactNode }) {
   const params = useParams()
@@ -77,6 +78,7 @@ export function ViewAsLayoutClient({ children }: { children: React.ReactNode }) 
         <div className="flex-1 flex flex-col overflow-hidden relative z-10">
           <main className="flex-1 overflow-y-auto px-4 sm:px-5 lg:px-6 xl:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 bg-black">
             <div className="max-w-5xl mx-auto">
+              <PageGuide />
               {children}
             </div>
           </main>

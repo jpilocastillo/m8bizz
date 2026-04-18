@@ -37,6 +37,7 @@ import { AdminNav } from "@/components/admin/admin-nav"
 import { getAdminUsers } from "@/app/admin/actions"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
+import { PageGuide } from "@/components/onboarding/page-guide"
 
 interface UserProfile {
   id: string
@@ -276,6 +277,7 @@ export default function AdminDashboard() {
       <AdminNav />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PageGuide />
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Users List */}
           <div className="lg:col-span-1">

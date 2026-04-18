@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageGuide } from "@/components/onboarding/page-guide"
 
 export default function ClearAuthPage() {
   const [isClearing, setIsClearing] = useState(false)
@@ -42,7 +43,8 @@ export default function ClearAuthPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-md">
+    <div className="container mx-auto p-4 max-w-md space-y-4">
+      <PageGuide />
       <Card>
         <CardHeader>
           <CardTitle>Clear Authentication</CardTitle>

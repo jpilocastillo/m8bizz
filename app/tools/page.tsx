@@ -1,5 +1,7 @@
 "use client"
 
+import { useAuth } from "@/components/auth-provider"
+import { isBrandNewUser } from "@/lib/onboarding-eligibility"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { 
@@ -60,6 +62,10 @@ const tools = [
 ]
 
 export default function ToolsPage() {
+  const { user, isLoading } = useAuth()
+  const showNewUserHelp = Boolean(user && !isLoading && isBrandNewUser(user))
+  const showEstablishedFooter = !isLoading && (!user || !isBrandNewUser(user))
+
   return (
     <div className="space-y-8">
       <div className="text-center space-y-4">
@@ -105,15 +111,20 @@ export default function ToolsPage() {
         ))}
       </div>
 
+      {showNewUserHelp && (
       <Card className="mt-12 bg-m8bs-card border-m8bs-card-alt shadow-lg">
         <CardContent className="p-6">
           <div className="text-center space-y-4">
-            <h2 className="text-2xl font-bold text-white">Need Help Getting Started?</h2>
+            <h2 className="text-2xl font-bold text-white">New here?</h2>
             <p className="text-m8bs-muted max-w-2xl mx-auto">
-            Each Tool Is Designed To Be Intuitive And User-Friendly. If You Need Assistance With Any Specific Tool, 
-            Refer To The Help Documentation Or Contact Support.
+            Use <span className="text-white/90">How it works</span> in the sidebar for full instructions and the page guide at the top of each screen during your first week.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/getting-started">
+              <Button variant="outline" className="w-full sm:w-auto">
+                How it works
+              </Button>
+            </Link>
             <Link href="/business-dashboard">
               <Button variant="outline" className="w-full sm:w-auto">
                 Back To Dashboard
@@ -128,6 +139,21 @@ export default function ToolsPage() {
         </div>
         </CardContent>
       </Card>
+      )}
+      {showEstablishedFooter && (
+      <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+        <Link href="/business-dashboard">
+          <Button variant="outline" className="w-full sm:w-auto border-m8bs-border">
+            Back To Dashboard
+          </Button>
+        </Link>
+        <Link href="/settings">
+          <Button variant="outline" className="w-full sm:w-auto border-m8bs-border">
+            Settings
+          </Button>
+        </Link>
+      </div>
+      )}
     </div>
   )
 }

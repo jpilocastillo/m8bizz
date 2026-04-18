@@ -36,6 +36,11 @@ The M8BS (Motiv8 Business Suite) Dashboard is a comprehensive marketing and busi
 3. Enter your credentials or create a new account
 4. Complete your profile setup if required
 
+### In-app help (new accounts only)
+Step-by-step instructions, the **How it works** hub, and spotlight tours are shown **only for brand-new accounts** (approximately the **first week** after signup). After that window, those panels and menu entries are hidden so the workspace stays clean.
+- **How it works** appears in the sidebar only during that period and links to the onboarding checklist.
+- The expandable **page instructions** panel and **Start tour** on Overview appear only for the same new-account window.
+
 ## Authentication
 
 ### Login Process

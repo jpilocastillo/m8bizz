@@ -3,8 +3,9 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { logger } from "@/lib/logger"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
+import { isBrandNewUser } from "@/lib/onboarding-eligibility"
 
-export default async function ClientPlansLayout({
+export default async function GettingStartedLayout({
   children,
 }: {
   children: React.ReactNode
@@ -25,11 +26,15 @@ export default async function ClientPlansLayout({
       user = userData
     }
   } catch (error) {
-    logger.error("Error in client plans layout:", error)
+    logger.error("Error in getting-started layout:", error)
   }
 
   if (user === null) {
     redirect("/login")
+  }
+
+  if (!isBrandNewUser(user)) {
+    redirect("/")
   }
 
   return <DashboardShell>{children}</DashboardShell>

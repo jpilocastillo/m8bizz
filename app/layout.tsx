@@ -7,6 +7,7 @@ import { SessionWarning } from "@/components/session-warning"
 import { DebugPanel } from "@/components/debug-panel"
 import { ErrorBoundary } from "@/components/error-boundary"
 import "./globals.css"
+import "driver.js/dist/driver.css"
 
 const inter = Inter({ subsets: ["latin"] })
 

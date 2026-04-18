@@ -26,7 +26,7 @@ export function CSVExport({ data, profile }: CSVExportProps) {
           return formatCurrency(value)
         }
         if (metricType === 'percentage') {
-          return `${value}%`
+          return `${Number(value).toFixed(2)}%`
         }
         if (metricType === 'time') {
           return `${value} days`
@@ -49,6 +49,8 @@ export function CSVExport({ data, profile }: CSVExportProps) {
         periodLabel = `${monthNames[data.month - 1]} ${data.year}`
       } else if (data.periodType === 'quarter' && data.quarter) {
         periodLabel = `${quarterNames[data.quarter - 1]} ${data.year}`
+      } else if (data.periodType === 'semiAnnual' && data.semiAnnual) {
+        periodLabel = `${data.semiAnnual === 1 ? 'H1 (Jan–Jun)' : 'H2 (Jul–Dec)'} ${data.year}`
       } else {
         periodLabel = `Year ${data.year}`
       }
@@ -61,7 +63,7 @@ export function CSVExport({ data, profile }: CSVExportProps) {
         [''],
         // Company Summary
         ['COMPANY SUMMARY'],
-        ['Company Average', `${data.companySummary.companyAverage.toFixed(1)}%`],
+        ['Company Average', `${data.companySummary.companyAverage.toFixed(2)}%`],
         ['Company Grade', data.companySummary.companyGrade],
         [''],
         // Role Scorecards
@@ -73,10 +75,10 @@ export function CSVExport({ data, profile }: CSVExportProps) {
             metric.metricName,
             formatValue(metric.goalValue, 'count'),
             formatValue(metric.actualValue, 'count'),
-            `${metric.percentageOfGoal.toFixed(1)}%`,
+            `${metric.percentageOfGoal.toFixed(2)}%`,
             metric.grade,
           ]),
-          ['Average Grade', '', '', `${roleScorecard.averageGradePercentage.toFixed(1)}%`, roleScorecard.averageGrade],
+          ['Average Grade', '', '', `${roleScorecard.averageGradePercentage.toFixed(2)}%`, roleScorecard.averageGrade],
         ]),
       ]
 
@@ -91,6 +93,8 @@ export function CSVExport({ data, profile }: CSVExportProps) {
         filename += `-${String(data.month).padStart(2, '0')}`
       } else if (data.periodType === 'quarter' && data.quarter) {
         filename += `-Q${data.quarter}`
+      } else if (data.periodType === 'semiAnnual' && data.semiAnnual) {
+        filename += `-H${data.semiAnnual}`
       } else {
         filename += '-year'
       }

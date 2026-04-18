@@ -13,6 +13,7 @@ import {
   Database as DatabaseIcon,
 } from "lucide-react"
 import { logger } from "@/lib/logger"
+import { PageGuide } from "@/components/onboarding/page-guide"
 import type { Database } from "@/types/supabase"
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
@@ -76,6 +77,7 @@ export default async function DebugPage() {
   return (
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-6xl mx-auto space-y-6">
+        <PageGuide />
         <div>
           <h1 className="text-4xl font-bold mb-2">Production Debug Dashboard</h1>
           <p className="text-gray-400">

@@ -159,7 +159,7 @@ export const AnalyticsSummary = memo(function AnalyticsSummary({ data }: Analyti
       initial="hidden"
       animate="show"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 md:gap-5">
+      <div className="grid grid-cols-7 gap-3">
         {summaryCards.map((card, index) => (
           <motion.div
             key={card.title}

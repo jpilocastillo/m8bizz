@@ -623,7 +623,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
       }).format(value)
     }
     if (metricType === 'percentage') {
-      return `${value}%`
+      return `${Number(value).toFixed(2)}%`
     }
     if (metricType === 'time') {
       return `${value} ${value === 1 ? 'day' : 'days'}`
@@ -1067,7 +1067,7 @@ export function DataEntryForm({ roleName, roleId, metrics, year, month, onSave }
                             percentage >= 60 ? 'text-orange-400' :
                             'text-red-400'
                           }`}>
-                            {percentage.toFixed(1)}%
+                            {percentage.toFixed(2)}%
                           </span>
                           {isEditing && (
                             <div className="h-1 w-16 bg-m8bs-card-alt rounded-full overflow-hidden">

@@ -30,7 +30,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
           return formatCurrency(value)
         }
         if (metricType === 'percentage') {
-          return `${value}%`
+          return `${Number(value).toFixed(2)}%`
         }
         if (metricType === 'time') {
           return `${value} days`
@@ -64,6 +64,8 @@ export function PDFExport({ data, profile }: PDFExportProps) {
         periodLabel = `${monthNames[data.month - 1]} ${data.year}`
       } else if (data.periodType === 'quarter' && data.quarter) {
         periodLabel = `${quarterNames[data.quarter - 1]} ${data.year}`
+      } else if (data.periodType === 'semiAnnual' && data.semiAnnual) {
+        periodLabel = `${data.semiAnnual === 1 ? 'H1 (Jan–Jun)' : 'H2 (Jul–Dec)'} ${data.year}`
       } else {
         periodLabel = `Year ${data.year}`
       }
@@ -200,7 +202,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
               ${data.companySummary.companyGrade}
             </div>
             <div class="company-average">
-              Company Average: ${data.companySummary.companyAverage.toFixed(1)}%
+              Company Average: ${data.companySummary.companyAverage.toFixed(2)}%
             </div>
           </div>
 
@@ -230,7 +232,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                       <td>${metric.metricName}</td>
                       <td class="number">${formatValue(metric.goalValue, 'count')}</td>
                       <td class="number">${formatValue(metric.actualValue, 'count')}</td>
-                      <td class="number">${metric.percentageOfGoal.toFixed(1)}%</td>
+                      <td class="number">${metric.percentageOfGoal.toFixed(2)}%</td>
                       <td class="number">
                         <span class="grade-badge" style="background-color: ${getGradeColor(metric.grade)}20; color: ${getGradeColor(metric.grade)}; border: 1px solid ${getGradeColor(metric.grade)}50;">
                           ${metric.grade}
@@ -242,7 +244,7 @@ export function PDFExport({ data, profile }: PDFExportProps) {
                     <td><strong>Average Grade</strong></td>
                     <td class="number"></td>
                     <td class="number"></td>
-                    <td class="number"><strong>${roleScorecard.averageGradePercentage.toFixed(1)}%</strong></td>
+                    <td class="number"><strong>${roleScorecard.averageGradePercentage.toFixed(2)}%</strong></td>
                     <td class="number">
                       <span class="grade-badge" style="background-color: ${getGradeColor(roleScorecard.averageGrade)}20; color: ${getGradeColor(roleScorecard.averageGrade)}; border: 1px solid ${getGradeColor(roleScorecard.averageGrade)}50;">
                         ${roleScorecard.averageGrade}

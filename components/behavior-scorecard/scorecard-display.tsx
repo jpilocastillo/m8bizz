@@ -31,7 +31,7 @@ const formatValue = (value: number, metricType: string) => {
     }).format(value)
   }
   if (metricType === 'percentage') {
-    return `${value}%`
+    return `${Number(value).toFixed(2)}%`
   }
   if (metricType === 'time') {
     return `${value} ${value === 1 ? 'day' : 'days'}`
@@ -78,11 +78,11 @@ export const ScorecardDisplay = memo(function ScorecardDisplay({ roleScorecard }
   const userMetricsGrade = roleScorecard.userMetricsGrade || 'F'
   
   const defaultMetricsAverage = useMemo(() => 
-    roleScorecard.defaultMetricsAverage?.toFixed(0) || '0', 
+    roleScorecard.defaultMetricsAverage?.toFixed(2) || '0.00', 
     [roleScorecard.defaultMetricsAverage]
   )
   const userMetricsAverage = useMemo(() => 
-    roleScorecard.userMetricsAverage?.toFixed(0) || '0', 
+    roleScorecard.userMetricsAverage?.toFixed(2) || '0.00', 
     [roleScorecard.userMetricsAverage]
   )
 
@@ -101,7 +101,7 @@ export const ScorecardDisplay = memo(function ScorecardDisplay({ roleScorecard }
               {combinedGrade}
             </Badge>
             <span className="text-xs text-m8bs-muted font-medium">
-              {combinedAverage.toFixed(0)}%
+              {combinedAverage.toFixed(2)}%
             </span>
           </div>
         </div>
@@ -184,7 +184,7 @@ export const ScorecardDisplay = memo(function ScorecardDisplay({ roleScorecard }
             <div className="grid grid-cols-4 gap-2 p-2.5 bg-gradient-to-r from-m8bs-blue/20 via-m8bs-blue/15 to-m8bs-blue-dark/20 rounded-lg border border-m8bs-blue/50 text-sm shadow-sm">
               <div className="col-span-2 text-white font-semibold">Combined</div>
               <div className="text-right text-white font-semibold">
-                {roleScorecard.combinedAverage.toFixed(0)}%
+                {roleScorecard.combinedAverage.toFixed(2)}%
               </div>
               <div className="text-right">
                 <Badge className={`${getGradeColor(roleScorecard.combinedGrade || 'F')} border px-1.5 py-0.5 text-xs font-bold shadow-sm`}>

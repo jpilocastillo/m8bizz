@@ -7,6 +7,7 @@ const FULL_ACCESS_EMAILS = [
 
 export const REGULAR_USER_VISIBLE_PAGES = [
   "/",
+  "/getting-started",
   "/business-dashboard",
   "/analytics",
   "/events",
