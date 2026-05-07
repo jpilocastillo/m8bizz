@@ -8,9 +8,10 @@ import { DashboardData } from "./dashboard-content"
 interface SingleEventExportProps {
   data: DashboardData
   eventName: string
+  disabled?: boolean
 }
 
-export function SingleEventExport({ data, eventName }: SingleEventExportProps) {
+export function SingleEventExport({ data, eventName, disabled = false }: SingleEventExportProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -160,6 +161,7 @@ export function SingleEventExport({ data, eventName }: SingleEventExportProps) {
         variant="outline"
         size="sm"
         className="border-m8bs-border text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white"
+        disabled={disabled}
       >
         <FileSpreadsheet className="h-4 w-4 mr-2" />
         Export CSV

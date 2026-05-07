@@ -24,8 +24,9 @@ export function ConversionRateIndicator({
   const [isGaugeHovered, setIsGaugeHovered] = useState(false)
 
   // Calculate conversion rate
-  const conversionRate = attendees > 0 ? (clients / attendees) * 100 : 0
-  const lostProspects = attendees - clients
+  const rawConversionRate = attendees > 0 ? (clients / attendees) * 100 : 0
+  const conversionRate = Number.isFinite(rawConversionRate) ? Math.max(0, Math.min(100, rawConversionRate)) : 0
+  const lostProspects = Math.max(0, attendees - clients)
   const lostProspectsPercentage = attendees > 0 ? (lostProspects / attendees) * 100 : 0
 
   // Extract numeric value from income assets string
@@ -71,7 +72,7 @@ export function ConversionRateIndicator({
   // Calculate potential improvement
   const improvedRate = Math.min(conversionRate + 5, 100)
   const improvedClients = Math.round(attendees * (improvedRate / 100))
-  const additionalClients = improvedClients - clients
+  const additionalClients = Math.max(0, improvedClients - clients)
 
   return (
     <Card
@@ -147,7 +148,7 @@ export function ConversionRateIndicator({
                   strokeDasharray="125.6"
                   initial={{ strokeDashoffset: 125.6 }}
                   animate={{
-                    strokeDashoffset: 125.6 - (conversionRate / 20) * 125.6,
+                    strokeDashoffset: 125.6 - (conversionRate / 100) * 125.6,
                     filter: isGaugeHovered ? "url(#glow)" : "none",
                   }}
                   transition={{ duration: 1.5, ease: "easeOut" }}

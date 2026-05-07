@@ -17,9 +17,8 @@ import { AccumulativeIncomeCard } from "./accumulative-income-card"
 import { FinancialProductionCard } from "./financial-production-card"
 import { ThreeDMetricCard } from "@/components/dashboard/3d-metric-card"
 import { MarketingExpensesCard } from "./marketing-expenses-card"
-import { format, parseISO } from "date-fns"
+import { format } from "date-fns"
 import { DashboardError } from "./dashboard-error"
-import { createClient } from "@/lib/supabase/client"
 import { PlateLickerCard } from "@/components/dashboard/plate-licker-card"
 import { SingleEventExport } from "@/components/dashboard/single-event-export"
 import { Button } from "@/components/ui/button"
@@ -344,14 +343,22 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
   const registrants = dashboardData.attendance?.registrantResponses || 0
   const confirmations = dashboardData.attendance?.confirmations || 0
   const attendees = dashboardData.attendance?.attendees || 0
-  const clients = dashboardData.attendance?.clients_from_event || 0
+  const clientsFromAttendance = dashboardData.attendance?.clients_from_event || 0
+  const clients = Math.max(clientsFromAttendance, dashboardData.writtenBusiness || 0)
   const totalAppointmentsBooked = (dashboardData.appointments?.setAtEvent || 0) + (dashboardData.appointments?.setAfterEvent || 0)
 
   const registrationToConfirmation = registrants > 0 ? (confirmations / registrants) * 100 : 0
   const confirmationToAttendance = confirmations > 0 ? (attendees / confirmations) * 100 : 0
   const attendanceToAppointments = attendees > 0 ? (totalAppointmentsBooked / attendees) * 100 : 0
   const attendanceToClient = attendees > 0 ? (clients / attendees) * 100 : 0
-  const overallConversion = registrants > 0 ? (clients / registrants) * 100 : 0
+  const overallConversionRaw = registrants > 0
+    ? (clients / registrants) * 100
+    : attendees > 0
+      ? (clients / attendees) * 100
+      : 0
+  const overallConversion = Number.isFinite(overallConversionRaw)
+    ? Math.max(0, Math.min(100, overallConversionRaw))
+    : 0
 
   // Calculate client acquisition costs
   const expensePerRegistrant = registrants > 0 ? totalExpenses / registrants : 0
@@ -428,12 +435,14 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             events={filteredEvents}
             selectedEventId={selectedEventId}
             onSelect={setSelectedEventId}
+            isLoading={isLoading}
           />
           {selectedEventId && (
             <Button
               variant="outline"
               onClick={() => router.push(`/events/edit/${selectedEventId}`)}
               className="flex items-center gap-2"
+              disabled={isLoading}
             >
               <Edit className="h-4 w-4" />
               Edit Event
@@ -442,6 +451,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
           <SingleEventExport 
             data={dashboardData} 
             eventName={dashboardData.eventDetails?.name || 'Event'} 
+            disabled={isLoading || !selectedEventId}
           />
         </div>
       </div>
@@ -565,7 +575,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
       )}
 
       {/* Plate Lickers Card */}
-      {/* <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -576,7 +586,7 @@ export function DashboardContent({ initialData, events, userId }: DashboardConte
             attendees={attendees}
           />
         </motion.div>
-      </div> */}
+      </div>
 
       {/* Cultivation / Referral metrics card - same data as analytics cultivation card */}
       {!isSeminarOrOther && (
