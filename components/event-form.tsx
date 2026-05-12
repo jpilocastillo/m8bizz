@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { createEvent, createEventExpenses, createEventAttendance, createEventAppointments, createEventFinancialProduction, updateEvent } from "@/lib/data"
 import { useAuth } from "@/components/auth-provider"
 import { EVENT_TYPES, getCanonicalEventType, getMarketingTypeForStorage, type EventType } from "@/lib/event-types"
+import { postEventSaveRedirectPath } from "@/lib/event-dashboard-access-policy"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -445,7 +446,7 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
       const eventId = isEditing ? initialData?.eventId : ('eventId' in result ? result.eventId : undefined)
       
       logger.log('Redirecting to single event dashboard...')
-      router.push("/single-event")
+      router.push(postEventSaveRedirectPath(user?.email))
       router.refresh()
     } catch (error) {
       console.error('Detailed error:', {
@@ -609,8 +610,8 @@ export function EventForm({ initialData, isEditing = false, userId }: EventFormP
         description: "Event updated successfully!",
       })
 
-      // Redirect to single event dashboard after update
-      router.push("/single-event")
+      // Redirect after update (single-event dashboard unless blocked for this user)
+      router.push(postEventSaveRedirectPath(user?.email))
       router.refresh()
     } catch (error) {
       console.error('Detailed error:', {

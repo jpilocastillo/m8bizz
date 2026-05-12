@@ -1,5 +1,10 @@
 "use client"
 
+import {
+  isEventDashboardBlockedEmail,
+  isEventDashboardPathname,
+} from "@/lib/event-dashboard-access-policy"
+
 const FULL_ACCESS_EMAILS = [
   "jazminpilo@gmail.com",
   "mike@theterriogroup.com"
@@ -28,6 +33,10 @@ export function isPageVisible(pathname: string, userEmail: string | null | undef
     return true
   }
 
+  if (isEventDashboardPathname(pathname) && isEventDashboardBlockedEmail(userEmail)) {
+    return false
+  }
+
   if (hasFullAccess(userEmail)) {
     return true
   }
@@ -35,6 +44,16 @@ export function isPageVisible(pathname: string, userEmail: string | null | undef
   return REGULAR_USER_VISIBLE_PAGES.some(page => 
     pathname === page || pathname.startsWith(page + "/")
   )
+}
+
+const MARKETING_NAV_ORDER = ["/events", "/events/new", "/single-event", "/analytics"] as const
+
+/** First marketing sidebar path this user may open (for collapsed Marketing icon). */
+export function getFirstVisibleMarketingPath(userEmail: string | null | undefined): string | null {
+  for (const p of MARKETING_NAV_ORDER) {
+    if (isPageVisible(p, userEmail)) return p
+  }
+  return null
 }
 
 
