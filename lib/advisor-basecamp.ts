@@ -678,7 +678,7 @@ class AdvisorBasecampService {
         .select('id')
         .eq('user_id', user.id)
         .eq('month_year', entry.month_year)
-        .single()
+        .maybeSingle()
 
       // If entry exists, update it instead of creating a new one
       if (existingEntry) {

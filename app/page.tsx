@@ -11,7 +11,6 @@ import { getCanonicalEventType } from "@/lib/event-types"
 import { aggregateEventDataByMonth, recalculateMonthlyEntryFromEvents } from "@/lib/client-tracking"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Suspense } from "react"
-import { isPageVisible } from "@/lib/page-visibility"
 import { 
   BarChart3, 
   Building2, 
@@ -1415,14 +1414,12 @@ export default function Overview() {
                       <span className="text-xs">Basecamp</span>
                     </Button>
                   </Link>
-                  {isPageVisible("/analytics", user.email) && (
                   <Link href="/analytics">
                     <Button className="w-full h-auto p-3 flex flex-col items-center space-y-2" variant="outline">
                       <BarChart3 className="h-5 w-5" />
                       <span className="text-xs">Analytics</span>
                     </Button>
                   </Link>
-                  )}
                   <Link href="/events">
                     <Button className="w-full h-auto p-3 flex flex-col items-center space-y-2" variant="outline">
                       <Calendar className="h-5 w-5" />

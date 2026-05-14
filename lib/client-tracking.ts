@@ -85,6 +85,37 @@ export interface ClientFilters {
 }
 
 /**
+ * Derive Advisor Basecamp monthly metrics from event_clients rows already filtered
+ * to a single calendar month (by close_date). Keeps sync + aggregate paths aligned.
+ */
+export function aggregateClientRowsForMonthlyEntry(clientList: any[]): {
+  new_clients: number
+  current_book_closes: number
+  annuity_sales: number
+  aum_sales: number
+  life_sales: number
+  client_names: string[]
+} {
+  let new_clients = 0
+  let current_book_closes = 0
+  const nameSet = new Set<string>()
+  for (const c of clientList) {
+    const source = (c.client_source || "new").toString().toLowerCase()
+    if (source === "current_book") current_book_closes += 1
+    else new_clients += 1
+    if (c.client_name) nameSet.add(String(c.client_name))
+  }
+  return {
+    new_clients,
+    current_book_closes,
+    annuity_sales: clientList.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0),
+    aum_sales: clientList.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0),
+    life_sales: clientList.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0),
+    client_names: Array.from(nameSet),
+  }
+}
+
+/**
  * Get clients for a specific event
  */
 export async function getClientsByEvent(eventId: string): Promise<EventClient[]> {
@@ -252,11 +283,16 @@ export async function updateClient(
 
     if (error) throw error
 
-    // Sync to monthly entry using the updated close_date or original
-    const closeDate = clientData.close_date || currentClient?.close_date
-    if (currentClient && closeDate) {
+    // Sync monthly entries for close month(s). If close_date moved, the prior month must
+    // be recalculated or Basecamp monthly tab stays stale for that month.
+    const previousCloseDate = currentClient?.close_date ?? null
+    const effectiveCloseDate = data?.close_date ?? previousCloseDate
+    if (currentClient && effectiveCloseDate) {
       try {
-        await syncClientToMonthlyEntry(currentClient.event_id, closeDate)
+        if (previousCloseDate && previousCloseDate !== effectiveCloseDate) {
+          await syncClientToMonthlyEntry(currentClient.event_id, previousCloseDate)
+        }
+        await syncClientToMonthlyEntry(currentClient.event_id, effectiveCloseDate)
       } catch (syncError) {
         logger.error("Error syncing to monthly entry (non-blocking):", syncError)
       }
@@ -403,16 +439,13 @@ export async function syncClientToMonthlyEntry(
     }
 
     const clientList = allClients || []
-    const newCount = clientList.filter((c: any) => (c.client_source || "new").toString().toLowerCase() !== "current_book").length
-    const currentBookCount = clientList.filter((c: any) => (c.client_source || "").toString().toLowerCase() === "current_book").length
-
-    // Aggregate the data
+    const fromRows = aggregateClientRowsForMonthlyEntry(clientList)
     const aggregated = {
-      new_clients: newCount,
-      current_book_closes: currentBookCount,
-      annuity_sales: clientList.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0) || 0,
-      aum_sales: clientList.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0) || 0,
-      life_sales: clientList.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0) || 0,
+      new_clients: fromRows.new_clients,
+      current_book_closes: fromRows.current_book_closes,
+      annuity_sales: fromRows.annuity_sales,
+      aum_sales: fromRows.aum_sales,
+      life_sales: fromRows.life_sales,
     }
 
     // Build client names and notes list
@@ -681,15 +714,13 @@ export async function aggregateEventDataByMonth(
 
       if (clientsError) throw clientsError
       const clientList = clients || []
-      annuity_sales = clientList.reduce((sum: number, c: any) => sum + (c.annuity_premium || 0), 0)
-      aum_sales = clientList.reduce((sum: number, c: any) => sum + (c.aum_amount || 0), 0)
-      life_sales = clientList.reduce((sum: number, c: any) => sum + (c.life_insurance_premium || 0), 0)
-      client_names = Array.from(new Set(clientList.map((c: any) => c.client_name).filter(Boolean))) as string[]
-      clientList.forEach((c: any) => {
-        const source = (c.client_source || "new").toLowerCase()
-        if (source === "current_book") current_book_closes += 1
-        else new_clients += 1
-      })
+      const metrics = aggregateClientRowsForMonthlyEntry(clientList)
+      annuity_sales = metrics.annuity_sales
+      aum_sales = metrics.aum_sales
+      life_sales = metrics.life_sales
+      new_clients = metrics.new_clients
+      current_book_closes = metrics.current_book_closes
+      client_names = metrics.client_names
     }
 
     return {

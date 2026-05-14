@@ -20,7 +20,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { hasFullAccess, isPageVisible, getFirstVisibleMarketingPath } from "@/lib/page-visibility"
+import { hasFullAccess, isPageVisible } from "@/lib/page-visibility"
 import type { ViewAsProfile } from "@/components/admin/view-as-user-context"
 
 const VIEW_AS_BASE = (userId: string) => `/admin/users/${userId}`
@@ -37,15 +37,6 @@ export function ViewAsSidebar({ profile }: { profile: ViewAsProfile | null }) {
 
   const userEmail = profile?.email ?? null
   const canSeeAllPages = hasFullAccess(userEmail)
-  const firstMarketingPath = getFirstVisibleMarketingPath(userEmail)
-  const marketingCollapsedHref = firstMarketingPath ? `${base}${firstMarketingPath}` : `${base}/events`
-  const isMarketingSectionActive =
-    pathname === `${base}/single-event` ||
-    pathname.startsWith(`${base}/single-event/`) ||
-    pathname === `${base}/analytics` ||
-    pathname.startsWith(`${base}/analytics/`) ||
-    pathname === `${base}/events` ||
-    pathname.startsWith(`${base}/events/`)
 
   useEffect(() => {
     const savedState = localStorage.getItem("sidebarCollapsed")
@@ -206,10 +197,10 @@ export function ViewAsSidebar({ profile }: { profile: ViewAsProfile | null }) {
               </div>
             ) : (
               <Link
-                href={marketingCollapsedHref}
+                href={`${base}/analytics`}
                 className={cn(
                   "flex items-center justify-center rounded-lg px-2 py-2.5 text-sm font-semibold transition-all duration-200 group",
-                  isMarketingSectionActive
+                  isAnalytics
                     ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
                     : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
                 )}

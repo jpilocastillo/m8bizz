@@ -52,7 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { User as SupabaseUser, Session } from "@supabase/supabase-js"
-import { hasFullAccess, isPageVisible, getFirstVisibleMarketingPath } from "@/lib/page-visibility"
+import { hasFullAccess, isPageVisible } from "@/lib/page-visibility"
 import { isBrandNewUser } from "@/lib/onboarding-eligibility"
 
 export function Sidebar() {
@@ -123,15 +123,6 @@ export function Sidebar() {
 
   // Check if user has full access
   const canSeeAllPages = hasFullAccess(user?.email || null)
-  const firstMarketingPath = getFirstVisibleMarketingPath(user?.email || null)
-  const marketingCollapsedHref = firstMarketingPath ?? "/events"
-  const isMarketingSectionActive =
-    pathname === "/single-event" ||
-    pathname.startsWith("/single-event/") ||
-    pathname === "/analytics" ||
-    pathname.startsWith("/analytics/") ||
-    pathname === "/events" ||
-    pathname.startsWith("/events/")
 
   return (
     <div
@@ -310,10 +301,10 @@ export function Sidebar() {
               </div>
             ) : (
               <Link
-                href={marketingCollapsedHref}
+                href="/analytics"
                 className={cn(
                   "flex items-center justify-center rounded-lg px-2 py-2.5 text-sm font-semibold transition-all duration-200 group",
-                  isMarketingSectionActive
+                  pathname.startsWith("/analytics")
                     ? "bg-gradient-to-r from-m8bs-blue to-m8bs-blue-dark text-white shadow-lg shadow-m8bs-blue/30"
                     : "text-m8bs-muted hover:bg-m8bs-card-alt hover:text-white hover:shadow-md",
                 )}

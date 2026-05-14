@@ -1,10 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import {
-  isEventDashboardBlockedEmail,
-  isEventDashboardPathname,
-} from "@/lib/event-dashboard-access-policy"
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
@@ -39,14 +35,6 @@ export async function middleware(req: NextRequest) {
   const {
     data: { session },
   } = await supabase.auth.getSession()
-
-  if (
-    session?.user?.email &&
-    isEventDashboardPathname(req.nextUrl.pathname) &&
-    isEventDashboardBlockedEmail(session.user.email)
-  ) {
-    return NextResponse.redirect(new URL("/", req.url))
-  }
 
   // Handle admin routes
   if (req.nextUrl.pathname.startsWith('/admin')) {
@@ -150,10 +138,6 @@ export const config = {
     '/',
     '/getting-started',
     '/business-dashboard/:path*',
-    '/analytics',
-    '/analytics/:path*',
-    '/single-event',
-    '/single-event/:path*',
     '/admin/:path*',
     '/login',
     '/reset-password',
