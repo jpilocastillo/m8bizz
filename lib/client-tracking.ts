@@ -639,7 +639,9 @@ export async function recalculateMonthlyEntryFromEvents(
 
 /**
  * Aggregate all event data (appointments, expenses, clients) for a specific month.
- * - Appointments and marketing_expenses: tied to events that occurred in this month.
+ * - Appointments: sum of event_appointments (set_at_event + set_after_event) for events in this month,
+ *   plus cultivation_client_touches on those same events (cultivation / client-touch activities).
+ * - marketing_expenses: tied to events that occurred in this month.
  * - Client sales/commissions (annuity_sales, aum_sales, life_sales, new_clients): tied to close_date,
  *   so they appear in the month the client was closed in the basecamp monthly data tab.
  */
@@ -667,7 +669,7 @@ export async function aggregateEventDataByMonth(
     // Get events that occurred in this month (for appointments and expenses only)
     const { data: eventsThisMonth, error: eventsError } = await supabase
       .from("marketing_events")
-      .select("id")
+      .select("id, cultivation_client_touches")
       .eq("user_id", userId)
       .gte("date", monthStart)
       .lte("date", monthEnd)
@@ -679,13 +681,20 @@ export async function aggregateEventDataByMonth(
     let appointments_booked = 0
     let marketing_expenses = 0
     if (eventIdsThisMonth.length > 0) {
+      const clientTouchesThisMonth = (eventsThisMonth || []).reduce(
+        (sum: number, ev: any) => sum + (Number(ev.cultivation_client_touches) || 0),
+        0
+      )
+
       const { data: appointments } = await supabase
         .from("event_appointments")
         .select("set_at_event, set_after_event")
         .in("event_id", eventIdsThisMonth)
-      appointments_booked = (appointments || []).reduce((sum: number, apt: any) => {
+      const appointmentsFromEvents = (appointments || []).reduce((sum: number, apt: any) => {
         return sum + (apt.set_at_event || 0) + (apt.set_after_event || 0)
       }, 0)
+
+      appointments_booked = appointmentsFromEvents + clientTouchesThisMonth
 
       const { data: expenses } = await supabase
         .from("marketing_expenses")
