@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AdvisorBasecampData, MarketingCampaign, ClientMetrics } from "@/lib/advisor-basecamp"
+import { calculateMarketingROI, estimateCampaignAppointments, estimateClientsFromAppointments, getAvgCommissionIncomePerClient } from "@/lib/marketing-roi"
 import { useMemo } from "react"
 
 interface ClientAcquisitionProps {
@@ -29,6 +30,7 @@ const colors = ["#3b82f6", "#8b5cf6", "#f97316", "#ef4444", "#64748b", "#22c55e"
 export function ClientAcquisition({ data }: ClientAcquisitionProps) {
   const campaigns = data?.campaigns || []
   const clientMetrics = data?.clientMetrics
+  const commissionRates = data?.commissionRates
 
   // Calculate metrics from campaign data
   const calculatedMetrics = useMemo(() => {
@@ -41,14 +43,21 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
     const totalLeads = campaigns.reduce((sum, campaign) => sum + (campaign.leads || 0), 0)
     const totalEvents = campaigns.reduce((sum, campaign) => sum + (campaign.events || 0), 0)
     
-    // Calculate appointments from campaigns
-    const totalAppointments = appointmentsPerCampaign > 0 
-      ? totalEvents * appointmentsPerCampaign
-      : Math.round(totalLeads * 0.4) // Fallback: assume 40% of leads become appointments
+    // Calculate appointments from campaigns (do not multiply events × appointments_per_campaign)
+    const totalAppointments = estimateCampaignAppointments({
+      totalEvents,
+      totalLeads,
+      campaignCount: campaigns.length,
+      appointmentsPerCampaign,
+    })
     
     // Calculate clients from prospects and close ratio
+    const totalClients = estimateClientsFromAppointments(
+      totalAppointments,
+      appointmentAttrition,
+      avgCloseRatio,
+    )
     const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
-    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
 
     // Calculate budget from campaigns
     const totalBudget = campaigns.reduce((sum, campaign) => sum + (campaign.budget || 0), 0)
@@ -57,16 +66,13 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
     const costPerLead = totalLeads > 0 ? totalBudget / totalLeads : 0
     const costPerClient = totalClients > 0 ? totalBudget / totalClients : 0
 
-    // Calculate ROI using the same formula as marketing ROI in campaign-table
-    const avgAnnuitySize = clientMetrics?.avg_annuity_size || 0
-    const avgAUMSize = clientMetrics?.avg_aum_size || 0
-    const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
-    const totalRevenue = totalClients * avgClientValue
-    // Match marketing ROI calculation exactly: ((totalRevenue - totalBudget) / totalBudget) * 100
-    const roi = totalBudget > 0 ? ((totalRevenue - totalBudget) / totalBudget) * 100 : 0
+    // ROI from commission income, not production
+    const avgIncomePerClient = getAvgCommissionIncomePerClient(clientMetrics, commissionRates)
+    const totalIncome = totalClients * avgIncomePerClient
+    const roi = calculateMarketingROI(totalIncome, totalBudget)
 
-    // Calculate client lifetime value (simplified)
-    const clientLifetimeValue = avgClientValue
+    // Estimated income value per client (commission/fees)
+    const clientLifetimeValue = avgIncomePerClient
 
     return {
       totalLeads,
@@ -81,7 +87,7 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
       appointmentAttrition,
       avgCloseRatio,
     }
-  }, [campaigns, clientMetrics])
+  }, [campaigns, clientMetrics, commissionRates])
 
   // Client acquisition funnel data
   const funnelData = [
@@ -100,11 +106,18 @@ export function ClientAcquisition({ data }: ClientAcquisitionProps) {
     // Calculate totals from campaigns
     const totalLeads = campaigns.reduce((sum, campaign) => sum + (campaign.leads || 0), 0)
     const totalEvents = campaigns.reduce((sum, campaign) => sum + (campaign.events || 0), 0)
-    const totalAppointments = appointmentsPerCampaign > 0 
-      ? totalEvents * appointmentsPerCampaign
-      : Math.round(totalLeads * 0.4)
+    const totalAppointments = estimateCampaignAppointments({
+      totalEvents,
+      totalLeads,
+      campaignCount: campaigns.length,
+      appointmentsPerCampaign,
+    })
     const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
-    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
+    const totalClients = estimateClientsFromAppointments(
+      totalAppointments,
+      appointmentAttrition,
+      avgCloseRatio,
+    )
 
     // Distribute campaign data evenly across 12 months
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

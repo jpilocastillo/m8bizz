@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react'
 import { AdvisorBasecampData } from '@/lib/advisor-basecamp'
+import { calculateMarketingROI, estimateCampaignAppointments, estimateClientsFromAppointments, getAvgCommissionIncomePerClient } from '@/lib/marketing-roi'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2, AlertCircle, Target } from 'lucide-react'
@@ -84,21 +85,29 @@ export function PDFExport({ data, profile, year }: PDFExportProps) {
     const totalLeads = (data.campaigns || []).reduce((sum, c) => sum + (c.leads || 0), 0) * 12
     const totalBudget = (data.campaigns || []).reduce((sum, c) => sum + (c.budget || 0), 0) * 12
     const appointmentsPerCampaign = data.clientMetrics?.appointments_per_campaign || 0
-    const totalAppointments = appointmentsPerCampaign > 0 
-      ? totalEvents * appointmentsPerCampaign
-      : Math.round(totalLeads * 0.4)
-    const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
-    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
+    const campaignCount = (data.campaigns || []).length
+    const totalAppointments = estimateCampaignAppointments({
+      totalEvents,
+      totalLeads,
+      campaignCount: campaignCount * 12,
+      appointmentsPerCampaign,
+    })
+    const totalClients = estimateClientsFromAppointments(
+      totalAppointments,
+      appointmentAttrition,
+      avgCloseRatio,
+    )
     const costPerLead = totalLeads > 0 ? totalBudget / totalLeads : 0
     const costPerAppointment = totalAppointments > 0 ? totalBudget / totalAppointments : 0
     const costPerClient = totalClients > 0 ? totalBudget / totalClients : 0
     const leadToAppointmentRatio = totalLeads > 0 ? (totalAppointments / totalLeads) * 100 : 0
     const appointmentToClientRatio = totalAppointments > 0 ? (totalClients / totalAppointments) * 100 : 0
-    const avgClientAnnuitySize = data.clientMetrics?.avg_annuity_size || 0
-    const avgClientAUMSize = data.clientMetrics?.avg_aum_size || 0
-    const avgClientValue = (avgClientAnnuitySize + avgClientAUMSize) / 2
-    const totalRevenue = totalClients * avgClientValue
-    const marketingROI = totalBudget > 0 ? ((totalRevenue - totalBudget) / totalBudget) * 100 : 0
+    const avgIncomePerClient = getAvgCommissionIncomePerClient(
+      data.clientMetrics,
+      data.commissionRates,
+    )
+    const totalIncome = totalClients * avgIncomePerClient
+    const marketingROI = calculateMarketingROI(totalIncome, totalBudget)
 
     return {
       clientsNeeded,

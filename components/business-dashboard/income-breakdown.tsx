@@ -17,6 +17,7 @@ import {
 } from "recharts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BusinessGoals, CurrentValues, ClientMetrics, CommissionRates, MarketingCampaign } from "@/lib/advisor-basecamp"
+import { calculateMarketingROI, estimateCampaignAppointments, estimateClientsFromAppointments, getAvgCommissionIncomePerClient } from "@/lib/marketing-roi"
 import { formatCurrency } from "@/lib/utils"
 
 interface IncomeBreakdownProps {
@@ -132,40 +133,41 @@ export function IncomeBreakdown({
     // This should come from business data form if needed, for now set to 0
     const totalOperationalExpenses = 0
     
-    // Calculate Marketing ROI from actual campaign data
-    // ROI = ((Revenue - Marketing Costs) / Marketing Costs) * 100
-    // Revenue is calculated from clients acquired through campaigns
+    // Calculate Marketing ROI from actual campaign data using commission income
+    // ROI = ((Income - Marketing Costs) / Marketing Costs) * 100
     const appointmentAttrition = clientMetrics.appointment_attrition || 0
     const avgCloseRatio = clientMetrics.avg_close_ratio || 0
     const appointmentsPerCampaign = clientMetrics.appointments_per_campaign || 0
-    const avgAnnuitySize = clientMetrics.avg_annuity_size || 0
-    const avgAUMSize = clientMetrics.avg_aum_size || 0
-    const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
+    const avgIncomePerClient = getAvgCommissionIncomePerClient(clientMetrics, commissionRates)
     
     // Calculate total events, leads, and appointments from campaigns
     let totalEvents = 0
     let totalLeads = 0
+    let campaignCount = 0
     
     campaigns.forEach(campaign => {
       const frequency = (campaign as any).frequency || "Monthly"
       const multiplier = frequency === "Monthly" ? 12 : frequency === "Quarterly" ? 4 : frequency === "Semi-Annual" ? 2 : 1
       totalEvents += (campaign.events || 0) * multiplier
       totalLeads += (campaign.leads || 0) * multiplier
+      campaignCount += multiplier
     })
     
-    // Calculate clients from campaigns
-    const totalAppointments = appointmentsPerCampaign > 0 
-      ? totalEvents * appointmentsPerCampaign
-      : Math.round(totalLeads * 0.4) // Fallback: 40% of leads become appointments
+    const totalAppointments = estimateCampaignAppointments({
+      totalEvents,
+      totalLeads,
+      campaignCount,
+      appointmentsPerCampaign,
+    })
+    const totalClients = estimateClientsFromAppointments(
+      totalAppointments,
+      appointmentAttrition,
+      avgCloseRatio,
+    )
+    const campaignIncome = totalClients * avgIncomePerClient
     
-    const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
-    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
-    const campaignRevenue = totalClients * avgClientValue
-    
-    // Calculate ROI
-    const marketingROI = totalMarketingExpenses > 0 
-      ? ((campaignRevenue - totalMarketingExpenses) / totalMarketingExpenses) * 100
-      : 0
+    // Calculate ROI from commission income, not production
+    const marketingROI = calculateMarketingROI(campaignIncome, totalMarketingExpenses)
 
     return {
       incomeData,

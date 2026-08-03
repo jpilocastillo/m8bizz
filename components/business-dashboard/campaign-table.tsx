@@ -17,6 +17,7 @@ import * as z from "zod"
 import { useAdvisorBasecamp } from "@/hooks/use-advisor-basecamp"
 import { useAuth } from "@/components/auth-provider"
 import { MarketingCampaign } from "@/lib/advisor-basecamp"
+import { calculateMarketingROI, estimateCampaignAppointments, estimateClientsFromAppointments, getAvgCommissionIncomePerClient } from "@/lib/marketing-roi"
 import { useMemo } from "react"
 import { toast } from "@/components/ui/use-toast"
 
@@ -80,26 +81,28 @@ export function CampaignTable() {
   const totalLeads = campaigns.reduce((sum, item) => sum + (item.leads || 0), 0)
   const totalBudget = campaigns.reduce((sum, item) => sum + (item.budget || 0), 0)
 
-  // Calculate accurate ROI metrics
+  // Calculate accurate ROI metrics (income/commission, not production)
   const roiMetrics = useMemo(() => {
     const clientMetrics = data.clientMetrics
     const appointmentAttrition = clientMetrics?.appointment_attrition || 0
     const avgCloseRatio = clientMetrics?.avg_close_ratio || 0
     const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
-    const avgAnnuitySize = clientMetrics?.avg_annuity_size || 0
-    const avgAUMSize = clientMetrics?.avg_aum_size || 0
-    const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
+    const avgIncomePerClient = getAvgCommissionIncomePerClient(
+      clientMetrics,
+      data.commissionRates,
+    )
 
-    // Calculate appointments
-    const totalAppointments = appointmentsPerCampaign > 0 
-      ? totalEvents * appointmentsPerCampaign
-      : Math.round(totalLeads * 0.4) // Fallback: 40% of leads become appointments
-
-    // Calculate prospects (appointments after attrition)
-    const totalProspects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
-
-    // Calculate clients (prospects * close ratio)
-    const totalClients = Math.round(totalProspects * (avgCloseRatio / 100))
+    const totalAppointments = estimateCampaignAppointments({
+      totalEvents,
+      totalLeads,
+      campaignCount: campaigns.length,
+      appointmentsPerCampaign,
+    })
+    const totalClients = estimateClientsFromAppointments(
+      totalAppointments,
+      appointmentAttrition,
+      avgCloseRatio,
+    )
 
     // Calculate costs
     const costPerLead = totalLeads > 0 ? totalBudget / totalLeads : 0
@@ -110,9 +113,9 @@ export function CampaignTable() {
     const leadToAppointmentRatio = totalLeads > 0 ? (totalAppointments / totalLeads) * 100 : 0
     const appointmentToClientRatio = totalAppointments > 0 ? (totalClients / totalAppointments) * 100 : 0
 
-    // Calculate ROI
-    const totalRevenue = totalClients * avgClientValue
-    const marketingROI = totalBudget > 0 ? ((totalRevenue - totalBudget) / totalBudget) * 100 : 0
+    // Calculate ROI from commission income, not production
+    const totalIncome = totalClients * avgIncomePerClient
+    const marketingROI = calculateMarketingROI(totalIncome, totalBudget)
 
     return {
       costPerLead,
@@ -122,7 +125,7 @@ export function CampaignTable() {
       appointmentToClientRatio,
       marketingROI,
     }
-  }, [totalEvents, totalLeads, totalBudget, data.clientMetrics])
+  }, [totalEvents, totalLeads, totalBudget, campaigns.length, data.clientMetrics, data.commissionRates])
 
   const onSubmit = async (formData: CampaignFormData) => {
     try {
@@ -233,9 +236,12 @@ export function CampaignTable() {
   const performanceData = useMemo(() => {
     const clientMetrics = data.clientMetrics
     const avgCloseRatio = clientMetrics?.avg_close_ratio || 0
-    const avgAnnuitySize = clientMetrics?.avg_annuity_size || 0
-    const avgAUMSize = clientMetrics?.avg_aum_size || 0
-    const avgClientValue = (avgAnnuitySize + avgAUMSize) / 2
+    const appointmentAttrition = clientMetrics?.appointment_attrition || 0
+    const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
+    const avgIncomePerClient = getAvgCommissionIncomePerClient(
+      clientMetrics,
+      data.commissionRates,
+    )
 
     // Group campaigns by quarter (assuming campaigns are monthly, distribute across quarters)
     const campaignsPerQuarter = Math.ceil(campaigns.length / 4)
@@ -248,20 +254,21 @@ export function CampaignTable() {
       
       const budget = quarterCampaigns.reduce((sum, c) => sum + (c.budget || 0), 0)
       const leads = quarterCampaigns.reduce((sum, c) => sum + (c.leads || 0), 0)
-      
-      // Calculate ROI: (Revenue - Cost) / Cost * 100
-      // Revenue = leads * conversion_rate * avg_client_value
-      // For simplicity, assume conversion from leads to clients based on close ratio
-      const appointmentAttrition = clientMetrics?.appointment_attrition || 0
-      const appointmentsPerCampaign = clientMetrics?.appointments_per_campaign || 0
-      const totalEvents = quarterCampaigns.reduce((sum, c) => sum + (c.events || 0), 0)
-      const totalAppointments = appointmentsPerCampaign > 0 
-        ? totalEvents * appointmentsPerCampaign
-        : Math.round(leads * 0.4) // Fallback: 40% of leads become appointments
-      const prospects = Math.round(totalAppointments * (1 - appointmentAttrition / 100))
-      const clients = Math.round(prospects * (avgCloseRatio / 100))
-      const revenue = clients * avgClientValue
-      const roi = budget > 0 ? ((revenue - budget) / budget) * 100 : 0
+      const events = quarterCampaigns.reduce((sum, c) => sum + (c.events || 0), 0)
+
+      const totalAppointments = estimateCampaignAppointments({
+        totalEvents: events,
+        totalLeads: leads,
+        campaignCount: quarterCampaigns.length,
+        appointmentsPerCampaign,
+      })
+      const clients = estimateClientsFromAppointments(
+        totalAppointments,
+        appointmentAttrition,
+        avgCloseRatio,
+      )
+      const income = clients * avgIncomePerClient
+      const roi = calculateMarketingROI(income, budget)
       
       return {
         name: quarter,
@@ -270,7 +277,7 @@ export function CampaignTable() {
         roi: Math.round(roi * 10) / 10, // Round to 1 decimal
       }
     })
-  }, [campaigns, data.clientMetrics])
+  }, [campaigns, data.clientMetrics, data.commissionRates])
 
   return (
     <div className="grid gap-6">
